@@ -1,13 +1,13 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-26 ~21:00 UTC (00:00 Cairo)
+Last updated: 2026-09-26 ~21:10 UTC (00:10 Cairo)
 
 ## CURRENT PRODUCTION STATE
 
 - **n8n**: workflows 00, 00b and 01–11 are unchanged (01 is inactive by design).
   - **12 - NOYA Outbound Email Executor v1** (`HOQIzE9gRKmeoz1G`): **ACTIVE (published 26 Sep)**. It is triggered only by the CEO Command Centre (`hq_approve_draft` via `pg_net`) for a single approved outbound id. It creates Gmail drafts only; no SEND row can be created from the dashboard.
   - **13 - NOYA Gmail Interaction Sync v1** (`lcc7sb28itQaTubO`): **ACTIVE**, every 15 minutes. The first scheduled run succeeded at 19:30 UTC (exec 293).
-- **CEO Command Centre**: built in `hq/`. **Deployment config added for the Cloudflare Worker `noya-hq` (Workers Static Assets). Awaiting Adam's retry of the Cloudflare deployment.**
+- **CEO Command Centre**: built in `hq/`, deployed to the Cloudflare Worker `noya-hq`. **`hq.noyaconcierge.com` does not resolve yet (NXDOMAIN, see LIVE PRODUCTION VERIFICATION). NOT frozen.**
   - Server side: migration `20260926200000_hq_command_centre.sql`, plus the hardening migration `20260926201000_pin_helper_search_path.sql`.
   - Admin: `adam.elshazly1012@gmail.com` (Supabase Auth user `0d858bd9-…`, in `hq_admins`). The temporary password is flagged must-change.
 - **Supabase `noya-ai-hq`**: CRM at baseline — 29 opportunities, 28 tasks, 33 contacts, 44 companies, 0 interactions, 0 outbound, 0 revenue.
@@ -46,6 +46,35 @@ Last updated: 2026-09-26 ~21:00 UTC (00:00 Cairo)
        - `/app.js` and `/styles.css` return 200 with the correct content types.
        - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
      - Secret scan: PASS. UI checks: 31/31.
+
+## LIVE PRODUCTION VERIFICATION — 26 Sep 21:05 UTC (Command Centre NOT frozen)
+
+**Result: `hq.noyaconcierge.com` is not reachable on the public internet yet.**
+
+Public DNS (Google DNS resolver, `dns.google`) returns **NXDOMAIN** for `hq.noyaconcierge.com` (A, AAAA and CNAME). The `noyaconcierge.com` zone is authoritative on **Google Cloud DNS** (`ns-cloud-b1..b4.googledomains.com`), not Cloudflare. A Workers Custom Domain can only attach to a hostname in a zone that is active on Cloudflare, so the domain has not been connected to the `noya-hq` Worker.
+
+**Corroborating evidence:**
+- Adam's HQ account has never signed in (`last_sign_in_at` null, must-change-password still true, 0 sessions).
+- The Supabase edge logs show no `hq_*` or auth-token calls in the last 24 hours.
+
+**Could not be verified from this session:**
+- The live build, live login and the forced password change.
+- The 10 views against live data from the browser.
+- The live-dashboard APPROVE & DRAFT test.
+
+Two reasons: the hostname does not resolve, and this cloud session's network policy also blocks `hq.noyaconcierge.com` and `gagbhykzmtstekpqujyl.supabase.co`. No test data was created, so nothing needed cleaning.
+
+**Verified now:**
+
+| Check | Evidence | Result |
+|---|---|---|
+| Workflow 13 active and healthy | 7 consecutive scheduled runs, 19:30–21:00 UTC, all success; `gmail_sync_state.last_run_at` 21:00:30 | PASS |
+| Workflow 12 active, idle | Published; 0 executions since 19:40 UTC (no approvals were made) | PASS |
+| Zero emails sent | Gmail `in:sent newer_than:2d` is empty | PASS |
+| CRM baseline intact | 29 opportunities / 28 tasks / 33 contacts / 44 companies, 0 interactions, 0 outbound, 0 audit, 0 ledger rows | PASS |
+| Committed bundle secret-free | `hq/tests/security-scan.mjs` PASS (commit `374b111`) | PASS |
+| Private / authenticated | Server-side auth tests of 26 Sep still apply: anon has no hq_* execute, non-admin JWTs denied, tables RLS deny-all | PASS (server side) |
+| Approval-ready live queue | Quintessentially, Armani, Rafanelli, Nobu (4; all HUMAN_ONLY, VERIFIED) | 4 |
 
 ## TEST RESULTS — CEO COMMAND CENTRE (26 Sep)
 
@@ -102,16 +131,18 @@ Last updated: 2026-09-26 ~21:00 UTC (00:00 Cairo)
 
 ## BLOCKERS
 
-1. **Cloudflare deployment not yet retried.** The config is in the repo. Adam retries the `noya-hq` deployment, then adds the custom domain `hq.noyaconcierge.com` to the Worker.
-2. **Supabase security advisor warnings.**
-   - Informational: "authenticated can execute SECURITY DEFINER" (the 6 `hq_*` functions, by design with an allowlist check).
-   - Optional: turn on leaked-password protection in Supabase Auth settings.
+1. **No DNS record for `hq.noyaconcierge.com` (NXDOMAIN).** The zone is on Google Cloud DNS, so a Workers Custom Domain cannot attach. Either:
+   - (a) move the `noyaconcierge.com` nameservers to Cloudflare, copying every existing record first (website and email records included); or
+   - (b) serve HQ on the Worker's `*.workers.dev` URL until then.
+2. **This cloud session cannot reach the live site or Supabase** (environment network policy). Adam can add `hq.noyaconcierge.com` and `gagbhykzmtstekpqujyl.supabase.co` to the allowed domains so the live browser verification can run.
 
 ## NEXT ACTION
 
-Adam retries the Cloudflare `noya-hq` deployment (Deploy command `npx wrangler deploy`, root `/`, no build command). Once it is green, he adds the custom domain `hq.noyaconcierge.com` to the Worker.
+Adam decides how `hq.noyaconcierge.com` gets onto Cloudflare:
+- **Recommended**: move the `noyaconcierge.com` nameservers to Cloudflare after Cloudflare imports the existing records, then add the custom domain `hq.noyaconcierge.com` to the `noya-hq` Worker.
+- **Or**: use the `noya-hq` workers.dev URL for now.
 
-His login is in an **unsent draft in noya@ Gmail Drafts**, subject "NOYA HQ — your login". He must change the password on first sign-in, then delete that draft.
+Then re-run this verification. **Do not freeze the Command Centre until it passes.**
 
 ## DO NOT TOUCH
 
