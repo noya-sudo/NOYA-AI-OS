@@ -1,0 +1,18 @@
+{
+  "name": "noya-hq",
+  "private": true,
+  "version": "1.0.0",
+  "description": "NOYA CEO Command Centre (hq.noyaconcierge.com). Static site; all writes go through authenticated Supabase RPCs.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node build.mjs && node tests/security-scan.mjs && node tests/ui.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "playwright-core": "1.56"
+  }
+}
