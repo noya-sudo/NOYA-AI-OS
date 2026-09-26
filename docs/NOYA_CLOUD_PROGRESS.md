@@ -1,6 +1,6 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-26 ~21:10 UTC (00:10 Cairo)
+Last updated: 2026-09-26 ~22:00 UTC (01:00 Cairo)
 
 ## CURRENT PRODUCTION STATE
 
@@ -46,6 +46,24 @@ Last updated: 2026-09-26 ~21:10 UTC (00:10 Cairo)
        - `/app.js` and `/styles.css` return 200 with the correct content types.
        - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
      - Secret scan: PASS. UI checks: 31/31.
+
+## FINAL LIVE GATE — IN PROGRESS (26 Sep ~22:00 UTC)
+
+**Verified live:**
+- `hq.noyaconcierge.com` resolves: CNAME → `noya-hq-dashboard.pages.dev`, a Cloudflare Pages project.
+- It serves the NOYA HQ build. The deployed `app.js` is **byte-identical** to the committed `hq/dist/app.js` (sha256 `c932617f…`).
+- Live bundle scan: no `sb_secret`, no service_role, no JWT, no n8n URL or webhook. It holds only the publishable key and the 6 hq_* functions.
+- Adam signed in at 21:51:16 UTC and completed the forced password change at 21:51:39 (`must_change_password=false`). Supabase edge logs show the live `hq_dashboard` calls returning 200.
+- Workflow 13: 8/8 scheduled runs successful since 20:00 UTC. Workflow 12: idle, 0 runs since 19:40.
+- CRM baseline before the test: 29 opportunities / 28 tasks / 33 contacts / 44 companies; 0 interactions, outbound, audit and ledger rows.
+
+**Staged:** internal test approval **"ZZ INTERNAL LIVE TEST — approve this one only"**.
+- Opportunity `4104402a-4eca-4e77-93db-feca3ad8902a`, `run_id TEST_HQ_LIVE_20260926`.
+- Recipient `noya@noyaconcierge.com` (VERIFIED); not human-only; draft v1 parses.
+
+**Waiting on:** Adam clicking **Approve & Draft** on that card, then clicking it again or refreshing, on the live site. This session cannot reach `hq.noyaconcierge.com` or Supabase over HTTP (environment network policy), and must not use Adam's credentials. After the click, Claude verifies the result and cleans up.
+
+**NOT frozen yet.**
 
 ## LIVE PRODUCTION VERIFICATION — 26 Sep 21:05 UTC (Command Centre NOT frozen)
 
