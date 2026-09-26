@@ -1,13 +1,13 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-26 ~19:45 UTC (22:45 Cairo)
+Last updated: 2026-09-26 ~21:00 UTC (00:00 Cairo)
 
 ## CURRENT PRODUCTION STATE
 
 - **n8n**: workflows 00, 00b and 01–11 are unchanged (01 is inactive by design).
   - **12 - NOYA Outbound Email Executor v1** (`HOQIzE9gRKmeoz1G`): **ACTIVE (published 26 Sep)**. It is triggered only by the CEO Command Centre (`hq_approve_draft` via `pg_net`) for a single approved outbound id. It creates Gmail drafts only; no SEND row can be created from the dashboard.
   - **13 - NOYA Gmail Interaction Sync v1** (`lcc7sb28itQaTubO`): **ACTIVE**, every 15 minutes. The first scheduled run succeeded at 19:30 UTC (exec 293).
-- **CEO Command Centre**: built in `hq/`. **Deployment-ready; not hosted yet.**
+- **CEO Command Centre**: built in `hq/`. **Deployment config added for the Cloudflare Worker `noya-hq` (Workers Static Assets). Awaiting Adam's retry of the Cloudflare deployment.**
   - Server side: migration `20260926200000_hq_command_centre.sql`, plus the hardening migration `20260926201000_pin_helper_search_path.sql`.
   - Admin: `adam.elshazly1012@gmail.com` (Supabase Auth user `0d858bd9-…`, in `hq_admins`). The temporary password is flagged must-change.
 - **Supabase `noya-ai-hq`**: CRM at baseline — 29 opportunities, 28 tasks, 33 contacts, 44 companies, 0 interactions, 0 outbound, 0 revenue.
@@ -34,6 +34,18 @@ Last updated: 2026-09-26 ~19:45 UTC (22:45 Cairo)
      - Views: Today, Approvals, Pipeline, Tasks, Completed, Inbound, Marketing, Intelligence, System Health, CEO Brief.
      - Security: strict CSP; all CRM text is HTML-escaped.
      - Mobile-ready.
+
+5. **Cloudflare deployment config** (this revision)
+   - `wrangler.jsonc` at the repo root: `name` noya-hq, `assets.directory` `./hq/dist`, `not_found_handling` single-page-application. No Worker script, bindings or secrets.
+   - `hq/src/index.html` now loads `/app.js` and `/styles.css` with absolute paths, so deep URLs served by the SPA fallback still load the app. `hq/dist` was rebuilt.
+   - A root `.gitignore` excludes `.wrangler/` and `node_modules/`.
+   - **Verified locally with wrangler 4.141.0**:
+     - `wrangler deploy --dry-run`: 5 asset files read, no bindings.
+     - `wrangler dev`:
+       - `/`, `/approvals` and `/some/deep/path` return index.html (200).
+       - `/app.js` and `/styles.css` return 200 with the correct content types.
+       - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
+     - Secret scan: PASS. UI checks: 31/31.
 
 ## TEST RESULTS — CEO COMMAND CENTRE (26 Sep)
 
@@ -90,14 +102,14 @@ Last updated: 2026-09-26 ~19:45 UTC (22:45 Cairo)
 
 ## BLOCKERS
 
-1. **Hosting for `hq.noyaconcierge.com`.** Supabase Edge Functions cannot serve HTML, and no static host is connected. `hq/dist` is ready (see `hq/README.md`).
+1. **Cloudflare deployment not yet retried.** The config is in the repo. Adam retries the `noya-hq` deployment, then adds the custom domain `hq.noyaconcierge.com` to the Worker.
 2. **Supabase security advisor warnings.**
    - Informational: "authenticated can execute SECURITY DEFINER" (the 6 `hq_*` functions, by design with an allowlist check).
    - Optional: turn on leaked-password protection in Supabase Auth settings.
 
 ## NEXT ACTION
 
-Adam connects a static host for `hq/dist` and points `hq.noyaconcierge.com` at it. See `hq/README.md`; Cloudflare Pages is the suggested host.
+Adam retries the Cloudflare `noya-hq` deployment (Deploy command `npx wrangler deploy`, root `/`, no build command). Once it is green, he adds the custom domain `hq.noyaconcierge.com` to the Worker.
 
 His login is in an **unsent draft in noya@ Gmail Drafts**, subject "NOYA HQ — your login". He must change the password on first sign-in, then delete that draft.
 

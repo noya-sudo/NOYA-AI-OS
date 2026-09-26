@@ -28,17 +28,16 @@ npm test         # build + security scan of dist/ + headless browser checks
 
 `npm test` runs its browser checks only if `tests/fixtures/snapshot.json` exists. That file is a live `hq_dashboard()` response and is git-ignored, so it is never committed.
 
-## Deploy (one-time)
+## Deploy (Cloudflare Workers Static Assets)
 
-Host `hq/dist/` on any static host and point `hq.noyaconcierge.com` at it. For example, with Cloudflare Pages:
-- Connect this GitHub repo.
-- Build command `cd hq && npm install && npm run build`.
-- Output directory `hq/dist`.
-- Add the custom domain `hq.noyaconcierge.com`.
+The repo root has a `wrangler.jsonc` for the existing Worker `noya-hq`. It is assets-only: no Worker script, no bindings and no secrets. It serves the committed `hq/dist` with single-page-application fallback.
 
-`dist/_headers` applies the security headers on Cloudflare Pages and Netlify.
+Cloudflare Git deployment settings:
+- Root directory `/`.
+- No build command, because `hq/dist` is committed.
+- Deploy command `npx wrangler deploy`.
 
-No environment variables or secrets are needed on the host.
+After changing `hq/src`, run `npm run build` in `hq/` and commit `hq/dist`. `hq/dist/_headers` applies the security headers.
 
 ## Access
 

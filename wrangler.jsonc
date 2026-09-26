@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "noya-hq",
+  "compatibility_date": "2026-09-26",
+  // Static assets only: no Worker script, no bindings, no secrets.
+  // hq/dist is the committed, self-contained build of the CEO Command Centre (see hq/README.md).
+  "assets": {
+    "directory": "./hq/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
