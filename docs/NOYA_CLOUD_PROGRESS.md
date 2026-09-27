@@ -1,6 +1,6 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-27 ~17:45 UTC (20:45 Cairo)
+Last updated: 2026-09-27 ~20:45 UTC (23:45 Cairo)
 
 ## CURRENT PRODUCTION STATE
 
@@ -67,6 +67,16 @@ Adam clicked **Approve & Draft** on the live site, on the internal card "ZZ INTE
 | Security | The bundle holds the publishable key only; RLS is deny-all; hq_* functions are admin-gated; there is no send path | PASS |
 
 **Frozen:** the HQ frontend, the `hq_*` functions, WF12 and WF13, and the outbound, sync and audit schema. Change them only with Adam's explicit approval.
+
+## DAILY COMMERCIAL ENGINE — ACTIVATED (28 Sep 2026)
+
+- **Schedule (Cairo, unchanged, staggered):** 05:30 00b health · 06:00 02 Brand · 06:30 03 Hotels · 07:00 04 Weddings · 08:00 06 Corporate · 08:30 07 Partnerships · 09:00 08 Talent · 09:30 05 Sales & Outreach · 10:00 09 Egypt Intel · 18:00 11 CEO brief. 13 Gmail sync runs every 15 minutes. 01 is inactive by design.
+- **Fix 1 (05):** "Load All Person Interactions / Person Sibling Opportunities" had no alwaysOutputData, so every run stopped silently whenever the result was empty. No drafts had been produced since about 21 Sep. Fixed and published. Test run 412: 20 opportunities loaded, 18 drafts, 4 new tasks, 9 refreshed, 0 errors, 0 sent.
+- **Fix 2 (02, 03, 04, 06):** Merge & Cap now skips domains already in the CRM or researched in the last 60 days, so the 4 daily research slots go to new companies. Test run 411: 7 known domains skipped and 2 new candidates researched.
+- **Not changed:** 07 (it has unpublished 23 Sep edits to duplicate-matching parameters that need review first) and 08 (a different shortlist design).
+- **Quintessentially:** the committee submission (27 Sep) and the partnerships@ send are logged at company level. Hannah Felt is captured as a contact with a verified role and no email. There is one follow-up (27 Oct) plus one LinkedIn task.
+- **First daily brief:** `docs/briefs/2026-09-28_NOYA_DAILY_COMMERCIAL_ACTION_BRIEF.md`
+- **Open gap:** the morning action brief is not automated yet. 11 still runs at 18:00 in the CEO-brief format.
 
 ## LIVE PRODUCTION VERIFICATION — 26 Sep 21:05 UTC (historical; superseded by the final live gate above)
 
