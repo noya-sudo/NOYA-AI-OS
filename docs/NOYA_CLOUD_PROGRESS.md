@@ -1,16 +1,16 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-26 ~22:00 UTC (01:00 Cairo)
+Last updated: 2026-09-27 ~17:45 UTC (20:45 Cairo)
 
 ## CURRENT PRODUCTION STATE
 
 - **n8n**: workflows 00, 00b and 01–11 are unchanged (01 is inactive by design).
   - **12 - NOYA Outbound Email Executor v1** (`HOQIzE9gRKmeoz1G`): **ACTIVE (published 26 Sep)**. It is triggered only by the CEO Command Centre (`hq_approve_draft` via `pg_net`) for a single approved outbound id. It creates Gmail drafts only; no SEND row can be created from the dashboard.
   - **13 - NOYA Gmail Interaction Sync v1** (`lcc7sb28itQaTubO`): **ACTIVE**, every 15 minutes. The first scheduled run succeeded at 19:30 UTC (exec 293).
-- **CEO Command Centre**: built in `hq/`, deployed to the Cloudflare Worker `noya-hq`. **`hq.noyaconcierge.com` does not resolve yet (NXDOMAIN, see LIVE PRODUCTION VERIFICATION). NOT frozen.**
+- **CEO Command Centre**: LIVE at `hq.noyaconcierge.com` (CNAME → Cloudflare Pages `noya-hq-dashboard.pages.dev`, serving the committed `hq/dist`). **PRODUCTION ARCHITECTURE FROZEN — 27 Sep 2026 (final live gate PASS).**
   - Server side: migration `20260926200000_hq_command_centre.sql`, plus the hardening migration `20260926201000_pin_helper_search_path.sql`.
-  - Admin: `adam.elshazly1012@gmail.com` (Supabase Auth user `0d858bd9-…`, in `hq_admins`). The temporary password is flagged must-change.
-- **Supabase `noya-ai-hq`**: CRM at baseline — 29 opportunities, 28 tasks, 33 contacts, 44 companies, 0 interactions, 0 outbound, 0 revenue.
+  - Admin: `adam.elshazly1012@gmail.com` (Supabase Auth user `0d858bd9-…`, in `hq_admins`). Adam has signed in and set his own password.
+- **Supabase `noya-ai-hq`**: CRM at real baseline, with no test records. At 27 Sep 17:45 UTC: 31 opportunities, 28 tasks, 37 contacts, 47 companies, 0 interactions, 0 outbound, 0 audit, 0 revenue. The rise since 26 Sep comes from the scheduled discovery runs 324, 330 and 339 on 27 Sep and from the creators watchlist.
 - **Gmail**: `noya@noyaconcierge.com`. Nothing was sent from the mailbox in the last day.
 - **Prospect auto-send: OFF. APPROVE & SEND: not exposed. Auto-reply: OFF.**
 
@@ -47,25 +47,28 @@ Last updated: 2026-09-26 ~22:00 UTC (01:00 Cairo)
        - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
      - Secret scan: PASS. UI checks: 31/31.
 
-## FINAL LIVE GATE — IN PROGRESS (26 Sep ~22:00 UTC)
+## FINAL LIVE GATE — PASS (27 Sep 2026, 17:33–17:45 UTC) — FROZEN
 
-**Verified live:**
-- `hq.noyaconcierge.com` resolves: CNAME → `noya-hq-dashboard.pages.dev`, a Cloudflare Pages project.
-- It serves the NOYA HQ build. The deployed `app.js` is **byte-identical** to the committed `hq/dist/app.js` (sha256 `c932617f…`).
-- Live bundle scan: no `sb_secret`, no service_role, no JWT, no n8n URL or webhook. It holds only the publishable key and the 6 hq_* functions.
-- Adam signed in at 21:51:16 UTC and completed the forced password change at 21:51:39 (`must_change_password=false`). Supabase edge logs show the live `hq_dashboard` calls returning 200.
-- Workflow 13: 8/8 scheduled runs successful since 20:00 UTC. Workflow 12: idle, 0 runs since 19:40.
-- CRM baseline before the test: 29 opportunities / 28 tasks / 33 contacts / 44 companies; 0 interactions, outbound, audit and ledger rows.
+Adam clicked **Approve & Draft** on the live site, on the internal card "ZZ INTERNAL LIVE TEST". The dashboard replied: "Approved. Creating the Gmail draft…".
 
-**Staged:** internal test approval **"ZZ INTERNAL LIVE TEST — approve this one only"**.
-- Opportunity `4104402a-4eca-4e77-93db-feca3ad8902a`, `run_id TEST_HQ_LIVE_20260926`.
-- Recipient `noya@noyaconcierge.com` (VERIFIED); not human-only; draft v1 parses.
+| Check | Evidence | Result |
+|---|---|---|
+| HQ live | `hq.noyaconcierge.com` → Pages; the live `app.js` is byte-identical to the committed build | PASS |
+| Auth | Adam signed in and changed his password; the `hq_admins` gate holds | PASS |
+| Live data | Live `hq_dashboard` shows 4 approval-ready and 11 blocked | PASS |
+| Live Approve & Draft | `outbound_emails` `b867eb0f…`, mode DRAFT, approved_by Adam, key `hq-4104402a…-v1-a0` | PASS |
+| Audit log | APPROVE_DRAFT/APPROVED → DISPATCH_TO_WORKFLOW_12/QUEUED (pg_net #3, HTTP 200) → COMPLETE_DRAFT/DRAFTED (n8n-12) | PASS |
+| Workflow 12 | Exactly 1 execution (395, webhook, success, 17:33:20–17:33:23) | PASS |
+| Gmail draft | Exactly 1 draft, to `noya@noyaconcierge.com` | PASS |
+| Emails sent | `in:sent newer_than:3d` is empty | 0 |
+| Duplicate safety | A second `hq_approve_draft` as Adam returned ALREADY_PROCESSED and logged audit DUPLICATE_IGNORED. There was no new dispatch and WF12 stayed at 1 execution | PASS |
+| Workflow 13 | 80+ consecutive scheduled runs since 26 Sep 21:45, all success (latest 394 at 17:30) | PASS |
+| Test cleanup | Test draft and the old "NOYA HQ — your login" draft were deleted. All TEST_HQ_LIVE_20260926 rows were removed (opportunity, contact, company, 2 tasks, outbound, 4 audit rows) | PASS |
+| Security | The bundle holds the publishable key only; RLS is deny-all; hq_* functions are admin-gated; there is no send path | PASS |
 
-**Waiting on:** Adam clicking **Approve & Draft** on that card, then clicking it again or refreshing, on the live site. This session cannot reach `hq.noyaconcierge.com` or Supabase over HTTP (environment network policy), and must not use Adam's credentials. After the click, Claude verifies the result and cleans up.
+**Frozen:** the HQ frontend, the `hq_*` functions, WF12 and WF13, and the outbound, sync and audit schema. Change them only with Adam's explicit approval.
 
-**NOT frozen yet.**
-
-## LIVE PRODUCTION VERIFICATION — 26 Sep 21:05 UTC (Command Centre NOT frozen)
+## LIVE PRODUCTION VERIFICATION — 26 Sep 21:05 UTC (historical; superseded by the final live gate above)
 
 **Result: `hq.noyaconcierge.com` is not reachable on the public internet yet.**
 
@@ -149,24 +152,22 @@ Two reasons: the hostname does not resolve, and this cloud session's network pol
 
 ## BLOCKERS
 
-1. **No DNS record for `hq.noyaconcierge.com` (NXDOMAIN).** The zone is on Google Cloud DNS, so a Workers Custom Domain cannot attach. Either:
-   - (a) move the `noyaconcierge.com` nameservers to Cloudflare, copying every existing record first (website and email records included); or
-   - (b) serve HQ on the Worker's `*.workers.dev` URL until then.
-2. **This cloud session cannot reach the live site or Supabase** (environment network policy). Adam can add `hq.noyaconcierge.com` and `gagbhykzmtstekpqujyl.supabase.co` to the allowed domains so the live browser verification can run.
+None required.
+
+Optional:
+- Enable leaked-password protection in Supabase Auth.
+- Retire whichever of the duplicate Cloudflare projects is unused. `noya-hq-dashboard` (Pages) serves the live domain; the `noya-hq` Worker is unused.
 
 ## NEXT ACTION
 
-Adam decides how `hq.noyaconcierge.com` gets onto Cloudflare:
-- **Recommended**: move the `noyaconcierge.com` nameservers to Cloudflare after Cloudflare imports the existing records, then add the custom domain `hq.noyaconcierge.com` to the `noya-hq` Worker.
-- **Or**: use the `noya-hq` workers.dev URL for now.
-
-Then re-run this verification. **Do not freeze the Command Centre until it passes.**
+Adam opens HQ → APPROVALS and approves his first real draft. There are 4 ready: Quintessentially, Armani Hotels & Resorts, Rafanelli Events and Nobu Hotels. All are HUMAN_ONLY, so each approval creates a Gmail draft that Adam reviews and sends himself. Workflow 13 logs the send and any reply.
 
 ## DO NOT TOUCH
 
 - Workflows 00, 00b, 01–11, and the Squarespace site.
 - `reports@noyaconcierge.com`: internal reporting only.
 - Do not add an APPROVE & SEND path in this phase.
+- Frozen production architecture (27 Sep): the HQ frontend, the hq_* functions, WF12 and WF13.
 - Do not move `gmail_sync_state.go_live_at` earlier.
 
 ## KNOWN CREDENTIAL NAMES (names only)
