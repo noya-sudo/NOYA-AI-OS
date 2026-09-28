@@ -1,6 +1,6 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-27 ~20:45 UTC (23:45 Cairo)
+Last updated: 2026-09-28 ~00:50 UTC (03:50 Cairo)
 
 ## CURRENT PRODUCTION STATE
 
@@ -68,6 +68,26 @@ Adam clicked **Approve & Draft** on the live site, on the internal card "ZZ INTE
 
 **Frozen:** the HQ frontend, the `hq_*` functions, WF12 and WF13, and the outbound, sync and audit schema. Change them only with Adam's explicit approval.
 
+## DAILY OPERATING LAYER — FINALISED (28 Sep 2026, ~03:50 Cairo)
+
+- **11 converted** to **NOYA — DAILY COMMERCIAL ACTION BRIEF** at **10:15 Cairo**; the 18:00 daily run is removed and the Sunday 19:00 weekly review is kept.
+  - A new read-only function, `daily_action_brief_facts()`, supplies ranked existing tasks, drafts, replies and opportunities to the single AI call. Every value is labelled MODEL_ESTIMATE, ACTUAL or UNKNOWN. Nothing is re-researched.
+  - PDF cover and email are retitled. "Open pipeline (estimated)" is relabelled "Model estimates (NOT pipeline)".
+  - First live run: exec 430, AI_OK, PDF built, DELIVERED to Adam.
+- **05 dedup:** approval, contact and entity task checks now treat OPEN, IN_PROGRESS and WAITING as existing, so parked tasks are never re-created.
+- **Task review (11 overdue):**
+  - 6 are STILL_ACTIONABLE. They were converted in place to LinkedIn or warm-path actions with scripts: Aman, Colin Cowie, Etihad, Mandarin Oriental, J.P. Morgan and Arab Bank.
+  - 5 are WAITING_FOR_CONTACT and 1 is parked for capacity, all set to WAITING: Julius Baer, Rothschild, UBP, UBS, Northern Trust and Cambridge Associates.
+  - 0 were closed; none were done or superseded. Overdue open tasks are now 0.
+- **Aman:** the 27 Sep draft is rejected (unverified greeting, unsupported claims). Jihane Mamouri's identity is verified via public LinkedIn; her title (VP Global Sales) is inferred from RocketReach. The redraft from verified facts is stored as outreach_drafts v2; the channel is LinkedIn first. No paid verification.
+- **Free research:** Colin Cowie (founder; site shows Dubai office and Middle East partnerships, Egypt not named) and Ashik Ali (Mandarin Oriental Director of Global Sales; Middle East inferred). Neither has an email; none invented.
+- **07 review:** its pending 23 Sep changes are serialisation only (defaults stripped, unused output labels, sticky height). SAFE and functionally identical. Not published or overwritten.
+- **Cost observability:**
+  - New `department_run_metrics` table and `discovery_yield_daily` view.
+  - A fail-safe logging step at the end of 02, 03, 04, 06 and 08 records candidates, known-skipped, deep-researched, wrong-type, failed-fit, failed-signal, qualified, Serper searches and Firecrawl calls.
+  - Hunter and Anthropic token usage are not yet counted.
+- **Verification** of the real schedule is set for 28 Sep 10:30 Cairo.
+
 ## DAILY COMMERCIAL ENGINE — ACTIVATED (28 Sep 2026)
 
 - **Schedule (Cairo, unchanged, staggered):** 05:30 00b health · 06:00 02 Brand · 06:30 03 Hotels · 07:00 04 Weddings · 08:00 06 Corporate · 08:30 07 Partnerships · 09:00 08 Talent · 09:30 05 Sales & Outreach · 10:00 09 Egypt Intel · 18:00 11 CEO brief. 13 Gmail sync runs every 15 minutes. 01 is inactive by design.
@@ -76,7 +96,7 @@ Adam clicked **Approve & Draft** on the live site, on the internal card "ZZ INTE
 - **Not changed:** 07 (it has unpublished 23 Sep edits to duplicate-matching parameters that need review first) and 08 (a different shortlist design).
 - **Quintessentially:** the committee submission (27 Sep) and the partnerships@ send are logged at company level. Hannah Felt is captured as a contact with a verified role and no email. There is one follow-up (27 Oct) plus one LinkedIn task.
 - **First daily brief:** `docs/briefs/2026-09-28_NOYA_DAILY_COMMERCIAL_ACTION_BRIEF.md`
-- **Open gap:** the morning action brief is not automated yet. 11 still runs at 18:00 in the CEO-brief format.
+- **Morning brief:** automated since 28 Sep (see above).
 
 ## LIVE PRODUCTION VERIFICATION — 26 Sep 21:05 UTC (historical; superseded by the final live gate above)
 
