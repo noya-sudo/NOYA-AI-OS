@@ -8,7 +8,7 @@
 // - the auth token endpoint is stubbed. Real authentication and authorisation are proven
 //   separately in Postgres (see docs/NOYA_CLOUD_PROGRESS.md).
 import http from 'node:http';
-import { readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
 
@@ -20,10 +20,10 @@ const snapshot = JSON.parse(readFileSync(FIXTURE, 'utf8'));
 const overview = JSON.parse(readFileSync('tests/fixtures/overview.json', 'utf8'));
 mkdirSync('tests/out', { recursive: true });
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
   const p = join('dist', req.url === '/' ? 'index.html' : req.url.split('?')[0]);
-  if (!existsSync(p)) { res.writeHead(404); return res.end(); }
+  if (!existsSync(p) || !statSync(p).isFile()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
   res.end(readFileSync(p));
 });
@@ -98,6 +98,11 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       && (overview.money.revenue_records !== 0 || /none recorded/.test(moneyText)) && moneyText.includes(`${overview.money.pipeline_unknown_value} opps`));
   const approvalsLive = snapshot.approvals.filter((a) => a.loop_stage === 'PENDING_APPROVAL' && !a.block_reason).length;
   check('approvals-ready (overview) equals ready queue (outreach data)', sc.approvals_ready.n === approvalsLive, `${sc.approvals_ready.n} vs ${approvalsLive}`);
+  const interOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('14px Inter') && [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Inter' && f.status === 'loaded'); });
+  check('Inter loads from the local font file (CSP-safe)', interOk);
+  const sideBg = await page.evaluate(() => getComputedStyle(document.querySelector('.side')).backgroundColor);
+  const mainBg = await page.evaluate(() => getComputedStyle(document.querySelector('.panel')).backgroundColor);
+  check('navy shell (#061422), white content panels', sideBg === 'rgb(6, 20, 34)' && mainBg === 'rgb(255, 255, 255)', `${sideBg} / ${mainBg}`);
   await page.screenshot({ path: 'tests/out/overview.png', fullPage: true });
 
   // Search: YKONE finds the company, Magali Rady and the meeting task.

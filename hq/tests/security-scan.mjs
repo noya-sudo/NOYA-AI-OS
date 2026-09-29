@@ -1,7 +1,9 @@
 // Fails if anything shipped to the browser could grant more than publishable access.
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 
-const files = readdirSync('dist').map((f) => `dist/${f}`).concat(readdirSync('src').map((f) => `src/${f}`));
+// Text files only (fonts are binary assets, scanned by name/type in the headers check).
+const files = readdirSync('dist').map((f) => `dist/${f}`).concat(readdirSync('src').map((f) => `src/${f}`))
+  .filter((f) => statSync(f).isFile() && !/\.(woff2?|svg|png)$/.test(f));
 const appSources = ['src/app.js'];
 const problems = [];
 const writeRpcs = new Set();

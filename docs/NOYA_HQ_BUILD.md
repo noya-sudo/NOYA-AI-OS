@@ -20,6 +20,16 @@ Status as of 30 Sep 2026 (01:00 Cairo). HQ is the control layer over Supabase an
 
 **To go live:** run `cd hq && npm run build`, commit `hq/dist`, then push. The database side is already live and is backward compatible; the current dashboard still uses `hq_dashboard()` unchanged.
 
+## Visual system (Adam's brief, 30 Sep)
+- **Colours:**
+  - NOYA Navy `#061422` frames the system: sidebar, top bar, mobile nav and sign-in.
+  - Content sits on off-white (`#f4f3ef`) with white panels, dark navy text (`#0f1c2a`) and light grey borders.
+  - Colour is used only for priority (P1 filled, P2 outlined) and status (ok / warn / bad / info), all muted and readable on white.
+- **Type:** Inter (variable font, bundled locally at `dist/fonts/` because the CSP allows no third-party font host).
+- **Shape and effects:** small radii (4–6 px), no gradients, no glass effects, no gold-on-black.
+- **Logo:** no clean vector NOYA mark exists in the repo or in Drive. The live site's header logo is a screenshot PNG, and Drive holds only the brochure PDF. The sidebar uses a discreet letter-spaced NOYA wordmark. When `hq/src/noya-mark.svg` is added, the build places the mark beside the wordmark automatically.
+- **Tested:** Inter loads under the CSP; shell is `rgb(6, 20, 34)` and panels are white. 44/44 browser checks pass.
+
 ## A. Database audit (live, 30 Sep)
 
 | Object | Rows | HQ use |

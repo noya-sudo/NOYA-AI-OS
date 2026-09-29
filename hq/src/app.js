@@ -185,6 +185,7 @@ function navBadge(key) {
 }
 
 function render() {
+  document.body.classList.toggle('auth', !state.session || mustChangePassword() || state.modal === 'password');
   if (!state.session) return renderLogin();
   if (mustChangePassword()) return renderPasswordChange(true);
   if (state.modal === 'password') return renderPasswordChange(false);
@@ -194,12 +195,12 @@ function render() {
   const flat = NAV.flatMap(([, items]) => items).filter((i) => !i[2]);
   $('#app').innerHTML = `
     <div class="shell">
-      <aside class="side">
-        <div class="brand">NOYA<small>HQ · Operating terminal</small></div>
+      <div class="side-col"><aside class="side">
+        <div class="brand">${__HAS_LOGO__ ? '<img src="/noya-mark.svg" alt="">' : ''}<span class="word">NOYA<small>HQ · Private office</small></span></div>
         ${NAV.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l, phase]) => phase
           ? `<div class="nav-item off" title="Not built yet (build phase ${phase})"><span>${l}</span><span class="soon">${phase}</span></div>`
           : `<button class="nav-item ${state.tab === k ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('')}
-      </aside>
+      </aside></div>
       <div>
         <div class="topbar"><div class="mbrand">NOYA</div>
           <div class="search"><input id="q" type="search" placeholder="Search companies, people, opportunities, tasks…" value="${esc(state.q)}" autocomplete="off">${state.q.trim().length >= 2 ? searchResults(state.q) : ''}</div>
