@@ -89,7 +89,7 @@ input, textarea, select { background: var(--panel); }
 .topbar .btn { background: transparent; border-color: var(--navy-line); color: #fff; }
 .topbar .btn:hover { border-color: #fff; }
 .topbar .meta { margin-left: auto; display: flex; align-items: center; gap: 10px; color: var(--navy-text); font-size: 12px; }
-.mnav { display: none; }
+.bnav, .sheet, .sheet-bg { display: none; }
 .mbrand { display: none; letter-spacing: .45em; font-weight: 500; color: #fff; }
 main { padding: 20px 24px 80px; max-width: 1320px; }
 h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
@@ -229,10 +229,21 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .mbrand { display: block; }
   .topbar { padding: 8px 12px; flex-wrap: wrap; }
   .topbar .search { order: 3; flex-basis: 100%; max-width: none; }
-  .mnav { display: flex; gap: 4px; overflow-x: auto; padding: 6px 12px 8px; background: var(--navy); scrollbar-width: none; }
-  .mnav::-webkit-scrollbar { display: none; }
-  .mnav button { background: none; border: 1px solid var(--navy-line); border-radius: 14px; padding: 3px 11px; color: var(--navy-text); white-space: nowrap; font-size: 12px; }
-  .mnav button.active { color: var(--navy); background: #fff; border-color: #fff; }
+  /* Phone: five fixed bottom tabs + a full menu sheet (replaces the scrolling pill row). */
+  .bnav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--navy);
+    border-top: 1px solid var(--navy-line); padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); }
+  .bnav button { background: none; border: 0; color: var(--navy-text); font: inherit; font-size: 12px; padding: 9px 2px; border-radius: 6px; position: relative; }
+  .bnav button.active { color: #fff; background: var(--navy-2); font-weight: 600; }
+  .bnav .badge { position: absolute; top: 2px; right: 8px; }
+  .sheet-bg { display: block; position: fixed; inset: 0; background: rgba(6, 20, 34, .45); z-index: 31; }
+  .sheet { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 32; background: var(--navy); color: #fff; max-height: 80vh; overflow-y: auto;
+    padding: 14px 14px calc(70px + env(safe-area-inset-bottom)); border-radius: 12px 12px 0 0; }
+  .sheet h6 { margin: 10px 0 6px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--navy-text); font-weight: 600; }
+  .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .sheet-grid button { background: var(--navy-2); border: 1px solid var(--navy-line); color: #fff; border-radius: 6px; padding: 11px 10px; text-align: left; font: inherit; font-size: 14px; display: flex; justify-content: space-between; }
+  .sheet-grid button.active { background: #fff; color: var(--navy); }
+  .topbar .meta .live { display: none; }
+  table { font-size: 12px; }
   main { padding: 14px 12px 80px; }
   .q-row { grid-template-columns: 30px minmax(0, 1fr); }
   .q-btns { grid-column: 2; justify-content: flex-start; }
@@ -244,3 +255,34 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .mt6 { margin-top: 6px; }
 .mt8 { margin-top: 8px; }
 .bad-text { color: var(--bad); }
+
+/* Tabs, board, timeline and small helpers (operating layer). */
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 8px 0 10px; border-bottom: 1px solid var(--line); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 10px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tabs button.on { color: var(--text); border-bottom-color: var(--navy); font-weight: 600; }
+.tabs .n { font-size: 11px; color: var(--faint); margin-left: 2px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 8px; overflow-x: auto; padding-bottom: 8px; }
+.bcol { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; min-height: 80px; }
+.bcol h4 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); display: flex; justify-content: space-between; }
+.bcard { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 8px; margin-bottom: 6px; }
+.bcard .t { font-weight: 600; font-size: 13px; }
+.bcard .m { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.timeline .tl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.tl-when { font-size: 11px; color: var(--faint); }
+.ctx { color: var(--muted); margin: 4px 0 8px; }
+.btn-row.sub { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.chk { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); }
+.chk input { width: auto; }
+.def { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.def span { color: var(--muted); }
+.big { font-size: 28px; font-weight: 600; letter-spacing: -.01em; }
+.quick { display: grid; gap: 8px; margin-bottom: 12px; }
+.steps, .playbook ol { padding-left: 20px; }
+.playbook h4 { margin: 12px 0 4px; }
+.playbook li, .steps li { margin: 3px 0; }
+details.qa { border-bottom: 1px solid var(--line); padding: 8px 0; }
+details.qa summary { cursor: pointer; font-weight: 500; }
+details.panel > summary { padding: 12px 14px; cursor: pointer; }
+label.btn input[type=file] { display: none; }
+.kv .linkish, .src .linkish { background: none; border: 0; padding: 0; color: var(--info); cursor: pointer; font: inherit; text-decoration: underline; }

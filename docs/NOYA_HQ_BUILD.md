@@ -2,23 +2,78 @@
 
 Status as of 30 Sep 2026 (01:00 Cairo). HQ is the control layer over Supabase and n8n. It is not another database.
 
-## Status
+## Status (30 Sep 2026 — operating layer)
 
-| Item | Designed | Coded | Tested | Connected to live data | Production-ready | Live |
-|---|---|---|---|---|---|---|
-| Phase 1: data and architecture audit | ✓ | — | ✓ | ✓ | — | — |
-| Phase 2: HQ shell (navigation, auth, layout, search, record drawer) | ✓ | ✓ | ✓ | ✓ | ✓ | **no** |
-| Phase 3: CEO Overview V1 | ✓ | ✓ | ✓ | ✓ | ✓ | **no** |
-| `hq_overview()`, `hq_task_action()`, `system_blockers` (database) | ✓ | ✓ | ✓ | ✓ | ✓ | yes (additive, admin-only) |
-| Phase 4: Contacts and Companies record views | ✓ | — | — | — | — | — |
-| Phases 5–12 | outlined below | — | — | — | — | — |
+| Item | Designed | Coded | Tested | Live data | Live |
+|---|---|---|---|---|---|
+| Shell, auth, search, record drawers | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Today (CEO Overview) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Contacts and Companies (email evidence, vertical, market) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Pipeline table + board, filters (stage / vertical / market / stale) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Outreach HQ: 8 tabs, change channel, notes, snooze, reject | ✓ | ✓ | ✓ | ✓ | ✓ |
+| LinkedIn: export import, warm network, drafts, mark sent | ✓ | ✓ | ✓ | ✓ (0 connections until Adam imports) | ✓ |
+| Workflow 14, message drafting (`MUL5q7pTLMQwINiU`) | ✓ | ✓ | ✓ (live run, test draft discarded) | ✓ | ✓ published |
+| Relationship timeline, notes, meetings | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Finance: records, payments, derived status, per currency | ✓ | ✓ | ✓ | ✓ (0 records) | ✓ |
+| Markets, bridges, Growth | ✓ | ✓ | ✓ | ✓ | ✓ |
+| System costs and dependency register | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Help, playbooks, automation levels, tooltips | ✓ | ✓ | ✓ | — | ✓ |
+| Mobile: bottom tab bar and menu sheet | ✓ | ✓ | ✓ (390 px, 10-step routine) | ✓ | ✓ |
 
-**"Live: no" means:**
-- The new frontend is in `hq/src`, and `npm test` passes: 42/42 browser checks against a live snapshot, plus the security scan.
-- `hq/dist`, the build Cloudflare serves at hq.noyaconcierge.com, is deliberately left at the 27 Sep build.
-- The remote has no `main`. Production may deploy from this branch, so committing a new `hq/dist` could switch Adam's live dashboard without his approval.
+`npm test` runs the build, the security scan (26 allow-listed RPCs, no send path) and 90/90 browser checks against live snapshots.
 
-**To go live:** run `cd hq && npm run build`, commit `hq/dist`, then push. The database side is already live and is backward compatible; the current dashboard still uses `hq_dashboard()` unchanged.
+"Live" means the committed `hq/dist` on this branch, which Cloudflare auto-deploys to hq.noyaconcierge.com.
+
+## Operating layer — how it is built
+
+**Reads.** Four admin-gated RPCs run in parallel:
+- `hq_dashboard`: approvals, tasks, replies, briefs.
+- `hq_overview`: Today.
+- `hq_directory`:
+  - companies and contacts, with vertical, market and email provenance;
+  - the LinkedIn network and drafts;
+  - per-opportunity facts and channel readiness.
+- `hq_insight`: markets, bridges, verticals, channels, stalled and reactivate lists, finance, the services register, usage and budget.
+- `hq_timeline(kind, id)` loads one record's cross-channel history when its drawer opens.
+
+**Writes.** Every write is an audited SECURITY DEFINER function (`approval_audit`):
+- `hq_opportunity_update`, `hq_add_note`, `hq_log_touch`, `hq_record_meeting`, `hq_change_channel`;
+- `hq_import_connections`, `hq_connection_update`, `hq_request_draft`, `hq_draft_action`;
+- `hq_finance_upsert`, `hq_record_payment`;
+- `hq_create_opportunity` (reuses an existing company by name or domain);
+- `hq_company_update`, `hq_task_dismiss` (a reason is required; approval tasks are refused).
+
+**Classification.** These are deterministic:
+- `hq_vertical`: company type first, weddings matched first.
+- `hq_market`: Egypt / Europe / GCC / North America / Rest of world / Global / Unknown.
+- Each opportunity carries an origin market (where the client is) and a destination market (where NOYA delivers).
+
+**LinkedIn.** Method 1 is in use: Adam's own data export, drafts in HQ, and Adam sends.
+- No password, cookie or token is stored.
+- The CSV is parsed in the browser. Only name, company, position, profile URL and connected date are saved (plus email if the export has it).
+- Relationship strength stays `UNKNOWN`: no data source measures it.
+- The options gate is in the LinkedIn view.
+
+**Workflow 14 (message drafting).**
+- Claims `message_drafts` requests (`message_draft_claim`, service role only) every 15 minutes, 08:00–22:00 Cairo, to limit n8n executions while the plan limit is UNKNOWN.
+- Writes with Gemini 3.1 Flash-Lite, falling back to GPT-5 mini.
+- Quality gate:
+  - clichés, placeholders and prices not in the facts;
+  - exclamation marks and emoji;
+  - length.
+- If the gate or the providers fail, a deterministic template is used.
+- Status is READY or PROVIDER_UNAVAILABLE. It never sends.
+
+**Finance.**
+- `revenue` gains `invoice_status`, `due_at`, `notes`, `source` and `recorded_by`.
+- Payments go in `revenue_payments`. Paid is always the sum of payments, never an edited total.
+- The effective status comes from `hq_finance_records`: Draft / Sent / Part-paid / Paid / Overdue / Cancelled.
+- The issued amount is locked once the record is no longer a draft.
+- Collected, Outstanding, Won, Pipeline (ESTIMATE) and Forecast (not set) are kept separate.
+- Currencies are never added together; there is no FX until a method is approved.
+
+**Costs.** `system_services` is the dependency register (13 services).
+- A cost is filled in only from an invoice or plan page. Otherwise it stays UNKNOWN and counts as exposure.
 
 ## Visual system (Adam's brief, 30 Sep)
 - **Colours:**
@@ -130,14 +185,5 @@ Status as of 30 Sep 2026 (01:00 Cairo). HQ is the control layer over Supabase an
   - a signed-in non-admin gets "not authorised";
   - task actions validate dates and actions, refuse approval tasks and audit every change.
 
-## Phases after V1
-
-4. Contacts and Companies: `hq_record` + `hq_search`, email provenance, duplicate guard, board view for the pipeline.
-5. Tasks: assign in the UI, bulk snooze, owner filters.
-6. Outreach: change channel, snooze an approval, prior-communication panel.
-7. Inbox: reply groups with linked tasks and recommended actions (V1 grouping done).
-8. Website leads: full enquiry record (dates, guests, attribution) once real submissions exist.
-9. Finance: schema above, after Adam's classification decision.
-10. Reports and intelligence: pipeline by vertical/country, response and conversion rates, the Partnerships / Production / Hospitality views.
-11. System health: the n8n execution snapshot workflow.
-12. Polish and mobile.
+## Next
+See the readiness report (`docs/NOYA_HQ_READINESS_REPORT.md`) for blockers and the recommended next build.

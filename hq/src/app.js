@@ -1,9 +1,9 @@
-// NOYA HQ — CEO operating terminal.
-// Reads two admin-gated RPCs: hq_overview() (Overview: action queue, scorecard, money, replies,
-// website, system — computed server-side) and hq_dashboard() (section views). Writes only through
-// hq_save_draft / hq_approve_draft / hq_hold / hq_reject / hq_redispatch (outreach approval) and
-// hq_task_action (complete / snooze an ordinary task). There is deliberately no "send" action:
-// APPROVE & DRAFT creates a Gmail draft; Adam presses Send in Gmail; workflow 13 logs it.
+// NOYA HQ — the CEO operating system for NOYA Concierge.
+// Reads four admin-gated RPCs in parallel: hq_overview (Today), hq_dashboard (approvals, tasks,
+// replies, briefs), hq_directory (companies, contacts, LinkedIn network, drafts, channel readiness)
+// and hq_insight (markets, growth, finance, costs). Every write is an audited hq_* function.
+// There is deliberately no automatic "send": email approval creates a Gmail draft Adam sends;
+// LinkedIn / Instagram messages are copied and sent by Adam, then logged here.
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, GMAIL_DRAFTS_URL, GMAIL_THREAD_URL } from './config.js';
 
@@ -11,22 +11,45 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
-// Navigation. Items without a view are later build phases: shown, never faked.
 const NAV = [
-  ['Today', [['overview', 'Overview']]],
-  ['Commercial', [['outreach', 'Outreach'], ['pipeline', 'Pipeline'], ['inbox', 'Inbox'], ['tasks', 'Tasks'], ['website', 'Website leads'], ['finance', 'Finance']]],
-  ['Insight', [['intelligence', 'Intelligence'], ['reports', 'Reports'], ['system', 'System']]],
-  ['Next phases', [['contacts', 'Contacts', 'P4'], ['companies', 'Companies', 'P4'], ['partnerships', 'Partnerships', 'P10'], ['production', 'Production', 'P10'], ['hospitality', 'Hospitality / Creators', 'P10'], ['settings', 'Settings', 'P12']]],
+  ['Today', [['overview', 'Today']]],
+  ['Work', [['inbox', 'Replies'], ['outreach', 'Outreach'], ['linkedin', 'LinkedIn'], ['pipeline', 'Pipeline'], ['tasks', 'Tasks'], ['website', 'Website leads']]],
+  ['Records', [['contacts', 'Contacts'], ['companies', 'Companies']]],
+  ['Money', [['finance', 'Finance'], ['costs', 'System costs']]],
+  ['Growth', [['markets', 'Markets'], ['growth', 'Growth'], ['intelligence', 'Intelligence'], ['reports', 'Reports']]],
+  ['System', [['system', 'System health'], ['help', 'Help & playbook']]],
 ];
 const STAGES = ['NEW', 'RESEARCHING', 'READY', 'CONTACTED', 'FOLLOW_UP', 'INTERESTED', 'CALL_REQUIRED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'LONG_TERM', 'ARCHIVED'];
+const STAGE_LABEL = { NEW: 'New', RESEARCHING: 'Researching', READY: 'Ready', CONTACTED: 'Contacted', FOLLOW_UP: 'Follow-up', INTERESTED: 'Interested', CALL_REQUIRED: 'Call required', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', LOST: 'Lost', LONG_TERM: 'Long term', ARCHIVED: 'Archived' };
+const VERTICAL_LABEL = { PRIVATE_UHNW: 'Private / UHNW', CORPORATE: 'Corporate', BRAND_PRODUCTION: 'Brand / Production', HOSPITALITY: 'Hospitality', TRAVEL_CONCIERGE: 'Travel / Concierge partners', WEDDINGS_EVENTS: 'Weddings / Events', SPORTS_TALENT: 'Sports / Talent', OTHER: 'Other' };
+const MARKET_LABEL = { EGYPT: 'Egypt', EUROPE: 'Europe', GCC: 'GCC', NORTH_AMERICA: 'North America', REST_OF_WORLD: 'Rest of world', GLOBAL: 'Global', UNKNOWN: 'Unknown' };
 const LOOP = [['PENDING_APPROVAL', 'Pending approval'], ['DRAFT_CREATED', 'Draft created'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['NEXT', 'Follow-up / meeting / proposal']];
 const REPLY_ORDER = { MEETING_REQUEST: 0, POSITIVE: 1, NEEDS_INFO: 2, REFERRAL: 3, UNKNOWN: 4, BOUNCE: 5, NOT_NOW: 6, DECLINED: 7, OUT_OF_OFFICE: 8, UNRELATED: 9 };
 const REPLY_GROUP = { MEETING_REQUEST: 'Meeting request', POSITIVE: 'Positive', NEEDS_INFO: 'Needs information', REFERRAL: 'Referral', DECLINED: 'Not interested', NOT_NOW: 'Not now', OUT_OF_OFFICE: 'Out of office', BOUNCE: 'Bounce', UNKNOWN: 'Other / human review', UNRELATED: 'Other / human review' };
+const KIND_LABEL = { MEETING: 'Meeting requested', REPLY: 'Reply', WEBSITE: 'Website enquiry', SYSTEM: 'System', PROPOSAL: 'Proposal', PAYMENT: 'Payment', SEND_DRAFT: 'Send draft', APPROVE: 'Approve', FOLLOW_UP: 'Follow up', LINKEDIN: 'LinkedIn', INSTAGRAM: 'Instagram', MANUAL_ACTION: 'Your action', OVERDUE: 'Overdue' };
+const MESSAGE_TYPES = [['FIRST_MESSAGE', 'First message'], ['RECONNECTION', 'Reconnection'], ['FOLLOW_UP', 'Follow-up'], ['INTRODUCTION_REQUEST', 'Introduction request'], ['PARTNERSHIP', 'Partnership'], ['EGYPT_OPPORTUNITY', 'Egypt opportunity'], ['CORPORATE', 'Corporate'], ['HOSPITALITY', 'Hospitality'], ['BRAND_PRODUCTION', 'Brand / production'], ['PRIVATE_CLIENT_INTRO', 'Private client introduction']];
+const CONNECTION_STATUS = ['NEW', 'TO_CONTACT', 'CONTACTED', 'REPLIED', 'MEETING', 'INTRODUCED', 'OPPORTUNITY', 'NO_RESPONSE', 'LONG_TERM', 'DO_NOT_CONTACT'];
+
+// Plain-language tooltips for the figures most easily misread.
+const HELP = {
+  pipeline: 'Potential opportunities being pursued, valued by research estimate. This is not revenue.',
+  collected: 'Payments actually recorded as received (sum of recorded payments).',
+  outstanding: 'Issued invoices not yet fully paid — money legitimately due.',
+  won: 'Confirmed commercial revenue: issued (not draft, not cancelled) finance records.',
+  forecast: 'A model or CEO estimate of future revenue. Not set until you set one; never shown as revenue.',
+  call_required: 'The prospect asked for, or agreed to, a call. Book it and record it after.',
+  approvals: 'Email outreach drafted for you, to a verified address, waiting for your approval. Approving creates a Gmail draft — nothing is sent until you press Send in Gmail.',
+  unknown: 'No reliable figure exists yet. UNKNOWN is never counted as zero.',
+  verified: 'VERIFIED means an email provider confirmed the address is deliverable, or it is published on the company\'s official site. Hover a contact for the evidence.',
+};
+const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 
 const state = {
-  session: null, data: null, ov: null, error: null, ovError: null, notice: null, tab: 'overview', loading: false,
-  modal: null, drawer: null, q: '', queueAll: false, queueP3: false,
-  taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pipeStage: '', pipeQ: '', pollUntil: 0,
+  session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'overview', loading: false,
+  modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
+  outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
+  contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'warm' },
+  taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
 };
 
 // ---------------------------------------------------------------- utils
@@ -52,27 +75,56 @@ function department(createdBy) {
 }
 const taskColumn = (s) => ({ OPEN: 'TO DO', IN_PROGRESS: 'IN PROGRESS', WAITING: 'WAITING / BLOCKED', COMPLETED: 'DONE' }[s] || s);
 const prioBand = (p) => (p >= 80 ? 'High' : p >= 50 ? 'Medium' : 'Low');
-
-
 const shortDay = (d) => (d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'Africa/Cairo' }) : '—');
 const lbl = (kind) => ({ ACTUAL: '<span class="lbl actual">Actual</span>', ESTIMATE: '<span class="lbl est">Estimate</span>', UNKNOWN: '<span class="lbl unk">Unknown</span>' }[kind] || '');
 const openStatuses = ['OPEN', 'IN_PROGRESS', 'WAITING'];
+const V = (v) => VERTICAL_LABEL[v] || v || '—';
+const M = (m) => MARKET_LABEL[m] || m || '—';
+const S = (s) => STAGE_LABEL[s] || s || '—';
+const sentence = (t) => { const s = String(t || ''); return s === s.toUpperCase() ? s.charAt(0) + s.slice(1).toLowerCase() : s; };
+const cur = (list) => (list || []).filter((x) => x && x.currency);
+function sourceLabel(src) {
+  const s = String(src || '');
+  if (/Workflow 13 \(Gmail reply\)/.test(s)) return 'New reply';
+  if (/Workflow 13 \(follow-up\)/.test(s)) return 'Follow-up due';
+  if (/Workflow 05 \(draft\)/.test(s)) return 'Outreach ready for approval';
+  if (/Workflow 05 \(channel/.test(s)) return 'Message ready to send';
+  if (/Workflow 12/.test(s)) return 'Draft waiting in Gmail';
+  if (/10d/.test(s)) return 'Website enquiry';
+  if (/Adam review|Adam's instruction|HQ \(Adam\)/.test(s)) return 'Your action';
+  if (/^0\d|^1\d/.test(s)) return 'NOYA system';
+  return s || 'Task';
+}
+function emailPill(status, kind) {
+  const s = String(status || 'UNKNOWN').toUpperCase();
+  const cls = s === 'VERIFIED' ? 'ok' : s === 'RISKY' || s === 'UNVERIFIED' ? 'warn' : s === 'INVALID' ? 'bad' : '';
+  const label = s === 'NOT_FOUND' ? 'no email' : s.toLowerCase();
+  return `${pill(`email ${label}`, cls)}${kind === 'OFFICIAL_COMPANY_INBOX' ? ' ' + pill('company inbox') : ''}`;
+}
+const facts = (oppId) => state.dir?.opportunity_facts?.[oppId] || {};
+const ready = (oppId) => state.dir?.readiness?.[oppId] || {};
+const company = (id) => state.dir?.companies?.find((c) => c.id === id);
+const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 
 // ---------------------------------------------------------------- data
 async function load(silent = false) {
   if (!silent) { state.loading = true; render(); }
-  const [dash, ov] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview')]);
+  const [dash, ov, dir, ins] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight')]);
   state.loading = false;
+  state.errors = {};
   if (dash.error) {
-    state.error = /not authorised/i.test(dash.error.message)
-      ? 'This account is not authorised for NOYA HQ.'
-      : `Could not load live data: ${dash.error.message}`;
-  } else {
-    state.data = dash.data;
-    state.error = null;
-  }
-  if (ov.error) state.ovError = `Overview unavailable: ${ov.error.message}`;
-  else { state.ov = ov.data; state.ovError = null; }
+    state.errors.main = /not authorised/i.test(dash.error.message) ? 'This account is not authorised for NOYA HQ.' : `Could not load live data: ${dash.error.message}`;
+  } else state.data = dash.data;
+  if (ov.error) state.errors.ov = ov.error.message; else state.ov = ov.data;
+  if (dir.error) state.errors.dir = dir.error.message; else state.dir = dir.data;
+  if (ins.error) state.errors.ins = ins.error.message; else state.ins = ins.data;
+  render();
+}
+
+async function loadTimeline(kind, id) {
+  const key = `${kind}:${id}`;
+  const { data, error } = await sb.rpc('hq_timeline', { p_kind: kind, p_id: id });
+  state.timeline[key] = error ? { error: error.message } : data;
   render();
 }
 
@@ -80,12 +132,11 @@ async function call(fn, args, successText) {
   state.notice = null;
   const { data, error } = await sb.rpc(fn, args);
   if (error) { state.notice = { err: true, text: error.message }; render(); return null; }
-  if (data && data.ok === false) {
-    state.notice = { err: true, text: explain(data) };
-  } else {
-    state.notice = { err: false, text: successText };
-  }
+  if (data && data.ok === false) state.notice = { err: true, text: explain(data) };
+  else state.notice = { err: false, text: successText };
+  state.timeline = {};
   await load(true);
+  if (state.drawer) loadTimeline(state.drawer.kind, state.drawer.id);
   return data;
 }
 
@@ -103,14 +154,33 @@ function explain(r) {
     OPPORTUNITY_NOT_FOUND: 'This opportunity no longer exists.',
     HUMAN_ONLY_DRAFT_ONLY: 'Human-only opportunity: draft only.',
     NOT_ELIGIBLE: 'Not eligible for retry yet.',
+    INSTAGRAM_NOT_APPROPRIATE: 'Instagram is not used for banks, wealth, law or consulting firms. Choose LinkedIn or phone.',
+    ISSUED_AMOUNT_LOCKED: 'This record has been issued, so its amount and currency are locked. Cancel it and create a new one.',
+    RECORD_NOT_ISSUED: 'Payments can only be recorded against a record marked Sent.',
+    MORE_THAN_OUTSTANDING: 'That is more than the amount outstanding.',
+    INVALID_AMOUNT: 'Enter an amount greater than zero.',
+    INVALID_CURRENCY: 'Currency must be a three-letter code, e.g. GBP, USD, EUR, EGP.',
+    CLIENT_REQUIRED: 'Choose the client.',
+    STATUS_IS_DERIVED: 'Part-paid, Paid and Overdue are set automatically from payments and the due date.',
+    SUMMARY_REQUIRED: 'Say briefly what happened.',
+    NOTE_REQUIRED: 'Write the note first.',
+    RECORD_REQUIRED: 'This must be attached to a person, company or opportunity.',
+    COMPANY_REQUIRED: 'Company name is required.',
+    OPPORTUNITY_TYPE_REQUIRED: 'Describe the opportunity.',
+    INVALID_EMAIL: 'That email address is not valid.',
+    TASK_NOT_OPEN: 'This task is already closed.',
+    USE_APPROVAL_FLOW: 'Outreach approvals are closed by Approve, Hold or Reject in Outreach.',
+    NOT_ALLOWED_IN_THIS_STATE: 'Not possible in its current state — refresh and try again.',
+    INVALID_ROWS: 'The file could not be read as a list of connections.',
+    INVALID_STAGE: 'Unknown stage.', INVALID_CHANNEL: 'Unknown channel.', INVALID_STATUS: 'Unknown status.', INVALID_VALUE: 'Unknown value.',
+    NOT_FOUND: 'Record not found — it may have been changed. Refresh.',
+    OPPORTUNITY_REQUIRED: 'Open an opportunity first.',
   };
   if (reason.startsWith('EMAIL_NOT_VERIFIED')) return `Blocked: the contact email is ${reason.split(':')[1] || 'not verified'}. Only VERIFIED emails can be drafted.`;
   if (reason === 'DO_NOT_CONTACT') return 'Blocked: this contact is marked do-not-contact.';
   if (reason === 'NO_CONTACT' || reason === 'NO_EMAIL') return 'Blocked: no contact email on record.';
   return map[reason] || `Not done: ${reason}`;
 }
-
-
 // ---------------------------------------------------------------- auth
 async function initAuth() {
   const { data } = await sb.auth.getSession();
@@ -172,115 +242,156 @@ function renderPasswordChange(forced) {
   $('#pwcancel')?.addEventListener('click', () => { state.modal = null; render(); });
 }
 
-
 // ---------------------------------------------------------------- shell
 function navBadge(key) {
   const ov = state.ov; const d = state.data;
   if (key === 'overview' && ov) { const p1 = ov.actions.filter((a) => a.prio === 'P1').length; return p1 ? `<span class="badge hot">${p1}</span>` : ''; }
   if (key === 'outreach' && ov) { const n = ov.scorecard.approvals_ready.n; return n ? `<span class="badge">${n}</span>` : ''; }
+  if (key === 'linkedin' && ov) { const n = ov.actions.filter((a) => a.kind === 'LINKEDIN').length; return n ? `<span class="badge">${n}</span>` : ''; }
   if (key === 'inbox' && d) { const n = repliesForAdam(d).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'website' && ov) { const n = ov.website.filter((w) => w.status === 'NEW').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
+  if (key === 'finance' && state.ins) { const n = (state.ins.finance.records || []).filter((r) => r.status === 'OVERDUE').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'system' && ov) { const n = ov.system.failures.length + ov.system.signals.filter((s) => !s.ok).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   return '';
 }
+const navLabel = (k) => NAV.flatMap(([, i]) => i).find(([key]) => key === k)?.[1] || k;
 
 function render() {
   document.body.classList.toggle('auth', !state.session || mustChangePassword() || state.modal === 'password');
   if (!state.session) return renderLogin();
   if (mustChangePassword()) return renderPasswordChange(true);
   if (state.modal === 'password') return renderPasswordChange(false);
-  const d = state.data;
-  const live = state.ov || d;
-  const view = VIEWS[state.tab];
-  const flat = NAV.flatMap(([, items]) => items).filter((i) => !i[2]);
+  const d = state.data; const live = state.ov || d; const view = VIEWS[state.tab];
+  const errs = Object.entries(state.errors).filter(([k]) => k !== 'main').map(([k, v]) => `${k}: ${v}`);
   $('#app').innerHTML = `
     <div class="shell">
       <div class="side-col"><aside class="side">
         <div class="brand">${__HAS_LOGO__ ? '<img src="/noya-mark.svg" alt="">' : ''}<span class="word">NOYA<small>HQ · Private office</small></span></div>
-        ${NAV.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l, phase]) => phase
-          ? `<div class="nav-item off" title="Not built yet (build phase ${phase})"><span>${l}</span><span class="soon">${phase}</span></div>`
-          : `<button class="nav-item ${state.tab === k ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('')}
+        ${NAV.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('')}
       </aside></div>
       <div>
         <div class="topbar"><div class="mbrand">NOYA</div>
-          <div class="search"><input id="q" type="search" placeholder="Search companies, people, opportunities, tasks…" value="${esc(state.q)}" autocomplete="off">${state.q.trim().length >= 2 ? searchResults(state.q) : ''}</div>
+          <div class="search"><input id="q" type="search" placeholder="Search people, companies, markets, tasks…" value="${esc(state.q)}" autocomplete="off">${state.q.trim().length >= 2 ? searchResults(state.q) : ''}</div>
           <div class="meta">
-            <span>${live ? `Live · ${esc(fmtDate(live.generated_at))} Cairo` : state.loading ? 'Loading…' : ''}</span>
+            <span class="live">${live ? `Live · ${esc(fmtDate(live.generated_at))} Cairo` : state.loading ? 'Loading…' : ''}</span>
+            <button class="btn small" id="quick" title="Quick actions">+ New</button>
             <button class="btn small" id="refresh">Refresh</button>
             <button class="btn small" id="menu" title="Account">⋯</button>
           </div>
         </div>
-        <nav class="mnav">${flat.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</nav>
         <main>
           ${state.notice ? `<div class="banner ${state.notice.err ? 'err' : 'ok'}">${esc(state.notice.text)}</div>` : ''}
-          ${state.error ? `<div class="banner err">${esc(state.error)}</div>` : ''}
+          ${state.errors.main ? `<div class="banner err">${esc(state.errors.main)}</div>` : ''}
+          ${errs.length ? `<div class="banner err small">Some data could not load: ${esc(errs.join(' · '))}</div>` : ''}
           ${d && view ? view(d) : `<p class="muted">${state.loading ? 'Loading live CRM…' : 'No data.'}</p>`}
         </main>
       </div>
     </div>
+    <nav class="bnav">
+      ${[['overview', 'Today'], ['inbox', 'Replies'], ['outreach', 'Outreach']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
+      <button id="bsearch">Search</button><button id="bmenu" class="${state.menu ? 'active' : ''}">Menu</button>
+    </nav>
+    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet">${NAV.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? renderDrawer(state.drawer) : ''}
     ${state.modal && typeof state.modal === 'object' ? renderAnyModal(state.modal) : ''}`;
   bind();
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
 
-// ---------------------------------------------------------------- search (records already loaded)
+// ---------------------------------------------------------------- search
 function searchResults(raw) {
   const q = raw.trim().toLowerCase(); const d = state.data; if (!d) return '';
   const has = (...v) => v.some((x) => String(x ?? '').toLowerCase().includes(q));
-  const opps = d.opportunities.filter((o) => has(o.company_name, o.contact_name, o.opportunity_type, o.next_action)).slice(0, 8);
-  const people = [...new Map(d.opportunities.filter((o) => o.contact_name && has(o.contact_name)).map((o) => [o.contact_name, o])).values()].slice(0, 6);
-  const tasks = d.tasks.filter((t) => t.status !== 'CANCELLED' && has(t.title, t.company_name)).slice(0, 8);
-  const replies = d.inbound.filter((r) => has(r.from, r.company_name, r.subject, r.summary)).slice(0, 5);
-  const enq = d.enquiries.filter((e) => has(e.name, e.company, e.reference, e.destination)).slice(0, 5);
+  const dir = state.dir || { companies: [], contacts: [], connections: [] };
+  const opps = d.opportunities.filter((o) => { const f = facts(o.id); return has(o.company_name, o.contact_name, o.opportunity_type, o.next_action, f.destination, M(f.origin_market), M(f.opportunity_market), f.origin_country, V(f.vertical)); }).slice(0, 8);
+  const cos = dir.companies.filter((c) => has(c.name, c.website, c.country, c.city, M(c.market), V(c.vertical), c.company_type)).slice(0, 6);
+  const people = dir.contacts.filter((k) => has(k.name, k.email, k.position, k.company)).slice(0, 6);
+  const net = dir.connections.filter((c) => has(c.name, c.company, c.position)).slice(0, 5);
+  const tasks = d.tasks.filter((t) => t.status !== 'CANCELLED' && has(t.title, t.company_name)).slice(0, 6);
+  const replies = d.inbound.filter((r) => has(r.from, r.company_name, r.subject, r.summary)).slice(0, 4);
+  const enq = d.enquiries.filter((e) => has(e.name, e.company, e.reference, e.destination)).slice(0, 4);
   const group = (title, rows) => (rows.length ? `<h6>${title}</h6>${rows.join('')}` : '');
   const html = [
-    group('Opportunities', opps.map((o) => `<button class="hit" data-open-opp="${o.id}"><div>${esc(o.company_name)}</div><div class="s">${esc(o.status)} · ${esc(o.contact_name || 'no contact')} · ${esc(String(o.opportunity_type || '').slice(0, 60))}</div></button>`)),
-    group('People', people.map((o) => `<button class="hit" data-open-opp="${o.id}"><div>${esc(o.contact_name)}</div><div class="s">${esc(o.contact_position || '')} · ${esc(o.company_name)} · email ${esc(o.email_status || 'none')}</div></button>`)),
-    group('Tasks', tasks.map((t) => `<button class="hit" ${t.opportunity_id ? `data-open-opp="${t.opportunity_id}"` : 'data-go="tasks"'}><div>${esc(t.title)}</div><div class="s">${esc(t.status)} · ${esc(t.task_type)} · due ${esc(fmtDay(t.due_at))}</div></button>`)),
-    group('Replies', replies.map((r) => `<button class="hit" ${r.opportunity_id ? `data-open-opp="${r.opportunity_id}"` : 'data-go="inbox"'}><div>${esc(r.company_name || r.from)} — ${esc(r.classification || '')}</div><div class="s">${esc(fmtDate(r.received_at))} · ${esc(r.subject || '')}</div></button>`)),
+    group('Companies', cos.map((c) => `<button class="hit" data-open="company" data-id="${c.id}"><div>${esc(c.name)}</div><div class="s">${esc(V(c.vertical))} · ${esc(M(c.market))}${c.country ? ` (${esc(c.country)})` : ''} · ${c.active_opps} active</div></button>`)),
+    group('People', people.map((k) => `<button class="hit" data-open="contact" data-id="${k.id}"><div>${esc(k.name || k.email || 'Unnamed contact')}</div><div class="s">${esc(k.position || '')} · ${esc(k.company || '')} · email ${esc((k.email_status || 'none').toLowerCase())}</div></button>`)),
+    group('Opportunities', opps.map((o) => `<button class="hit" data-open="opp" data-id="${o.id}"><div>${esc(o.company_name)}</div><div class="s">${esc(S(o.status))} · ${esc(o.contact_name || 'no contact')} · ${esc(String(o.opportunity_type || '').slice(0, 50))}</div></button>`)),
+    group('LinkedIn network', net.map((c) => `<button class="hit" data-open="connection" data-id="${c.id}"><div>${esc(c.name)}</div><div class="s">${esc(c.position || '')} · ${esc(c.company || '')}</div></button>`)),
+    group('Tasks', tasks.map((t) => `<button class="hit" ${t.opportunity_id ? `data-open="opp" data-id="${t.opportunity_id}"` : 'data-go="tasks"'}><div>${esc(sentence(t.title))}</div><div class="s">${esc(t.status.toLowerCase())} · due ${esc(fmtDay(t.due_at))}</div></button>`)),
+    group('Replies', replies.map((r) => `<button class="hit" ${r.opportunity_id ? `data-open="opp" data-id="${r.opportunity_id}"` : 'data-go="inbox"'}><div>${esc(r.company_name || r.from)} — ${esc(REPLY_GROUP[r.classification] || r.classification || '')}</div><div class="s">${esc(fmtDate(r.received_at))} · ${esc(r.subject || '')}</div></button>`)),
     group('Website leads', enq.map((e) => `<button class="hit" data-go="website"><div>${esc(e.name || e.company)}</div><div class="s">${esc(e.lead_type)} · ${esc(fmtDate(e.created_at))}</div></button>`)),
   ].join('');
   return `<div class="results">${html || '<div class="hit s">No matching records.</div>'}</div>`;
 }
 
-// ---------------------------------------------------------------- OVERVIEW
+// ---------------------------------------------------------------- TODAY
+function prettyAction(a) {
+  const who = a.person || a.company || '';
+  switch (a.kind) {
+    case 'MEETING': return `Reply to ${who} — meeting requested`;
+    case 'APPROVE': return `Approve outreach to ${a.person ? `${a.person} (${a.company})` : a.company}${/Adam personal/.test(a.action) ? ' — personal' : ''}`;
+    case 'LINKEDIN': return `Message ${who} on LinkedIn`;
+    case 'INSTAGRAM': return `DM ${a.company || who} on Instagram`;
+    case 'FOLLOW_UP': return `Follow up with ${who}`;
+    case 'SEND_DRAFT': return `Send the approved email to ${who} (it is in Gmail Drafts)`;
+    case 'WEBSITE': return `Review website enquiry — ${who}`;
+    default: return sentence(String(a.action || '').replace(/ -- .*$/, '')) + (a.company && !String(a.action).includes(a.company) ? ` — ${a.company}` : '');
+  }
+}
+
+function actionButtons(a) {
+  const r = ready(a.opportunity_id);
+  const b = [];
+  const open = a.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${a.opportunity_id}">Open</button>` : `<button class="btn small" data-go="${a.go}">Open</button>`;
+  if (a.kind === 'APPROVE') { b.push(`<button class="btn small primary" data-go="outreach" data-otab="READY" data-anchor="opp-${a.opportunity_id}">Review</button>`, open); }
+  else if (a.kind === 'LINKEDIN' || a.kind === 'INSTAGRAM') {
+    const url = a.kind === 'LINKEDIN' ? r.linkedin : r.instagram;
+    const msg = a.kind === 'LINKEDIN' ? r.ready_linkedin : r.ready_instagram;
+    if (url) b.push(`<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open ${a.kind === 'LINKEDIN' ? 'LinkedIn' : 'Instagram'}</a>`);
+    if (msg) b.push(`<button class="btn small" data-copy="${esc(msg)}">Copy message</button>`);
+    b.push(`<button class="btn small primary" data-modal="touch" data-channel="${a.kind === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM_DM'}" data-task="${a.task_id || ''}" data-opp="${a.opportunity_id || ''}">Mark sent</button>`);
+  } else if (a.kind === 'MEETING' || a.kind === 'REPLY') {
+    const t = state.data.inbound.find((x) => x.opportunity_id === a.opportunity_id && x.thread_id);
+    if (t) b.push(`<a class="btn small" href="${GMAIL_THREAD_URL}${esc(t.thread_id)}" target="_blank" rel="noopener noreferrer">Open email</a>`);
+    if (a.opportunity_id) b.push(`<button class="btn small" data-modal="meeting" data-opp="${a.opportunity_id}" data-task="${a.task_id || ''}">Record meeting</button>`);
+    b.push(open);
+  } else b.push(open);
+  if (a.task_id && a.task_type !== 'SALES_OUTREACH_APPROVAL' && !['LINKEDIN', 'INSTAGRAM'].includes(a.kind)) b.push(`<button class="btn small" data-modal="task-done" data-id="${a.task_id}">Done</button>`);
+  if (a.task_id) b.push(`<button class="btn small" data-modal="task-snooze" data-id="${a.task_id}">Snooze</button>`);
+  if (a.task_id && a.task_type !== 'SALES_OUTREACH_APPROVAL') b.push(`<button class="btn small ghost" data-modal="task-dismiss" data-id="${a.task_id}" title="Not relevant — close with a reason">✕</button>`);
+  return b.join('');
+}
+
 function actionRow(a) {
   const due = a.due_at ? `${a.overdue ? '<span class="od">overdue · ' : ''}due ${esc(shortDay(a.due_at))}${a.overdue ? '</span>' : ''}` : '';
   const value = a.value != null ? `${esc(money(a.value, a.currency))}${lbl('ESTIMATE')}` : '';
-  const who = [a.company, a.person].filter(Boolean).map(esc).join(' · ');
-  const canTask = a.task_id && a.task_type !== 'SALES_OUTREACH_APPROVAL';
+  const f = facts(a.opportunity_id);
+  const ctx = [a.company !== a.person ? a.company : '', f.vertical ? V(f.vertical) : '', f.origin_market && f.origin_market !== 'UNKNOWN' ? `${M(f.origin_market)} → ${M(f.opportunity_market)}` : ''].filter(Boolean).map(esc).join(' · ');
   return `<div class="q-row">
-    <div class="prio ${a.prio}">${a.prio}</div>
-    <div><div class="q-act">${esc(a.action)}</div>
-      <div class="q-meta">${who || '—'}${due ? ` · ${due}` : ''}${value ? ` · ${value}` : ''}</div>
-      <div class="q-meta src">${esc(a.source)}${a.next_action ? ` · next: ${esc(a.next_action)}` : ''}</div></div>
-    <div class="q-btns">
-      ${a.opportunity_id ? `<button class="btn small" data-open-opp="${a.opportunity_id}">Open</button>` : `<button class="btn small" data-go="${a.go}">Open</button>`}
-      ${a.kind === 'APPROVE' ? `<button class="btn small" data-go="outreach" data-anchor="opp-${a.opportunity_id}">Review</button>` : ''}
-      ${canTask ? `<button class="btn small" data-task="done" data-id="${a.task_id}">Done</button><button class="btn small" data-task="snooze" data-id="${a.task_id}">Snooze</button>` : ''}
-    </div></div>`;
+    <div class="prio ${a.prio}" title="${a.prio === 'P1' ? 'Urgent / revenue / client-critical' : a.prio === 'P2' ? 'Important commercial action' : 'Operational'}">${a.prio}</div>
+    <div><div class="q-act">${esc(prettyAction(a))}</div>
+      <div class="q-meta">${ctx || '—'}${due ? ` · ${due}` : ''}${value ? ` · ${value}` : ''}</div>
+      <div class="q-meta src" title="${esc(a.source)}">${esc(sourceLabel(a.source))}${a.next_action ? ` · next: ${esc(a.next_action)}` : ''}</div></div>
+    <div class="q-btns">${actionButtons(a)}</div></div>`;
 }
 
 function viewOverview(d) {
   const ov = state.ov;
-  if (!ov) return `<div class="banner err">${esc(state.ovError || 'Overview not loaded.')}</div>`;
+  if (!ov) return `<div class="banner err">${esc(state.errors.ov || 'Today not loaded.')}</div>`;
   const P = (p) => ov.actions.filter((a) => a.prio === p);
   const p1 = P('P1'); const p2 = P('P2'); const p3 = P('P3');
   const p2shown = state.queueAll ? p2 : p2.slice(0, 8);
-  const s = ov.scorecard; const m = ov.money;
+  const s = ov.scorecard;
   const stageOrder = STAGES.filter((k) => s.stages[k]);
   const total = stageOrder.reduce((n, k) => n + s.stages[k], 0) || 1;
-  const sc = (label, n, def, go) => `<div class="k ${go ? 'clk' : ''}" title="${esc(def)}" ${go ? `data-go="${go}"` : ''}>${label}</div><div class="v">${esc(n)}</div>`;
+  const sc = (label, n, def, go, help) => `<div class="k ${go ? 'clk' : ''}" title="${esc(help ? HELP[help] + ' — ' + def : def)}" ${go ? `data-go="${go}"` : ''}>${label}</div><div class="v">${esc(n)}</div>`;
   const sigBad = ov.system.signals.filter((x) => !x.ok).length + ov.system.failures.length;
   const replies = ov.replies;
   const day = new Date(`${ov.today}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   return `
-    <div class="ov-head"><h1>Today</h1><span class="sub">${esc(day)} · every figure is a live query; hover a label for its definition</span></div>
-    ${state.ovError ? `<div class="banner err">${esc(state.ovError)}</div>` : ''}
+    <div class="ov-head"><h1>Today</h1><span class="sub">${esc(day)} · every figure is a live query; hover a label for what it means</span></div>
     <div class="ov-grid">
       <section class="panel">
-        <header><h3>Action queue</h3><div class="counts"><span>P1 ${p1.length}</span><span>P2 ${p2.length}</span><span>P3 ${p3.length}</span></div></header>
+        <header><h3>What needs you</h3><div class="counts"><span title="Urgent / revenue / client-critical">P1 ${p1.length}</span><span title="Important commercial action">P2 ${p2.length}</span><span title="Operational">P3 ${p3.length}</span></div></header>
         <div class="body">
           ${p1.length ? p1.map(actionRow).join('') : '<div class="empty">No P1 items — nothing urgent or revenue-critical is waiting.</div>'}
           ${p2shown.map(actionRow).join('')}
@@ -290,17 +401,17 @@ function viewOverview(d) {
       </section>
       <div>
         <section class="panel">
-          <header><h3>Scorecard</h3><span class="small faint">records, not estimates</span></header>
+          <header><h3>Pipeline</h3><button class="btn small ghost" data-go="pipeline">Open</button></header>
           <div class="body">
-            <div class="stagebar" title="${esc(stageOrder.map((k) => `${k} ${s.stages[k]}`).join(' · '))}">${stageOrder.map((k) => `<span class="${['CALL_REQUIRED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'INTERESTED'].includes(k) ? 'hot' : ''}" data-flex="${(s.stages[k] / total).toFixed(4)}"></span>`).join('')}</div>
-            <div class="small faint">${esc(stageOrder.map((k) => `${k.replace('_', ' ').toLowerCase()} ${s.stages[k]}`).join(' · '))}</div>
+            <div class="stagebar" title="${esc(stageOrder.map((k) => `${S(k)} ${s.stages[k]}`).join(' · '))}">${stageOrder.map((k) => `<span class="${['CALL_REQUIRED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'INTERESTED'].includes(k) ? 'hot' : ''}" data-flex="${(s.stages[k] / total).toFixed(4)}"></span>`).join('')}</div>
+            <div class="small faint">${esc(stageOrder.map((k) => `${S(k).toLowerCase()} ${s.stages[k]}`).join(' · '))}</div>
             <div class="score mt8">
               ${sc('Active opportunities', s.active_opportunities.n, s.active_opportunities.def, 'pipeline')}
               ${sc('In conversation', s.in_conversation.n, s.in_conversation.def, 'pipeline')}
-              ${sc('Call required', s.call_required.n, s.call_required.def, 'pipeline')}
+              ${sc('Call required', s.call_required.n, s.call_required.def, 'pipeline', 'call_required')}
               ${sc('Proposals open', s.proposals.n, s.proposals.def, 'pipeline')}
               ${sc('Won', s.won.n, s.won.def, 'pipeline')}
-              ${sc('Approvals ready', s.approvals_ready.n, s.approvals_ready.def, 'outreach')}
+              ${sc('Approvals ready', s.approvals_ready.n, s.approvals_ready.def, 'outreach', 'approvals')}
               ${sc('Positive replies · 7d', s.positive_replies_7d.n, s.positive_replies_7d.def, 'inbox')}
               ${sc('Website enquiries · 7d', s.website_7d.n, `${s.website_7d.def} (all-time ${s.website_7d.total})`, 'website')}
               ${sc('Overdue tasks', s.overdue_tasks.n, s.overdue_tasks.def, 'tasks')}
@@ -310,94 +421,118 @@ function viewOverview(d) {
         </section>
         <section class="panel mt8">
           <header><h3>Money</h3><button class="btn small ghost" data-go="finance">Finance</button></header>
-          <div class="body">${moneyBlock(m)}</div>
+          <div class="body">${moneyBlock()}</div>
         </section>
       </div>
     </div>
     <div class="ov-grid3">
-      <section class="panel"><header><h3>Replies · 14 days</h3><button class="btn small ghost" data-go="inbox">Inbox</button></header>
-        <div class="body">${replies.length ? replies.slice(0, 5).map((r) => `<div class="mini clickable" ${r.opportunity_id ? `data-open-opp="${r.opportunity_id}"` : ''}>
+      <section class="panel"><header><h3>Replies · 14 days</h3><button class="btn small ghost" data-go="inbox">Replies</button></header>
+        <div class="body">${replies.length ? replies.slice(0, 5).map((r) => `<div class="mini clickable" ${r.opportunity_id ? `data-open="opp" data-id="${r.opportunity_id}"` : ''}>
           <div class="t">${esc(r.company || r.from)} ${pill(REPLY_GROUP[r.classification] || r.classification, r.classification === 'MEETING_REQUEST' ? 'bad' : r.deterministic ? '' : 'info')}</div>
-          <div class="m">${esc(fmtDate(r.received_at))} · ${esc(r.person || r.from || '')}${r.deterministic ? ' · rule-based label' : ''}</div>
+          <div class="m">${esc(fmtDate(r.received_at))} · ${esc(r.person || r.from || '')}${r.deterministic ? ' · automatic reply' : ''}</div>
           <div class="m">${esc(r.summary || '')}</div></div>`).join('') : '<div class="empty">No replies in the last 14 days.</div>'}</div></section>
       <section class="panel"><header><h3>Website · 30 days</h3><button class="btn small ghost" data-go="website">Leads</button></header>
         <div class="body">${ov.website.length ? ov.website.slice(0, 5).map((w) => `<div class="mini"><div class="t">${esc(w.name || w.company || 'Enquiry')} ${pill(w.lead_type)}</div>
           <div class="m">${esc(fmtDate(w.created_at))} · ${esc(w.status)}${w.destination ? ` · ${esc(w.destination)}` : ''}${w.guests ? ` · ${esc(w.guests)} guests` : ''}</div></div>`).join('')
-          : `<div class="empty">No website enquiries in the last 30 days (all-time: ${esc(s.website_7d.total)}). Intake (workflow 10d) is live and waiting for the new website form.</div>`}</div></section>
+          : `<div class="empty">No website enquiries in the last 30 days (all-time: ${esc(s.website_7d.total)}). The intake is live and waiting for the new website form.</div>`}</div></section>
       <section class="panel"><header><h3>System</h3><button class="btn small ghost" data-go="system">Details</button></header>
         <div class="body">
           ${ov.system.failures.map((f) => `<div class="sig"><span><span class="dot bad"></span>${esc(f.title)}</span></div>`).join('')}
-          ${ov.system.signals.map((x) => `<div class="sig" title="${esc(x.rule)}"><span><span class="dot ${x.ok ? '' : 'bad'}"></span>${esc(x.name)}</span><span class="faint">${esc(x.last ? fmtDate(x.last) : 'never')}</span></div>`).join('')}
-          ${ov.system.blockers.length ? `<div class="small faint mt8">${ov.system.blockers.length} known blocker${ov.system.blockers.length > 1 ? 's' : ''} (not failures): ${esc(ov.system.blockers.map((b) => b.title).join(' · '))}</div>` : ''}
+          ${ov.system.signals.map((x) => `<div class="sig" title="${esc(x.rule)}"><span><span class="dot ${x.ok ? '' : 'bad'}"></span>${esc(signalName(x.name))}</span><span class="faint">${esc(x.last ? fmtDate(x.last) : 'never')}</span></div>`).join('')}
+          ${ov.system.blockers.length ? `<div class="small faint mt8">${ov.system.blockers.length} known blocker${ov.system.blockers.length > 1 ? 's' : ''} (not failures) — see System health.</div>` : ''}
         </div></section>
     </div>`;
 }
+const signalName = (n) => ({ 'Gmail sync (13)': 'Email reply tracking', 'Daily CEO brief (11)': 'Daily CEO brief', 'Outbound drafts (12)': 'Gmail drafts', 'Discovery (02/03/04/06/08)': 'Prospect research' }[n] || n);
 
-function moneyBlock(m) {
-  const cur = m.by_currency || [];
-  const line = (k, v, kind) => `<div class="money-line"><span>${k}${lbl(kind)}</span><span class="v">${v}</span></div>`;
-  const rev = m.revenue_records === 0
-    ? line('Collected', '<span class="muted">none recorded</span>', 'ACTUAL') + line('Outstanding', '<span class="muted">none recorded</span>', 'ACTUAL')
-    : cur.map((c) => line(`Collected (${esc(c.currency)})`, c.collected != null ? esc(money(c.collected, c.currency)) : '<span class="muted">none</span>', 'ACTUAL')
-        + line(`Outstanding (${esc(c.currency)})`, c.outstanding != null ? esc(money(c.outstanding, c.currency)) : '<span class="muted">none</span>', 'ACTUAL')
-        + (c.part_paid_records ? line(`Part-paid (${esc(c.currency)})`, `${c.part_paid_records} record(s), paid portion`, 'UNKNOWN') : '')).join('');
-  const pipe = (m.pipeline_estimate || []).map((p) => line(`Pipeline (${esc(p.currency)})`, `${esc(money(p.amount, p.currency))} <span class="faint small">(${p.opportunities} opps)</span>`, 'ESTIMATE')).join('');
-  return `${rev}${line('Won deals', esc(m.won_deals), 'ACTUAL')}${pipe}
-    ${m.pipeline_unknown_value ? line('Pipeline value not estimated', `${esc(m.pipeline_unknown_value)} opps`, 'UNKNOWN') : ''}
-    <div class="src mt6">Revenue records: ${esc(m.revenue_records)}. Pipeline is a research estimate, never revenue. Currencies are shown separately.</div>`;
+function moneyBlock() {
+  const ins = state.ins; const ov = state.ov;
+  const line = (k, v, kind, help) => `<div class="money-line"><span${help ? tip(help) : ''}>${k}${lbl(kind)}</span><span class="v">${v}</span></div>`;
+  if (!ins) return `<div class="empty">Finance not loaded.</div>`;
+  const f = ins.finance; const byc = cur(f.by_currency);
+  const rev = f.records.length === 0
+    ? line('Collected', '<span class="muted">none recorded</span>', 'ACTUAL', 'collected') + line('Outstanding', '<span class="muted">none recorded</span>', 'ACTUAL', 'outstanding')
+    : byc.map((c) => line(`Won (${esc(c.currency)})`, c.won != null ? esc(money(c.won, c.currency)) : '<span class="muted">none</span>', 'ACTUAL', 'won')
+        + line(`Collected (${esc(c.currency)})`, c.collected != null ? esc(money(c.collected, c.currency)) : '<span class="muted">none</span>', 'ACTUAL', 'collected')
+        + line(`Outstanding (${esc(c.currency)})`, c.outstanding != null ? esc(money(c.outstanding, c.currency)) + (c.overdue ? ` <span class="bad-text small">${esc(money(c.overdue, c.currency))} overdue</span>` : '') : '<span class="muted">none</span>', 'ACTUAL', 'outstanding')).join('');
+  const pipe = cur(f.pipeline).map((p) => line(`Pipeline (${esc(p.currency)})`, `${esc(money(p.amount, p.currency))} <span class="faint small">(${p.opportunities} opps)</span>`, 'ESTIMATE', 'pipeline')).join('');
+  return `${rev}${line('Won deals', esc(ov?.money.won_deals ?? 0), 'ACTUAL')}${pipe}
+    ${f.pipeline_unknown ? line('Pipeline value not estimated', `${esc(f.pipeline_unknown)} opps`, 'UNKNOWN', 'unknown') : ''}
+    <div class="src mt6">Finance records: ${esc(f.records.length)}. Pipeline is a research estimate, never revenue. Currencies are never added together.</div>`;
 }
 
 // ---------------------------------------------------------------- OUTREACH
 function repliesForAdam(d) {
-  return d.inbound.filter((r) => r.task_id && openStatuses.includes(r.task_status)
-    && !['OUT_OF_OFFICE', 'UNRELATED'].includes(r.classification))
+  return d.inbound.filter((r) => r.task_id && openStatuses.includes(r.task_status) && !['OUT_OF_OFFICE', 'UNRELATED'].includes(r.classification))
     .sort((a, b) => (REPLY_ORDER[a.classification] ?? 9) - (REPLY_ORDER[b.classification] ?? 9));
 }
 const openTasks = (d) => d.tasks.filter((t) => openStatuses.includes(t.status));
 
-function manualChannelRows(d, kind) {
-  const acts = (state.ov?.actions || []).filter((a) => a.kind === kind);
-  if (!acts.length) return '<p class="muted small">None.</p>';
-  return acts.map((a) => {
-    const t = d.tasks.find((x) => x.id === a.task_id);
-    const msg = t ? String(t.description || '').split('--- MESSAGE ---')[1]?.split('\n\nAfter sending')[0]?.trim() : '';
-    return `<div class="row"><div class="t">${esc(a.company || '')}${a.person ? ` · ${esc(a.person)}` : ''}</div>
-      <div class="meta">${esc(a.source)} · due ${esc(shortDay(a.due_at))}</div>
-      ${msg ? `<div class="email"><pre>${esc(msg)}</pre></div>` : `<div class="small muted mt6">${esc(a.action)}</div>`}
-      <div class="btn-row">${a.opportunity_id ? `<button class="btn small" data-open-opp="${a.opportunity_id}">Open record</button>` : ''}
-      <button class="btn small" data-task="done" data-id="${a.task_id}">Sent — mark done</button><button class="btn small" data-task="snooze" data-id="${a.task_id}">Snooze</button></div></div>`;
-  }).join('');
+function manualChannelCard(a) {
+  const r = ready(a.opportunity_id); const f = facts(a.opportunity_id); const o = opp(a.opportunity_id) || {};
+  const t = state.data.tasks.find((x) => x.id === a.task_id);
+  const isLi = a.kind === 'LINKEDIN';
+  const msg = (isLi ? r.ready_linkedin : r.ready_instagram) || (t ? String(t.description || '').split('--- MESSAGE ---')[1]?.split('\n\nAfter sending')[0]?.trim() : '');
+  const url = isLi ? r.linkedin : r.instagram;
+  return `<article class="card" id="task-${a.task_id}">
+    <div class="card-head"><div><div class="co">${esc(a.company || '')}</div><div class="muted small">${esc(a.person || 'account owner')}${r.contact_role ? ` · ${esc(r.contact_role)}` : ''}</div></div>
+      <div class="pills">${pill(a.prio, a.prio === 'P1' ? 'bad' : '')}${f.vertical ? pill(V(f.vertical)) : ''}${f.origin_market ? pill(`${M(f.origin_market)} → ${M(f.opportunity_market)}`) : ''}${emailPill(r.email_status, r.email_kind)}</div></div>
+    <div class="grid2">
+      <div class="kv"><div class="k">Why now</div><div class="v small">${esc(r.why_now || o.next_action || '—')}</div></div>
+      <div class="kv"><div class="k">Opportunity</div><div class="v small">${esc(String(o.opportunity_type || '—').slice(0, 140))}</div></div>
+      <div class="kv"><div class="k">Last interaction</div><div class="v small">${esc(r.last_outbound_at ? `sent ${fmtDay(r.last_outbound_at)}` : 'none yet')}${r.last_inbound_at ? ` · reply ${esc(fmtDay(r.last_inbound_at))}` : ''}</div></div>
+      <div class="kv"><div class="k">Sent from</div><div class="v small">${isLi ? 'Adam personally (LinkedIn)' : 'NOYA Instagram'}</div></div>
+    </div>
+    ${msg ? `<div class="email"><pre>${esc(msg)}</pre></div>` : '<p class="muted small">No prepared message — draft one.</p>'}
+    <div class="btn-row">
+      ${url ? `<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open ${isLi ? 'LinkedIn' : 'Instagram'}</a>` : ''}
+      ${msg ? `<button class="btn small" data-copy="${esc(msg)}">Copy message</button>` : ''}
+      <button class="btn small primary" data-modal="touch" data-channel="${isLi ? 'LINKEDIN' : 'INSTAGRAM_DM'}" data-task="${a.task_id}" data-opp="${a.opportunity_id || ''}">Mark sent</button>
+      <button class="btn small" data-modal="draft-request" data-channel="${isLi ? 'LINKEDIN' : 'INSTAGRAM'}" data-opp="${a.opportunity_id || ''}">Redraft</button>
+      <button class="btn small" data-modal="task-snooze" data-id="${a.task_id}">Snooze</button>
+      <button class="btn small" data-modal="note" data-opp="${a.opportunity_id || ''}">Add note</button>
+      <button class="btn small ghost" data-modal="task-dismiss" data-id="${a.task_id}">Reject</button>
+    </div></article>`;
 }
 
 function viewOutreach(d) {
   const a = d.approvals;
-  const ready = a.filter((x) => x.loop_stage === 'PENDING_APPROVAL' && !x.block_reason);
-  const blocked = a.filter((x) => x.loop_stage === 'PENDING_APPROVAL' && x.block_reason);
-  const inFlight = a.filter((x) => ['APPROVED', 'DRAFT_CREATED', 'FAILED', 'DRAFT_DISCARDED'].includes(x.loop_stage));
-  const sent = a.filter((x) => ['SENT', 'REPLIED'].includes(x.loop_stage));
-  const held = a.filter((x) => x.loop_stage === 'ON_HOLD');
-  const rejected = a.filter((x) => x.loop_stage === 'REJECTED');
-  const followUps = openTasks(d).filter((t) => t.task_type === 'OUTREACH_FOLLOW_UP').sort((x, y) => new Date(x.due_at) - new Date(y.due_at));
-  const researching = d.opportunities.filter((o) => ['NEW', 'RESEARCHING'].includes(o.status));
+  const acts = state.ov?.actions || [];
+  const tabs = {
+    READY: a.filter((x) => x.loop_stage === 'PENDING_APPROVAL' && !x.block_reason),
+    'FOLLOW-UP': openTasks(d).filter((t) => t.task_type === 'OUTREACH_FOLLOW_UP').sort((x, y) => new Date(x.due_at) - new Date(y.due_at)),
+    LINKEDIN: acts.filter((x) => x.kind === 'LINKEDIN'),
+    INSTAGRAM: acts.filter((x) => x.kind === 'INSTAGRAM'),
+    SENT: a.filter((x) => ['APPROVED', 'DRAFT_CREATED', 'SENT', 'FAILED', 'DRAFT_DISCARDED'].includes(x.loop_stage)),
+    REPLIED: a.filter((x) => x.loop_stage === 'REPLIED'),
+    HOLD: a.filter((x) => x.loop_stage === 'ON_HOLD' || x.loop_stage === 'REJECTED' || (x.loop_stage === 'PENDING_APPROVAL' && x.block_reason)),
+    RESEARCHING: d.opportunities.filter((o) => ['NEW', 'RESEARCHING'].includes(o.status)),
+  };
+  const t = state.outreachTab;
+  const intro = {
+    READY: 'Email outreach to a verified person, drafted and checked. Approve creates a Gmail draft — you press Send in Gmail.',
+    'FOLLOW-UP': 'Conversations waiting on a follow-up. One follow-up, then an optional final one, then long term — never endless chasing.',
+    LINKEDIN: 'Messages from you personally. Open the profile, paste the message, send it yourself, then press Mark sent so the follow-up is booked.',
+    INSTAGRAM: 'Only Instagram-native accounts (weddings, clubs, hotels, brands). Never banks, law or wealth firms.',
+    SENT: 'Outreach approved and sent (or in Gmail Drafts waiting for you).',
+    REPLIED: 'Prospects who answered. See Replies for the message and next step.',
+    HOLD: 'Parked: on hold, rejected, or the email route is blocked until a verified contact exists.',
+    RESEARCHING: 'Still missing a verified person or channel. The research agents keep working on these (up to 10 a day, highest priority first).',
+  }[t];
+  let body = '';
+  if (t === 'READY') body = tabs.READY.map(approvalCard).join('') || empty('No email outreach waiting for approval.');
+  else if (t === 'LINKEDIN' || t === 'INSTAGRAM') body = tabs[t].map(manualChannelCard).join('') || empty('Nothing ready on this channel.');
+  else if (t === 'FOLLOW-UP') body = `<div class="list">${tabs[t].map((x) => `<div class="row"><div class="t">${esc(sentence(x.title))}</div><div class="meta">${esc(x.company_name || '')} · due ${esc(fmtDay(x.due_at))}${new Date(x.due_at) < new Date() ? ' · <span class="bad-text">overdue</span>' : ''}</div>
+      <div class="btn-row mt6">${x.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : ''}<button class="btn small primary" data-modal="touch" data-channel="EMAIL" data-task="${x.id}" data-opp="${x.opportunity_id || ''}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${x.id}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${x.id}">No longer needed</button></div></div>`).join('') || empty('No follow-ups due.')}</div>`;
+  else if (t === 'RESEARCHING') body = `<div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Vertical</th><th>Market</th><th>Contact</th><th class="num">Priority</th><th>Next</th></tr></thead><tbody>${tabs[t].sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0)).map((o) => { const f = facts(o.id); return `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}</td><td>${esc(V(f.vertical))}</td><td>${esc(M(f.origin_market))} → ${esc(M(f.opportunity_market))}</td><td>${esc(o.contact_name || '—')}</td><td class="num">${esc(o.priority ?? '—')}</td><td class="small">${esc(o.next_action || '')}</td></tr>`; }).join('')}</tbody></table></div>`;
+  else body = tabs[t].map(approvalCard).join('') || empty('None.');
   return `
     <h2>Outreach</h2>
-    <p class="muted small">Approving creates a Gmail draft in noya@noyaconcierge.com. Nothing is sent from HQ — you press Send in Gmail and workflow 13 logs it. LinkedIn and Instagram messages are sent by you from your own accounts.</p>
-    <h3>Ready for approval (${ready.length})</h3>
-    ${ready.map(approvalCard).join('') || '<p class="muted">No approval-ready email outreach.</p>'}
-    ${inFlight.length ? `<h3>In progress (${inFlight.length})</h3>${inFlight.map(approvalCard).join('')}` : ''}
-    <h3>LinkedIn — ready (${(state.ov?.actions || []).filter((x) => x.kind === 'LINKEDIN').length})</h3>${manualChannelRows(d, 'LINKEDIN')}
-    <h3>Instagram — ready (${(state.ov?.actions || []).filter((x) => x.kind === 'INSTAGRAM').length})</h3>${manualChannelRows(d, 'INSTAGRAM')}
-    <h3>Follow-ups (${followUps.length})</h3>
-    <div class="list">${followUps.map((t) => `<div class="row"><div class="t">${esc(t.title)}</div><div class="meta">due ${esc(fmtDay(t.due_at))}${new Date(t.due_at) < new Date() ? ' · <span class="bad-text">overdue</span>' : ''}</div></div>`).join('') || '<p class="muted small">None.</p>'}</div>
-    <h3>Sent (${sent.length})</h3>
-    <details><summary>Show ${sent.length} sent outreach</summary>${sent.map(approvalCard).join('')}</details>
-    ${held.length ? `<h3>On hold (${held.length})</h3>${held.map(approvalCard).join('')}` : ''}
-    <h3>Email route blocked — contact needed (${blocked.length})</h3>
-    <details><summary>Show ${blocked.length} opportunities that need a verified contact first</summary>${blocked.map(approvalCard).join('')}</details>
-    ${rejected.length ? `<h3>Rejected (${rejected.length})</h3><details><summary>Show</summary>${rejected.map(approvalCard).join('')}</details>` : ''}
-    <h3>Researching (${researching.length})</h3>
-    <p class="muted small">Prospects not yet ready — workflow 05 resolves contacts and drafts them (up to 10 a day, highest commercial priority first).</p>`;
+    <div class="tabs">${Object.keys(tabs).map((k) => `<button data-otab="${k}" class="${t === k ? 'on' : ''}">${k.charAt(0) + k.slice(1).toLowerCase().replace('-up', '-up')} <span class="n">${tabs[k].length}</span></button>`).join('')}</div>
+    <p class="muted small">${esc(intro)}</p>
+    ${body}`;
 }
+const empty = (t) => `<div class="panel"><div class="body"><div class="empty">${esc(t)}</div></div></div>`;
 
 function loopBar(stage) {
   const order = ['PENDING_APPROVAL', 'DRAFT_CREATED', 'SENT', 'REPLIED', 'NEXT'];
@@ -405,7 +540,7 @@ function loopBar(stage) {
   return `<div class="loop">${LOOP.map(([k, l], i) => `<span class="${i < idx ? 'done' : i === idx || (idx === 0.5 && i === 1) ? 'now' : ''}">${l}</span>`).join('')}</div>`;
 }
 
-function approvalCard(a) {
+function approvalCardBase(a) {
   const dr = a.draft || {};
   const ready = a.loop_stage === 'PENDING_APPROVAL' && !a.block_reason;
   const editable = ['PENDING_APPROVAL', 'ON_HOLD'].includes(a.loop_stage) || (a.loop_stage === 'DRAFT_DISCARDED' || a.loop_stage === 'FAILED');
@@ -456,34 +591,6 @@ function approvalCard(a) {
     </div>` : ''}
   </article>`;
 }
-
-
-// ---------------------------------------------------------------- PIPELINE
-function viewPipeline(d) {
-  const by = {};
-  d.opportunities.forEach((o) => { (by[o.status] = by[o.status] || []).push(o); });
-  const q = state.pipeQ.trim().toLowerCase();
-  const rows = d.opportunities.filter((o) => (!state.pipeStage || o.status === state.pipeStage)
-    && (!q || [o.company_name, o.contact_name, o.opportunity_type, o.next_action].some((x) => String(x ?? '').toLowerCase().includes(q))));
-  const stale = (o) => daysAgo(o.updated_at) > 14 && !['WON', 'LOST', 'ARCHIVED', 'LONG_TERM'].includes(o.status);
-  return `
-    <h2>Pipeline</h2>
-    <p class="muted small">Estimated values are research estimates (ESTIMATE), never revenue; blank means UNKNOWN. Stale = no update in 14 days.</p>
-    <div class="filters"><div class="seg">
-      <button data-stage="" class="${!state.pipeStage ? 'on' : ''}">All · ${d.opportunities.length}</button>
-      ${STAGES.filter((s) => by[s]).map((s) => `<button data-stage="${s}" class="${state.pipeStage === s ? 'on' : ''}">${s.replace('_', ' ')} · ${by[s].length}</button>`).join('')}
-    </div><input id="pipe-q" placeholder="Filter…" value="${esc(state.pipeQ)}"></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Company</th><th>Stage</th><th>Contact</th><th class="num">Estimate</th><th class="num">Priority</th><th>Updated</th><th>Next action</th></tr></thead>
-      <tbody>${rows.map((o) => `<tr class="clickable" data-open-opp="${o.id}"><td>${esc(o.company_name)}<div class="muted small">${esc(String(o.opportunity_type || '').slice(0, 60))}</div></td>
-        <td>${pill(o.status)} ${stale(o) ? pill('stale', 'warn') : ''}</td>
-        <td>${esc(o.contact_name || '—')}<div class="muted small">${esc(o.email_status || 'no contact')}</div></td>
-        <td class="num">${o.estimated_value != null ? esc(money(o.estimated_value, o.currency)) : '<span class="faint">unknown</span>'}</td><td class="num">${esc(o.priority ?? '—')}</td>
-        <td class="small">${esc(shortDay(o.updated_at))}</td>
-        <td class="small">${esc(o.next_action || '')}</td></tr>`).join('')}</tbody>
-    </table></div>`;
-}
-
 // ---------------------------------------------------------------- TASKS
 function viewTasks(d) {
   const f = state.taskFilter;
@@ -514,13 +621,12 @@ function viewTasks(d) {
       const list = tasks.filter((t) => taskColumn(t.status) === c).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
       return `<div class="col"><h4><span>${c}</span><span>${list.length}</span></h4><div class="list">${list.map((t) => {
         const overdue = t.status !== 'COMPLETED' && t.due_at && new Date(t.due_at) < now;
-        const acts = openStatuses.includes(t.status) ? `<div class="btn-row mt6">${t.opportunity_id ? `<button class="btn small" data-open-opp="${t.opportunity_id}">Open</button>` : ''}${t.task_type !== 'SALES_OUTREACH_APPROVAL' ? `<button class="btn small" data-task="done" data-id="${t.id}">Done</button>` : ''}<button class="btn small" data-task="snooze" data-id="${t.id}">Snooze</button></div>` : '';
-        return `<div class="row"><div class="t small">${esc(t.title)}</div><div class="meta">${pill(prioBand(t.priority ?? 0), t.priority >= 80 ? 'gold' : '')} ${esc(department(t.created_by))} · ${esc(t.assigned_to || '—')}</div>
+        const acts = openStatuses.includes(t.status) ? `<div class="btn-row mt6">${t.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${t.opportunity_id}">Open</button>` : ''}${t.task_type !== 'SALES_OUTREACH_APPROVAL' ? `<button class="btn small" data-modal="task-done" data-id="${t.id}">Done</button>` : ''}<button class="btn small" data-modal="task-snooze" data-id="${t.id}">Snooze</button>${t.task_type !== 'SALES_OUTREACH_APPROVAL' ? `<button class="btn small ghost" data-modal="task-dismiss" data-id="${t.id}">✕</button>` : ''}</div>` : '';
+        return `<div class="row"><div class="t small">${esc(sentence(t.title))}</div><div class="meta">${pill(prioBand(t.priority ?? 0), t.priority >= 80 ? 'gold' : '')} ${esc(department(t.created_by))} · ${esc(t.assigned_to || '—')}</div>
           <div class="meta">${t.status === 'COMPLETED' ? `Done ${esc(t.completed_at ? fmtDate(t.completed_at) : '(time not recorded)')}` : `Due ${esc(fmtDay(t.due_at))}${overdue ? ' · <span class="bad-text">overdue</span>' : ''}`}</div>${acts}</div>`;
       }).join('') || '<p class="muted small">None</p>'}</div></div>`;
     }).join('')}</div>`;
 }
-
 // ---------------------------------------------------------------- COMPLETED
 function completionRow(c) {
   return `<div class="row"><div class="t">${esc(c.what)} — ${esc(c.company || '—')}</div>
@@ -540,8 +646,6 @@ function viewCompleted(d) {
     <h3>Completed this week (${week.length})</h3><div class="list">${week.map(completionRow).join('') || '<p class="muted">Nothing this week.</p>'}</div>
     <h3>Revenue-impacting (last 45 days, ${rev.length})</h3><div class="list">${rev.map(completionRow).join('') || '<p class="muted">None yet.</p>'}</div>`;
 }
-
-
 // ---------------------------------------------------------------- INBOX
 function suggestedReply(desc) {
   const i = String(desc || '').indexOf('--- SUGGESTED REPLY');
@@ -553,7 +657,7 @@ function viewInbox(d) {
   const groups = {};
   replies.forEach((r) => { const g = REPLY_GROUP[r.classification] || 'Other / human review'; (groups[g] = groups[g] || []).push(r); });
   return `
-    <h2>Inbox</h2>
+    <h2>Replies</h2>
     <p class="muted small">Replies to NOYA outreach, logged by workflow 13. Bounce and out-of-office labels come from delivery headers and always override the AI label. Nothing is replied to automatically — suggested replies are drafts for you.</p>
     ${Object.entries(groups).map(([g, list]) => `<h3>${esc(g)} (${list.length})</h3><div class="list">${list.map((r) => {
       const sug = suggestedReply(r.task_description);
@@ -562,10 +666,9 @@ function viewInbox(d) {
         <div class="small mt6">${esc(r.summary || '')}</div>
         <div class="small mt6"><b>Next:</b> ${esc(r.task_title || r.next_action || 'No action needed')}${r.task_status ? ` (${esc(r.task_status)})` : ''}</div>
         ${sug ? `<details><summary>Suggested reply (not sent)</summary><pre class="text">${esc(sug)}</pre></details>` : ''}
-        <div class="btn-row mt6">${r.opportunity_id ? `<button class="btn small" data-open-opp="${r.opportunity_id}">Open record</button>` : ''}${r.thread_id ? `<a class="btn small" href="${GMAIL_THREAD_URL}${esc(r.thread_id)}" target="_blank" rel="noopener noreferrer">Open in Gmail</a>` : ''}</div></div>`;
+        <div class="btn-row mt6">${r.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${r.opportunity_id}">Open record</button>` : ''}${r.opportunity_id ? `<button class="btn small" data-modal="meeting" data-opp="${r.opportunity_id}" data-task="${r.task_id || ''}">Record meeting</button>` : ''}${r.thread_id ? `<a class="btn small" href="${GMAIL_THREAD_URL}${esc(r.thread_id)}" target="_blank" rel="noopener noreferrer">Open in Gmail</a>` : ''}</div></div>`;
     }).join('')}</div>`).join('') || '<p class="muted">No replies yet since go-live.</p>'}`;
 }
-
 // ---------------------------------------------------------------- WEBSITE
 function viewWebsite(d) {
   const e = d.enquiries;
@@ -577,22 +680,6 @@ function viewWebsite(d) {
       ${x.message ? `<div class="small">${esc(x.message)}</div>` : ''}</div>`).join('')}</div>`
       : `<div class="panel"><div class="body"><div class="empty">No website enquiries in the last 60 days. The intake (10d) is live; enquiries will appear here the moment the new website form submits.</div></div></div>`}`;
 }
-
-// ---------------------------------------------------------------- FINANCE
-function viewFinance() {
-  const ov = state.ov; if (!ov) return '<p class="muted">Overview data not loaded.</p>';
-  const c = ov.system.cost_today || {};
-  return `
-    <h2>Finance</h2>
-    <p class="muted small">V1 reads the existing revenue table. Collected, outstanding, pipeline and costs are never blended, and currencies are never added together. Invoices, amount paid and FX come in build phase 9.</p>
-    <div class="ov-grid"><section class="panel"><header><h3>Revenue &amp; pipeline</h3></header><div class="body">${moneyBlock(ov.money)}</div></section>
-    <section class="panel"><header><h3>System usage today</h3><span class="small faint">counts actual · money unknown</span></header><div class="body">
-      ${[['Serper searches', c.serper_searches], ['Firecrawl calls', c.firecrawl_calls], ['Discovery AI calls', c.ai_calls_discovery], ['Hunter checks (05)', c.hunter_checks], ['Reply classifications (13)', c.reply_ai_calls], ['CEO briefs (11)', c.brief_runs]]
-        .map(([k, v]) => `<div class="money-line"><span>${k}${lbl('ACTUAL')}</span><span class="v">${esc(v ?? '—')}</span></div>`).join('')}
-      <div class="money-line"><span>Spend${lbl('UNKNOWN')}</span><span class="v muted">unit prices not recorded</span></div>
-      <div class="src mt6">${esc(c.note || '')}</div></div></section></div>`;
-}
-
 // ---------------------------------------------------------------- REPORTS / SYSTEM
 function viewReports(d) {
   const b = d.brief;
@@ -605,7 +692,7 @@ function viewReports(d) {
 function viewSystem(d) {
   const ov = state.ov; const h = d.health; const alerts = healthAlerts(d);
   return `
-    <h2>System</h2>
+    <h2>System health</h2>
     ${alerts.length ? `<div class="banner err">${alerts.map(esc).join('<br>')}</div>` : '<div class="banner ok">No production failures.</div>'}
     <h3>Workflow signals</h3>
     <div class="list">${(ov?.system.signals || []).map((x) => `<div class="row"><div class="t"><span class="dot ${x.ok ? '' : 'bad'}"></span>${esc(x.name)} ${x.ok ? pill('OK', 'ok') : pill('Check', 'bad')}</div><div class="meta">Last ${esc(x.last ? fmtDate(x.last) : 'never')} · rule: ${esc(x.rule)}${x.detail ? ` · ${esc(x.detail)}` : ''}</div></div>`).join('')}
@@ -622,9 +709,8 @@ function viewSystem(d) {
         ${row('Premium', r.premium, 'Manual escalation only — on no automatic path. Anthropic is optional.')}
         <div class="row"><div class="t">Final fallback</div><div class="meta">Deterministic rules or human review (the CEO brief is built from facts and labelled AI ENRICHMENT DEGRADED).</div></div></div>
         <p class="src mt6">From system_config.ai_model_routing · ${esc(r.provider_path || '')} · ${esc(ov.system.models.note || '')}</p>`; })()}
-    <p class="src mt8">Per-workflow execution history (last success/failure per n8n workflow) is build phase 11; today these signals come from the records each workflow writes. Failures also email Adam through workflow 00. Signed in as ${esc(d.admin)}.</p>`;
+    <p class="src mt8">Per-workflow execution history (last success/failure per n8n workflow) is build phase 11; today these signals come from the records each workflow writes. Failures also email Adam through workflow 00. Signed in as ${esc(d.admin)}. Costs and dependencies: <button class="linkish" data-go="costs">System costs</button>.</p>`;
 }
-
 // ---------------------------------------------------------------- MARKETING / INTELLIGENCE
 function viewMarketing(d) {
   const c = d.marketing.content; const p = d.marketing.paid;
@@ -664,68 +750,9 @@ function healthAlerts(d) {
   (h.open_alerts || []).filter((a) => (a.priority ?? 0) >= 50).forEach((a) => out.push(a.title)); // low-priority notices are blockers, not failures
   return out;
 }
-
-const VIEWS = { overview: viewOverview, outreach: viewOutreach, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite, finance: viewFinance, intelligence: viewIntelligence, reports: viewReports, system: viewSystem };
-
-// ---------------------------------------------------------------- opportunity record drawer
-function renderDrawer(dr) {
-  const d = state.data; const o = d.opportunities.find((x) => x.id === dr.id);
-  if (!o) return `<div class="drawer-bg" data-close-drawer></div><aside class="drawer"><button class="btn small close" data-close-drawer>Close</button><p class="muted">Record not found in the loaded data.</p></aside>`;
-  const ap = d.approvals.find((x) => x.id === o.id);
-  const tasks = d.tasks.filter((t) => t.opportunity_id === o.id);
-  const openT = tasks.filter((t) => openStatuses.includes(t.status));
-  const replies = d.inbound.filter((r) => r.opportunity_id === o.id);
-  const kv = (k, v) => `<div class="kv"><div class="k">${k}</div><div class="v">${v}</div></div>`;
-  return `<div class="drawer-bg" data-close-drawer></div>
-  <aside class="drawer">
-    <button class="btn small close" data-close-drawer>Close</button>
-    <h2>${esc(o.company_name)}</h2>
-    <div class="pills">${pill(o.status)} ${o.approval_status && o.approval_status !== 'PENDING' ? pill(`approval ${o.approval_status}`) : ''} ${pill(`priority ${o.priority ?? '—'}`)}</div>
-    <div class="grid2">
-      ${kv('Opportunity', esc(o.opportunity_type || '—'))}
-      ${kv('Primary contact', `${esc(o.contact_name || '—')}<div class="muted small">${esc(o.contact_position || '')}</div>`)}
-      ${kv('Email', ap ? `${esc(ap.contact_email || '—')} ${ap.email_status === 'VERIFIED' ? pill('verified', 'ok') : pill(ap.email_status || 'none', 'warn')}` : `${pill(o.email_status || 'none')}`)}
-      ${kv('Estimated value', o.estimated_value != null ? `${esc(money(o.estimated_value, o.currency))}${lbl('ESTIMATE')}` : `unknown${lbl('UNKNOWN')}`)}
-      ${kv('Actual revenue', d.revenue.rows ? 'see Finance' : `none recorded${lbl('ACTUAL')}`)}
-      ${kv('Next action', esc(o.next_action || '—'))}
-      ${kv('Created', esc(fmtDay(o.created_at)))}
-      ${kv('Last update', esc(fmtDate(o.updated_at)))}
-    </div>
-    ${ap ? `<h3>Outreach</h3>${loopBar(ap.loop_stage)}<div class="small">${esc(ap.loop_stage.replace('_', ' ').toLowerCase())}${ap.sent_at ? ` · sent ${esc(fmtDate(ap.sent_at))}` : ''}${ap.block_reason ? ` · email route blocked: ${esc(explain({ reason: ap.block_reason }))}` : ''}</div>
-      ${ap.draft?.subject ? `<details><summary>Draft: ${esc(ap.draft.subject)}</summary><div class="email"><pre>${esc(ap.draft.body || '')}</pre></div></details>` : ''}
-      ${ap.draft?.why_now ? `<div class="small mt6"><b>Why now:</b> ${esc(ap.draft.why_now)}</div>` : ''}` : ''}
-    <h3>Replies (${replies.length})</h3>
-    ${replies.map((r) => `<div class="mini"><div class="t">${pill(REPLY_GROUP[r.classification] || r.classification)} ${esc(fmtDate(r.received_at))}</div><div class="m">${esc(r.summary || '')}</div></div>`).join('') || '<p class="muted small">None.</p>'}
-    <h3>Open tasks (${openT.length})</h3>
-    ${openT.map((t) => `<div class="mini"><div class="t">${esc(t.title)}</div><div class="m">${esc(t.task_type)} · ${esc(t.status)} · due ${esc(fmtDay(t.due_at))}</div>
-      <div class="btn-row mt6">${t.task_type !== 'SALES_OUTREACH_APPROVAL' ? `<button class="btn small" data-task="done" data-id="${t.id}">Done</button>` : '<button class="btn small" data-go="outreach">Approve in Outreach</button>'}<button class="btn small" data-task="snooze" data-id="${t.id}">Snooze</button></div>
-      <details><summary>Task detail</summary><pre class="text small">${esc(t.description || '')}</pre></details></div>`).join('') || '<p class="muted small">None.</p>'}
-    <h3>History (${tasks.length - openT.length} closed tasks)</h3>
-    ${tasks.filter((t) => !openStatuses.includes(t.status)).map((t) => `<div class="m small">${esc(fmtDay(t.completed_at || t.created_at))} · ${esc(t.status)} · ${esc(t.title)}</div>`).join('') || '<p class="muted small">None.</p>'}
-    <p class="src mt8">Record ${esc(o.id)} · source: opportunities, tasks, gmail_sync_ledger, outbound_emails</p>
-  </aside>`;
-}
-
-// ---------------------------------------------------------------- modals & actions
 function findApproval(id) { return state.data.approvals.find((a) => a.id === id); }
 function findTask(id) { return state.data.tasks.find((t) => t.id === id); }
 function isoPlus(days) { const x = new Date(); x.setDate(x.getDate() + days); return x.toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }); }
-
-function renderAnyModal(m) {
-  if (m.kind === 'task-done' || m.kind === 'task-snooze') {
-    const t = findTask(m.id) || {};
-    return m.kind === 'task-done'
-      ? `<div class="modal-bg"><div class="modal"><h3>Mark done</h3><p>${esc(t.title || '')}</p>
-          <label class="field"><span>Note (optional)</span><input id="task-note" maxlength="300"></label>
-          <div class="btn-row"><button class="btn primary" data-confirm-task="COMPLETE">Mark done</button><button class="btn" data-close>Cancel</button></div></div></div>`
-      : `<div class="modal-bg"><div class="modal"><h3>Snooze</h3><p>${esc(t.title || '')}</p>
-          <label class="field"><span>Until</span><input id="task-until" type="date" min="${isoPlus(1)}" max="${isoPlus(90)}" value="${isoPlus(2)}"></label>
-          <label class="field"><span>Note (optional)</span><input id="task-note" maxlength="300"></label>
-          <div class="btn-row"><button class="btn primary" data-confirm-task="SNOOZE">Snooze</button><button class="btn" data-close>Cancel</button></div></div></div>`;
-  }
-  return renderModal(m);
-}
-
 async function confirmTask(action) {
   const m = state.modal; const note = $('#task-note')?.value || null; const until = $('#task-until')?.value || null;
   const btn = document.querySelector('[data-confirm-task]'); if (btn) btn.disabled = true;
@@ -734,7 +761,6 @@ async function confirmTask(action) {
     action === 'COMPLETE' ? 'Task marked done.' : `Task snoozed to ${until}.`);
   if (r && r.ok === false && r.reason === 'USE_APPROVAL_FLOW') state.notice = { err: true, text: 'Outreach approvals are closed by Approve, Hold or Reject in Outreach.' };
 }
-
 function renderModal(m) {
   const a = findApproval(m.id);
   if (!a) return '';
@@ -769,8 +795,6 @@ function renderModal(m) {
   }
   return '';
 }
-
-
 async function confirmModal(kind) {
   const m = state.modal; const a = findApproval(m.id); if (!a) return;
   const btn = document.querySelector('[data-confirm]'); if (btn) btn.disabled = true;
@@ -795,46 +819,700 @@ async function confirmModal(kind) {
   }
 }
 
+// Outreach card: the approval card plus market, channel and relationship context.
+function approvalCard(a) {
+  const f = facts(a.id); const r = ready(a.id);
+  const ctx = [f.vertical ? V(f.vertical) : '', f.origin_market ? `${M(f.origin_market)} → ${M(f.opportunity_market)}` : '',
+    r.primary_channel ? `best channel: ${String(r.primary_channel).toLowerCase()}` : '',
+    r.last_outbound_at ? `last contact ${fmtDay(r.last_outbound_at)}` : 'no previous contact'].filter(Boolean);
+  const extra = `<div class="ctx small">${ctx.map(esc).join(' · ')}</div>${r.evidence ? `<div class="kv"><div class="k">Evidence</div><div class="v small">${esc(r.evidence)}</div></div>` : ''}`;
+  const open = ['PENDING_APPROVAL', 'ON_HOLD'].includes(a.loop_stage);
+  const more = `<div class="btn-row sub">
+    <button class="btn small ghost" data-open="opp" data-id="${a.id}">Open record</button>
+    ${open ? `<button class="btn small ghost" data-modal="channel" data-opp="${a.id}">Change channel</button>` : ''}
+    <button class="btn small ghost" data-modal="note" data-opp="${a.id}">Add note</button>
+    ${a.loop_stage === 'SENT' ? `<button class="btn small ghost" data-modal="meeting" data-opp="${a.id}">Record meeting</button>` : ''}
+  </div>`;
+  return approvalCardBase(a).replace('<div class="grid2">', `${extra}<div class="grid2">`).replace(/<\/article>\s*$/, `${more}</article>`);
+}
+
+// ---------------------------------------------------------------- PIPELINE
+const ACTIVE = (s) => !['WON', 'LOST', 'ARCHIVED', 'LONG_TERM'].includes(s);
+const stale = (o) => daysAgo(o.updated_at) > 14 && ACTIVE(o.status);
+function pipeRows(d) {
+  const f = state.pipeF; const q = f.q.trim().toLowerCase();
+  return d.opportunities.filter((o) => {
+    const x = facts(o.id);
+    if (f.stage && o.status !== f.stage) return false;
+    if (f.vertical && x.vertical !== f.vertical) return false;
+    if (f.market && x.origin_market !== f.market && x.opportunity_market !== f.market) return false;
+    if (f.stale && !stale(o)) return false;
+    if (q && ![o.company_name, o.contact_name, o.opportunity_type, o.next_action, x.destination, x.origin_country].some((v) => String(v ?? '').toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+const opt = (v, curv, label = v) => `<option value="${esc(v)}" ${v === curv ? 'selected' : ''}>${esc(label)}</option>`;
+function viewPipeline(d) {
+  const f = state.pipeF; const rows = pipeRows(d);
+  const by = {}; d.opportunities.forEach((o) => { by[o.status] = (by[o.status] || 0) + 1; });
+  const est = (o) => (o.estimated_value != null ? `${esc(money(o.estimated_value, o.currency))}${lbl('ESTIMATE')}` : '<span class="faint">unknown</span>');
+  const filters = `<div class="filters">
+    <select data-pf="stage">${opt('', f.stage, `All stages · ${d.opportunities.length}`)}${STAGES.filter((s) => by[s]).map((s) => opt(s, f.stage, `${S(s)} · ${by[s]}`)).join('')}</select>
+    <select data-pf="vertical">${opt('', f.vertical, 'All verticals')}${Object.entries(VERTICAL_LABEL).map(([k, l]) => opt(k, f.vertical, l)).join('')}</select>
+    <select data-pf="market">${opt('', f.market, 'All markets')}${Object.entries(MARKET_LABEL).map(([k, l]) => opt(k, f.market, l)).join('')}</select>
+    <label class="chk"><input type="checkbox" data-pf="stale" ${f.stale ? 'checked' : ''}> Stale only</label>
+    <input data-pf="q" placeholder="Filter…" value="${esc(f.q)}">
+    <div class="seg"><button data-pview="table" class="${state.pipeView === 'table' ? 'on' : ''}">Table</button><button data-pview="board" class="${state.pipeView === 'board' ? 'on' : ''}">Board</button></div></div>`;
+  let body;
+  if (state.pipeView === 'board') {
+    const cols = STAGES.filter((s) => !['ARCHIVED'].includes(s) && rows.some((o) => o.status === s));
+    body = `<div class="board">${cols.map((s) => { const list = rows.filter((o) => o.status === s).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+      return `<div class="bcol"><h4><span>${esc(S(s))}</span><span>${list.length}</span></h4>${list.map((o) => { const x = facts(o.id);
+        return `<div class="bcard clickable" data-open="opp" data-id="${o.id}"><div class="t">${esc(o.company_name)}</div><div class="m">${esc(V(x.vertical))} · ${esc(M(x.origin_market))}</div><div class="m">${est(o)}${stale(o) ? ` ${pill('stale', 'warn')}` : ''}</div></div>`; }).join('')}</div>`; }).join('')}</div>`;
+  } else {
+    body = `<div class="tbl-wrap"><table>
+      <thead><tr><th>Company</th><th>Stage</th><th>Vertical</th><th>Market</th><th>Contact</th><th class="num">Estimate</th><th>Updated</th><th>Next action</th></tr></thead>
+      <tbody>${rows.map((o) => { const x = facts(o.id); return `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}<div class="muted small">${esc(String(o.opportunity_type || '').slice(0, 60))}</div></td>
+        <td>${pill(S(o.status))} ${stale(o) ? pill('stale', 'warn') : ''}</td><td class="small">${esc(V(x.vertical))}</td>
+        <td class="small">${esc(M(x.origin_market))} → ${esc(M(x.opportunity_market))}</td>
+        <td>${esc(o.contact_name || '—')}<div class="muted small">${esc((o.email_status || 'no contact').toLowerCase())}</div></td>
+        <td class="num">${est(o)}</td><td class="small">${esc(shortDay(o.updated_at))}</td><td class="small">${esc(o.next_action || '')}</td></tr>`; }).join('') || '<tr><td colspan="8" class="muted">No opportunities match.</td></tr>'}</tbody></table></div>`;
+  }
+  return `<h2>Pipeline</h2>
+    <p class="muted small"${tip('pipeline')}>${rows.length} shown. Values are research estimates (never revenue); blank = unknown. Stale = no update in 14 days. Click any row for the full record, history and actions.</p>
+    ${filters}${body}`;
+}
+
+// ---------------------------------------------------------------- CONTACTS / COMPANIES
+function provenanceTitle(k) {
+  return [k.provenance && `Source: ${k.provenance}`, k.provider && `Checked by ${k.provider}`, k.verified_at && `on ${fmtDay(k.verified_at)}`,
+    k.verified_by && `(${k.verified_by})`, k.quality_issue && `Issue: ${k.quality_issue}`].filter(Boolean).join(' ') || 'No verification record.';
+}
+function viewContacts() {
+  const dir = state.dir; if (!dir) return empty('Contacts not loaded.');
+  const f = state.contactF; const q = f.q.trim().toLowerCase();
+  const rows = dir.contacts.filter((k) => (!f.email || String(k.email_status || 'NONE').toUpperCase() === f.email)
+    && (!q || [k.name, k.email, k.position, k.company, k.country].some((v) => String(v ?? '').toLowerCase().includes(q))));
+  const counts = {}; dir.contacts.forEach((k) => { const s = String(k.email_status || 'NONE').toUpperCase(); counts[s] = (counts[s] || 0) + 1; });
+  return `<h2>Contacts</h2>
+    <p class="muted small"${tip('verified')}>${dir.contacts.length} people. Email status: VERIFIED is confirmed deliverable; RISKY / UNKNOWN / UNVERIFIED are never emailed automatically. Hover an email for its evidence.</p>
+    <div class="filters"><input data-cf="q" placeholder="Name, email, company…" value="${esc(f.q)}">
+      <select data-cf="email">${opt('', f.email, 'Any email status')}${Object.keys(counts).sort().map((s) => opt(s, f.email, `${s.toLowerCase()} · ${counts[s]}`)).join('')}</select></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>Email</th><th>Last interaction</th><th class="num">Active opps</th></tr></thead>
+    <tbody>${rows.map((k) => `<tr class="clickable" data-open="contact" data-id="${k.id}"><td>${esc(k.name || '—')}<div class="muted small">${esc(k.position || '')}</div></td>
+      <td>${esc(k.company || '—')}</td><td title="${esc(provenanceTitle(k))}"><span class="small">${esc(k.email || '—')}</span> ${emailPill(k.email_status, k.email_kind)}${k.do_not_contact ? ` ${pill('do not contact', 'bad')}` : ''}</td>
+      <td class="small">${esc(k.last_interaction ? fmtDay(k.last_interaction) : '—')}</td><td class="num">${esc(k.active_opps)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No contacts match.</td></tr>'}</tbody></table></div>`;
+}
+
+const QUICK_VERTICALS = [['', 'All'], ['TRAVEL_CONCIERGE', 'Partnerships'], ['BRAND_PRODUCTION', 'Production'], ['HOSPITALITY', 'Hospitality'], ['PRIVATE_UHNW', 'Private / UHNW'], ['CORPORATE', 'Corporate'], ['WEDDINGS_EVENTS', 'Weddings'], ['SPORTS_TALENT', 'Sports / Talent']];
+function viewCompanies() {
+  const dir = state.dir; if (!dir) return empty('Companies not loaded.');
+  const f = state.companyF; const q = f.q.trim().toLowerCase();
+  const rows = dir.companies.filter((c) => (!f.vertical || c.vertical === f.vertical) && (!f.market || c.market === f.market)
+    && (!q || [c.name, c.website, c.country, c.city, c.company_type].some((v) => String(v ?? '').toLowerCase().includes(q))));
+  const n = (v) => dir.companies.filter((c) => !v || c.vertical === v).length;
+  return `<h2>Companies</h2>
+    <p class="muted small">${dir.companies.length} accounts. Vertical is set automatically from the company type; you can reclassify any company from its record.</p>
+    <div class="tabs">${QUICK_VERTICALS.map(([k, l]) => `<button data-cof="vertical" data-v="${k}" class="${f.vertical === k ? 'on' : ''}">${l} <span class="n">${n(k)}</span></button>`).join('')}</div>
+    <div class="filters"><input data-cof="q" placeholder="Name, website, country…" value="${esc(f.q)}">
+      <select data-cof="market">${opt('', f.market, 'All markets')}${Object.entries(MARKET_LABEL).map(([k, l]) => opt(k, f.market, l)).join('')}</select></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Vertical</th><th>Market</th><th>Relationship</th><th class="num">Active</th><th class="num">People</th><th>Last activity</th></tr></thead>
+    <tbody>${rows.map((c) => `<tr class="clickable" data-open="company" data-id="${c.id}"><td>${esc(c.name)}<div class="muted small">${esc(c.website || '')}</div></td>
+      <td class="small">${esc(V(c.vertical))}${c.vertical_override ? ' <span class="faint">(set by you)</span>' : ''}</td><td class="small">${esc(M(c.market))}${c.country ? ` · ${esc(c.country)}` : ''}</td>
+      <td class="small">${esc(c.relationship_status || '—')}</td><td class="num">${esc(c.active_opps)}</td><td class="num">${esc(c.contacts)}</td>
+      <td class="small">${esc(c.last_activity ? shortDay(c.last_activity) : '—')}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No companies match.</td></tr>'}</tbody></table></div>`;
+}
+
+// ---------------------------------------------------------------- LINKEDIN
+const LI_OPTIONS = [
+  ['1. Your LinkedIn data export + draft here + you send (recommended)', 'Your 1st-degree connections file (name, company, position, profile link, connected date; email only if the contact allowed it)', 'Nothing. HQ drafts; you open the profile and send yourself', 'No password, cookie or token is stored. You upload the file; only the needed columns are kept', 'Fully compliant — it is your own data export', '£0', '£0'],
+  ['2. Official "Sign in with LinkedIn" API', 'Your own name, photo and email only', 'Posts to your own feed only', 'OAuth token kept server-side', 'Compliant, but cannot read connections or send messages (those APIs are partner-only)', '£0', '£0'],
+  ['3. Sales Navigator (manual use)', 'Better search, lead lists, InMail credits inside LinkedIn', 'InMail by you, inside LinkedIn', 'None in HQ', 'Compliant; no API access for NOYA (SNAP partner programme is closed)', 'Paid — verify current price before any decision', 'None'],
+  ['4. Browser-cookie automation tools (Phantombuster, Expandi, Dripify…)', 'Everything your account can see', 'Automated invites and messages', 'Requires your session cookie — account-takeover risk', 'Breaks LinkedIn User Agreement; account restriction risk. Not recommended', 'Paid — verify', 'Paid tiers'],
+];
+function viewLinkedin() {
+  const dir = state.dir; if (!dir) return empty('LinkedIn data not loaded.');
+  const conns = dir.connections; const f = state.netF; const q = f.q.trim().toLowerCase();
+  const acts = (state.ov?.actions || []).filter((a) => a.kind === 'LINKEDIN');
+  const due = conns.filter((c) => c.next_follow_up_at && c.next_follow_up_at <= todayKey() && c.status !== 'DO_NOT_CONTACT');
+  const lists = {
+    warm: conns.filter((c) => c.active_opps > 0).sort((a, b) => b.active_opps - a.active_opps),
+    matched: conns.filter((c) => c.matched_company_id),
+    followup: due,
+    all: conns,
+  };
+  const rows = (lists[f.only] || conns).filter((c) => (!f.vertical || c.vertical === f.vertical) && (!q || [c.name, c.company, c.position].some((v) => String(v ?? '').toLowerCase().includes(q))));
+  const drafts = (dir.drafts || []).filter((x) => x.channel === 'LINKEDIN' || x.channel === 'INSTAGRAM' || x.channel === 'WHATSAPP' || x.channel === 'EMAIL');
+  return `<h2>LinkedIn</h2>
+    <p class="muted small">Messages here are sent by you, personally, from LinkedIn. HQ prepares the words, opens the profile and books the follow-up. Nothing is ever sent automatically, and your LinkedIn password is never asked for or stored.</p>
+    <section class="panel"><header><h3>Messages ready to send (${acts.length})</h3><button class="btn small ghost" data-go="outreach" data-otab="LINKEDIN">All in Outreach</button></header>
+      <div class="body">${acts.slice(0, 3).map(manualChannelCard).join('') || '<div class="empty">No LinkedIn messages waiting.</div>'}${acts.length > 3 ? `<button class="linkish" data-go="outreach" data-otab="LINKEDIN">Show all ${acts.length}</button>` : ''}</div></section>
+    <section class="panel mt8"><header><h3>Drafts (${drafts.length})</h3><span class="small faint">requested from HQ · written by the drafting workflow</span></header>
+      <div class="body">${drafts.map(draftRow).join('') || '<div class="empty">No drafts. Use "Draft message" on any person, company or connection.</div>'}</div></section>
+    <section class="panel mt8"><header><h3>People you already know</h3><span class="small faint">${conns.length} connections imported</span></header>
+      <div class="body">${conns.length ? `
+        <div class="tabs">${[['warm', 'At active prospects'], ['followup', 'Follow-up due'], ['matched', 'At known companies'], ['all', 'All']].map(([k, l]) => `<button data-nf="only" data-v="${k}" class="${f.only === k ? 'on' : ''}">${l} <span class="n">${lists[k].length}</span></button>`).join('')}</div>
+        <div class="filters"><input data-nf="q" placeholder="Name, company, role…" value="${esc(f.q)}"><select data-nf="vertical">${opt('', f.vertical || '', 'All verticals')}${Object.entries(VERTICAL_LABEL).map(([k, l]) => opt(k, f.vertical || '', l)).join('')}</select></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>Status</th><th>Relationship</th><th>Next follow-up</th></tr></thead><tbody>
+        ${rows.slice(0, 200).map((c) => `<tr class="clickable" data-open="connection" data-id="${c.id}"><td>${esc(c.name || '—')}<div class="muted small">${esc(c.position || '')}</div></td>
+          <td>${esc(c.company || '—')}${c.active_opps ? ` ${pill(`${c.active_opps} active opp${c.active_opps > 1 ? 's' : ''}`, 'info')}` : ''}</td><td>${pill(sentence(c.status.replace(/_/g, ' ')))}</td>
+          <td class="small" title="No data source measures relationship strength; it stays UNKNOWN until you describe how you know them.">${c.how_we_know ? esc(c.how_we_know) : 'Unknown'}</td>
+          <td class="small">${esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No connections match.</td></tr>'}</tbody></table></div>
+        ${rows.length > 200 ? `<p class="small faint">Showing 200 of ${rows.length}. Narrow with the filter.</p>` : ''}`
+        : `<div class="empty">No connections imported yet. Import your LinkedIn export below to see which prospects you already know.</div>`}</div></section>
+    <section class="panel mt8"><header><h3>Import your LinkedIn connections</h3></header><div class="body">
+      <ol class="small steps"><li>On LinkedIn: <b>Me → Settings &amp; Privacy → Data privacy → Get a copy of your data</b>.</li>
+        <li>Choose <b>Connections</b> only, request the archive. LinkedIn emails a link (usually within 10–30 minutes).</li>
+        <li>Download and unzip; choose <b>Connections.csv</b> below. It is read in your browser; only name, company, position, profile link and connected date are saved. Re-importing updates, never duplicates.</li></ol>
+      <label class="btn">Choose Connections.csv<input type="file" id="li-file" accept=".csv,text/csv" hidden></label>
+    </div></section>
+    <details class="panel mt8"><summary><b>How HQ connects to LinkedIn — options and approval</b> (method 1 is in use; nothing else is connected)</summary><div class="body">
+      <div class="tbl-wrap"><table><thead><tr><th>Option</th><th>Can read</th><th>Can write / send</th><th>Security</th><th>Platform / compliance risk</th><th>Monthly</th><th>Usage</th></tr></thead>
+      <tbody>${LI_OPTIONS.map((r) => `<tr>${r.map((x, i) => `<td class="small">${i === 0 ? `<b>${esc(x)}</b>` : esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <p class="small">No other method is connected or paid for without your explicit approval.</p></div></details>`;
+}
+function draftRow(x) {
+  const st = { REQUESTED: pill('Drafting…', 'info'), DRAFTING: pill('Drafting…', 'info'), READY: pill('Ready', 'ok'), PROVIDER_UNAVAILABLE: pill('Provider unavailable', 'warn') }[x.status] || pill(x.status);
+  const who = x.connection_id ? state.dir.connections.find((c) => c.id === x.connection_id)?.name : x.company_id ? company(x.company_id)?.name : '';
+  const url = x.connection_id ? state.dir.connections.find((c) => c.id === x.connection_id)?.profile_url : x.opportunity_id ? ready(x.opportunity_id).linkedin : null;
+  return `<div class="row"><div class="t">${esc(who || 'Message')} ${st} ${pill(sentence(x.message_type.replace(/_/g, ' ')))} ${pill(x.voice === 'ADAM_PERSONAL' ? 'Adam personally' : 'NOYA')}</div>
+    <div class="meta">${esc(sentence(x.channel))} · requested ${esc(fmtDate(x.requested_at))}${x.quality_issues && x.quality_issues.length ? ` · checks: ${esc([].concat(x.quality_issues).join(', '))}` : ''}</div>
+    ${x.draft ? `<div class="email"><pre>${esc(x.draft)}</pre></div>` : x.status === 'PROVIDER_UNAVAILABLE' ? '<p class="small muted">The AI provider was unavailable. Retry, or write it yourself with Edit.</p>' : '<p class="small muted">Being written — refresh in a few minutes.</p>'}
+    <div class="btn-row">${x.draft ? `<button class="btn small" data-copy="${esc(x.draft)}">Copy</button>` : ''}
+      ${url && x.channel === 'LINKEDIN' ? `<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open in LinkedIn</a>` : ''}
+      ${['READY', 'PROVIDER_UNAVAILABLE'].includes(x.status) ? `<button class="btn small" data-modal="draft-edit" data-id="${x.id}">Edit</button><button class="btn small primary" data-modal="touch" data-channel="${x.channel === 'INSTAGRAM' ? 'INSTAGRAM_DM' : x.channel}" data-opp="${x.opportunity_id || ''}" data-conn="${x.connection_id || ''}" data-draft="${x.id}">Mark sent</button>` : ''}
+      ${x.status === 'PROVIDER_UNAVAILABLE' ? `<button class="btn small" data-draft-act="RETRY" data-id="${x.id}">Retry</button>` : ''}
+      <button class="btn small ghost" data-draft-act="DISCARD" data-id="${x.id}">Discard</button></div></div>`;
+}
+
+// ---------------------------------------------------------------- FINANCE
+const FIN_STATUS = { DRAFT: '', SENT: 'info', PART_PAID: 'warn', PAID: 'ok', OVERDUE: 'bad', CANCELLED: '' };
+function viewFinance() {
+  const ins = state.ins; if (!ins) return empty(`Finance not loaded${state.errors.ins ? `: ${state.errors.ins}` : ''}.`);
+  const f = ins.finance; const recs = f.records; const byc = cur(f.by_currency);
+  const def = (k, t) => `<div class="def"><b${tip(k)}>${t}</b><span>${esc(HELP[k])}</span></div>`;
+  const line = (k, v, kind, help) => `<div class="money-line"><span${help ? tip(help) : ''}>${k}${lbl(kind)}</span><span class="v">${v}</span></div>`;
+  return `<h2>Finance</h2>
+    <div class="btn-row"><button class="btn primary" data-modal="finance">+ New record</button></div>
+    <div class="ov-grid">
+      <section class="panel"><header><h3>Money by currency</h3><span class="small faint">currencies are never added together</span></header><div class="body">
+        ${byc.length ? byc.map((c) => `<h4>${esc(c.currency)}</h4>${line('Won', c.won != null ? esc(money(c.won, c.currency)) : '<span class="muted">none</span>', 'ACTUAL', 'won')}
+          ${line('Collected', c.collected ? esc(money(c.collected, c.currency)) : '<span class="muted">none</span>', 'ACTUAL', 'collected')}
+          ${line('Outstanding', c.outstanding ? esc(money(c.outstanding, c.currency)) : '<span class="muted">none</span>', 'ACTUAL', 'outstanding')}
+          ${c.overdue ? line('of which overdue', `<span class="bad-text">${esc(money(c.overdue, c.currency))}</span>`, 'ACTUAL') : ''}`).join('')
+          : line('Won / collected / outstanding', '<span class="muted">no finance records yet</span>', 'ACTUAL', 'won')}
+        ${cur(f.pipeline).map((p) => line(`Pipeline (${esc(p.currency)})`, `${esc(money(p.amount, p.currency))} <span class="faint small">(${p.opportunities} opps)</span>`, 'ESTIMATE', 'pipeline')).join('')}
+        ${f.pipeline_unknown ? line('Pipeline without an estimate', `${esc(f.pipeline_unknown)} opps`, 'UNKNOWN', 'unknown') : ''}
+        ${line('Forecast', '<span class="muted">not set</span>', 'UNKNOWN', 'forecast')}
+      </div></section>
+      <section class="panel"><header><h3>What each word means</h3></header><div class="body">
+        ${def('collected', 'Collected')}${def('outstanding', 'Outstanding')}${def('won', 'Won')}${def('pipeline', 'Pipeline')}${def('forecast', 'Forecast')}
+        <p class="small faint mt6">A record starts as Draft. Mark it Sent when the invoice goes out; Part-paid, Paid and Overdue follow automatically from payments and the due date. An issued amount cannot be edited — cancel and re-issue instead.</p>
+      </div></section></div>
+    <h3>Records (${recs.length})</h3>
+    ${recs.length ? `<div class="tbl-wrap"><table><thead><tr><th>Client</th><th>What</th><th>Status</th><th class="num">Gross</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Due</th><th></th></tr></thead><tbody>
+      ${recs.map((r) => `<tr><td>${esc(r.company || '—')}<div class="muted small">${esc(r.invoice_reference || '')}</div></td><td class="small">${esc(r.description || r.revenue_type || '—')}</td>
+        <td>${pill(sentence(r.status.replace('_', ' ')), FIN_STATUS[r.status])}</td><td class="num">${esc(money(r.gross_amount, r.currency))}</td><td class="num">${esc(money(r.amount_paid, r.currency))}</td>
+        <td class="num">${esc(money(r.outstanding, r.currency))}</td><td class="small">${esc(r.due_at ? fmtDay(r.due_at) : '—')}</td>
+        <td><div class="btn-row">${['SENT', 'PART_PAID', 'OVERDUE'].includes(r.status) ? `<button class="btn small primary" data-modal="payment" data-id="${r.id}">Record payment</button>` : ''}
+          ${r.status !== 'CANCELLED' && r.status !== 'PAID' ? `<button class="btn small" data-modal="finance" data-id="${r.id}">Edit</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>`
+      : empty('No finance records yet. Add one when a client confirms — Won and Collected stay empty until then; nothing is estimated.')}
+    <h3>Payments received (${f.payments.length})</h3>
+    ${f.payments.length ? `<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Client</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>Recorded by</th></tr></thead><tbody>
+      ${f.payments.map((p) => `<tr><td>${esc(fmtDay(p.paid_at))}</td><td>${esc(recs.find((r) => r.id === p.revenue_id)?.company || '—')}</td><td class="num">${esc(money(p.amount, p.currency))}</td><td class="small">${esc(p.method || '—')}</td><td class="small">${esc(p.reference || '—')}</td><td class="small">${esc(p.recorded_by)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="muted small">None recorded.</p>'}`;
+}
+
+// ---------------------------------------------------------------- SYSTEM COSTS
+const COST_TYPE = { FIXED_MONTHLY: 'Fixed monthly', PAY_AS_YOU_GO: 'Pay as you go', USAGE_LIMITED: 'Usage limited', FREE: 'Free', UNKNOWN: 'Unknown — verify before scale' };
+function viewCosts() {
+  const ins = state.ins; if (!ins) return empty('Cost data not loaded.');
+  const sv = ins.services.filter((s) => s.status !== 'RETIRED');
+  const active = sv.filter((s) => s.status === 'ACTIVE');
+  const pending = sv.filter((s) => ['PROPOSED', 'AWAITING_APPROVAL'].includes(s.status));
+  const fixed = {}; active.filter((s) => s.cost_type === 'FIXED_MONTHLY' && s.monthly_cost != null).forEach((s) => { fixed[s.currency || '?'] = (fixed[s.currency || '?'] || 0) + Number(s.monthly_cost); });
+  const unknown = active.filter((s) => s.cost_type === 'UNKNOWN' || (s.cost_type !== 'FREE' && s.monthly_cost == null));
+  const payg = active.filter((s) => s.cost_type === 'PAY_AS_YOU_GO');
+  const u = (p) => (ins.cost_usage || []).find((x) => x.period === p) || {};
+  const usage = [['Google searches (Serper)', 'serper_searches'], ['Website reads (Firecrawl)', 'firecrawl_calls'], ['Email checks (Hunter)', 'hunter_checks'], ['AI research calls', 'ai_calls_discovery'], ['AI reply reading', 'reply_ai_calls'], ['CEO briefs', 'brief_runs']];
+  const b = ins.budget || {};
+  return `<h2>System costs</h2>
+    <p class="muted small">Every service NOYA depends on, what it costs and what breaks without it. A cost is only filled in from an invoice or plan page — otherwise it stays UNKNOWN.</p>
+    <div class="ov-grid3">
+      <section class="panel"><header><h3>Known fixed monthly</h3></header><div class="body">${Object.keys(fixed).length ? Object.entries(fixed).map(([c, v]) => `<div class="money-line"><span>${esc(c)}${lbl('ACTUAL')}</span><span class="v">${esc(money(v, c))}</span></div>`).join('') : '<div class="muted">None confirmed yet</div>'}</div></section>
+      <section class="panel"><header><h3>Unknown exposure</h3></header><div class="body"><div class="big bad-text">${unknown.length}</div><div class="small">service${unknown.length === 1 ? '' : 's'} with cost UNKNOWN — verify before scale</div></div></section>
+      <section class="panel"><header><h3>Pay as you go</h3></header><div class="body"><div class="big">${payg.length}</div><div class="small">${esc(payg.map((s) => s.service).join(', ') || 'none')}</div>${b.monthly_budget_usd ? `<div class="small faint mt6">AI spend cap configured: USD ${esc(b.monthly_budget_usd)}/month (cheap models only above 100%).</div>` : ''}</div></section>
+    </div>
+    <h3>Paid services awaiting your approval (${pending.length})</h3>
+    ${pending.length ? pending.map((s) => `<div class="row"><div class="t">${esc(s.service)}</div><div class="small">${esc(s.purpose)} · ${esc(s.usage_cost || '')}</div></div>`).join('') : '<p class="muted small">None. Nothing paid is pending.</p>'}
+    <div class="banner small">Rule: before any paid service, plan upgrade, API credit or connector is added, HQ shows the tool, purpose, why the current stack cannot do it, the free option, the paid option, monthly and usage cost, and what happens if NOYA stops paying — then waits for your approval.</div>
+    <h3>Usage (actual counts)</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>What</th><th class="num">Today</th><th class="num">7 days</th><th class="num">30-day projection</th></tr></thead><tbody>
+      ${usage.map(([l, k]) => `<tr><td>${l}</td><td class="num">${esc(u('TODAY')[k] ?? '—')}</td><td class="num">${esc(u('7_DAYS')[k] ?? '—')}</td><td class="num">${esc(u('30_DAY_PROJECTION')[k] ?? '—')}</td></tr>`).join('')}</tbody></table></div>
+    <p class="src">Money for usage is UNKNOWN until unit prices are entered from invoices. ${esc(u('TODAY').note || '')}</p>
+    <h3>Dependency register (${sv.length})</h3>
+    ${Object.keys(COST_TYPE).map((t) => { const list = sv.filter((s) => s.cost_type === t); if (!list.length) return '';
+      return `<h4>${esc(COST_TYPE[t])} (${list.length})</h4><div class="list">${list.map((s) => `<details class="row"><summary><b>${esc(s.service)}</b> — ${esc(s.purpose)} ${s.verified ? pill('verified', 'ok') : pill('verify', 'warn')}</summary>
+        <div class="grid2 small">
+          <div class="kv"><div class="k">Plan</div><div class="v">${esc(s.current_plan || 'UNKNOWN')}</div></div>
+          <div class="kv"><div class="k">Monthly cost</div><div class="v">${s.monthly_cost != null ? esc(money(s.monthly_cost, s.currency || '')) : 'UNKNOWN'}</div></div>
+          <div class="kv"><div class="k">Usage cost</div><div class="v">${esc(s.usage_cost || '—')}</div></div>
+          <div class="kv"><div class="k">Limit</div><div class="v">${esc(s.usage_limit || 'UNKNOWN')}</div></div>
+          <div class="kv"><div class="k">Used by</div><div class="v">${esc(s.used_by || '—')}</div></div>
+          <div class="kv"><div class="k">Owner</div><div class="v">${esc(s.owner)}</div></div>
+          <div class="kv"><div class="k">If removed</div><div class="v">${esc(s.breaks_if_removed || '—')}</div></div>
+          <div class="kv"><div class="k">Alternative</div><div class="v">${esc(s.alternative || '—')}</div></div>
+          <div class="kv"><div class="k">Credential kept in</div><div class="v">${esc(s.credentials_location || '—')}</div></div>
+          <div class="kv"><div class="k">Renewal</div><div class="v">${esc(s.renewal_date ? fmtDay(s.renewal_date) : 'UNKNOWN')}</div></div>
+        </div>${s.verification_note ? `<p class="small faint">${esc(s.verification_note)}</p>` : ''}</details>`).join('')}</div>`; }).join('')}`;
+}
+
+// ---------------------------------------------------------------- MARKETS / GROWTH
+function viewMarkets() {
+  const ins = state.ins; if (!ins) return empty('Market data not loaded.');
+  const mk = ins.markets.filter((m) => m.companies || m.active_opps_origin || m.active_opps_destination);
+  const pipe = (p) => cur(p).map((x) => esc(money(x.amount, x.currency))).join(' · ') || '—';
+  return `<h2>Markets</h2>
+    <p class="muted small">Origin market = where the client or partner is based. Destination = where NOYA delivers. A bridge is the route from one to the other (for example Europe → Egypt). "Unknown" means the company's country is not recorded yet.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Market</th><th class="num">Companies</th><th class="num">People</th><th class="num" title="Active opportunities with clients based here">Active (clients from)</th><th class="num" title="Active opportunities delivered here">Active (delivered in)</th><th class="num">Contacted</th><th class="num">Positive replies</th><th class="num">Calls+</th><th class="num">Won</th><th class="num">Pipeline${lbl('ESTIMATE')}</th></tr></thead><tbody>
+      ${mk.map((m) => `<tr class="clickable" data-market="${m.market}"><td><b>${esc(M(m.market))}</b><div class="muted small">${esc(Object.entries(m.verticals || {}).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([v, n]) => `${V(v)} ${n}`).join(' · '))}</div></td>
+        <td class="num">${m.companies}</td><td class="num">${m.contacts}</td><td class="num">${m.active_opps_origin}</td><td class="num">${m.active_opps_destination}</td><td class="num">${m.contacted}</td><td class="num">${m.positive_replies}</td><td class="num">${m.calls}</td><td class="num">${m.won}</td><td class="num small">${pipe(m.pipeline)}</td></tr>`).join('')}</tbody></table></div>
+    <h3>Bridges</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Route</th><th class="num">Active</th><th class="num">Contacted</th><th class="num">Positive</th><th class="num">Calls+</th></tr></thead><tbody>
+      ${ins.bridges.map((b) => `<tr><td>${esc(b.route.split(' → ').map(M).join(' → '))}</td><td class="num">${b.active}</td><td class="num">${b.contacted}</td><td class="num">${b.positive}</td><td class="num">${b.calls}</td></tr>`).join('')}</tbody></table></div>
+    <p class="src">Click a market to open the pipeline filtered to it.</p>`;
+}
+
+function growthActions() {
+  const ins = state.ins; const ov = state.ov; const dir = state.dir; const out = [];
+  const unk = ins.markets.find((m) => m.market === 'UNKNOWN');
+  if (ov?.actions.some((a) => a.prio === 'P1')) out.push(['Answer the P1 replies first', 'A prospect who asked for a meeting is the closest thing to revenue in the system.', 'overview']);
+  if (ins.stalled.length) out.push([`Re-open ${ins.stalled.length} stalled conversation${ins.stalled.length > 1 ? 's' : ''}`, 'They already engaged with NOYA; a short, useful follow-up costs minutes and restarts the most advanced deals.', 'growth']);
+  if (ov?.scorecard.approvals_ready.n) out.push([`Clear ${ov.scorecard.approvals_ready.n} outreach approvals`, 'Each is drafted to a verified person. Unapproved drafts produce nothing.', 'outreach']);
+  if (dir && !dir.connections.length) out.push(['Import your LinkedIn connections', 'Your existing relationships are currently invisible to HQ. A warm introduction is the shortest route to a first conversation.', 'linkedin']);
+  if (unk && unk.companies) out.push([`Add the country for ${unk.companies} companies`, 'Without it their market is Unknown and the Europe / GCC → Egypt picture is incomplete.', 'companies']);
+  const noVal = ins.finance.pipeline_unknown; if (noVal) out.push([`Put a value on the top opportunities (${noVal} have none)`, 'Unvalued deals cannot be prioritised by money. Estimates stay labelled ESTIMATE.', 'pipeline']);
+  return out.slice(0, 6);
+}
+function viewGrowth() {
+  const ins = state.ins; if (!ins) return empty('Growth data not loaded.');
+  const caveat = (n) => (n < 10 ? ' <span class="faint small">(too early to judge — fewer than 10 contacted)</span>' : '');
+  return `<h2>Growth</h2>
+    <p class="muted small">What is working, what is stuck and what to do next — from real records only. Small samples are marked; nothing is extrapolated.</p>
+    <section class="panel"><header><h3>Recommended next actions</h3></header><div class="body">
+      ${growthActions().map(([t, why, go]) => `<div class="q-row"><div class="prio P2">→</div><div><div class="q-act">${esc(t)}</div><div class="q-meta"><b>Why:</b> ${esc(why)}</div></div><div class="q-btns"><button class="btn small" data-go="${go}">Go</button></div></div>`).join('') || '<div class="empty">Nothing pressing.</div>'}
+    </div></section>
+    <h3>By vertical</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Vertical</th><th class="num">Active</th><th class="num">Contacted</th><th class="num">Positive replies</th><th class="num">Reply rate</th><th class="num">Calls+</th><th class="num">Won</th></tr></thead><tbody>
+      ${ins.verticals.map((v) => `<tr><td>${esc(V(v.vertical))}</td><td class="num">${v.active}</td><td class="num">${v.contacted}</td><td class="num">${v.positive}</td><td class="num">${v.reply_rate != null ? `${v.reply_rate}%` : '—'}${v.contacted ? caveat(v.contacted) : ''}</td><td class="num">${v.calls}</td><td class="num">${v.won}</td></tr>`).join('')}</tbody></table></div>
+    <h3>By channel</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Channel</th><th class="num">Sent</th><th class="num">Replies</th></tr></thead><tbody>
+      ${(ins.channels || []).map((c) => `<tr><td>${esc(sentence(c.channel))}</td><td class="num">${c.sent}</td><td class="num">${c.replies}${caveat(c.sent)}</td></tr>`).join('')}</tbody></table></div>
+    <h3>Stalled (${ins.stalled.length})</h3>
+    <div class="list">${ins.stalled.map((s) => `<div class="row clickable" data-open="opp" data-id="${s.id}"><div class="t">${esc(s.company)} ${pill(S(s.status))}</div><div class="meta">${s.days} days without an update${s.value != null ? ` · ${esc(money(s.value, s.currency))} estimate` : ''} · ${esc(s.next_action || '')}</div></div>`).join('') || '<p class="muted small">No engaged opportunity has gone quiet for 10+ days.</p>'}</div>
+    <h3>Worth reactivating (${ins.reactivate.length})</h3>
+    <div class="list">${ins.reactivate.slice(0, 15).map((s) => `<div class="row clickable" data-open="opp" data-id="${s.id}"><div class="t">${esc(s.company)} ${pill(S(s.status))}</div><div class="meta">last update ${s.days} days ago</div></div>`).join('') || '<p class="muted small">None.</p>'}</div>`;
+}
+
+// ---------------------------------------------------------------- HELP
+const QA = [
+  ['What do I do first each morning?', 'Open Today. Work top to bottom: P1 (replies, meetings, website enquiries), then approvals, then LinkedIn messages. Everything else can wait.'],
+  ['What is the difference between Pipeline, Won and Collected?', 'Pipeline is possible business, valued by research estimate. Won is a confirmed deal with a finance record. Collected is money actually received. They are never added together.'],
+  ['What does "email verified" mean?', HELP.verified],
+  ['Does HQ ever send anything by itself?', 'No. Approving an email creates a Gmail draft that you send. LinkedIn and Instagram messages are copied and sent by you. Auto-reply is off.'],
+  ['Why are some values "Unknown"?', HELP.unknown],
+  ['How do I log a call or meeting?', 'Open the opportunity (search or Pipeline) → Record meeting. Write two lines, choose the outcome and the next step. HQ books the follow-up.'],
+  ['How do I add a new lead I met?', '+ New → New opportunity. If the company already exists HQ reuses it — no duplicates. Emails you type are saved as unverified.'],
+  ['A task is not relevant. What do I do?', 'Press ✕ on it and give a short reason. It is closed and kept in the history.'],
+];
+function viewHelp() {
+  return `<h2>Help &amp; playbook</h2>
+    <section class="panel"><header><h3>How to run NOYA from HQ</h3></header><div class="body playbook">
+      <h4>Daily — 15 minutes (09:00)</h4><ol><li>Today → answer every P1 (replies, meetings, website enquiries).</li><li>Outreach → Ready: approve, edit or hold each email; then send the Gmail drafts.</li><li>Outreach → LinkedIn: copy, open profile, send, press Mark sent.</li><li>Record any call or meeting from yesterday.</li><li>Glance at System: green means nothing to do.</li></ol>
+      <h4>Weekly — 45 minutes (Monday)</h4><ol><li>Pipeline → Stale only: move, follow up or close each.</li><li>Growth: act on the recommended actions; review what vertical / market is replying.</li><li>Finance: record payments; chase anything Overdue.</li><li>LinkedIn → People you already know: pick 5 warm people at active prospects.</li><li>Read the weekly review in Reports.</li></ol>
+      <h4>Monthly — 1 hour</h4><ol><li>System costs: fill any Unknown cost from invoices; check renewals.</li><li>Markets: decide where to push next month (Europe, GCC, Egypt).</li><li>Re-import LinkedIn connections if you have added many.</li><li>Decide what to stop doing.</li></ol>
+    </div></section>
+    <section class="panel mt8"><header><h3>How to scale NOYA</h3></header><div class="body playbook">
+      <ol><li><b>Prove one vertical and one bridge.</b> Wait for at least 10 contacted per vertical before judging reply rates.</li>
+      <li><b>Raise volume only where replies come from.</b> The research agents run up to 10 new prospects a day; increase only after costs are verified (System costs shows Unknown exposure).</li>
+      <li><b>Turn every reply into a relationship record.</b> Notes, meetings and follow-ups make the next conversation warmer.</li>
+      <li><b>Automate one step at a time</b> using the levels below, and only after the manual version works.</li></ol></div></section>
+    <section class="panel mt8"><header><h3>Automation levels</h3></header><div class="body">
+      <div class="tbl-wrap"><table><thead><tr><th>Level</th><th>Meaning</th><th>Today</th></tr></thead><tbody>
+        <tr><td><b>1 — Prepare</b></td><td>NOYA researches, drafts and recommends. You decide and send.</td><td>Prospect research, email drafts, LinkedIn / Instagram messages, reply reading, follow-up reminders, CEO brief</td></tr>
+        <tr><td><b>2 — Act with approval</b></td><td>NOYA acts after your one-click approval.</td><td>Approve → Gmail draft created (you still press Send)</td></tr>
+        <tr><td><b>3 — Act alone</b></td><td>NOYA acts without asking, within limits.</td><td>Nothing client-facing. Only internal bookkeeping (logging replies, booking follow-up tasks). Moving anything to level 3 needs your explicit approval.</td></tr>
+      </tbody></table></div></div></section>
+    <section class="panel mt8"><header><h3>Approval gates (always on)</h3></header><div class="body small"><ul>
+      <li>No email, LinkedIn or Instagram message is ever sent automatically. Auto-reply is off.</li>
+      <li>No paid tool, plan upgrade, API credit or connector without your approval — see System costs.</li>
+      <li>Your LinkedIn password or session is never requested or stored.</li>
+      <li>Only VERIFIED emails can be drafted for sending.</li></ul></div></section>
+    <section class="panel mt8"><header><h3>Questions</h3></header><div class="body">${QA.map(([q, a]) => `<details class="qa"><summary>${esc(q)}</summary><p class="small">${esc(a)}</p></details>`).join('')}</div></section>`;
+}
+
+// ---------------------------------------------------------------- record drawers
+const kv = (k, v) => `<div class="kv"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+function timelineBlock(kind, id) {
+  const t = state.timeline[`${kind}:${id}`];
+  if (!t) return '<p class="muted small">Loading history…</p>';
+  if (t.error) return `<p class="bad-text small">History unavailable: ${esc(t.error)}</p>`;
+  const ev = t.events || [];
+  return ev.length ? `<div class="timeline">${ev.slice(0, 60).map((e) => `<div class="tl"><div class="tl-when">${esc(fmtDate(e.at))}</div><div><span class="pill ${e.direction === 'INBOUND' ? 'info' : ''}">${esc(e.channel)}${e.direction === 'INBOUND' ? ' · in' : e.direction === 'OUTBOUND' ? ' · out' : ''}</span> ${esc(e.title)}${e.detail ? `<div class="small muted">${esc(String(e.detail).slice(0, 400))}</div>` : ''}</div></div>`).join('')}</div>`
+    : '<p class="muted small">No history yet.</p>';
+}
+function drawerShell(title, inner) {
+  return `<div class="drawer-bg" data-close-drawer></div><aside class="drawer"><button class="btn small close" data-close-drawer>Close</button>${title}${inner}</aside>`;
+}
+function renderDrawer(dr) {
+  const d = state.data; const dir = state.dir || { companies: [], contacts: [], connections: [], drafts: [] };
+  if (dr.kind === 'opp') {
+    const o = d.opportunities.find((x) => x.id === dr.id);
+    if (!o) return drawerShell('', '<p class="muted">Record not found in the loaded data.</p>');
+    const f = facts(o.id); const r = ready(o.id); const ap = d.approvals.find((x) => x.id === o.id); const co = company(f.company_id);
+    const openT = d.tasks.filter((t) => t.opportunity_id === o.id && openStatuses.includes(t.status));
+    return drawerShell(`<h2>${esc(o.company_name)}</h2><div class="pills">${pill(S(o.status))}${f.vertical ? pill(V(f.vertical)) : ''}${pill(`${M(f.origin_market)} → ${M(f.opportunity_market)}`)}${stale(o) ? pill('stale', 'warn') : ''}</div>`, `
+      <div class="btn-row"><button class="btn small primary" data-modal="stage" data-opp="${o.id}">Change stage</button><button class="btn small" data-modal="meeting" data-opp="${o.id}">Record meeting</button>
+        <button class="btn small" data-modal="touch" data-channel="PHONE" data-opp="${o.id}">Log call / message</button><button class="btn small" data-modal="note" data-opp="${o.id}">Add note</button>
+        <button class="btn small" data-modal="draft-request" data-channel="LINKEDIN" data-opp="${o.id}">Draft message</button><button class="btn small" data-modal="channel" data-opp="${o.id}">Change channel</button>
+        <button class="btn small" data-modal="finance" data-opp="${o.id}">Add finance record</button></div>
+      <div class="grid2">
+        ${kv('Opportunity', esc(o.opportunity_type || '—'))}
+        ${kv('Company', co ? `<button class="linkish" data-open="company" data-id="${co.id}">${esc(co.name)}</button>` : esc(o.company_name))}
+        ${kv('Contact', `${ap?.contact_id ? `<button class="linkish" data-open="contact" data-id="${ap.contact_id}">${esc(o.contact_name || '—')}</button>` : esc(o.contact_name || '—')}<div class="muted small">${esc(o.contact_position || '')}</div>`)}
+        ${kv('Email', `${esc(ap?.contact_email || r.email || '—')} ${emailPill(ap?.email_status || o.email_status, r.email_kind)}`)}
+        ${kv('Channels', `${r.linkedin ? `<a href="${esc(r.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a> ` : ''}${r.instagram ? `<a href="${esc(r.instagram)}" target="_blank" rel="noopener noreferrer">Instagram</a> ` : ''}${r.primary_channel ? `<span class="muted small">best: ${esc(String(r.primary_channel).toLowerCase())}</span>` : ''}` || '—')}
+        ${kv('Estimated value', o.estimated_value != null ? `${esc(money(o.estimated_value, o.currency))}${lbl('ESTIMATE')}` : `unknown${lbl('UNKNOWN')}`)}
+        ${kv('Destination', esc(f.destination || '—'))}
+        ${kv('Next action', esc(o.next_action || '—'))}
+        ${kv('Why now', esc(r.why_now || '—'))}
+        ${kv('Last update', esc(fmtDate(o.updated_at)))}
+      </div>
+      ${ap ? `<h3>Email outreach</h3>${loopBar(ap.loop_stage)}<div class="small">${esc(ap.loop_stage.replace(/_/g, ' ').toLowerCase())}${ap.sent_at ? ` · sent ${esc(fmtDate(ap.sent_at))}` : ''}${ap.block_reason ? ` · ${esc(explain({ reason: ap.block_reason }))}` : ''}</div>
+        ${ap.draft?.subject ? `<details><summary>Draft: ${esc(ap.draft.subject)}</summary><div class="email"><pre>${esc(ap.draft.body || '')}</pre></div></details>` : ''}` : ''}
+      <h3>Open tasks (${openT.length})</h3>
+      ${openT.map((t) => `<div class="mini"><div class="t">${esc(sentence(t.title))}</div><div class="m">due ${esc(fmtDay(t.due_at))}</div>
+        <div class="btn-row mt6">${t.task_type !== 'SALES_OUTREACH_APPROVAL' ? `<button class="btn small" data-modal="task-done" data-id="${t.id}">Done</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${t.id}">Not needed</button>` : '<button class="btn small" data-go="outreach">Approve in Outreach</button>'}<button class="btn small" data-modal="task-snooze" data-id="${t.id}">Snooze</button></div></div>`).join('') || '<p class="muted small">None.</p>'}
+      <h3>History</h3>${timelineBlock('opportunity', o.id)}
+      <p class="src mt8">Record ${esc(o.id)}</p>`);
+  }
+  if (dr.kind === 'company') {
+    const c = company(dr.id); if (!c) return drawerShell('', '<p class="muted">Company not found.</p>');
+    const opps = d.opportunities.filter((o) => facts(o.id).company_id === c.id);
+    const people = dir.contacts.filter((k) => k.company_id === c.id);
+    const net = dir.connections.filter((k) => k.matched_company_id === c.id);
+    return drawerShell(`<h2>${esc(c.name)}</h2><div class="pills">${pill(V(c.vertical))}${pill(M(c.market))}${c.relationship_status ? pill(c.relationship_status) : ''}</div>`, `
+      <div class="btn-row"><button class="btn small" data-modal="vertical" data-company="${c.id}">Classify</button><button class="btn small" data-modal="note" data-company="${c.id}">Add note</button>
+        <button class="btn small" data-modal="finance" data-company="${c.id}">Add finance record</button></div>
+      <div class="grid2">${kv('Website', c.website ? `<a href="${esc(/^https?:/.test(c.website) ? c.website : `https://${c.website}`)}" target="_blank" rel="noopener noreferrer">${esc(c.website)}</a>` : '—')}
+        ${kv('Country', esc([c.city, c.country].filter(Boolean).join(', ') || 'Unknown'))}${kv('Type', esc(c.company_type || '—'))}${kv('Source', esc(c.source || '—'))}</div>
+      <h3>Opportunities (${opps.length})</h3>${opps.map((o) => `<div class="mini clickable" data-open="opp" data-id="${o.id}"><div class="t">${esc(String(o.opportunity_type || '').slice(0, 90))} ${pill(S(o.status))}</div><div class="m">${esc(o.next_action || '')}</div></div>`).join('') || '<p class="muted small">None.</p>'}
+      <h3>People (${people.length})</h3>${people.map((k) => `<div class="mini clickable" data-open="contact" data-id="${k.id}"><div class="t">${esc(k.name || k.email || '—')} ${emailPill(k.email_status, k.email_kind)}</div><div class="m">${esc(k.position || '')}</div></div>`).join('') || '<p class="muted small">None.</p>'}
+      ${net.length ? `<h3>You know here (${net.length})</h3>${net.map((k) => `<div class="mini clickable" data-open="connection" data-id="${k.id}"><div class="t">${esc(k.name)}</div><div class="m">${esc(k.position || '')} · LinkedIn connection</div></div>`).join('')}` : ''}
+      <h3>History</h3>${timelineBlock('company', c.id)}`);
+  }
+  if (dr.kind === 'contact') {
+    const k = dir.contacts.find((x) => x.id === dr.id); if (!k) return drawerShell('', '<p class="muted">Contact not found.</p>');
+    const opps = d.approvals.filter((a) => a.contact_id === k.id);
+    return drawerShell(`<h2>${esc(k.name || k.email || 'Contact')}</h2><div class="pills">${emailPill(k.email_status, k.email_kind)}${k.do_not_contact ? pill('do not contact', 'bad') : ''}</div>`, `
+      <div class="btn-row"><button class="btn small" data-modal="touch" data-channel="PHONE" data-contact="${k.id}">Log call / message</button><button class="btn small" data-modal="note" data-contact="${k.id}">Add note</button>
+        <button class="btn small" data-modal="draft-request" data-channel="LINKEDIN" data-contact="${k.id}">Draft message</button></div>
+      <div class="grid2">${kv('Role', esc(k.position || '—'))}${kv('Company', k.company_id ? `<button class="linkish" data-open="company" data-id="${k.company_id}">${esc(k.company)}</button>` : '—')}
+        ${kv('Email', esc(k.email || '—'))}${kv('Email evidence', esc(provenanceTitle(k)))}${k.email_source ? kv('Found at', `<a href="${esc(k.email_source)}" target="_blank" rel="noopener noreferrer">source</a>`) : ''}
+        ${kv('LinkedIn', k.linkedin ? `<a href="${esc(k.linkedin)}" target="_blank" rel="noopener noreferrer">profile</a>` : '—')}${kv('Phone', esc(k.phone || '—'))}${kv('Last interaction', esc(k.last_interaction ? fmtDate(k.last_interaction) : '—'))}</div>
+      <h3>Opportunities (${opps.length})</h3>${opps.map((o) => `<div class="mini clickable" data-open="opp" data-id="${o.id}"><div class="t">${esc(o.company_name)} ${pill(S(o.status))}</div></div>`).join('') || '<p class="muted small">None.</p>'}
+      <h3>History</h3>${timelineBlock('contact', k.id)}`);
+  }
+  if (dr.kind === 'connection') {
+    const c = dir.connections.find((x) => x.id === dr.id); if (!c) return drawerShell('', '<p class="muted">Connection not found.</p>');
+    const drafts = (dir.drafts || []).filter((x) => x.connection_id === c.id);
+    return drawerShell(`<h2>${esc(c.name || 'Connection')}</h2><div class="pills">${pill(sentence(c.status.replace(/_/g, ' ')))}${c.vertical ? pill(V(c.vertical)) : ''}</div>`, `
+      <div class="btn-row"><a class="btn small" href="${esc(c.profile_url)}" target="_blank" rel="noopener noreferrer">Open in LinkedIn</a>
+        <button class="btn small primary" data-modal="draft-request" data-channel="LINKEDIN" data-conn="${c.id}">Draft message</button>
+        <button class="btn small" data-modal="touch" data-channel="LINKEDIN" data-conn="${c.id}">Mark sent</button>
+        <button class="btn small" data-modal="conn-status" data-conn="${c.id}">Update status</button><button class="btn small" data-modal="note" data-conn="${c.id}">Add note</button></div>
+      <div class="grid2">${kv('Role', esc(c.position || '—'))}${kv('Company', c.matched_company_id ? `<button class="linkish" data-open="company" data-id="${c.matched_company_id}">${esc(c.company)}</button>` : esc(c.company || '—'))}
+        ${kv('Connected', esc(c.connected_on ? fmtDay(c.connected_on) : '—'))}${kv('Relationship strength', 'Unknown <span class="faint small">(no data source measures this)</span>')}
+        ${kv('How you know them', esc(c.how_we_know || '—'))}${kv('Last contacted', esc(c.last_contacted_at ? fmtDate(c.last_contacted_at) : 'never (in HQ)'))}
+        ${kv('Next follow-up', esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—'))}${kv('Active opportunities at company', esc(c.active_opps))}</div>
+      ${drafts.length ? `<h3>Drafts</h3>${drafts.map(draftRow).join('')}` : ''}`);
+  }
+  return '';
+}
+
+// ---------------------------------------------------------------- modals
+const fld = (label, id, type = 'text', val = '', attrs = '') => `<label class="field"><span>${label}</span><input id="${id}" type="${type}" value="${esc(val ?? '')}" ${attrs}></label>`;
+const area = (label, id, val = '', attrs = '') => `<label class="field"><span>${label}</span><textarea id="${id}" ${attrs}>${esc(val ?? '')}</textarea></label>`;
+const sel = (label, id, options, curv = '') => `<label class="field"><span>${label}</span><select id="${id}">${options.map(([v, l]) => opt(v, curv, l)).join('')}</select></label>`;
+const form = (title, body, ok = 'Save', danger = false) => `<div class="modal-bg"><div class="modal"><h3>${title}</h3>${body}
+  <div class="btn-row"><button class="btn ${danger ? 'danger' : 'primary'}" id="m-ok">${ok}</button><button class="btn" data-close>Cancel</button></div></div></div>`;
+const val = (id) => { const el = $(`#${id}`); if (!el) return null; const v = String(el.value ?? '').trim(); return v === '' ? null : v; };
+const CHANNELS = [['LINKEDIN', 'LinkedIn'], ['EMAIL', 'Email'], ['PHONE', 'Phone call'], ['WHATSAPP', 'WhatsApp'], ['INSTAGRAM_DM', 'Instagram DM'], ['MEETING', 'Meeting'], ['OTHER', 'Other']];
+const NOTE_KINDS = [['NOTE', 'Note'], ['HOW_WE_MET', 'How we met'], ['REFERRAL', 'Referral'], ['PROMISE', 'Promise / commitment'], ['PRIOR_PROJECT', 'Previous project'], ['SHARED_CONNECTION', 'Shared connection']];
+
+function modalTitle(m) {
+  const o = m.opp && opp(m.opp); const c = m.company && company(m.company);
+  const k = m.contact && state.dir?.contacts.find((x) => x.id === m.contact); const n = m.conn && state.dir?.connections.find((x) => x.id === m.conn);
+  return esc(o?.company_name || c?.name || k?.name || n?.name || '');
+}
+function renderAnyModal(m) {
+  const who = modalTitle(m);
+  switch (m.kind) {
+    case 'task-done': case 'task-snooze': {
+      const t = findTask(m.id) || {};
+      return m.kind === 'task-done'
+        ? `<div class="modal-bg"><div class="modal"><h3>Mark done</h3><p>${esc(sentence(t.title || ''))}</p>${fld('Note (optional)', 'task-note', 'text', '', 'maxlength="300"')}
+            <div class="btn-row"><button class="btn primary" data-confirm-task="COMPLETE">Mark done</button><button class="btn" data-close>Cancel</button></div></div></div>`
+        : `<div class="modal-bg"><div class="modal"><h3>Snooze</h3><p>${esc(sentence(t.title || ''))}</p>${fld('Until', 'task-until', 'date', isoPlus(2), `min="${isoPlus(1)}" max="${isoPlus(90)}"`)}${fld('Note (optional)', 'task-note', 'text', '', 'maxlength="300"')}
+            <div class="btn-row"><button class="btn primary" data-confirm-task="SNOOZE">Snooze</button><button class="btn" data-close>Cancel</button></div></div></div>`;
+    }
+    case 'task-dismiss': { const t = findTask(m.id) || {}; return form('Not needed', `<p>${esc(sentence(t.title || ''))}</p><p class="small muted">The task is closed and kept in the history with your reason.</p>${fld('Reason (required)', 'f-reason', 'text', '', 'maxlength="300"')}`, 'Close task'); }
+    case 'touch': {
+      const lab = { LINKEDIN: 'Sent LinkedIn message', INSTAGRAM_DM: 'Sent Instagram DM', EMAIL: 'Followed up by email', PHONE: 'Called' }[m.channel] || '';
+      return form(`Log contact${who ? ` — ${who}` : ''}`, `<p class="small muted">Records what you did. Nothing is sent from HQ.</p>
+        ${sel('Channel', 'f-channel', CHANNELS, m.channel || 'LINKEDIN')}${sel('Direction', 'f-dir', [['OUTBOUND', 'I contacted them'], ['INBOUND', 'They contacted me']])}
+        ${area('What happened', 'f-summary', lab, 'maxlength="2000"')}${fld('Outcome (optional)', 'f-outcome', 'text', '', 'maxlength="200"')}
+        ${fld('Follow up on (optional)', 'f-follow', 'date', m.channel === 'MEETING' ? '' : isoPlus(5), `min="${isoPlus(1)}"`)}`, 'Save');
+    }
+    case 'meeting':
+      return form(`Record meeting${who ? ` — ${who}` : ''}`, `${area('Summary (two lines is enough)', 'f-summary', '', 'maxlength="3000"')}
+        ${fld('Outcome', 'f-outcome', 'text', '', 'maxlength="200" placeholder="e.g. Wants a proposal for March trip"')}
+        ${sel('Move stage to', 'f-stage', [['', 'Keep current stage'], ...STAGES.map((s) => [s, S(s)])])}
+        ${fld('Follow up on (optional)', 'f-follow', 'date', isoPlus(3))}${fld('Next meeting (optional)', 'f-next', 'date')}`, 'Save meeting');
+    case 'note':
+      return form(`Add note${who ? ` — ${who}` : ''}`, `${sel('Type', 'f-kind', NOTE_KINDS)}${area('Note', 'f-body', '', 'maxlength="4000"')}${fld('Remind me on (optional)', 'f-follow', 'date')}`, 'Save note');
+    case 'stage': { const o = opp(m.opp) || {};
+      return form(`Change stage — ${who}`, `${sel('Stage', 'f-stage', STAGES.map((s) => [s, S(s)]), o.status)}${fld('Next action', 'f-next', 'text', o.next_action || '', 'maxlength="300"')}${area('Note (optional)', 'f-note', '', 'maxlength="2000"')}`, 'Save'); }
+    case 'channel':
+      return form(`Change channel — ${who}`, `<p class="small muted">Switching away from email puts the email approval on hold and creates one task with the prepared message for the new channel. Instagram is refused for banks, wealth, law and consulting firms.</p>
+        ${sel('New channel', 'f-channel', [['LINKEDIN', 'LinkedIn (Adam personally)'], ['INSTAGRAM', 'Instagram (NOYA)'], ['PHONE', 'Phone call'], ['EMAIL', 'Back to email']])}${fld('Why (optional)', 'f-note', 'text', '', 'maxlength="300"')}`, 'Change channel');
+    case 'draft-request': {
+      const defType = m.conn ? 'RECONNECTION' : 'FIRST_MESSAGE';
+      return form(`Draft a message${who ? ` — ${who}` : ''}`, `<p class="small muted">The drafting workflow writes it within about 15 minutes (08:00–22:00 Cairo) using only the facts on this record. You review, copy and send it yourself.</p>
+        ${sel('Channel', 'f-channel', [['LINKEDIN', 'LinkedIn'], ['EMAIL', 'Email'], ['INSTAGRAM', 'Instagram'], ['WHATSAPP', 'WhatsApp']], m.channel || 'LINKEDIN')}
+        ${sel('Voice', 'f-voice', [['ADAM_PERSONAL', 'Adam personally'], ['NOYA', 'NOYA']])}${sel('Type', 'f-type', MESSAGE_TYPES, defType)}
+        ${area('Anything to include (optional)', 'f-note', '', 'maxlength="500" placeholder="e.g. we met at ITB; mention the Siwa villa"')}`, 'Request draft'); }
+    case 'draft-edit': { const x = (state.dir?.drafts || []).find((y) => y.id === m.id) || {};
+      return form('Edit draft', `${area('Message', 'f-text', x.draft || '', 'maxlength="3000" rows="10"')}`, 'Save'); }
+    case 'conn-status': { const c = state.dir?.connections.find((x) => x.id === m.conn) || {};
+      return form(`Update — ${who}`, `${sel('Status', 'f-status', CONNECTION_STATUS.map((s) => [s, sentence(s.replace(/_/g, ' '))]), c.status)}${fld('How you know them', 'f-how', 'text', c.how_we_know || '', 'maxlength="300"')}${fld('Next follow-up (optional)', 'f-follow', 'date', c.next_follow_up_at || '')}`, 'Save'); }
+    case 'vertical': { const c = company(m.company) || {};
+      return form(`Classify — ${who}`, `${sel('Vertical', 'f-vertical', [['AUTO', 'Automatic (from company type)'], ...Object.entries(VERTICAL_LABEL)], c.vertical_override || 'AUTO')}
+        ${sel('Relationship', 'f-rel', [['', 'Keep'], ['prospect', 'Prospect'], ['client', 'Client'], ['partner', 'Partner'], ['supplier', 'Supplier'], ['mixed', 'Mixed'], ['inactive', 'Inactive']])}`, 'Save'); }
+    case 'finance': {
+      const r = m.id ? state.ins.finance.records.find((x) => x.id === m.id) || {} : {};
+      const locked = r.id && r.status !== 'DRAFT';
+      const cos = (state.dir?.companies || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+      const defCo = r.company_id || m.company || (m.opp && facts(m.opp).company_id) || '';
+      return form(r.id ? 'Edit finance record' : 'New finance record', `
+        ${sel('Client', 'f-company', [['', 'Choose…'], ...cos.map((c) => [c.id, c.name])], defCo)}
+        <div class="grid2">${fld('Currency', 'f-cur', 'text', r.currency || 'GBP', `maxlength="3" ${locked ? 'disabled' : ''}`)}${fld('Gross amount', 'f-amount', 'number', r.gross_amount ?? '', `min="0" step="0.01" ${locked ? 'disabled' : ''}`)}</div>
+        ${locked ? '<p class="small muted">Issued amount is locked. Cancel and re-issue to change it.</p>' : ''}
+        ${fld('What for', 'f-desc', 'text', r.description || '', 'maxlength="300"')}
+        <div class="grid2">${fld('Invoice reference', 'f-ref', 'text', r.invoice_reference || '', 'maxlength="60"')}${fld('Due date', 'f-due', 'date', r.due_at || '')}</div>
+        ${sel('Status', 'f-status', [['DRAFT', 'Draft (not issued)'], ['SENT', 'Sent to client'], ['CANCELLED', 'Cancelled']], r.id ? (r.status === 'DRAFT' ? 'DRAFT' : r.status === 'CANCELLED' ? 'CANCELLED' : 'SENT') : 'DRAFT')}
+        ${area('Notes (optional)', 'f-notes', r.notes || '', 'maxlength="1000"')}`, 'Save'); }
+    case 'payment': { const r = state.ins.finance.records.find((x) => x.id === m.id) || {};
+      return form(`Record payment — ${esc(r.company || '')}`, `<p class="small">Outstanding: <b>${esc(money(r.outstanding, r.currency))}</b></p>
+        ${fld(`Amount received (${esc(r.currency || '')})`, 'f-amount', 'number', r.outstanding ?? '', `min="0.01" max="${r.outstanding ?? ''}" step="0.01"`)}
+        ${fld('Date received', 'f-date', 'date', todayKey(), `max="${todayKey()}"`)}${fld('Method (optional)', 'f-method', 'text', '', 'maxlength="60" placeholder="Bank transfer"')}
+        ${fld('Reference (optional)', 'f-ref', 'text', '', 'maxlength="100"')}`, 'Record payment'); }
+    case 'new-opp':
+      return form('New opportunity', `<p class="small muted">If the company already exists (same name or website) it is reused — no duplicates. Emails you enter are saved as unverified.</p>
+        ${fld('Company', 'f-co', 'text', '', 'maxlength="200"')}<div class="grid2">${fld('Website', 'f-web')}${fld('Country', 'f-country')}</div>
+        ${fld('What is the opportunity', 'f-type', 'text', '', 'maxlength="300" placeholder="e.g. Incentive trip to Egypt for 40 staff"')}
+        <div class="grid2">${fld('Destination', 'f-dest', 'text', 'Egypt')}${fld('Next action', 'f-next', 'text', '', 'maxlength="300"')}</div>
+        <div class="grid2">${fld('Contact first name', 'f-first')}${fld('Last name', 'f-last')}</div>
+        <div class="grid2">${fld('Role', 'f-role')}${fld('Email', 'f-email', 'email')}</div>${fld('LinkedIn URL', 'f-li', 'url')}
+        ${area('Note (optional)', 'f-note', '', 'maxlength="1000"')}`, 'Create');
+    case 'quick':
+      return `<div class="modal-bg"><div class="modal"><h3>New</h3><div class="quick">
+        <button class="btn" data-modal="new-opp">New opportunity</button><button class="btn" data-modal="finance">Finance record</button>
+        <button class="btn" data-go="linkedin">Import LinkedIn connections</button><button class="btn" data-go="pipeline">Log a meeting (open the deal)</button></div>
+        <div class="btn-row"><button class="btn" data-close>Close</button></div></div></div>`;
+    case 'account':
+      return `<div class="modal-bg"><div class="modal"><h3>Account</h3><p class="small muted">Signed in as ${esc(state.session?.user?.email || '')}</p>
+        <div class="quick"><button class="btn" id="acct-pw">Change password</button><button class="btn danger" id="acct-out">Sign out</button></div>
+        <div class="btn-row"><button class="btn" data-close>Close</button></div></div></div>`;
+    case 'import': {
+      const rows = m.rows || [];
+      return form('Import LinkedIn connections', `<p><b>${rows.length}</b> connections found${m.skipped ? `, ${m.skipped} lines skipped (no profile link)` : ''}.</p>
+        <p class="small muted">Saved: name, company, position, profile link, connected date${rows.some((r) => r.email) ? ', and email where the person shared it with you' : ''}. Nothing else. Re-importing updates existing people.</p>
+        <p class="small">${rows.slice(0, 3).map((r) => esc(`${r.first_name || ''} ${r.last_name || ''} — ${r.company || ''}`)).join('<br>')}${rows.length > 3 ? '<br>…' : ''}</p>`, `Import ${rows.length}`);
+    }
+    default: return renderModal(m);
+  }
+}
+
+async function submitModal() {
+  const m = state.modal; const btn = $('#m-ok'); if (btn) btn.disabled = true;
+  const done = async (fn, args, text) => { state.modal = null; return call(fn, args, text); };
+  const need = (v, msg) => { if (v) return true; state.notice = { err: true, text: msg }; if (btn) btn.disabled = false; render(); return false; };
+  switch (m.kind) {
+    case 'task-dismiss': { const r = val('f-reason'); if (!need(r, 'A reason is required.')) return; return done('hq_task_dismiss', { p_task: m.id, p_reason: r }, 'Task closed.'); }
+    case 'touch': { const s = val('f-summary'); if (!need(s, 'Say briefly what happened.')) return;
+      const r = await done('hq_log_touch', { p_channel: val('f-channel'), p_summary: s, p_company: m.company || null, p_contact: m.contact || null, p_opportunity: m.opp || null,
+        p_connection: m.conn || null, p_task: m.task || null, p_follow_up: val('f-follow'), p_outcome: val('f-outcome'), p_direction: val('f-dir') },
+        `Logged.${val('f-follow') ? '' : ''}`);
+      if (r?.ok && m.draft) await call('hq_draft_action', { p_draft: m.draft, p_action: 'USED', p_text: null }, 'Logged, and the draft is marked as used.');
+      return r; }
+    case 'meeting': { const s = val('f-summary'); if (!need(s, 'A short summary is required.')) return;
+      return done('hq_record_meeting', { p_opportunity: m.opp, p_summary: s, p_outcome: val('f-outcome'), p_new_status: val('f-stage'), p_follow_up: val('f-follow'), p_next_meeting: val('f-next'), p_task: m.task || null }, 'Meeting recorded.'); }
+    case 'note': { const b = val('f-body'); if (!need(b, 'Write the note first.')) return;
+      return done('hq_add_note', { p_kind: val('f-kind'), p_body: b, p_company: m.company || null, p_contact: m.contact || null, p_opportunity: m.opp || null, p_connection: m.conn || null, p_follow_up: val('f-follow') }, 'Note saved.'); }
+    case 'stage': return done('hq_opportunity_update', { p_opportunity: m.opp, p_status: val('f-stage'), p_next_action: val('f-next'), p_note: val('f-note') }, 'Stage updated.');
+    case 'channel': return done('hq_change_channel', { p_opportunity: m.opp, p_channel: val('f-channel'), p_note: val('f-note') }, 'Channel changed. The message task is in Outreach.');
+    case 'draft-request': {
+      const r = await done('hq_request_draft', { p_channel: val('f-channel'), p_voice: val('f-voice'), p_type: val('f-type'), p_connection: m.conn || null, p_contact: m.contact || null,
+        p_company: m.company || null, p_opportunity: m.opp || null, p_note: val('f-note') }, 'Draft requested — it appears under LinkedIn → Drafts within about 15 minutes (08:00–22:00 Cairo).');
+      if (r?.existing) state.notice = { err: false, text: 'A draft of this type is already requested for this person — see LinkedIn → Drafts.' };
+      render(); return r; }
+    case 'draft-edit': { const t = val('f-text'); if (!need(t, 'The message is empty.')) return; return done('hq_draft_action', { p_draft: m.id, p_action: 'SAVE', p_text: t }, 'Draft saved.'); }
+    case 'conn-status': return done('hq_connection_update', { p_connection: m.conn, p_status: val('f-status'), p_how_we_know: val('f-how'), p_follow_up: val('f-follow') }, 'Updated.');
+    case 'vertical': return done('hq_company_update', { p_company: m.company, p_vertical: val('f-vertical'), p_relationship: val('f-rel') }, 'Company updated.');
+    case 'finance': {
+      const r = m.id ? state.ins.finance.records.find((x) => x.id === m.id) : null;
+      const co = val('f-company'); if (!need(co || m.opp, 'Choose the client.')) return;
+      const amount = r && r.status !== 'DRAFT' ? r.gross_amount : Number(val('f-amount'));
+      const currency = r && r.status !== 'DRAFT' ? r.currency : (val('f-cur') || '').toUpperCase();
+      return done('hq_finance_upsert', { p_id: m.id || null, p_company: co, p_opportunity: r?.opportunity_id || m.opp || null, p_currency: currency, p_amount: amount,
+        p_description: val('f-desc'), p_invoice_ref: val('f-ref'), p_due: val('f-due'), p_invoice_status: val('f-status'), p_revenue_type: null, p_notes: val('f-notes') }, 'Finance record saved.'); }
+    case 'payment': return done('hq_record_payment', { p_revenue: m.id, p_amount: Number(val('f-amount')), p_paid_at: val('f-date'), p_method: val('f-method'), p_reference: val('f-ref'), p_note: null }, 'Payment recorded.');
+    case 'new-opp': {
+      if (!need(val('f-co') && val('f-type'), 'Company and opportunity are required.')) return;
+      const r = await done('hq_create_opportunity', { p_company_name: val('f-co'), p_website: val('f-web'), p_country: val('f-country'), p_opportunity_type: val('f-type'),
+        p_next_action: val('f-next'), p_contact_first: val('f-first'), p_contact_last: val('f-last'), p_contact_role: val('f-role'), p_contact_email: val('f-email'),
+        p_contact_linkedin: val('f-li'), p_destination: val('f-dest'), p_note: val('f-note') }, 'Opportunity created.');
+      if (r?.ok) { state.notice = { err: false, text: r.company_reused ? 'Opportunity created under the existing company (no duplicate).' : 'Opportunity and company created.' }; openDrawer('opp', r.opportunity_id); }
+      return r; }
+    case 'import': {
+      const rows = m.rows || []; state.modal = null; let up = 0; let skip = m.skipped || 0; let err = null;
+      state.notice = { err: false, text: `Importing ${rows.length} connections…` }; render();
+      for (let i = 0; i < rows.length; i += 500) {
+        const { data, error } = await sb.rpc('hq_import_connections', { p_rows: rows.slice(i, i + 500) });
+        if (error || data?.ok === false) { err = error?.message || explain(data); break; }
+        up += data.upserted; skip += data.skipped;
+      }
+      state.notice = err ? { err: true, text: `Import stopped after ${up}: ${err}` } : { err: false, text: `Imported ${up} connections${skip ? ` (${skip} skipped — no LinkedIn profile link)` : ''}.` };
+      await load(true); return null; }
+    default: return null;
+  }
+}
+
+// LinkedIn "Connections.csv": a few lines of notes, then the header row. Parsed in the browser.
+function parseCsv(text) {
+  const out = []; let row = []; let f = ''; let q = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (q) { if (ch === '"' && text[i + 1] === '"') { f += '"'; i += 1; } else if (ch === '"') q = false; else f += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(f); f = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i += 1; row.push(f); out.push(row); row = []; f = ''; }
+    else f += ch;
+  }
+  if (f || row.length) { row.push(f); out.push(row); }
+  return out;
+}
+const MONTHS = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+function liDate(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})$/);
+  return m && MONTHS[m[2].toLowerCase()] ? `${m[3]}-${MONTHS[m[2].toLowerCase()]}-${m[1].padStart(2, '0')}` : null;
+}
+function parseConnections(text) {
+  const rows = parseCsv(String(text).replace(/^﻿/, ''));
+  const h = rows.findIndex((r) => r.some((c) => /^first name$/i.test(c.trim())) && r.some((c) => /^url$/i.test(c.trim())));
+  if (h < 0) return { error: 'This does not look like LinkedIn\'s Connections.csv (no "First Name" / "URL" header).' };
+  const idx = (n) => rows[h].findIndex((c) => c.trim().toLowerCase() === n);
+  const I = { first: idx('first name'), last: idx('last name'), url: idx('url'), email: idx('email address'), company: idx('company'), position: idx('position'), on: idx('connected on') };
+  const good = []; let skipped = 0;
+  rows.slice(h + 1).forEach((r) => {
+    if (r.every((c) => !c.trim())) return;
+    const url = (r[I.url] || '').trim();
+    if (!/linkedin\.com\/in\//i.test(url)) { skipped += 1; return; }
+    good.push({ first_name: r[I.first] || null, last_name: r[I.last] || null, url, email: I.email >= 0 ? (r[I.email] || null) : null,
+      company: r[I.company] || null, position: r[I.position] || null, connected_on: liDate(r[I.on]) });
+  });
+  return { rows: good, skipped };
+}
+
+// ---------------------------------------------------------------- events
+function openDrawer(kind, id) {
+  state.drawer = { kind, id }; state.q = ''; state.menu = false; render();
+  const tk = { opp: 'opportunity', company: 'company', contact: 'contact' }[kind];
+  if (tk && !state.timeline[`${tk}:${id}`]) loadTimeline(tk, id);
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); state.notice = { err: false, text: 'Copied. Paste it into LinkedIn / Instagram, send, then press Mark sent.' }; }
+  catch { state.notice = { err: true, text: 'Could not copy automatically — select the message text and copy it.' }; }
+  render();
+}
 
 function bind() {
-  // Proportions are applied through the CSSOM (allowed by the strict CSP; inline style attributes are not).
   document.querySelectorAll('[data-flex]').forEach((el) => { el.style.flex = el.dataset.flex; });
-  document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; render(); window.scrollTo(0, 0); }));
-  document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', (e) => {
-    e.stopPropagation(); state.tab = b.dataset.go; state.drawer = null; state.q = ''; render();
+  const on = (sel2, ev, fn) => document.querySelectorAll(sel2).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
+  on('[data-tab]', 'click', (b) => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; state.menu = false; state.drawer = null; render(); window.scrollTo(0, 0); });
+  on('[data-go]', 'click', (b, e) => {
+    e.stopPropagation(); state.tab = b.dataset.go; if (b.dataset.otab) state.outreachTab = b.dataset.otab;
+    state.drawer = null; state.modal = null; state.q = ''; state.menu = false; render();
     const anchor = b.dataset.anchor && document.getElementById(b.dataset.anchor);
     if (anchor) anchor.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
-  }));
-  document.querySelectorAll('[data-open-opp]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); state.drawer = { id: b.dataset.openOpp }; state.q = ''; render(); }));
-  document.querySelectorAll('[data-close-drawer]').forEach((b) => b.addEventListener('click', () => { state.drawer = null; render(); }));
-  document.querySelectorAll('[data-task]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); state.modal = { kind: `task-${b.dataset.task}`, id: b.dataset.id }; render(); }));
-  document.querySelectorAll('[data-confirm-task]').forEach((b) => b.addEventListener('click', () => confirmTask(b.dataset.confirmTask)));
+  });
+  on('[data-otab]:not([data-go])', 'click', (b) => { state.outreachTab = b.dataset.otab; render(); });
+  on('[data-open]', 'click', (b, e) => { e.stopPropagation(); openDrawer(b.dataset.open, b.dataset.id); });
+  on('[data-close-drawer]', 'click', () => { state.drawer = null; render(); });
+  on('[data-modal]', 'click', (b, e) => { e.stopPropagation(); const x = b.dataset; state.menu = false;
+    state.modal = { kind: x.modal, id: x.id || null, opp: x.opp || null, task: x.task || null, channel: x.channel || null, conn: x.conn || null, contact: x.contact || null, company: x.company || null, draft: x.draft || null }; render(); });
+  on('[data-copy]', 'click', (b, e) => { e.stopPropagation(); copyText(b.dataset.copy); });
+  on('[data-draft-act]', 'click', (b) => call('hq_draft_action', { p_draft: b.dataset.id, p_action: b.dataset.draftAct, p_text: null }, b.dataset.draftAct === 'RETRY' ? 'Draft re-requested.' : 'Draft discarded.'));
+  on('[data-confirm-task]', 'click', (b) => confirmTask(b.dataset.confirmTask));
+  $('#m-ok')?.addEventListener('click', submitModal);
+  on('[data-act]', 'click', async (b) => {
+    if (b.dataset.act === 'redispatch') { await call('hq_redispatch', { p_outbound_id: b.dataset.id }, 'Draft creation re-requested.'); state.pollUntil = Date.now() + 120000; return; }
+    state.modal = { kind: b.dataset.act, id: b.dataset.id }; render();
+  });
+  on('[data-confirm]', 'click', (b) => confirmModal(b.dataset.confirm));
+  on('[data-close]', 'click', () => { state.modal = null; render(); });
+  on('[data-close-menu]', 'click', () => { state.menu = false; render(); });
   $('#queue-all')?.addEventListener('click', () => { state.queueAll = !state.queueAll; render(); });
   $('#queue-p3')?.addEventListener('click', () => { state.queueP3 = !state.queueP3; render(); });
   $('#q')?.addEventListener('input', (e) => { state.q = e.target.value; state.focusSearch = true; render(); });
   $('#q')?.addEventListener('keydown', (e) => { if (e.key === 'Escape') { state.q = ''; render(); } });
-  $('#pipe-q')?.addEventListener('change', (e) => { state.pipeQ = e.target.value; render(); });
   $('#refresh')?.addEventListener('click', () => load());
-  $('#menu')?.addEventListener('click', async () => {
-    const choice = window.prompt('Type "password" to change your password, or "logout" to sign out.');
-    if (choice === 'password') { state.modal = 'password'; render(); }
-    if (choice === 'logout') { await sb.auth.signOut(); }
+  $('#quick')?.addEventListener('click', () => { state.modal = { kind: 'quick' }; render(); });
+  $('#menu')?.addEventListener('click', () => { state.modal = { kind: 'account' }; render(); });
+  $('#acct-pw')?.addEventListener('click', () => { state.modal = 'password'; render(); });
+  $('#acct-out')?.addEventListener('click', async () => { state.modal = null; await sb.auth.signOut(); });
+  $('#bmenu')?.addEventListener('click', () => { state.menu = !state.menu; render(); });
+  $('#bsearch')?.addEventListener('click', () => { state.menu = false; render(); const q = $('#q'); q?.focus(); window.scrollTo(0, 0); });
+  // tasks
+  on('[data-when]', 'click', (b) => { state.taskFilter.when = b.dataset.when; render(); });
+  on('[data-f]', 'change', (s) => { state.taskFilter[s.dataset.f] = s.value; render(); });
+  // pipeline / directory filters
+  on('[data-pf]', 'change', (el) => { state.pipeF[el.dataset.pf] = el.type === 'checkbox' ? el.checked : el.value; render(); });
+  on('[data-pview]', 'click', (b) => { state.pipeView = b.dataset.pview; render(); });
+  on('[data-cf]', 'change', (el) => { state.contactF[el.dataset.cf] = el.value; render(); });
+  on('button[data-cof]', 'click', (b) => { state.companyF[b.dataset.cof] = b.dataset.v; render(); });
+  on('input[data-cof], select[data-cof]', 'change', (el) => { state.companyF[el.dataset.cof] = el.value; render(); });
+  on('button[data-nf]', 'click', (b) => { state.netF[b.dataset.nf] = b.dataset.v; render(); });
+  on('input[data-nf], select[data-nf]', 'change', (el) => { state.netF[el.dataset.nf] = el.value; render(); });
+  on('[data-market]', 'click', (r) => { state.pipeF = { stage: '', vertical: '', market: r.dataset.market, q: '', stale: false }; state.tab = 'pipeline'; render(); window.scrollTo(0, 0); });
+  $('#li-file')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { state.notice = { err: true, text: 'File is larger than 20 MB — choose Connections.csv only.' }; render(); return; }
+    const res = parseConnections(await file.text());
+    if (res.error) { state.notice = { err: true, text: res.error }; render(); return; }
+    state.modal = { kind: 'import', rows: res.rows, skipped: res.skipped }; render();
   });
-  document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', async () => {
-    if (b.dataset.act === 'redispatch') { await call('hq_redispatch', { p_outbound_id: b.dataset.id }, 'Draft creation re-requested.'); state.pollUntil = Date.now() + 120000; return; }
-    state.modal = { kind: b.dataset.act, id: b.dataset.id }; render();
-  }));
-  document.querySelectorAll('[data-confirm]').forEach((b) => b.addEventListener('click', () => confirmModal(b.dataset.confirm)));
-  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { state.modal = null; render(); }));
-  document.querySelectorAll('[data-when]').forEach((b) => b.addEventListener('click', () => { state.taskFilter.when = b.dataset.when; render(); }));
-  document.querySelectorAll('[data-f]').forEach((s) => s.addEventListener('change', () => { state.taskFilter[s.dataset.f] = s.value; render(); }));
-  document.querySelectorAll('[data-stage]').forEach((b) => b.addEventListener('click', () => { state.pipeStage = b.dataset.stage; render(); }));
 }
 
+const VIEWS = { overview: viewOverview, outreach: viewOutreach, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
+  contacts: viewContacts, companies: viewCompanies, finance: viewFinance, costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
+  intelligence: viewIntelligence, reports: viewReports, system: viewSystem, help: viewHelp };
+
 // Refresh: every 60s normally, every 5s for two minutes after an approval. Paused while typing,
-// or while a modal / record is open.
+// or while a modal / record / menu is open.
 setInterval(() => {
-  if (!state.session || state.modal || state.drawer || state.q || mustChangePassword()) return;
+  if (!state.session || state.modal || state.drawer || state.menu || state.q || mustChangePassword()) return;
   const fast = Date.now() < state.pollUntil;
   const tick = Math.floor(Date.now() / 5000);
   if (fast || tick % 12 === 0) load(true);

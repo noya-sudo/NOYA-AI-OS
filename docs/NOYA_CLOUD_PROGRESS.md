@@ -54,7 +54,12 @@ Last updated: 2026-09-29 ~18:20 UTC (21:20 Cairo) — see COMMERCIAL ENGINE FINA
 See `docs/NOYA_HQ_BUILD.md`:
 - Phases 1–3 are coded and tested; Overview V1 is verified against live data.
 - The database layer is live and additive.
-- The new frontend is **not live**: `hq/dist` is kept at the 27 Sep build until Adam approves the switch.
+- HQ is live from this branch (Cloudflare auto-deploys the committed `hq/dist`).
+- 30 Sep, operating layer:
+  - Outreach HQ, LinkedIn (export + drafts + manual send), contacts/companies, pipeline board;
+  - finance ledger, markets/growth, system costs + dependency register, help/playbooks, mobile nav.
+  - Workflow 14, message drafting (`MUL5q7pTLMQwINiU`), is published.
+  - See `docs/NOYA_HQ_READINESS_REPORT.md`, `docs/NOYA_HQ_PLAYBOOK.md` and `docs/NOYA_SYSTEM_DEPENDENCY_REGISTER.md`.
 - Production fix the same day: Workflow 05 dedupe now recognises curated `OUTREACH_READY` tasks (published `62988121`); 8 duplicate tasks were merged.
 
 ## COMMERCIAL ENGINE FINAL GATE — PASS (29 Sep 2026, 18:20 UTC)
