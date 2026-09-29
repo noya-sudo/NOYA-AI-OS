@@ -1,6 +1,6 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-28 ~00:50 UTC (03:50 Cairo)
+Last updated: 2026-09-29 ~16:10 UTC (19:10 Cairo) — see COMMERCIAL ENGINE COMPLETION below
 
 ## CURRENT PRODUCTION STATE
 
@@ -46,6 +46,140 @@ Last updated: 2026-09-28 ~00:50 UTC (03:50 Cairo)
        - `/app.js` and `/styles.css` return 200 with the correct content types.
        - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
      - Secret scan: PASS. UI checks: 31/31.
+
+## COMMERCIAL ENGINE COMPLETION (29 Sep 2026)
+
+Context: Anthropic's API key in n8n kept returning "credit balance too low" on 28 and 29 Sep, even after the reported top-up. The check was on org `a79626e9…`, workspace `wrkspc_014URL…`. The 10:15 brief on both days went out without its narrative. This run removed the dependency instead of waiting for credit.
+
+### AI routing — Anthropic no longer required
+- **Provider path:** n8n AI gateway credits (managed credentials auto-assigned by n8n). No new SaaS and no new API key.
+- **Benchmark on real NOYA work (29 Sep):**
+  - *Reply classification:* both Gemini 3.1 Flash-Lite and GPT-5 mini returned the correct NEEDS_INFO.
+  - *Drafting (YKONE, real 05 prompt):* GPT-5 mini was clearly better. It positioned NOYA correctly and was specific.
+  - *Flash-Lite drafting:* fake-familiarity opener, and the IG DM duplicated the LinkedIn message.
+
+| Tier | Model | Used for |
+|---|---|---|
+| 0 (deterministic) | SQL / JS | Dedupe, registrable domains, throttle, channel routing, quality gate, typography, dates, metrics, provider health, bounce/OOO/thread matching (WF13 triage), degraded CEO brief |
+| 1 primary | Gemini 3.1 Flash-Lite | Entity extraction (02/03/04/06/07/08), reply classification (13, 05), contact-candidate extraction (05), content classification (10a), competitor extraction (10c) |
+| 1 drafting / judgement | GPT-5 mini | AI Qualification (02/03/04/06/07/08), outreach drafting (05), CEO brief (11), Egypt intelligence (09), Windsor retrieval agents (10a/10b) |
+| Backup | GPT-5 mini ↔ Gemini Flash-Lite | Fallback model on every chain node that supports it (entity extraction, 11 brief, 13 replies) |
+| 2 premium | Claude Sonnet (existing Anthropic key) | Escalation only; not wired into any automatic path. 00b reports it as PREMIUM_OPTIONAL. |
+
+- Anthropic removed from 02, 03, 04, 05, 06, 07, 08, 09, 10a, 10b, 10c, 11 and 13. All were published and verified.
+- **07 publish:** 07 was published, which also shipped its 23 Sep serialization-only edits (reviewed SAFE on 28 Sep).
+- **Final fallback:** deterministic or human review. Provider failure never equals commercial rejection.
+  - WF11 → deterministic brief (below).
+  - WF13 → UNKNOWN / human review, and confidence below 0.6 → human review.
+  - Discovery → provider_failures counted, not rejected.
+
+### Workflow 11 — brief always arrives
+- Writer: GPT-5 mini, with Gemini fallback.
+- **Guard:** `AI Brief Has Text?` routes an empty or short AI output to the deterministic template.
+- **Deterministic template:** built from `daily_action_brief_facts`, labelled **AI ENRICHMENT DEGRADED**. Sections:
+  - DO TODAY
+  - Replies needing action
+  - Ready to approve
+  - Follow-ups due
+  - Contacts to resolve
+  - Meetings & proposals
+  - Opportunities by vertical
+  - Discovery
+  - System / cost
+- **Proven:**
+  - Exec 620 (production, 29 Sep): AI_OK brief with PDF delivered.
+  - Exec 623 (pinned test with an empty AI result): degraded brief flows through PDF → email preparation.
+- Found and fixed: GPT-5 mini spent all 6k output tokens on reasoning over a 36k-token fact set. The budget is now 20k, and the empty-output guard covers any recurrence.
+
+### 00b provider health
+- Probes the AI gateway with a real one-token completion, plus Serper.
+- Anthropic is shown as PREMIUM_OPTIONAL and no longer raises a blocking alert.
+- Exec 626: operational providers OK, and no false billing alert.
+- Old alerts:
+  - Superseded alerts closed.
+  - 7d8d18b0 kept open at priority 40 so Adam knows the top-up did not reach this key.
+
+### Data repair (curated 28 Sep imports)
+- **Column shift:** 17 opportunities from `CHATGPT_RESEARCH_2026_09_28` had shifted contact columns (next_action = first name, first_name = surname, last_name = role). They were repaired structurally (migration `20260929090000`); no names were invented.
+- **Named rows:** 13 now have contacts linked (confidence 60, email NOT_FOUND).
+- **Role-only rows:** the target role moved to next_action, with a CONTACT_RESEARCH task where none existed.
+- **Summits:** founders named only as "Lukas and Jonas", so no contact was created.
+- **YKONE:** a personal LinkedIn URL had been stored as the company page; that field is cleared.
+- Malformed records remaining: 0.
+
+### Account dedupe
+- **New objects:** `registrable_domain()` (eTLD+1; two-part suffixes; shared hosts and social handles keep the tenant) and the `company_account_duplicates` view. The view is empty, and `MERGED_INTO:` / `SEPARATE_ACCOUNT` notes are respected.
+- **J.P. Morgan:** one account (8472657f).
+  - The Private Bank row is kept as `MERGED_INTO`.
+  - McCree was moved as the secondary contact.
+  - The duplicate opportunity is LONG_TERM and its WAITING task closed.
+  - Kate Randolph (LinkedIn) leads.
+- **Discovery 02/03/04/06:** `Read Discovery Context` (RPC `discovery_context`) feeds `Merge & Cap`.
+  - A candidate whose registrable domain is already in the CRM is skipped before paid research.
+  - Live: 04 skipped 6 known accounts, 06 skipped 3.
+
+### Discovery throttling
+- `system_config.discovery_throttle` sets a research cap by backlog:
+  - backlog below 30: cap 4 (NORMAL);
+  - backlog 30–49: cap 2 (REDUCED);
+  - backlog 50 or more: cap 0 (PAUSED).
+- Backlog = approval-ready + contact-blocked + open follow-ups + overdue.
+- Live 29 Sep: backlog 46 → REDUCED. Runs 618, 621 and 622 each researched at most 2.
+
+### Firecrawl metrics
+- Build Run Metrics now falls back to the run's static-data counters (Track Firecrawl nodes).
+- Live: 04 = 4 calls, 06 = 6 calls (previously null). Metrics also log `known_account_skipped`, `throttle_level`, `research_cap`, `backlog_total` and `ai_calls_estimated`.
+
+### Channel routing, outreach-ready state, HQ data
+- **View `outreach_readiness`:** one row per open opportunity, with vertical, contact, role, email, email status, email kind (DIRECT_PERSON_EMAIL / OFFICIAL_COMPANY_INBOX), LinkedIn, Instagram, the ONE primary channel, available channels, ready email / LinkedIn / Instagram, style, evidence, follow-up plan, last touch and next follow-up.
+- **Rule:**
+  1. VERIFIED direct email → EMAIL;
+  2. named person with a LinkedIn profile → LINKEDIN;
+  3. Instagram-native → INSTAGRAM;
+  4. VERIFIED official inbox → EMAIL_COMPANY_INBOX;
+  5. otherwise → CONTACT_RESOLUTION.
+- **`commercial_vertical()`:** BRAND_PRODUCTION, CORPORATE_EVENTS, WEDDINGS_PRIVATE_EVENTS, MEMBER_COMMUNITIES, DESTINATION_CONCIERGE_PARTNERS, HOTELS_CONTENT, TALENT_SUPPORT.
+- **`account_sequence_conflicts`:** always empty. One account gets one sequence.
+- **`commercial_funnel`:** vertical × channel.
+- **No shadow CRM table:** ready messages live in the approval task as one `OUTREACH_READY_JSON:` line.
+
+### Workflow 05 — three-channel drafts
+- **Models:** GPT-5 mini drafts; Gemini Flash-Lite classifies.
+- **New AI fields:** `linkedin_message` (250–500 chars) and `instagram_dm` (<400 chars, only when Instagram-native).
+- **Deterministic post-processing:**
+  - one primary channel plus a fallback list;
+  - typography (non-breaking hyphens, NBSP);
+  - blank-line collapse;
+  - exact 3-line sign-off plus `noyaconcierge.com`;
+  - email style (PLAIN_PERSONAL by default, MINIMAL_BRANDED only for a warm relationship);
+  - quality gate: 55–150 words, CTA, "Hi" opening, banned phrases, "based in Egypt", LinkedIn/IG length, why-now, primary-channel copy present → PASS / NEEDS_EDIT;
+  - a single-channel follow-up plan (initial → one follow-up → optional final → LONG_TERM).
+- **HQ parsing preserved:** `--- EMAIL --- … --- FOLLOW-UP 1` is unchanged. Never sends.
+
+### Workflow 12 — email formatting
+- Gmail draft and send now use minimal personal HTML: 14px system font, 1.5 line height, 12px paragraph spacing, no banner or image.
+- Blank-line runs are collapsed and mid-sentence hard wraps joined; sign-off lines are kept.
+- Cause: text/plain drafts were being hard-wrapped by Gmail, as seen in the 27 Sep Quintessentially send.
+
+### Other fixes found during verification
+- **WF13 07:00 failure:** a transient Supabase ECONNABORTED. Retries (3x) were added to Triage and Apply, and the alert was closed.
+- **10a:** Windsor returned a free-plan paywall notice ("3 accounts connected, Free plan includes 1") that was stored as a media row. The bogus row was removed, and a deterministic guard now rejects notices posing as media.
+
+### Cost observability and budget
+- **`cost_observability`:** Serper, Firecrawl and discovery AI calls for TODAY / 7_DAYS / 30_DAY_PROJECTION.
+  - Counts are ACTUAL.
+  - Money is UNKNOWN until `system_config.unit_costs` is filled from invoices.
+  - AI calls in 05/09/10/11/13 are not yet counted.
+- **`system_config.ai_budget`:** PROPOSED USD 30/month, with 50/75/90/100% guardrails.
+  - Not enforceable in money yet, because gateway credit prices are not exposed.
+  - Premium is already outside every automatic path.
+  - CRM, Gmail and tasks never depend on it.
+
+### Future modules — NOTE ONLY (not built)
+- **NOYA MEMBERSHIP PLATFORM:** corporate and private/lifestyle memberships.
+  - Recurring billing, member profile, benefits, priority service, usage, renewal, corporate account usage, retention, member requests.
+- **INVESTOR / FOUNDER SHOWCASE VIEW:** real traction, the commercial engine, relationship graph, membership economics, revenue and repeat business.
+- Build neither until core production has real operating data.
 
 ## FINAL LIVE GATE — PASS (27 Sep 2026, 17:33–17:45 UTC) — FROZEN
 
