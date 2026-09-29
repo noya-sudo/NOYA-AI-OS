@@ -1,10 +1,12 @@
 # NOYA HQ — CEO Command Centre
 
-A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **publishable** key and Adam's own login token. All reads and writes go through six authenticated Postgres functions, defined in `supabase/migrations/20260926200000_hq_command_centre.sql`:
+A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **publishable** key and Adam's own login token. All reads and writes go through authenticated Postgres functions, defined in `supabase/migrations/20260926200000_hq_command_centre.sql` and `20260930091000_hq_overview.sql`. See `docs/NOYA_HQ_BUILD.md` for status and architecture.
 
 | Function | Used for |
 |---|---|
-| `hq_dashboard()` | Everything the views show (live CRM) |
+| `hq_overview()` | The Overview: action queue, scorecard, money, replies, website, system (computed server-side) |
+| `hq_dashboard()` | The section views (live CRM) |
+| `hq_task_action(task, action, until, assignee, note)` | COMPLETE / SNOOZE / ASSIGN an ordinary task (approval tasks refused) |
 | `hq_save_draft(opp, subject, body, note)` | EDIT. The original draft is kept as v1 |
 | `hq_approve_draft(opp, version)` | APPROVE & DRAFT. Runs the gates, then asks workflow 12 to create one Gmail draft |
 | `hq_hold(opp, review_date, reason)` | HOLD |

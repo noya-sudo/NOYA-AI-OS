@@ -18,7 +18,7 @@ for (const f of files) {
   for (const m of s.matchAll(/(?:\.rpc|\bcall)\(\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
   if (/\.from\(\s*['"](opportunities|contacts|tasks|outbound_emails|companies|approval_audit|hq_admins)['"]\s*\)/.test(s)) problems.push(`${f}: direct table access`);
 }
-const allowed = ['hq_dashboard', 'hq_save_draft', 'hq_approve_draft', 'hq_hold', 'hq_reject', 'hq_redispatch'];
+const allowed = ['hq_dashboard', 'hq_overview', 'hq_save_draft', 'hq_approve_draft', 'hq_hold', 'hq_reject', 'hq_redispatch', 'hq_task_action'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

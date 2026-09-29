@@ -49,6 +49,14 @@ Last updated: 2026-09-29 ~18:20 UTC (21:20 Cairo) — see COMMERCIAL ENGINE FINA
        - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
      - Secret scan: PASS. UI checks: 31/31.
 
+## NOYA HQ BUILD (from 30 Sep 2026)
+
+See `docs/NOYA_HQ_BUILD.md`:
+- Phases 1–3 are coded and tested; Overview V1 is verified against live data.
+- The database layer is live and additive.
+- The new frontend is **not live**: `hq/dist` is kept at the 27 Sep build until Adam approves the switch.
+- Production fix the same day: Workflow 05 dedupe now recognises curated `OUTREACH_READY` tasks (published `62988121`); 8 duplicate tasks were merged.
+
 ## COMMERCIAL ENGINE FINAL GATE — PASS (29 Sep 2026, 18:20 UTC)
 
 ### Live evidence

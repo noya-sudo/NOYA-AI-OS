@@ -17,6 +17,7 @@ const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome
 const FIXTURE = 'tests/fixtures/snapshot.json';
 if (!existsSync(FIXTURE)) { console.log('SKIP ui test: no live snapshot fixture'); process.exit(0); }
 const snapshot = JSON.parse(readFileSync(FIXTURE, 'utf8'));
+const overview = JSON.parse(readFileSync('tests/fixtures/overview.json', 'utf8'));
 mkdirSync('tests/out', { recursive: true });
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain' };
@@ -54,6 +55,8 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       const body = route.request().postDataJSON?.() ?? null;
       calls.push({ fn: m[1], body, auth: route.request().headers().authorization || '' });
       if (m[1] === 'hq_dashboard') return route.fulfill({ json: data });
+      if (m[1] === 'hq_overview') return route.fulfill({ json: overview });
+      if (m[1] === 'hq_task_action') return route.fulfill({ json: { ok: true } });
       if (m[1] === 'hq_approve_draft') return route.fulfill({ json: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-000000000001' } });
       if (m[1] === 'hq_save_draft') return route.fulfill({ json: { ok: true, version: 2 } });
       if (m[1] === 'hq_hold' || m[1] === 'hq_reject') return route.fulfill({ json: { ok: true } });
@@ -68,28 +71,74 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
   return { browser, page, errors, calls, label };
 }
 
-// 1. Desktop: every view renders from live data.
+// 1. Desktop: Overview + every view renders from live data.
 {
   const { browser, page, errors, calls } = await runScenario({ viewport: { width: 1280, height: 900 } });
-  await page.waitForSelector('nav.tabs');
-  await page.waitForSelector('.tiles');
-  check('login leads to dashboard, data via hq_dashboard with bearer token', calls.some((c) => c.fn === 'hq_dashboard' && c.auth.startsWith('Bearer ey')));
-  const approvalsTile = await page.locator('.tile', { hasText: 'Approvals waiting' }).locator('.n').innerText();
-  const readyLive = snapshot.approvals.filter((a) => a.loop_stage === 'PENDING_APPROVAL' && !a.block_reason).length;
-  check('Today: approvals-waiting tile equals live queue', Number(approvalsTile) === readyLive, `${approvalsTile} vs ${readyLive}`);
-  await page.screenshot({ path: 'tests/out/today.png', fullPage: true });
+  await page.waitForSelector('.side');
+  await page.waitForSelector('.q-row');
+  check('login leads to Overview; data via hq_dashboard + hq_overview with bearer token',
+    ['hq_dashboard', 'hq_overview'].every((fn) => calls.some((c) => c.fn === fn && c.auth.startsWith('Bearer ey'))));
+  const counts = await page.locator('.counts').innerText();
+  const n = (p) => overview.actions.filter((a) => a.prio === p).length;
+  check('Overview: P1/P2/P3 counts equal hq_overview actions', counts.includes(`P1 ${n('P1')}`) && counts.includes(`P2 ${n('P2')}`) && counts.includes(`P3 ${n('P3')}`), counts.replace(/\n/g, ' '));
+  const p1rows = await page.locator('.q-row .prio.P1').count();
+  check('Overview: every P1 action listed', p1rows === n('P1'), `${p1rows}`);
+  const firstP1 = await page.locator('.q-row').first().innerText();
+  const p1 = overview.actions.find((a) => a.prio === 'P1');
+  check('Overview: top action is the live P1 (company + person + source)', !p1 || (firstP1.includes(p1.company) && firstP1.includes(p1.source)), firstP1.split('\n')[1]);
+  const scoreText = await page.locator('.score').innerText();
+  const sc = overview.scorecard;
+  const scoreOk = [['Active opportunities', sc.active_opportunities.n], ['Call required', sc.call_required.n], ['Approvals ready', sc.approvals_ready.n],
+    ['Overdue tasks', sc.overdue_tasks.n], ['Won', sc.won.n]].every(([k, v]) => new RegExp(`${k}\\s*\\n\\s*${v}\\b`).test(scoreText));
+  check('Overview: scorecard values equal hq_overview scorecard', scoreOk, scoreText.replace(/\n/g, ' | ').slice(0, 200));
+  const moneyText = await page.locator('.panel', { hasText: 'Money' }).first().innerText();
+  const pipe = overview.money.pipeline_estimate[0];
+  check('Money: pipeline shown as ESTIMATE, revenue never blended, UNKNOWN count shown',
+    /Estimate/i.test(moneyText) && (!pipe || moneyText.includes(Number(pipe.amount).toLocaleString('en-GB', { maximumFractionDigits: 0 })))
+      && (overview.money.revenue_records !== 0 || /none recorded/.test(moneyText)) && moneyText.includes(`${overview.money.pipeline_unknown_value} opps`));
+  const approvalsLive = snapshot.approvals.filter((a) => a.loop_stage === 'PENDING_APPROVAL' && !a.block_reason).length;
+  check('approvals-ready (overview) equals ready queue (outreach data)', sc.approvals_ready.n === approvalsLive, `${sc.approvals_ready.n} vs ${approvalsLive}`);
+  await page.screenshot({ path: 'tests/out/overview.png', fullPage: true });
 
-  for (const tab of ['approvals', 'pipeline', 'tasks', 'completed', 'inbound', 'marketing', 'intelligence', 'health', 'brief']) {
-    await page.click(`nav.tabs button[data-tab=${tab}]`);
+  // Search: YKONE finds the company, Magali Rady and the meeting task.
+  await page.fill('#q', 'YKONE');
+  await page.waitForSelector('.results');
+  const hits = await page.locator('.results').innerText();
+  check('search "YKONE": company, Magali Rady and meeting task', /YKONE Middle East/.test(hits) && /Magali Rady/.test(hits) && /MEETING REQUESTED/.test(hits), hits.replace(/\n/g, ' | ').slice(0, 220));
+  await page.locator('.results [data-open-opp]').first().click();
+  await page.waitForSelector('.drawer');
+  const drawer = await page.locator('.drawer').innerText();
+  const dOk = /YKONE Middle East/.test(drawer) && /Magali Rady/.test(drawer) && /verified/i.test(drawer) && /Replies \(\d+\)/i.test(drawer) && /Open tasks/i.test(drawer); check("record drawer: opportunity, contact, verified email, replies, open tasks", dOk, drawer.replace(/\n/g, " | ").slice(0, 300));
+  await page.screenshot({ path: 'tests/out/record.png', fullPage: false });
+  await page.click('.drawer [data-close-drawer]');
+
+  // Task actions: Done and Snooze go through hq_task_action only.
+  const doneBtn = page.locator('.q-row [data-task=done]').first();
+  await doneBtn.click();
+  await page.click('[data-confirm-task=COMPLETE]');
+  await page.waitForTimeout(300);
+  const snoozeBtn = page.locator('.q-row [data-task=snooze]').first();
+  await snoozeBtn.click();
+  await page.click('[data-confirm-task=SNOOZE]');
+  await page.waitForTimeout(300);
+  const tcalls = calls.filter((c) => c.fn === 'hq_task_action');
+  check('Done / Snooze call hq_task_action (COMPLETE, SNOOZE with a date)', tcalls.length === 2 && tcalls[0].body.p_action === 'COMPLETE' && tcalls[1].body.p_action === 'SNOOZE' && /^\d{4}-\d{2}-\d{2}$/.test(tcalls[1].body.p_until), JSON.stringify(tcalls.map((c) => c.body.p_action)));
+  const approvalRowsHaveNoDone = await page.locator('.q-row', { hasText: 'Approve outreach' }).locator('[data-task=done]').count();
+  check('approval actions cannot be marked done from the queue (approval flow only)', approvalRowsHaveNoDone === 0);
+
+  for (const tab of ['outreach', 'pipeline', 'inbox', 'tasks', 'website', 'finance', 'intelligence', 'reports', 'system']) {
+    await page.click(`.side [data-tab=${tab}]`);
     await page.waitForSelector('main h2');
     const h2 = await page.locator('main h2').first().innerText();
     check(`view renders: ${tab}`, h2.length > 0, h2);
     await page.screenshot({ path: `tests/out/${tab}.png`, fullPage: true });
   }
+  const offCount = await page.locator('.nav-item.off').count();
+  check('unbuilt sections are labelled with their build phase, not faked', offCount === 6, `${offCount}`);
 
-  await page.click('nav.tabs button[data-tab=approvals]');
+  await page.click('.side [data-tab=outreach]');
   const readyCards = await page.locator('article.card.ready').count();
-  check('Approvals: ready cards equal live approval-ready queue', readyCards === readyLive, `${readyCards}`);
+  check('Approvals: ready cards equal live approval-ready queue', readyCards === approvalsLive, `${readyCards}`);
   const firstReady = page.locator('article.card.ready').first();
   const cardText = await firstReady.innerText();
   check('card shows contact, position, verified email, ESTIMATED value, why now, why NOYA, subject, body',
@@ -142,7 +191,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
   await page.waitForTimeout(300);
   check('HOLD calls hq_hold with review date', calls.some((c) => c.fn === 'hq_hold' && c.body.p_review_date === '2026-10-15'));
 
-  check('only allow-listed RPCs were called', calls.every((c) => ['hq_dashboard', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject'].includes(c.fn)));
+  check('only allow-listed RPCs were called', calls.every((c) => ['hq_dashboard', 'hq_overview', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject'].includes(c.fn)));
   check('no JavaScript errors (desktop)', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
@@ -150,11 +199,14 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
 // 2. Mobile: approval cards usable at phone width.
 {
   const { browser, page, errors } = await runScenario({ viewport: { width: 390, height: 844 } });
-  await page.waitForSelector('nav.tabs');
-  await page.click('nav.tabs button[data-tab=approvals]');
+  await page.waitForSelector('.q-row');
+  const ovOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check('mobile 390px: no horizontal page overflow on Overview', ovOverflow <= 1, `${ovOverflow}px`);
+  await page.screenshot({ path: 'tests/out/mobile-overview.png', fullPage: false });
+  await page.click('.mnav [data-tab=outreach]');
   await page.waitForSelector('article.card.ready');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  check('mobile 390px: no horizontal page overflow on Approvals', overflow <= 1, `${overflow}px`);
+  check('mobile 390px: no horizontal page overflow on Outreach', overflow <= 1, `${overflow}px`);
   const btn = await page.locator('article.card.ready [data-act=approve]').first().boundingBox();
   check('mobile: Approve button is tappable (>= 36px tall)', btn && btn.height >= 36, btn ? `${Math.round(btn.height)}px` : 'missing');
   await page.screenshot({ path: 'tests/out/mobile-approvals.png', fullPage: false });
@@ -169,8 +221,8 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
   a.company_name = '<img src=x onerror="window.__xss=1">Evil Co';
   a.draft.body = '<script>window.__xss=2</script>';
   const { browser, page } = await runScenario({ viewport: { width: 1280, height: 900 }, data: evil });
-  await page.waitForSelector('nav.tabs');
-  await page.click('nav.tabs button[data-tab=approvals]');
+  await page.waitForSelector('.side');
+  await page.click('.side [data-tab=outreach]');
   await page.waitForSelector('article.card.ready');
   const xss = await page.evaluate(() => window.__xss);
   const shown = await page.locator('article.card.ready .co', { hasText: 'Evil Co' }).first().innerText();
