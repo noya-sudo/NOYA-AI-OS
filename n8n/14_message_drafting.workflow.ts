@@ -2,12 +2,18 @@
 // requested in HQ. Never sends anything: it writes the draft back for Adam to copy and send himself.
 // Low-cost models only (Gemini Flash-Lite, then GPT-5 mini); if both fail, a deterministic
 // template is stored and the request is marked PROVIDER_UNAVAILABLE so HQ can say so.
-import { workflow, node, trigger, languageModel, expr } from '@n8n/workflow-sdk';
+// Event-driven (30 Sep): HQ's draft request wakes this workflow through the webhook below
+// (Supabase pg_net, token header from Vault); two daily sweeps catch anything a wake missed.
+// The wake token is not in this file: it lives in Supabase Vault and in the live n8n node.
+import { workflow, node, trigger, ifElse, languageModel, expr } from '@n8n/workflow-sdk';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co/rest/v1/rpc/';
 const supabase = { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } };
 
-const every5 = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.2, config: { name: 'Every 5 Minutes', parameters: { rule: { interval: [{ field: 'minutes', minutesInterval: 5 }] } } } });
+const sweep = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.2, config: { name: 'Safety Sweep 12:05 + 18:05', parameters: { rule: { interval: [{ field: 'cronExpression', expression: '5 12,18 * * *' }] } } } });
+const wake = trigger({ type: 'n8n-nodes-base.webhook', version: 2, config: { name: 'HQ Wake (webhook)', parameters: { httpMethod: 'POST', path: 'noya-draft-wake-<secret-path>', responseMode: 'onReceived', options: {} } } });
+const tokenOk = ifElse({ version: 2.2, config: { name: 'Wake Token Valid?', parameters: { conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: expr("{{ $json.headers['x-noya-wake'] }}"), operator: { type: 'string', operation: 'equals' }, rightValue: '<token from Supabase Vault: n8n_draft_wake_token>' }], combinator: 'and' } } } });
 const manual = trigger({ type: 'n8n-nodes-base.manualTrigger', version: 1, config: { name: 'Manual Run' } });
 
 const claim = node({
@@ -137,5 +143,7 @@ const complete = node({
 });
 
 export default workflow('noya-14-message-drafting', '14 - NOYA Message Drafting v1')
-  .add(every5).to(claim).to(build).to(write).to(gate).to(complete)
-  .add(manual).to(claim);
+  .add(sweep).to(claim).to(build).to(write).to(gate).to(complete)
+  .add(manual).to(claim)
+  .add(wake).to(tokenOk.onTrue(claim));
+// Live Build Prompts / Quality Gate code (30 Sep): see workflow 14 active version; prompt treats Adam's note as guidance and the gate flags a copied note.

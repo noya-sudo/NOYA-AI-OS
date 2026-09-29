@@ -20,6 +20,7 @@ const snapshot = JSON.parse(readFileSync(FIXTURE, 'utf8'));
 const overview = JSON.parse(readFileSync('tests/fixtures/overview.json', 'utf8'));
 const directory = JSON.parse(readFileSync('tests/fixtures/directory.json', 'utf8'));
 const insight = JSON.parse(readFileSync('tests/fixtures/insight.json', 'utf8'));
+const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json', 'utf8'));
 mkdirSync('tests/out', { recursive: true });
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
@@ -32,8 +33,8 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(4173, r));
 
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
-  'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update'];
-const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
+  'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact'];
+const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
   'hq_create_opportunity', 'hq_import_connections', ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
@@ -69,6 +70,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_hold' || m[1] === 'hq_reject') return route.fulfill({ json: { ok: true } });
       if (m[1] === 'hq_directory') return route.fulfill({ json: directory });
       if (m[1] === 'hq_insight') return route.fulfill({ json: insight });
+      if (m[1] === 'hq_relationships') return route.fulfill({ json: relationships });
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
       if (m[1] === 'hq_create_opportunity') return route.fulfill({ json: { ok: true, opportunity_id: data.opportunities[0].id, company_id: null, company_reused: true } });
       if (m[1] === 'hq_import_connections') return route.fulfill({ json: { ok: true, upserted: body.p_rows.length, skipped: 0 } });
@@ -85,6 +87,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
 }
 
 const last = (calls, fn) => [...calls].reverse().find((c) => c.fn === fn);
+const closeDrawer = async (page) => { if (await page.locator('.drawer').count()) await page.click('.drawer [data-close-drawer]'); };
 const noOverflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 
 // 1. Desktop: Today + every view renders from live data; every write goes through the right RPC.
@@ -93,7 +96,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForSelector('.side');
   await page.waitForSelector('.q-row');
   check('login leads to Today; data via the four read RPCs with bearer token',
-    ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight'].every((fn) => calls.some((c) => c.fn === fn && c.auth.startsWith('Bearer ey'))));
+    ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_relationships'].every((fn) => calls.some((c) => c.fn === fn && c.auth.startsWith('Bearer ey'))));
   const counts = await page.locator('.counts').innerText();
   const n = (p) => overview.actions.filter((a) => a.prio === p).length;
   check('Today: P1/P2/P3 counts equal hq_overview actions', counts.includes(`P1 ${n('P1')}`) && counts.includes(`P2 ${n('P2')}`) && counts.includes(`P3 ${n('P3')}`), counts.replace(/\n/g, ' '));
@@ -178,7 +181,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('dismiss with a reason calls hq_task_dismiss', calls.some((c) => c.fn === 'hq_task_dismiss' && /Duplicate/.test(c.body.p_reason)));
   check('approval actions cannot be done/dismissed from Today', (await page.locator('.q-row', { hasText: 'Approve outreach' }).locator('[data-modal=task-done], [data-modal=task-dismiss]').count()) === 0);
 
-  const tabs = ['inbox', 'outreach', 'linkedin', 'pipeline', 'tasks', 'website', 'contacts', 'companies', 'finance', 'costs', 'markets', 'growth', 'intelligence', 'reports', 'system', 'help'];
+  const tabs = ['inbox', 'outreach', 'relationships', 'linkedin', 'pipeline', 'tasks', 'website', 'contacts', 'companies', 'finance', 'costs', 'markets', 'growth', 'intelligence', 'reports', 'system', 'help'];
   for (const tab of tabs) {
     await page.click(`.side [data-tab=${tab}]`);
     await page.waitForSelector('main h2');
@@ -313,6 +316,77 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const co = last(calls, 'hq_create_opportunity');
   check('+ New → opportunity calls hq_create_opportunity and opens the record', co && co.body.p_company_name === 'Aman Resorts' && co.body.p_contact_email === 'sara@example.com');
 
+
+  // Past relationships (NOYA Gmail history).
+  await closeDrawer(page);
+  await page.click('.side [data-tab=relationships]');
+  const relText = await page.locator('main').innerText();
+  const replied = relationships.groups.filter((g) => !g.dismissed && g.received > 0 && g.state === 'REPLIED').length;
+  check('Past relationships: "They wrote last" count equals Gmail history', new RegExp(`They wrote last\\s*${replied}`).test(relText), `${replied}`);
+  check('Past relationships: source and scan size stated (provenance)', /noya@noyaconcierge\.com/.test(relText) && relText.includes(String(relationships.state.scanned)));
+  await page.click('main .tabs button[data-v=NOT_IN_CRM]');
+  const firstNotInCrm = relationships.groups.find((g) => !g.dismissed && g.received > 0 && !g.in_crm);
+  await page.locator('main article.card.rel [data-modal=history-add]').first().click();
+  await page.waitForSelector('.modal');
+  check('Add to CRM: prefilled from the email (company guess + address)', (await page.inputValue('#f-co')).length > 0 && (await page.locator('#f-email option').count()) >= 1);
+  await page.click('#m-ok');
+  await page.waitForTimeout(400);
+  const ha = last(calls, 'hq_history_action');
+  check('Add to CRM calls hq_history_action ADD_TO_CRM with the group key', ha && ha.body.p_action === 'ADD_TO_CRM' && ha.body.p_key === firstNotInCrm.key, JSON.stringify(ha?.body).slice(0, 160));
+  await closeDrawer(page);
+  await page.click('.side [data-tab=relationships]');
+  await page.locator('main article.card.rel [data-hist-act=DISMISS]').first().click();
+  await page.waitForTimeout(300);
+  check('Not relevant → hq_history_action DISMISS (history kept)', last(calls, 'hq_history_action')?.body.p_action === 'DISMISS');
+  const gmailLinks = await page.locator('main article.card.rel a[href*="mail.google.com"]').count();
+  check('every relationship card links to its real Gmail thread', gmailLinks === (await page.locator('main article.card.rel').count()) && gmailLinks > 0, `${gmailLinks}`);
+
+  // Outreach knows the history: a held cold intro shows the earlier conversation.
+  const heldPrior = snapshot.approvals.find((a) => a.loop_stage === 'ON_HOLD' && /Previously in contact/.test(a.queue_reason || ''));
+  if (heldPrior) {
+    await page.click('.side [data-tab=outreach]');
+    await page.click('main .tabs [data-otab=HOLD]');
+    const card = await page.locator(`#opp-${heldPrior.id}`).innerText();
+    check('Outreach: cold intro to a past contact is held, showing "Emailed before" + reason', /Emailed before/.test(card) && /Previously in contact/.test(card), heldPrior.company_name);
+  } else check('Outreach: held prior-relationship example present in snapshot', false, 'no held example');
+
+  // Data cleanup: company country from evidence.
+  await page.fill('#q', directory.companies[0].name);
+  await page.locator('.results [data-open=company]').first().click();
+  await page.waitForSelector('.drawer');
+  await page.click('.drawer [data-modal=vertical]');
+  await page.fill('#f-country', 'United Kingdom');
+  await page.click('#m-ok');
+  await page.waitForTimeout(300);
+  check('Edit details saves country via hq_company_update', last(calls, 'hq_company_update')?.body.p_country === 'United Kingdom');
+  await closeDrawer(page);
+
+  // Quick actions: add contact / follow-up.
+  await page.click('#quick');
+  await page.click('.modal [data-modal=new-contact]');
+  await page.fill('#f-first', 'Sara'); await page.fill('#f-last', 'Khalil'); await page.fill('#f-co', 'Aman Resorts'); await page.fill('#f-email', 'sara@aman.com');
+  await page.click('#m-ok');
+  await page.waitForTimeout(400);
+  const ac = last(calls, 'hq_add_contact');
+  check('+ New → Add contact calls hq_add_contact (no duplicate by email/name server-side)', ac && ac.body.p_first === 'Sara' && ac.body.p_email === 'sara@aman.com');
+  await closeDrawer(page);
+  await page.click('#quick');
+  await page.click('.modal [data-modal=followup]');
+  await page.selectOption('#f-company', directory.companies[1].id);
+  await page.fill('#f-body', 'Send the Siwa proposal');
+  await page.click('#m-ok');
+  await page.waitForTimeout(300);
+  const fu2 = last(calls, 'hq_add_note');
+  check('+ New → Add follow-up books a dated follow-up (hq_add_note with date)', fu2 && fu2.body.p_company === directory.companies[1].id && /^\d{4}-\d{2}-\d{2}$/.test(fu2.body.p_follow_up));
+
+  // Search reaches email history.
+  const g0 = relationships.groups.find((g) => g.domain && !g.in_crm && g.received > 0);
+  await page.fill('#q', g0.domain);
+  await page.waitForSelector('.results');
+  check('search finds past email relationships by domain', /Previous relationships/i.test(await page.locator('.results').innerText()), g0.domain);
+  await page.locator('.results [data-relq]').first().click();
+  check('search result opens Past relationships filtered to it', (await page.locator('main h2').innerText()) === 'Past relationships' && (await page.locator('main article.card.rel').count()) >= 1);
+
   check('only allow-listed RPCs were called', calls.every((c) => ALLOWED.includes(c.fn)), [...new Set(calls.map((c) => c.fn))].filter((f) => !ALLOWED.includes(f)).join(','));
   check('no JavaScript errors (desktop)', errors.length === 0, errors.join(' | '));
   await browser.close();
@@ -360,11 +434,14 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await step('7 search finds a person', /Magali/.test(await page.locator('.results').innerText()));
   await page.fill('#q', '');
   await page.click('#bmenu');
+  await page.click('.sheet [data-tab=relationships]');
+  await step('7b past relationships from the menu: who wrote last, with Gmail links', /They wrote last/.test(await page.locator('main').innerText()) && (await page.locator('main a[href*="mail.google.com"]').count()) > 0);
+  await page.click('#bmenu');
   await page.waitForSelector('.sheet');
   const sheetBtns = await page.locator('.sheet-grid button').count();
   await page.click('.sheet [data-tab=pipeline]');
   await page.click('main [data-pview=board]');
-  await step('8 Menu sheet → Pipeline board', sheetBtns >= 17 && (await page.locator('.board .bcol').count()) > 0);
+  await step('8 Menu sheet → Pipeline board', sheetBtns >= 18 && (await page.locator('.board .bcol').count()) > 0);
   await page.screenshot({ path: 'tests/out/mobile-pipeline.png' });
   await page.click('#bmenu');
   await page.click('.sheet [data-tab=finance]');
@@ -376,8 +453,8 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#m-ok');
   await page.waitForSelector('.drawer');
   await step('10 + New opportunity from the phone opens the new record', !!last(calls, 'hq_create_opportunity'));
-  for (const tab of ['linkedin', 'contacts', 'companies', 'markets', 'costs', 'growth', 'help', 'system']) {
-    await page.click('.drawer [data-close-drawer]').catch(() => {});
+  for (const tab of ['relationships', 'linkedin', 'contacts', 'companies', 'markets', 'costs', 'growth', 'help', 'system']) {
+    await closeDrawer(page);
     await page.click('#bmenu');
     await page.click(`.sheet [data-tab=${tab}]`);
     await page.waitForSelector('main h2');

@@ -24,6 +24,31 @@ Status as of 30 Sep 2026 (01:00 Cairo). HQ is the control layer over Supabase an
 
 "Live" means the committed `hq/dist` on this branch, which Cloudflare auto-deploys to hq.noyaconcierge.com.
 
+## V2 (30 Sep): historical email, relationships, event-driven drafting
+- **Workflow 15, Gmail History Import** (`VGNfoaqAMmQ5bZHA`):
+  - Reads noya@ (GET only).
+  - 12-month metadata backfill (1,223 emails), then incremental via Gmail history IDs every 3 hours, 07:00–22:00 Cairo.
+  - Ingest runs in Supabase (`gmail_history_ingest`):
+    - deterministic filtering;
+    - Gmail SENT label = real send;
+    - matching by contact email, then company domain (`registrable_domain`, free-mail excluded), then within the thread;
+    - interactions written with the shared `external_message_id` guard;
+    - `gmail_history_threads` relationship states: REPLIED / WAIT / FOLLOW_UP / RECONNECT / LONG_TERM / INBOUND_ONLY / MEETING / DO_NOT_CONTACT.
+  - Triggers on companies and contacts link later-added records to their past email.
+  - Privacy: ignored mail keeps only ID and reason; irrelevant threads lose subject and snippet.
+- **No cold intro to past contacts:**
+  - `gmail_history_apply_outreach()` holds pending cold approvals (never overriding Adam's decisions), parks cold LinkedIn/Instagram intros and books one reconnect / follow-up task.
+  - Workflow 05 gained a "Prior Relationship Guard" node (defect fix: the old rule only looked back 3 days). Published `a27436f7`.
+- **Workflow 14 is event-driven:**
+  - `hq_request_draft` → `hq_wake_drafting()` (pg_net; URL and token in Supabase Vault) → webhook → one run.
+  - Safety sweeps at 12:05 and 18:05.
+- **HQ:**
+  - Past relationships view (`hq_relationships`, `hq_history_action`).
+  - "Emailed before" on outreach cards and records; Gmail links in timelines.
+  - Meeting prep; client flag; Edit details (country / website).
+  - Quick actions: add contact, follow-up, draft, note.
+  - LinkedIn connection → contact matching.
+
 ## Operating layer — how it is built
 
 **Reads.** Four admin-gated RPCs run in parallel:

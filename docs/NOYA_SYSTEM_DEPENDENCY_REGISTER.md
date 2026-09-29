@@ -28,7 +28,13 @@ The live register is the `system_services` table, shown in HQ → **System costs
 - **Usage counts (actual, 30-day projection):**
   - 2,061 Serper searches, 180 Firecrawl calls, 60 Hunter checks;
   - 21 discovery AI calls, 13 reply-AI calls, 90 CEO briefs.
-- **New in this phase:** workflow 14 adds at most 56 n8n executions a day (every 15 minutes, 08:00–22:00 Cairo). Most are empty polls.
+- **Automation runs (n8n executions, monthly maximum):**
+  - Reply tracking (13): ~2,880.
+  - Gmail history sync (15): ~180 (every 3 hours, 07:00–22:00).
+  - Message drafting (14): ~60 safety sweeps plus one run per draft you request. This is now event-driven; it was up to 1,680 a month with polling.
+  - Other workflows: see n8n → Executions.
+  - The n8n plan allowance is UNKNOWN.
+- **Gmail API** (Google Workspace): the history import uses read-only metadata calls within Google's free quota. There is no separate charge.
 
 ## Paid-software gate (always on)
 Before any paid tool, plan upgrade, API credit or connector, HQ must show:

@@ -20,7 +20,7 @@ for (const f of files) {
   for (const m of s.matchAll(/(?:\.rpc|\bcall|\bdone)\(\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
   if (/\.from\(\s*['"](opportunities|contacts|tasks|outbound_emails|companies|approval_audit|hq_admins)['"]\s*\)/.test(s)) problems.push(`${f}: direct table access`);
 }
-const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline',
+const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_history_action', 'hq_add_contact',
   'hq_save_draft', 'hq_approve_draft', 'hq_hold', 'hq_reject', 'hq_redispatch', 'hq_task_action', 'hq_task_dismiss',
   'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_import_connections',
   'hq_connection_update', 'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_create_opportunity', 'hq_company_update'];

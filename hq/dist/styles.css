@@ -286,3 +286,8 @@ details.qa summary { cursor: pointer; font-weight: 500; }
 details.panel > summary { padding: 12px 14px; cursor: pointer; }
 label.btn input[type=file] { display: none; }
 .kv .linkish, .src .linkish { background: none; border: 0; padding: 0; color: var(--info); cursor: pointer; font: inherit; text-decoration: underline; }
+.prev { border-left: 3px solid var(--info); background: var(--panel-2); padding: 6px 10px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+.prep { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; }
+.prep ul { margin: 0; padding-left: 18px; }
+.prep li { margin: 3px 0; }
+.card.rel .email { margin: 6px 0; padding: 8px 10px; }

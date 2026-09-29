@@ -59,6 +59,7 @@ See `docs/NOYA_HQ_BUILD.md`:
   - Outreach HQ, LinkedIn (export + drafts + manual send), contacts/companies, pipeline board;
   - finance ledger, markets/growth, system costs + dependency register, help/playbooks, mobile nav.
   - Workflow 14, message drafting (`MUL5q7pTLMQwINiU`), is published.
+- 30 Sep, V2: Gmail history import (workflow 15), prior-contact suppression (05 guard), Past relationships view, event-driven drafting (14).
   - See `docs/NOYA_HQ_READINESS_REPORT.md`, `docs/NOYA_HQ_PLAYBOOK.md` and `docs/NOYA_SYSTEM_DEPENDENCY_REGISTER.md`.
 - Production fix the same day: Workflow 05 dedupe now recognises curated `OUTREACH_READY` tasks (published `62988121`); 8 duplicate tasks were merged.
 
