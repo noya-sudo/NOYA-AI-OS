@@ -92,12 +92,13 @@ select
   opp.estimated_value, opp.currency,
   ct.contact_name, ct.contact_role, ct.email, ct.email_status, email_kind(ct.email) as email_kind,
   ct.linkedin, ct.instagram,
+  -- Same rule as Workflow 05's draft builder; 05's recorded choice wins when present.
   case
     when ct.do_not_contact then 'DO_NOT_CONTACT'
+    when task.ready->>'primary_channel' is not null then task.ready->>'primary_channel'
     when ct.email_status = 'VERIFIED' and email_kind(ct.email) = 'DIRECT_PERSON_EMAIL' then 'EMAIL'
     when ct.contact_name is not null and ct.linkedin ~* 'linkedin\.com/in/' then 'LINKEDIN'
-    when ct.instagram is not null and (opp.vertical in ('WEDDINGS_PRIVATE_EVENTS', 'MEMBER_COMMUNITIES', 'DESTINATION_CONCIERGE_PARTNERS')
-                                       or ct.linkedin is null) then 'INSTAGRAM'
+    when ct.instagram is not null then 'INSTAGRAM'
     when ct.email_status = 'VERIFIED' and email_kind(ct.email) = 'OFFICIAL_COMPANY_INBOX' then 'EMAIL_COMPANY_INBOX'
     else 'CONTACT_RESOLUTION'
   end as primary_channel,

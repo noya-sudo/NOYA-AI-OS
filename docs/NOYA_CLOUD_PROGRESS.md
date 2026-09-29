@@ -1,10 +1,12 @@
 # NOYA Cloud Progress
 
-Last updated: 2026-09-29 ~16:10 UTC (19:10 Cairo) — see COMMERCIAL ENGINE COMPLETION below
+Last updated: 2026-09-29 ~18:20 UTC (21:20 Cairo) — see COMMERCIAL ENGINE FINAL GATE below
 
 ## CURRENT PRODUCTION STATE
 
-- **n8n**: workflows 00, 00b and 01–11 are unchanged (01 is inactive by design).
+- **n8n (29 Sep)**: AI now runs on n8n AI gateway credits: Gemini 3.1 Flash-Lite, with GPT-5 mini for drafting, judgement and fallback. Anthropic is not required.
+  - Published 29 Sep: 00b, 02, 03, 04, 05, 06, 07, 08, 09, 10a, 10b, 10c, 11, 12 and 13.
+  - 00 and 10d are unchanged. 01 is inactive by design.
   - **12 - NOYA Outbound Email Executor v1** (`HOQIzE9gRKmeoz1G`): **ACTIVE (published 26 Sep)**. It is triggered only by the CEO Command Centre (`hq_approve_draft` via `pg_net`) for a single approved outbound id. It creates Gmail drafts only; no SEND row can be created from the dashboard.
   - **13 - NOYA Gmail Interaction Sync v1** (`lcc7sb28itQaTubO`): **ACTIVE**, every 15 minutes. The first scheduled run succeeded at 19:30 UTC (exec 293).
 - **CEO Command Centre**: LIVE at `hq.noyaconcierge.com` (CNAME → Cloudflare Pages `noya-hq-dashboard.pages.dev`, serving the committed `hq/dist`). **PRODUCTION ARCHITECTURE FROZEN — 27 Sep 2026 (final live gate PASS).**
@@ -46,6 +48,50 @@ Last updated: 2026-09-29 ~16:10 UTC (19:10 Cairo) — see COMMERCIAL ENGINE COMP
        - `/app.js` and `/styles.css` return 200 with the correct content types.
        - The `_headers` security headers are applied (X-Frame-Options DENY, nosniff, no-referrer, HSTS, noindex), and the `_headers` file itself is not served.
      - Secret scan: PASS. UI checks: 31/31.
+
+## COMMERCIAL ENGINE FINAL GATE — PASS (29 Sep 2026, 18:20 UTC)
+
+### Live evidence
+- **05 production run 641** (success, 17:50–18:04 UTC). It ran on the published version `fb7b0f25` and produced 30 drafts.
+  - **Drafts:** every salutation is a name or "Hello,". Length is 75–101 words, with no triple blank lines and the exact 4-line sign-off.
+  - **Quality gate:** 29 PASS. 1 NEEDS_EDIT (Insider Expeditions, "elevate"), correctly flagged.
+  - **Approval tasks:** 13 new ones, each with a sendable recipient in HQ (block reason = none):
+    - Founders Forum, EO Dubai, The Arts Club, Home House, Soho House, 67 Pall Mall and GPJ Dubai (curated 29 Sep);
+    - Founders Club, Sporting Founders, Vivaah, LINKVIVA, CRUSH and Sarah Haywood.
+  - **LinkedIn / Instagram:** ready tasks were re-titled and lead with the message.
+  - **Hunter results** in `contact_email_verifications`:
+    - 7 applied or created (VERIFIED with provenance);
+    - 3 catch-all → RISKY, not applied;
+    - 1 invalid → not applied.
+- **YKONE (Brand/Production), end to end:**
+  1. Hunter-verified email.
+  2. HQ approval.
+  3. Adam sent manually at 17:00 UTC.
+  4. Magali Rady replied at 17:33 asking for a call next week.
+  5. Workflow 13 classified it MEETING_REQUEST on the AI gateway (no Anthropic).
+  6. The opportunity is now CALL_REQUIRED, with a MEETING_ACTION task. No auto-reply.
+- **MCI (Corporate/Events):** Hunter-verified email, then HQ approval. Adam sent at 17:00; a follow-up task is open.
+- **Alice Wilkes (Wedding), Beyond Members Club (Member community), Medina Mallorca (Destination):** each has an `INSTAGRAM DM READY` task that opens with the DM, for Adam to send by hand. Email is not used (no verified address).
+- **Workflow 13:** deterministic handling as follows:
+  - manual-send detection and thread matching run in SQL;
+  - bounce and out-of-office labels come from headers and subject, and always override the model; a model may never declare a bounce;
+  - own-mailbox and internal mail is skipped.
+  - AI is used only for reply meaning and the out-of-office return date.
+- **Sends:** all 3 today (YKONE, MCI, Wealth Access) were approved by Adam in HQ, created as DRAFT and sent by Adam himself. Auto-sent prospect emails: 0.
+
+### Data quality (all live)
+- **Counts:** false VERIFIED 0; malformed contacts 0; shifted curated records 0; duplicate open tasks 0; account duplicates 0; sequence conflicts 0; READY without a usable channel 0; test rows 0.
+- **Duplicate tasks:** Beyond and Medina had a curated research task alongside 05's task. They were merged; the research notes were kept and the curated task cancelled.
+- **Julius Baer and Rothschild:** moved READY → RESEARCHING (no contact on file). Their parked tasks are untouched.
+- **Role-named contacts** ("Partnerships Team", "Marketing Team", "Membership Team"): the names were cleared, and the published inbox and role were kept.
+- **Quintessentially:** two open tasks by design, a committee follow-up due 27 Oct and Adam's LinkedIn touch to Hannah Felt.
+- **Curated backlog:** the 29 Sep member-community and brand accounts (8) were released to 05. The 5 football clubs stay RESEARCHING; they are outside the 5 commercial priorities.
+- **Temporary workflow** "ZZ - AI gateway probe" archived.
+
+### Remaining risks (not blockers)
+1. The n8n AI gateway credit allowance and price are UNKNOWN, so the AI budget cannot be enforced in money. Adam should confirm the plan's AI credits, or add his own Gemini/OpenAI key as an independent backup.
+2. The Anthropic top-up never reached the n8n key. It matters only for the manual premium tier.
+3. Windsor's free plan allows 1 account and 3 are connected, so 10a/10b get no Instagram data until 2 are disconnected or the plan is upgraded.
 
 ## COMMERCIAL ENGINE COMPLETION (29 Sep 2026)
 
@@ -135,8 +181,8 @@ Context: Anthropic's API key in n8n kept returning "credit balance too low" on 2
 - **Rule:**
   1. VERIFIED direct email → EMAIL;
   2. named person with a LinkedIn profile → LINKEDIN;
-  3. Instagram-native → INSTAGRAM;
-  4. VERIFIED official inbox → EMAIL_COMPANY_INBOX;
+  3. Instagram-native → INSTAGRAM. Never for banks, wealth, law, consulting or investment firms (`20260929097000`; same rule in 05);
+  4. VERIFIED official inbox → EMAIL_COMPANY_INBOX. The inbox rule was widened, e.g. `sponsorshipenquiries@` is an inbox, not a person;
   5. otherwise → CONTACT_RESOLUTION.
 - **`commercial_vertical()`:** BRAND_PRODUCTION, CORPORATE_EVENTS, WEDDINGS_PRIVATE_EVENTS, MEMBER_COMMUNITIES, DESTINATION_CONCIERGE_PARTNERS, HOTELS_CONTENT, TALENT_SUPPORT.
 - **`account_sequence_conflicts`:** always empty. One account gets one sequence.
@@ -155,6 +201,83 @@ Context: Anthropic's API key in n8n kept returning "credit balance too low" on 2
   - quality gate: 55–150 words, CTA, "Hi" opening, banned phrases, "based in Egypt", LinkedIn/IG length, why-now, primary-channel copy present → PASS / NEEDS_EDIT;
   - a single-channel follow-up plan (initial → one follow-up → optional final → LONG_TERM).
 - **HQ parsing preserved:** `--- EMAIL --- … --- FOLLOW-UP 1` is unchanged. Never sends.
+- **Final pass (29 Sep evening, published version `fb7b0f25`):**
+  - **Salutation:**
+    - A role or team is never used ("Hi Founder / Creative Director,", "Hi the team…", "Hi Partnerships,").
+    - The known person's first name is used when it is a real name; otherwise "Hello,".
+  - **Company-inbox rule** matches SQL `email_kind()`.
+  - **Email approval tasks:** only a VERIFIED address creates a `SALES_OUTREACH_APPROVAL`. An UNVERIFIED address takes the contact path, where LinkedIn or Instagram is the ready channel. HQ blocks unverified recipients anyway, so this removes dead-end approvals.
+  - **LinkedIn / Instagram-ready tasks:**
+    - titled `LINKEDIN MESSAGE READY -- X` or `INSTAGRAM DM READY -- X`;
+    - open with the message, profile, why-now and quality gate, all within HQ's first 900 characters;
+    - Adam sends by hand; nothing is automated.
+  - **One open outreach task per opportunity:**
+    - a curated `CONTACT_RESEARCH` task is refreshed in place, with its research notes kept under `--- ORIGINAL RESEARCH NOTES ---`;
+    - a parked or converted approval task is left untouched;
+    - a VERIFIED email closes a curated research task.
+  - **Structured Hunter result** is written to `contact_email_verifications` (see below).
+  - **Local suite 6/6 PASS:** role→name, team→Hello, sponsorship inbox, LinkedIn path, Instagram path, verified direct; no triple blank lines, exact sign-off, no NBSP or non-breaking hyphens.
+
+### Verified email → canonical CRM contact (final design)
+- **Problem found in the live test:** 05 resolved and verified emails (Serper → Hunter finder → Hunter verifier) but wrote them only into the draft. HQ approval reads `contacts.email`, so a verified draft could not be approved.
+- **First fix, since retired:** `20260929095000` copied the address from the draft's `OUTREACH_READY_JSON` line. It was replaced because draft text must never be the source of a recipient.
+- **Final fix (`20260929096000` + `096500`):**
+  - New table `contact_email_verifications`. It is an append-only log of the structured Hunter provider result, not a CRM table. It records:
+    - provider, status, result, score, finder score and accept-all;
+    - the provider's verification date and NOYA's `checked_at`;
+    - workflow and execution;
+    - the public sources where the address was seen;
+    - the outcome.
+  - Workflow 05 writes one row per Hunter check (`Email Found To Record?` → `Record Email Verification - Supabase`), taken straight from the finder and verifier responses.
+  - A BEFORE INSERT trigger applies a row to `contacts` only when **all** of these hold:
+    - valid + deliverable + not catch-all;
+    - a person's address (not an inbox);
+    - first and last name are known;
+    - the email's registrable domain equals the company website's;
+    - it is the same person at the same company;
+    - the contact has no email yet, or already has this exact address;
+    - the contact is not do-not-contact.
+  - When those hold, the trigger:
+    - sets `email_status = VERIFIED`;
+    - writes provenance into `email_source_url`: `hunter:email-verifier status=valid result=deliverable score=… checked_at=… workflow=… exec=… log=<id>`;
+    - mirrors the address to the opportunity;
+    - points the opportunity at the verified person only if it had no contact or an unnamed placeholder.
+  - If no contact exists for that named person, one is created from the verified identity.
+  - It never overwrites a different address; that case is logged as `SKIPPED:CONTACT_HAS_DIFFERENT_EMAIL` for Adam.
+- **Backfill:** Magali Rady (YKONE) and Alexander John (MCI Middle East), from the real exec 628 Hunter responses. Outcome is `CONFIRMED_EXISTING_EMAIL` for both, with provenance recorded and no HQ block reason.
+- **Tested** (10 cases in a rolled-back transaction):
+
+  | Case | Outcome |
+  |---|---|
+  | New named person | Contact created and linked |
+  | Existing person without email | Applied |
+  | Different email on file | Never overwritten |
+  | Catch-all | RISKY, not applied |
+  | Invalid | INVALID, not applied |
+  | Wrong domain | Skipped |
+  | `info@` inbox | Skipped |
+  | Do-not-contact | Skipped |
+  | First name only | Skipped |
+  | VERIFIED only in draft text | Contact unchanged |
+
+- **Audit view `contact_email_provenance`:** each address is labelled PROVIDER_VERIFIED_LOGGED, PUBLISHED_ON_OFFICIAL_SOURCE or LEGACY_PROVIDER_VERIFIED_NO_STORED_EVIDENCE. `quality_issue` flags a false VERIFIED; today it flags none.
+  - The 7 legacy rows were set by department workflows through the same Hunter `valid` rule before provenance logging existed: Nobu, Armani, Quintessentially, Rafanelli, David Tutera, Jetex, Wealth Access.
+
+### Workflow 05 — channel facts for the drafter
+- The AI now sees the person's LinkedIn profile and the Instagram account, and is told which channel copy is REQUIRED.
+- Before this, the drafts for Instagram-primary accounts lacked a DM. The quality gate flagged it as `PRIMARY_INSTAGRAM_WITHOUT_DM`, so nothing was hidden.
+
+### Workflow 07 — member communities and destination partners
+- The aviation/yachting and real-estate query slots are replaced by:
+  - member-community queries (founder, athlete and member clubs);
+  - destination-partner queries: Mallorca, Ibiza, Marbella, Mykonos, Saint-Tropez, Monaco, Courchevel, St Moritz and Cannes, including public `site:instagram.com` discovery.
+- Same query count; same quality gates.
+
+### Conversion before discovery
+- Two changes:
+  - The remaining 21 curated 28 Sep prospects (priority ≥ 70) were moved RESEARCHING → NEW, so 05 resolves contacts and drafts them on the next scheduled runs.
+  - Superseded contact-research tasks were closed once an approval draft exists.
+- The backlog throttle keeps broad discovery REDUCED or PAUSED while this backlog is worked.
 
 ### Workflow 12 — email formatting
 - Gmail draft and send now use minimal personal HTML: 14px system font, 1.5 line height, 12px paragraph spacing, no banner or image.
@@ -166,10 +289,10 @@ Context: Anthropic's API key in n8n kept returning "credit balance too low" on 2
 - **10a:** Windsor returned a free-plan paywall notice ("3 accounts connected, Free plan includes 1") that was stored as a media row. The bogus row was removed, and a deterministic guard now rejects notices posing as media.
 
 ### Cost observability and budget
-- **`cost_observability`:** Serper, Firecrawl and discovery AI calls for TODAY / 7_DAYS / 30_DAY_PROJECTION.
-  - Counts are ACTUAL.
-  - Money is UNKNOWN until `system_config.unit_costs` is filled from invoices.
-  - AI calls in 05/09/10/11/13 are not yet counted.
+- **`cost_observability` (v2, `20260929098000`):** TODAY / 7_DAYS / 30_DAY_PROJECTION.
+  - It covers Serper, Firecrawl, discovery AI calls, Hunter checks (05, from `contact_email_verifications`), reply-classification AI calls (13) and CEO brief runs (11).
+  - Counts are ACTUAL. Money is UNKNOWN until `system_config.unit_costs` is filled from invoices.
+  - Not yet counted: 05 drafting calls, 09, 10a-c, and Hunter inside discovery.
 - **`system_config.ai_budget`:** PROPOSED USD 30/month, with 50/75/90/100% guardrails.
   - Not enforceable in money yet, because gateway credit prices are not exposed.
   - Premium is already outside every automatic path.
@@ -324,14 +447,17 @@ Optional:
 
 ## NEXT ACTION
 
-Adam opens HQ → APPROVALS and approves his first real draft. There are 4 ready: Quintessentially, Armani Hotels & Resorts, Rafanelli Events and Nobu Hotels. All are HUMAN_ONLY, so each approval creates a Gmail draft that Adam reviews and sends himself. Workflow 13 logs the send and any reply.
+29 Sep: reply to Magali Rady (YKONE) with call times for next week. Then review the 13 new approvals in HQ and send the ready LinkedIn/Instagram messages by hand. HQ CRM/Finance completion is the next build phase; it has not started.
+
+Earlier (27 Sep): Adam opens HQ → APPROVALS and approves his first real draft. There are 4 ready: Quintessentially, Armani Hotels & Resorts, Rafanelli Events and Nobu Hotels. All are HUMAN_ONLY, so each approval creates a Gmail draft that Adam reviews and sends himself. Workflow 13 logs the send and any reply.
 
 ## DO NOT TOUCH
 
-- Workflows 00, 00b, 01–11, and the Squarespace site.
+- The Squarespace site and `noya-website/` (separate workstream).
+- Do not re-wire Anthropic back into automatic paths; premium escalation is manual only.
 - `reports@noyaconcierge.com`: internal reporting only.
 - Do not add an APPROVE & SEND path in this phase.
-- Frozen production architecture (27 Sep): the HQ frontend, the hq_* functions, WF12 and WF13.
+- Frozen production architecture (27 Sep): the HQ frontend and the hq_* functions. On 29 Sep WF12 changed only its email body format and WF13 changed only its classifier model and retries.
 - Do not move `gmail_sync_state.go_live_at` earlier.
 
 ## KNOWN CREDENTIAL NAMES (names only)
