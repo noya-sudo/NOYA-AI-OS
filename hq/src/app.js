@@ -11,13 +11,16 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
+// The permanent structure: eight sections, frozen. New capability goes inside one of them, never a ninth.
 const NAV = [
-  ['Today', [['overview', 'Today']]],
-  ['Work', [['inbox', 'Replies'], ['outreach', 'Outreach'], ['relationships', 'Past relationships'], ['linkedin', 'LinkedIn'], ['pipeline', 'Pipeline'], ['tasks', 'Tasks'], ['website', 'Website leads']]],
-  ['Records', [['contacts', 'Contacts'], ['companies', 'Companies']]],
-  ['Money', [['finance', 'Finance'], ['costs', 'System costs']]],
-  ['Growth', [['markets', 'Markets'], ['growth', 'Growth'], ['intelligence', 'Intelligence'], ['reports', 'Reports']]],
-  ['System', [['system', 'System health'], ['help', 'Help & playbook']]],
+  ['01 · Command', [['overview', 'Today'], ['reports', 'Reports']]],
+  ['02 · Intelligence & Opportunities', [['radar', 'Opportunity radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth'], ['library', 'Products & playbooks']]],
+  ['03 · Sales & Outreach', [['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach'], ['pipeline', 'Pipeline'], ['linkedin', 'LinkedIn'], ['website', 'Website leads']]],
+  ['04 · Partnerships', [['partners', 'Partnerships']]],
+  ['05 · Events & Experiences', [['events', 'Events']]],
+  ['06 · Clients & Relationships', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts']]],
+  ['07 · Operations', [['projects', 'Projects'], ['tasks', 'Tasks']]],
+  ['08 · Performance & System', [['finance', 'Finance'], ['costs', 'System costs'], ['system', 'System & team'], ['help', 'Help & playbook']]],
 ];
 const STAGES = ['NEW', 'RESEARCHING', 'READY', 'CONTACTED', 'FOLLOW_UP', 'INTERESTED', 'CALL_REQUIRED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'LONG_TERM', 'ARCHIVED'];
 const STAGE_LABEL = { NEW: 'New', RESEARCHING: 'Researching', READY: 'Ready', CONTACTED: 'Contacted', FOLLOW_UP: 'Follow-up', INTERESTED: 'Interested', CALL_REQUIRED: 'Call required', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', LOST: 'Lost', LONG_TERM: 'Long term', ARCHIVED: 'Archived' };
@@ -82,6 +85,7 @@ const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 const state = {
   session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'overview', loading: false,
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
+  com: null, account: {}, radarF: { h: 'ALL', region: '', cat: '', q: '' }, actF: { view: 'TODAY', seg: '', owner: '', track: '' }, parF: { tab: 'DEVELOP', cls: '' }, evF: { tab: 'UPCOMING' },
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
@@ -154,7 +158,7 @@ const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 // ---------------------------------------------------------------- data
 async function load(silent = false) {
   if (!silent) { state.loading = true; render(); }
-  const [dash, ov, dir, ins, rel] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships')]);
+  const [dash, ov, dir, ins, rel, com] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial')]);
   state.loading = false;
   state.errors = {};
   if (dash.error) {
@@ -164,6 +168,7 @@ async function load(silent = false) {
   if (dir.error) state.errors.dir = dir.error.message; else state.dir = dir.data;
   if (ins.error) state.errors.ins = ins.error.message; else state.ins = ins.data;
   if (rel.error) state.errors.rel = rel.error.message; else state.rel = rel.data;
+  if (com.error) state.errors.com = com.error.message; else state.com = com.data;
   render();
 }
 
@@ -180,9 +185,10 @@ async function call(fn, args, successText) {
   if (error) { state.notice = { err: true, text: error.message }; render(); return null; }
   if (data && data.ok === false) state.notice = { err: true, text: explain(data) };
   else state.notice = { err: false, text: successText };
-  state.timeline = {};
+  state.timeline = {}; state.account = {};
   await load(true);
   if (state.drawer) loadTimeline(state.drawer.kind, state.drawer.id);
+  if (state.drawer?.kind === 'company') loadAccount(state.drawer.id);
   return data;
 }
 
@@ -475,6 +481,7 @@ function viewOverview(d) {
       </div>
     </div>
     ${warmPanel()}
+    ${commandPanels()}
     <div class="ov-grid3">
       <section class="panel"><header><h3>Replies · 14 days</h3><button class="btn small ghost" data-go="inbox">Replies</button></header>
         <div class="body">${replies.length ? replies.slice(0, 5).map((r) => `<div class="mini clickable" ${r.opportunity_id ? `data-open="opp" data-id="${r.opportunity_id}"` : ''}>
@@ -1374,18 +1381,23 @@ function renderDrawer(dr) {
     if (!o) return drawerShell('', '<p class="muted">Record not found in the loaded data.</p>');
     const f = facts(o.id); const r = ready(o.id); const ap = d.approvals.find((x) => x.id === o.id); const co = company(f.company_id);
     const openT = d.tasks.filter((t) => t.opportunity_id === o.id && openStatuses.includes(t.status));
-    return drawerShell(`<h2>${esc(o.company_name)}</h2><div class="pills">${pill(S(o.status))}${f.vertical ? pill(V(f.vertical)) : ''}${pill(`${M(f.origin_market)} → ${M(f.opportunity_market)}`)}${stale(o) ? pill('stale', 'warn') : ''}</div>`, `
+    const cq = (state.com?.queue || []).find((x) => x.id === o.id);
+    return drawerShell(`<h2>${cq ? scoreBadge(cq.score) + ' ' : ''}${esc(o.company_name)}</h2><div class="pills">${pill(S(o.status))}${f.vertical ? pill(V(f.vertical)) : ''}${pill(`${M(f.origin_market)} → ${M(f.opportunity_market)}`)}${stale(o) ? pill('stale', 'warn') : ''}</div>`, `
       <div class="btn-row"><button class="btn small primary" data-modal="stage" data-opp="${o.id}">Change stage</button><button class="btn small" data-modal="meeting" data-opp="${o.id}">Record meeting</button>
         <button class="btn small" data-modal="touch" data-channel="PHONE" data-opp="${o.id}">Log call / message</button><button class="btn small" data-modal="note" data-opp="${o.id}">Add note</button>
         <button class="btn small" data-modal="draft-request" data-channel="LINKEDIN" data-opp="${o.id}">Draft message</button><button class="btn small" data-modal="channel" data-opp="${o.id}">Change channel</button>
-        <button class="btn small" data-modal="finance" data-opp="${o.id}">Add finance record</button></div>
+        <button class="btn small" data-modal="finance" data-opp="${o.id}">Add finance record</button><button class="btn small" data-modal="opp-commercial" data-id="${o.id}">Commercial</button>
+        ${cq && !cq.has_draft && cq.product ? `<button class="btn small primary" data-prep-outreach="${o.id}">Prepare outreach</button>` : ''}</div>
+      ${cq?.trigger ? `<div class="small"><b>Why now:</b> ${esc(cq.trigger)}${cq.signal_id ? ' <button class="linkish" data-tab="radar">(signal)</button>' : ''}</div>` : ''}
+      ${cq?.score ? `<details class="small"><summary>Priority ${esc(cq.score.score)} — why</summary>${scoreTable(cq.score)}</details>` : ''}
       <div class="grid2">
         ${kv('Opportunity', esc(o.opportunity_type || '—'))}
         ${kv('Company', co ? `<button class="linkish" data-open="company" data-id="${co.id}">${esc(co.name)}</button>` : esc(o.company_name))}
         ${kv('Contact', `${ap?.contact_id ? `<button class="linkish" data-open="contact" data-id="${ap.contact_id}">${esc(o.contact_name || '—')}</button>` : esc(o.contact_name || '—')}<div class="muted small">${esc(o.contact_position || '')}</div>`)}
         ${kv('Email', `${esc(ap?.contact_email || r.email || '—')} ${emailPill(ap?.email_status || o.email_status, r.email_kind)}`)}
         ${kv('Channels', `${r.linkedin ? `<a href="${esc(r.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a> ` : ''}${r.instagram ? `<a href="${esc(r.instagram)}" target="_blank" rel="noopener noreferrer">Instagram</a> ` : ''}${r.primary_channel ? `<span class="muted small">best: ${esc(String(r.primary_channel).toLowerCase())}</span>` : ''}` || '—')}
-        ${kv('Estimated value', o.estimated_value != null ? `${esc(money(o.estimated_value, o.currency))}${lbl('ESTIMATE')}` : `unknown${lbl('UNKNOWN')}`)}
+        ${kv('Value', o.estimated_value != null ? `${esc(money(o.estimated_value, o.currency))} <span class="faint">(evidence-backed: ${esc(cq?.contracted_value != null ? 'contract' : cq?.proposal_value != null ? 'proposal' : 'client budget')})</span>` : '<span class="faint">none recorded — no estimate is ever shown</span>')}
+        ${cq ? kv('Commercial', `${esc(PNAME(cq.product))} · ${esc(human(cq.track))} · ${esc(SALES_STAGE[cq.stage] || cq.stage)} · owner ${esc(cq.owner || '—')}`) : ''}
         ${kv('Destination', esc(f.destination || '—'))}
         ${kv('Next action', esc(o.next_action || '—'))}
         ${kv('Why now', esc(r.why_now || '—'))}
@@ -1412,6 +1424,8 @@ function renderDrawer(dr) {
         <button class="btn small" data-modal="finance" data-company="${c.id}">Add finance record</button></div>
       <div class="grid2">${kv('Website', c.website ? `<a href="${esc(/^https?:/.test(c.website) ? c.website : `https://${c.website}`)}" target="_blank" rel="noopener noreferrer">${esc(c.website)}</a>` : '—')}
         ${kv('Country', esc([c.city, c.country].filter(Boolean).join(', ') || 'Unknown'))}${kv('Type', esc(c.company_type || '—'))}${kv('Source', esc(c.source || '—'))}</div>
+      ${accountBlock(c.id)}
+      <div class="btn-row"><button class="btn small" data-modal="partner-edit" data-company="${c.id}">Track as partner</button><button class="btn small" data-modal="edge-add" data-company="${c.id}">Record an introduction</button></div>
       <h3>Opportunities (${opps.length})</h3>${opps.map((o) => `<div class="mini clickable" data-open="opp" data-id="${o.id}"><div class="t">${esc(String(o.opportunity_type || '').slice(0, 90))} ${pill(S(o.status))}</div><div class="m">${esc(o.next_action || '')}</div></div>`).join('') || '<p class="muted small">None.</p>'}
       <h3>People (${people.length})</h3>${people.map((k) => `<div class="mini clickable" data-open="contact" data-id="${k.id}"><div class="t">${esc(k.name || k.email || '—')} ${emailPill(k.email_status, k.email_kind)}</div><div class="m">${esc(k.position || '')}</div></div>`).join('') || '<p class="muted small">None.</p>'}
       ${net.length ? `<h3>You know here (${net.length})</h3>${net.map((k) => `<div class="mini clickable" data-open="connection" data-id="${k.id}"><div class="t">${esc(k.name)}</div><div class="m">${esc(k.position || '')} · LinkedIn connection</div></div>`).join('')}` : ''}
@@ -1445,6 +1459,319 @@ function renderDrawer(dr) {
       ${drafts.length ? `<h3>Drafts</h3>${drafts.map(draftRow).join('')}` : ''}`);
   }
   return '';
+}
+
+// ---------------------------------------------------------------- COMMERCIAL CORE (inside the 8 frozen sections)
+// signal → opportunity → company → people → relationship → service → angle → outreach → conversation → proposal /
+// partnership → project → revenue → expansion. Data: hq_commercial (one read) + hq_account (per company, on open).
+const URG = { NOW: ['Now', 'bad'], D7: ['7 days', 'warn'], D30: ['30 days', 'info'], D90: ['90 days', ''], LATER: ['Later / watch', ''], PASSED: ['Passed', ''] };
+const REGION_LABEL = { EGYPT: 'Egypt', UK: 'UK', EUROPE: 'Europe', MIDDLE_EAST: 'Middle East', GLOBAL: 'Global' };
+const CATEGORY_LABEL = { SPORTS: 'Sports', EVENTS: 'Events', HOSPITALITY: 'Hospitality', BRANDS: 'Brands', PRODUCTION: 'Production', CORPORATE: 'Corporate',
+  PRIVATE_UHNW: 'Private / UHNW', ENTERTAINMENT: 'Entertainment', WEDDINGS: 'Weddings', TRAVEL: 'Travel', REAL_ESTATE: 'Real estate', LUXURY_GOODS: 'Luxury goods', OTHER: 'Other' };
+const SIG_STAGE = { WATCH: ['Watch', ''], RESEARCH: ['Research', 'info'], QUALIFIED: ['Qualified opportunity', 'ok'], ACTIVE: ['Active commercial', 'ok'], DISMISSED: ['Dismissed', ''] };
+const SALES_STAGE = { DISCOVERED: 'Discovered', QUALIFIED: 'Qualified', CONTACT_IDENTIFIED: 'Contact identified', OUTREACH_PREPARED: 'Outreach prepared', CONTACTED: 'Contacted',
+  ENGAGED: 'Engaged', DISCOVERY: 'Discovery', OPPORTUNITY: 'Opportunity', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', LOST: 'Lost', NURTURE: 'Nurture' };
+const PARTNER_STAGES = ['TARGET', 'QUALIFIED', 'CONTACTED', 'CONVERSATION', 'VALUE_EXCHANGE', 'PROPOSED', 'PILOT', 'ACTIVE', 'PRODUCTIVE', 'STRATEGIC', 'DORMANT', 'LOST'];
+const ORG_ROLES = ['ORGANISER', 'PROMOTER', 'SPONSOR', 'BRAND', 'AGENCY', 'PR', 'HOTEL', 'VENUE', 'OPERATOR', 'DEVELOPER', 'PRODUCTION', 'TALENT_AGENCY', 'TEAM', 'GOVERNMENT', 'OTHER'];
+const ITEM_TYPES = ['GUEST', 'VIP', 'FLIGHT', 'HOTEL', 'VILLA', 'TRANSFER', 'RESTAURANT', 'VENUE', 'ENTERTAINMENT', 'PRODUCTION', 'SECURITY', 'SUPPLIER', 'SCHEDULE', 'APPROVAL', 'RUN_OF_SHOW', 'ISSUE', 'FEEDBACK', 'OTHER'];
+const ROLES = ['CEO', 'SALES', 'PARTNERSHIPS', 'SDR', 'EVENTS', 'OPERATIONS', 'ACCOUNT_MANAGEMENT', 'REVOPS'];
+const PROV = { VERIFIED: ['verified', 'ok'], SOURCE_BACKED: ['source-backed', 'info'], INFERRED: ['inferred', 'warn'], NEEDS_VERIFICATION: ['needs verification', 'warn'], MANUALLY_CONFIRMED: ['confirmed in HQ', 'ok'] };
+const provPill = (p) => (p ? pill(PROV[p]?.[0] || p, PROV[p]?.[1] || '') : '');
+const human = (t) => sentence(String(t || '').replace(/_/g, ' '));
+const product = (code) => (state.com?.products || []).find((p) => p.code === code);
+const playbook = (code) => (state.com?.playbooks || []).find((p) => p.code === code);
+const PNAME = (code) => (product(code)?.name || code || '—').replace(/^NOYA /, '');
+const urgPill = (u) => pill(URG[u]?.[0] || u, URG[u]?.[1] || '');
+const dateRange = (a, b) => (a ? `${fmtDay(a)}${b && b !== a ? ` – ${fmtDay(b)}` : ''}` : '');
+const scoreTitle = (s) => (s ? [...(s.components || []).map((c) => `${c.label}: ${c.points}/${c.max} — ${c.why}`), s.override ? `Override ${s.override.score} (computed ${s.computed}): ${s.override.reason}` : '', s.note || ''].filter(Boolean).join('\n') : '');
+const scoreBadge = (s) => (s ? `<span class="score-badge ${s.score >= 70 ? 'hi' : s.score >= 50 ? 'mid' : ''}" title="${esc(scoreTitle(s))}">${esc(s.score)}</span>` : '');
+function scoreTable(s) {
+  if (!s) return '';
+  return `<div class="tbl-wrap"><table class="score-tbl"><tbody>${(s.components || []).map((c) => `<tr><td>${esc(c.label)}</td><td class="num">${esc(c.points)}/${esc(c.max)}</td><td class="small muted">${esc(c.why)}</td></tr>`).join('')}
+    <tr><td><b>Priority</b></td><td class="num"><b>${esc(s.score)}</b></td><td class="small muted">${s.override ? `Override by ${esc(s.override.by || '')}: ${esc(s.override.reason || '')} (computed ${esc(s.computed)})` : esc(s.note || '')}</td></tr></tbody></table></div>`;
+}
+const teamOptions = () => ((state.com?.team?.members) || [{ name: 'Adam' }]).map((m) => [m.name, m.name]);
+const companyOptions = () => [['', 'Choose…'], ...((state.dir?.companies || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map((c) => [c.id, c.name]))];
+
+// ---------------------------------------------------------------- 02 · Opportunity radar
+function signalCard(s) {
+  const q = s.qualification || {}; const pb = playbook(s.playbook);
+  const orgs = s.orgs || [];
+  return `<article class="card signal-card" id="sig-${s.id}">
+    <div class="card-head"><div><div class="co">${esc(s.title)}</div>
+      <div class="muted small">${s.source_url ? `<a href="${esc(s.source_url)}" target="_blank" rel="noopener noreferrer">${esc(s.source_name || 'source')}</a>` : 'No source link'} · found ${esc(shortDay(s.discovered_at))}${s.event_date ? ` · <b>${esc(dateRange(s.event_date, s.event_end))}</b>` : ''}${s.destination ? ` · ${esc(s.destination)}` : ''}</div></div>
+      <div class="pills">${urgPill(s.urgency)}${pill(SIG_STAGE[s.stage]?.[0] || s.stage, SIG_STAGE[s.stage]?.[1] || '')}${s.category ? pill(CATEGORY_LABEL[s.category] || s.category) : ''}${s.region ? pill(REGION_LABEL[s.region] || s.region) : ''}${provPill(s.provenance)}</div></div>
+    ${s.why ? `<div class="small"><b>Why NOYA should care:</b> ${esc(s.why)}</div>` : ''}
+    ${pb ? `<div class="small mt6"><b>Playbook:</b> ${esc(pb.name)} · <b>Products:</b> ${esc((s.products || []).map(PNAME).join(', ') || '—')}</div>` : '<div class="small mt6 faint">No playbook matched yet — edit to choose one.</div>'}
+    ${s.ai?.angle ? `<div class="ai small mt6"><div class="faint">AI reading of the source (${esc(s.ai.provenance || 'inferred')})</div>${esc(s.ai.angle)}${s.ai.decision_roles?.length ? `<div class="mt6"><b>Likely deciders:</b> ${esc(s.ai.decision_roles.join(', '))}</div>` : ''}</div>` : ''}
+    <div class="qual mt6"><div class="qbar"><span data-w="${Math.round(((q.answered || 0) / 10) * 100)}"></span></div>
+      <span class="small"><b>${esc(q.answered ?? 0)}/10</b> qualification answers${q.complete ? ' — complete' : q.missing?.length ? ` · missing: <span class="bad-text">${esc(q.missing.join(' · '))}</span>` : ''}</span>
+      <details class="small"><summary>The 10 questions</summary><ol>${(q.questions || []).map((x) => `<li class="${x.ok ? '' : 'bad-text'}"><b>${esc(x.q)}</b> ${esc(x.a || '—')}</li>`).join('')}</ol></details></div>
+    <div class="small mt6"><b>Organisations</b> ${orgs.length ? '' : '<span class="faint">none named yet</span>'}</div>
+    <div class="orgs">${orgs.map((o) => `<div class="org"><span>${esc(o.name)} <span class="faint">(${esc(human(o.role))})</span>${o.partner ? ' ' + pill('NOYA partner', 'ok') : ''} ${provPill(o.provenance)}</span>
+      ${o.company_id ? `<button class="btn small" data-open="company" data-id="${o.company_id}">Account</button>` : ''}<button class="btn small" data-org-crm="${o.id}" title="Put this organisation in the CRM and raise a find-the-decision-maker task">${o.company_id ? 'Find decision maker' : 'Add to CRM'}</button></div>`).join('')}</div>
+    ${(s.opportunities || []).length ? `<div class="small mt6"><b>Opportunities from this signal:</b> ${s.opportunities.map((o) => `<button class="linkish" data-open="opp" data-id="${o.id}">${esc(o.company)} · ${esc(PNAME(o.product))}</button> ${pill(S(o.status))}`).join(' ')}</div>` : ''}
+    <div class="small faint mt6">Owner ${esc(s.owner || '—')} · next: ${esc(s.next_action || '—')}${s.next_action_due ? ` (due ${esc(shortDay(s.next_action_due))})` : ''}</div>
+    <div class="btn-row mt6">
+      ${s.stage !== 'RESEARCH' && s.stage !== 'ACTIVE' ? `<button class="btn small" data-sig-stage="RESEARCH" data-id="${s.id}">Research</button>` : ''}
+      ${s.stage !== 'WATCH' && s.stage !== 'ACTIVE' ? `<button class="btn small ghost" data-sig-stage="WATCH" data-id="${s.id}">Watch</button>` : ''}
+      ${['WATCH', 'RESEARCH'].includes(s.stage) ? `<button class="btn small ${q.complete ? 'primary' : ''}" data-sig-stage="QUALIFIED" data-id="${s.id}" ${q.complete ? '' : 'title="Answer all 10 questions first"'}>Qualify</button>` : ''}
+      ${['QUALIFIED', 'ACTIVE'].includes(s.stage) || q.complete ? `<button class="btn small primary" data-modal="sig-promote" data-id="${s.id}">Create opportunities</button>` : ''}
+      <button class="btn small" data-modal="sig-org" data-id="${s.id}">Add organisation</button>
+      <button class="btn small" data-modal="sig-edit" data-id="${s.id}">Edit</button>
+      ${s.stage !== 'DISMISSED' ? `<button class="btn small ghost" data-modal="sig-dismiss" data-id="${s.id}">Dismiss</button>` : ''}
+    </div></article>`;
+}
+function viewRadar() {
+  const c = state.com; if (!c) return empty(`Intelligence not loaded${state.errors.com ? `: ${state.errors.com}` : ''}.`);
+  const f = state.radarF; const q = f.q.trim().toLowerCase();
+  const live = c.signals.filter((s) => s.stage !== 'DISMISSED');
+  const tabs = { ALL: live.filter((s) => s.urgency !== 'PASSED'), NOW: live.filter((s) => s.urgency === 'NOW'), D7: live.filter((s) => s.urgency === 'D7'),
+    D30: live.filter((s) => s.urgency === 'D30'), D90: live.filter((s) => s.urgency === 'D90'), LATER: live.filter((s) => ['LATER', 'PASSED'].includes(s.urgency)),
+    DISMISSED: c.signals.filter((s) => s.stage === 'DISMISSED') };
+  const labels = { ALL: 'All', NOW: 'Now / urgent', D7: '7 days', D30: '30 days', D90: '90 days', LATER: 'Longer term / watch', DISMISSED: 'Dismissed' };
+  const rows = (tabs[f.h] || tabs.ALL).filter((s) => (!f.region || s.region === f.region) && (!f.cat || s.category === f.cat)
+    && (!q || [s.title, s.summary, s.destination, ...(s.orgs || []).map((o) => o.name)].some((v) => String(v ?? '').toLowerCase().includes(q))));
+  return `<h2>Opportunity radar</h2>
+    <p class="muted small">Real-world developments that give NOYA a reason to contact someone. The horizon is when to <b>act</b> (events need ~45 days), not the event date. A signal becomes a qualified opportunity only when all 10 questions are answered — otherwise it stays in research.</p>
+    <div class="tabs">${Object.keys(tabs).map((k) => `<button data-rdf="h" data-v="${k}" class="${f.h === k ? 'on' : ''}">${labels[k]} <span class="n">${tabs[k].length}</span></button>`).join('')}</div>
+    <div class="filters"><input data-rdf="q" placeholder="Event, organisation, destination…" value="${esc(f.q)}">
+      <select data-rdf="region">${opt('', f.region, 'All regions')}${Object.entries(REGION_LABEL).map(([k, l]) => opt(k, f.region, l)).join('')}</select>
+      <select data-rdf="cat">${opt('', f.cat, 'All categories')}${Object.entries(CATEGORY_LABEL).map(([k, l]) => opt(k, f.cat, l)).join('')}</select>
+      <button class="btn small" data-modal="sig-capture">+ Capture a signal</button></div>
+    ${rows.map(signalCard).join('') || empty('Nothing on this horizon.')}
+    <p class="src">Sources: workflow 09 (Egypt intelligence) daily, workflow 17 (AI analyst — organisations are kept only if named in the source), and signals captured by the team. No source link, no signal.</p>`;
+}
+
+// ---------------------------------------------------------------- 02 · Products & playbooks
+function viewLibrary() {
+  const c = state.com; if (!c) return empty('Library not loaded.');
+  const w = c.weights || {};
+  return `<h2>Products & playbooks</h2>
+    <p class="muted small">Internal sales frameworks (not public). The radar recommends a playbook and products for every signal; every opportunity records which product it sells, so playbook results below are real outcomes, not estimates.</p>
+    <h3>Playbooks (${c.playbooks.length})</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Playbook</th><th class="num">Signals</th><th class="num">Opps</th><th class="num">Contacted</th><th class="num">Engaged</th><th class="num">Won</th><th class="num">Lost</th></tr></thead><tbody>
+      ${c.playbooks.map((p) => `<tr><td><b>${esc(p.name)}</b><div class="muted small">${esc(p.trigger_desc)}</div></td>${['signals', 'opportunities', 'contacted', 'engaged', 'won', 'lost'].map((k) => `<td class="num">${esc(p.performance?.[k] ?? 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    ${c.playbooks.map((p) => `<details class="panel mt8"><summary><b>${esc(p.name)}</b> — ${esc(p.value_proposition || '')}</summary><div class="body small">
+      ${kv('Ideal prospect', esc(p.ideal_prospect || '—'))}${kv('Decision makers', esc((p.decision_roles || []).join(', ')))}${kv('Products', esc((p.product_codes || []).map(PNAME).join(', ')))}
+      ${kv('Services', esc((p.services || []).join(' · ')))}${kv('Research first', esc((p.research_questions || []).join(' · ')))}${kv('Outreach approach', esc(p.outreach_approach || '—'))}
+      ${kv('Targets around one event', (p.target_orgs || []).map((t) => `${esc(human(t.org_role))} → ${esc(PNAME(t.product))} <span class="faint">(${esc(t.why)})</span>`).join('<br>') || '—')}
+      ${kv('Proposal', esc(p.proposal_type || '—'))}${kv('Proof required', esc((p.proof_required || []).join(' · ')))}${kv('Upsells', esc((p.upsells || []).join(' · ')))}${kv('Partnership potential', esc(p.partnership_potential || '—'))}
+      ${(p.objections || []).map((o) => `<div class="mini"><div class="t">“${esc(o.objection)}”</div><div class="m">${esc(o.response)}</div></div>`).join('')}</div></details>`).join('')}
+    <h3>Products (${c.products.length})</h3>
+    ${c.products.map((p) => `<details class="panel mt8"><summary><b>${esc(p.name)}</b> — ${esc(p.summary)}</summary><div class="body small">
+      ${kv('Ideal client', esc(p.ideal_client || '—'))}${kv('Buyer roles', esc((p.buyer_roles || []).join(', ')))}${kv('Triggers', esc((p.trigger_events || []).join(' · ')))}
+      ${kv('Their problems', esc((p.client_problems || []).join(' · ')))}${kv('NOYA solution', esc(p.solution || '—'))}${kv('Included', esc((p.included_services || []).join(' · ')))}
+      ${kv('Proof', esc((p.proof_points || []).join(' · ')))}${kv('Upsells', esc((p.upsells || []).join(' · ')))}${kv('Recurring', esc(p.recurring_potential || '—'))}
+      <h4>First email</h4><div class="email"><pre>Subject: ${esc(p.email_template?.subject || '')}\n\n${esc(p.email_template?.body || '')}</pre></div>
+      <h4>LinkedIn / DM</h4><div class="email"><pre>${esc(p.dm_template || '')}</pre></div>
+      <h4>Follow-ups</h4>${(p.follow_up_sequence || []).map((f) => `<div class="mini"><div class="t">Day +${esc(f.day)} · ${esc(human(f.channel))} · ${esc(f.purpose)}</div><div class="m">${esc(f.message)}</div></div>`).join('')}
+      <h4>Call points</h4><ul>${(p.call_points || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+      ${(p.objections || []).map((o) => `<div class="mini"><div class="t">“${esc(o.objection)}”</div><div class="m">${esc(o.response)}</div></div>`).join('')}
+      ${kv('Proposal', esc(p.proposal_template || '—'))}</div></details>`).join('')}
+    <h3>Opportunity priority score</h3>
+    <p class="small">Weights (configurable, total 100): ${Object.entries(w).map(([k, v]) => `${esc(human(k))} ${esc(v)}`).join(' · ')}. The score orders the work. It is <b>not money and not a probability of winning</b>; any override needs a written reason and is audited.</p>`;
+}
+
+// ---------------------------------------------------------------- 03 · Action queue (who to contact today, why, what to offer)
+const SEGMENTS = [['', 'All'], ['PRIVATE', 'Private / UHNW'], ['CORPORATE', 'Corporate'], ['BRANDS', 'Brands'], ['PRODUCTION', 'Production'], ['SPORTS', 'Sports / Athletes'],
+  ['EVENTS', 'Events'], ['HOSPITALITY', 'Hospitality'], ['WEDDINGS', 'Weddings'], ['AGENCIES', 'Agencies'], ['CONCIERGE', 'Concierge partners'], ['REAL_ESTATE', 'Real estate'], ['SOURCING', 'Luxury sourcing']];
+function segOf(x) {
+  const t = `${x.type || ''} ${x.company || ''}`;
+  return {
+    PRIVATE: x.segment === 'PRIVATE_UHNW' || x.product === 'NOYA_PRIVATE', CORPORATE: x.segment === 'CORPORATE' || x.product === 'CORPORATE_DESK',
+    BRANDS: x.product === 'BRAND_EXPERIENCE_DESK' || (x.segment === 'BRAND_PRODUCTION' && x.product !== 'PRODUCTION_DESK'), PRODUCTION: x.product === 'PRODUCTION_DESK' || /production/i.test(t),
+    SPORTS: x.segment === 'SPORTS_TALENT' || x.product === 'ATHLETE_TEAM_DESK', EVENTS: x.track === 'EVENT' || ['EVENT_CONCIERGE_DESK', 'VIP_GUEST_DESK'].includes(x.product),
+    HOSPITALITY: x.segment === 'HOSPITALITY', WEDDINGS: x.product === 'WEDDING_GUEST_DESK' || x.segment === 'WEDDINGS_EVENTS', AGENCIES: /agency|agencies|pr |marketing/i.test(t),
+    CONCIERGE: x.segment === 'TRAVEL_CONCIERGE' || x.product === 'EGYPT_DESTINATION_DESK', REAL_ESTATE: x.playbook === 'PROPERTY_LAUNCH' || /real estate|propert|developer/i.test(t),
+    SOURCING: x.product === 'LUXURY_SOURCING',
+  };
+}
+function actionCard(x) {
+  const due = x.due && x.due <= todayKey();
+  return `<article class="card act" id="act-${x.id}">
+    <div class="card-head"><div><div class="co">${scoreBadge(x.score)} ${esc(x.company || '—')}</div>
+      <div class="muted small">${esc(x.person || 'No named person yet')}${x.role ? ` · ${esc(x.role)}` : ''}${x.email_status ? ` · email ${esc(String(x.email_status).toLowerCase())}` : ''}</div></div>
+      <div class="pills">${pill(SALES_STAGE[x.stage] || x.stage, ['ENGAGED', 'DISCOVERY', 'PROPOSAL', 'NEGOTIATION'].includes(x.stage) ? 'ok' : '')}${pill(human(x.track))}${x.segment ? pill(V(x.segment)) : ''}${provPill(x.provenance)}</div></div>
+    <div class="grid2 small">
+      ${kv('Why now', esc(x.trigger || x.reason || '—'))}${kv('Offer', esc(x.product ? PNAME(x.product) : 'No product chosen'))}
+      ${kv('Angle', esc(x.angle || '—'))}${kv('Relationship path', `${pill(x.path, x.path === 'STRONG' ? 'ok' : x.path === 'WARM' ? 'info' : '')} <span class="faint" title="${esc((x.strength?.components || []).map((c) => `${c.evidence} (+${c.points})`).join('\n'))}">${esc((x.strength?.components || []).map((c) => c.evidence).slice(0, 2).join(' · ') || 'no history')}</span>`)}
+      ${kv('Last interaction', esc(x.last_touch ? fmtDay(x.last_touch) : '—'))}${kv('Next', `${esc(x.next_action || '—')}${x.due ? ` <span class="${due ? 'bad-text' : 'faint'}">· due ${esc(shortDay(x.due))}</span>` : ''}`)}
+      ${kv('Owner', esc(x.owner || '—'))}${x.contracted_value != null || x.proposal_value != null || x.client_budget != null ? kv('Value (evidence-backed)', `${esc(money(x.contracted_value ?? x.proposal_value ?? x.client_budget, x.currency))} <span class="faint">${x.contracted_value != null ? 'contract' : x.proposal_value != null ? 'proposal' : 'client budget'}</span>`) : ''}
+    </div>
+    <div class="btn-row mt6"><button class="btn small" data-open="opp" data-id="${x.id}">Open</button>${x.company_id ? `<button class="btn small" data-open="company" data-id="${x.company_id}">Account brief</button>` : ''}
+      ${!x.has_draft && x.product && ['DISCOVERED', 'QUALIFIED', 'CONTACT_IDENTIFIED'].includes(x.stage) ? `<button class="btn small primary" data-prep-outreach="${x.id}">Prepare outreach</button>` : ''}
+      ${x.has_draft && x.stage === 'OUTREACH_PREPARED' ? '<button class="btn small primary" data-go="outreach" data-otab="READY">Approve in Outreach</button>' : ''}
+      <button class="btn small" data-modal="opp-commercial" data-id="${x.id}">Commercial</button></div></article>`;
+}
+function viewActions() {
+  const c = state.com; if (!c) return empty(`Action queue not loaded${state.errors.com ? `: ${state.errors.com}` : ''}.`);
+  const f = state.actF;
+  const open = c.queue.filter((x) => !['WON', 'LOST', 'NURTURE'].includes(x.stage));
+  const today = open.filter((x) => (x.due && x.due <= todayKey()) || ((x.score?.score || 0) >= 60 && !['CONTACTED'].includes(x.stage)));
+  const tabs = { TODAY: today, OPEN: open, NURTURE: c.queue.filter((x) => x.stage === 'NURTURE'), WON: c.queue.filter((x) => x.stage === 'WON') };
+  const labels = { TODAY: 'Today', OPEN: 'All open', NURTURE: 'Nurture', WON: 'Won' };
+  const rows = (tabs[f.view] || today).filter((x) => (!f.seg || segOf(x)[f.seg]) && (!f.owner || x.owner === f.owner) && (!f.track || x.track === f.track));
+  return `<h2>Action queue</h2>
+    <p class="muted small">Who to contact, why, what to offer, what happened last and what to do next — ordered by the priority score (hover a score for its reasons). One shared CRM; the segment chips are views, not separate databases. Nothing is sent from here.</p>
+    <div class="tabs">${Object.keys(tabs).map((k) => `<button data-acf="view" data-v="${k}" class="${f.view === k ? 'on' : ''}">${labels[k]} <span class="n">${tabs[k].length}</span></button>`).join('')}</div>
+    <div class="chips">${SEGMENTS.map(([k, l]) => `<button class="chip ${f.seg === k ? 'on' : ''}" data-acf="seg" data-v="${k}">${esc(l)}</button>`).join('')}</div>
+    <div class="filters"><select data-acf="owner">${opt('', f.owner, 'All owners')}${teamOptions().map(([k, l]) => opt(k, f.owner, l)).join('')}</select>
+      <select data-acf="track">${opt('', f.track, 'Sales + partnerships + events')}${[['SALES', 'Sales'], ['PARTNERSHIP', 'Partnerships'], ['EVENT', 'Events']].map(([k, l]) => opt(k, f.track, l)).join('')}</select></div>
+    ${rows.slice(0, 60).map(actionCard).join('') || empty('Nothing here.')}
+    ${rows.length > 60 ? `<p class="small faint">Showing 60 of ${rows.length}.</p>` : ''}`;
+}
+
+// ---------------------------------------------------------------- 04 · Partnerships
+function partnerCard(p) {
+  return `<article class="card partner"><div class="card-head"><div><div class="co">${esc(p.name)}</div><div class="muted small">${esc(human(p.class))} · ${esc(p.category || '—')}${p.geography ? ` · ${esc(p.geography)}` : ''}</div></div>
+    <div class="pills">${pill(human(p.stage), ['PRODUCTIVE', 'STRATEGIC', 'ACTIVE'].includes(p.stage) ? 'ok' : p.stage === 'DORMANT' ? 'warn' : '')}${pill(human(p.health), p.health === 'GOOD' ? 'ok' : p.health === 'DORMANT' ? 'bad' : 'warn')}${provPill(p.provenance)}</div></div>
+    <div class="grid2 small">${kv('They give NOYA', esc(p.provides_noya || '—'))}${kv('NOYA gives them', esc(p.noya_provides || '—'))}${kv('Terms / rates', esc([p.terms, p.rates, p.commission && `commission: ${p.commission}`, p.exclusivity && `exclusivity: ${p.exclusivity}`].filter(Boolean).join(' · ') || '—'))}
+      ${kv('Real activity', `${esc(p.opportunities)} opportunities · ${esc(p.projects)} project supplies · ${esc(p.revenue_invoices)} paid invoices`)}${kv('Last interaction', esc(p.last_interaction ? fmtDay(p.last_interaction) : 'none recorded'))}${kv('Next', esc(p.next_action || '—'))}
+      ${p.events?.length ? kv('Events they are part of', esc(p.events.join(' · '))) : ''}${kv('Owner', esc(p.owner || '—'))}</div>
+    ${p.stage_evidence ? `<div class="small faint">Stage evidence: ${esc(p.stage_evidence)}</div>` : ''}
+    <div class="btn-row mt6"><button class="btn small" data-open="company" data-id="${p.company_id}">Account</button><button class="btn small" data-modal="partner-edit" data-company="${p.company_id}" data-type="${p.class}">Update</button></div></article>`;
+}
+function viewPartners() {
+  const c = state.com; if (!c) return empty('Partnerships not loaded.');
+  const f = state.parF;
+  const recs = c.partners.filter((p) => !f.cls || p.class === f.cls);
+  const pursuits = c.queue.filter((x) => x.track === 'PARTNERSHIP' && !['WON', 'LOST'].includes(x.stage));
+  const eventOrgs = c.signals.filter((s) => s.stage !== 'DISMISSED' && s.urgency !== 'PASSED').flatMap((s) => (s.orgs || []).filter((o) => ['HOTEL', 'VENUE', 'AGENCY', 'OPERATOR', 'TALENT_AGENCY', 'PR'].includes(o.role)).map((o) => ({ ...o, signal: s })));
+  const openers = recs.filter((p) => (p.events || []).length && ['ACTIVE', 'PRODUCTIVE', 'STRATEGIC', 'PILOT'].includes(p.stage));
+  const tabs = { DEVELOP: pursuits.length + recs.filter((p) => ['TARGET', 'QUALIFIED', 'CONTACTED', 'CONVERSATION', 'VALUE_EXCHANGE', 'PROPOSED'].includes(p.stage)).length,
+    ACTIVE: recs.filter((p) => ['PILOT', 'ACTIVE', 'PRODUCTIVE', 'STRATEGIC'].includes(p.stage)).length,
+    DORMANT: recs.filter((p) => p.stage === 'DORMANT' || ['DORMANT', 'COOLING'].includes(p.health)).length, EVENTS: eventOrgs.length, OPENERS: openers.length };
+  const labels = { DEVELOP: 'To develop', ACTIVE: 'Active', DORMANT: 'Dormant / cooling', EVENTS: 'Events creating partnerships', OPENERS: 'Can open accounts' };
+  let body = '';
+  if (f.tab === 'DEVELOP') body = `${recs.filter((p) => ['TARGET', 'QUALIFIED', 'CONTACTED', 'CONVERSATION', 'VALUE_EXCHANGE', 'PROPOSED'].includes(p.stage)).map(partnerCard).join('')}
+      ${pursuits.length ? `<h3>Partnership pursuits in the CRM (${pursuits.length})</h3>${pursuits.slice(0, 40).map(actionCard).join('')}` : ''}`;
+  else if (f.tab === 'ACTIVE') body = recs.filter((p) => ['PILOT', 'ACTIVE', 'PRODUCTIVE', 'STRATEGIC'].includes(p.stage)).map(partnerCard).join('');
+  else if (f.tab === 'DORMANT') body = recs.filter((p) => p.stage === 'DORMANT' || ['DORMANT', 'COOLING'].includes(p.health)).map(partnerCard).join('');
+  else if (f.tab === 'EVENTS') body = eventOrgs.map((o) => `<div class="mini"><div class="t">${esc(o.name)} <span class="faint">(${esc(human(o.role))})</span> ${provPill(o.provenance)}</div>
+      <div class="m">${esc(o.signal.title)} · ${urgPill(o.signal.urgency)}</div><div class="btn-row mt6">${o.company_id ? `<button class="btn small" data-modal="partner-edit" data-company="${o.company_id}" data-type="${['HOTEL', 'VENUE', 'OPERATOR'].includes(o.role) ? 'SUPPLY' : 'DISTRIBUTION'}">Track as partner</button>` : `<button class="btn small" data-org-crm="${o.id}">Add to CRM</button>`}<button class="btn small ghost" data-tab="radar">Open radar</button></div></div>`).join('');
+  else body = openers.map(partnerCard).join('');
+  return `<h2>Partnerships</h2>
+    <p class="muted small"><b>Supply partners</b> help NOYA deliver (hotels, villas, transport, yachts, security, venues…). <b>Distribution partners</b> send NOYA business repeatedly (concierge firms, family offices, agencies, planners, brands…). <b>Productive</b> and <b>Strategic</b> are earned only by real opportunities, projects and revenue through the partner — never by prestige.</p>
+    <div class="tabs">${Object.keys(tabs).map((k) => `<button data-paf="tab" data-v="${k}" class="${f.tab === k ? 'on' : ''}">${labels[k]} <span class="n">${tabs[k]}</span></button>`).join('')}</div>
+    <div class="filters"><select data-paf="cls">${opt('', f.cls, 'Supply + distribution')}${opt('SUPPLY', f.cls, 'Supply / delivery')}${opt('DISTRIBUTION', f.cls, 'Distribution / revenue')}</select>
+      <button class="btn small" data-modal="partner-edit">+ Partner</button><button class="btn small" data-modal="edge-add">Record an introduction</button></div>
+    ${body || empty('Nothing here yet.')}`;
+}
+
+// ---------------------------------------------------------------- 05 · Events & experiences
+const EVENT_CATS = ['SPORTS', 'ENTERTAINMENT', 'EVENTS', 'CORPORATE', 'WEDDINGS', 'PRODUCTION'];
+function viewEvents() {
+  const c = state.com; if (!c) return empty('Events not loaded.');
+  const f = state.evF;
+  const events = c.signals.filter((s) => s.stage !== 'DISMISSED' && (EVENT_CATS.includes(s.category) || playbook(s.playbook)?.track === 'EVENT'));
+  const upcoming = events.filter((s) => s.urgency !== 'PASSED').sort((a, b) => String(a.event_date || '9999').localeCompare(String(b.event_date || '9999')));
+  const winnable = upcoming.filter((s) => (s.opportunities || []).some((o) => !['WON', 'LOST', 'ARCHIVED'].includes(o.status)) || s.qualification?.complete);
+  const won = c.projects.filter((p) => p.signal_id || /EVENT|GUEST|DESK/.test(p.project_type || ''));
+  const needs = c.projects.filter((p) => ['CONFIRMED', 'PLANNING', 'LIVE'].includes(p.status) && (p.issues > 0 || p.open_tasks > 0));
+  const tabs = { UPCOMING: upcoming.length, WIN: winnable.length, WON: won.length, ACTION: needs.length };
+  const labels = { UPCOMING: 'Upcoming', WIN: 'What we can win', WON: 'Won', ACTION: 'Needs action' };
+  const supply = c.supply_partners || {};
+  const eventRow = (s) => { const pb = playbook(s.playbook); return `<article class="card signal-card"><div class="card-head"><div><div class="co">${esc(s.title)}</div>
+      <div class="muted small">${esc(dateRange(s.event_date, s.event_end) || 'date not confirmed')} · ${esc(s.destination || '—')}</div></div><div class="pills">${urgPill(s.urgency)}${pill(SIG_STAGE[s.stage]?.[0] || s.stage)}</div></div>
+      <div class="small">${pb ? `<b>What NOYA can win:</b> ${(pb.target_orgs || []).map((t) => `${esc(human(t.org_role))} → ${esc(PNAME(t.product))}`).join(' · ')}` : ''}</div>
+      <div class="small mt6"><b>Organisations:</b> ${esc((s.orgs || []).map((o) => `${o.name} (${human(o.role)})`).join(', ') || 'not identified yet')}</div>
+      <div class="small mt6"><b>Opportunities:</b> ${(s.opportunities || []).map((o) => `<button class="linkish" data-open="opp" data-id="${o.id}">${esc(o.company)} · ${esc(PNAME(o.product))}</button> ${pill(S(o.status))}`).join(' ') || '<span class="faint">none yet</span>'}</div>
+      ${pb ? `<details class="small mt6"><summary>Suppliers and partners it needs</summary>${esc((pb.services || []).join(' · '))}<div class="faint mt6">Active supply partners on file: ${esc(Object.entries(supply).map(([k, n]) => `${k} ${n}`).join(' · ') || 'none recorded yet')}</div></details>` : ''}
+      <div class="btn-row mt6"><button class="btn small" data-radar-q="${esc(s.title.slice(0, 30))}">Open in radar</button></div></article>`; };
+  let body;
+  if (f.tab === 'UPCOMING') body = upcoming.map(eventRow).join('');
+  else if (f.tab === 'WIN') body = winnable.map(eventRow).join('');
+  else body = (f.tab === 'WON' ? won : needs).map(projectCard).join('');
+  return `<h2>Events & experiences</h2>
+    <p class="muted small">Before we win: every event is an intelligence signal with several possible commercial targets (one event, many opportunities — never duplicated). After we win: the project runs in Operations with its guests, suppliers, schedule, budget and margin.</p>
+    <div class="tabs">${Object.keys(tabs).map((k) => `<button data-evf="tab" data-v="${k}" class="${f.tab === k ? 'on' : ''}">${labels[k]} <span class="n">${tabs[k]}</span></button>`).join('')}</div>
+    ${body || empty('Nothing here yet.')}`;
+}
+
+// ---------------------------------------------------------------- 07 · Operations (won work)
+const perCur = (list) => { const o = {}; (list || []).forEach((x) => { if (x && x.currency && x.amount != null) o[x.currency] = (o[x.currency] || 0) + Number(x.amount); }); return Object.entries(o).map(([k, v]) => money(v, k)).join(' · ') || '—'; };
+function projectCard(p) {
+  const groups = {}; (p.items || []).forEach((i) => { (groups[i.item_type] = groups[i.item_type] || []).push(i); });
+  return `<article class="card proj"><div class="card-head"><div><div class="co">${esc(p.name)}</div><div class="muted small">${esc(p.company || '—')} · ${esc(dateRange(p.starts_on, p.ends_on) || 'dates tbc')}${p.destination ? ` · ${esc(p.destination)}` : ''} · owner ${esc(p.owner || '—')}</div></div>
+    <div class="pills">${pill(human(p.status), p.status === 'LIVE' ? 'bad' : ['DELIVERED', 'CLOSED'].includes(p.status) ? 'ok' : 'info')}${p.issues ? pill(`${p.issues} issue${p.issues > 1 ? 's' : ''}`, 'bad') : ''}${p.open_tasks ? pill(`${p.open_tasks} open tasks`, 'warn') : ''}</div></div>
+    <div class="grid2 small">${kv('Client charge', esc(p.client_charge != null ? money(p.client_charge, p.currency) : 'not recorded'))}${kv('Supplier cost', esc(p.supplier_cost != null ? money(p.supplier_cost, p.currency) : 'not recorded'))}
+      ${kv('Gross profit', esc(p.gross_profit != null ? money(p.gross_profit, p.currency) : '—'))}${kv('Invoiced / collected', `${esc(perCur(p.invoiced))} / ${esc(perCur(p.collected))}`)}</div>
+    ${p.brief ? `<div class="small"><b>Brief:</b> ${esc(p.brief)}</div>` : ''}
+    ${Object.entries(groups).map(([t, list]) => `<div class="small mt6"><b>${esc(human(t))}</b> ${list.map((i) => `<span class="item ${i.status === 'ISSUE' ? 'bad-text' : ''}">${esc(i.title)}${i.supplier ? ` (${esc(i.supplier)})` : ''} · ${esc(human(i.status))}</span> <button class="linkish" data-modal="project-item" data-id="${p.id}" data-draft="${i.id}">edit</button>`).join(' · ')}</div>`).join('')}
+    ${p.feedback ? `<div class="small mt6"><b>Feedback:</b> ${esc(p.feedback)}</div>` : ''}
+    <div class="btn-row mt6"><button class="btn small" data-modal="project-item" data-id="${p.id}">+ Item (guest, hotel, transfer, supplier, issue…)</button><button class="btn small" data-modal="project-edit" data-id="${p.id}">Update project</button>
+      ${p.status === 'CONFIRMED' ? `<button class="btn small" data-proj-status="PLANNING" data-id="${p.id}">Planning</button>` : ''}${['CONFIRMED', 'PLANNING'].includes(p.status) ? `<button class="btn small" data-proj-status="LIVE" data-id="${p.id}">Live</button>` : ''}
+      ${['PLANNING', 'LIVE'].includes(p.status) ? `<button class="btn small primary" data-proj-status="DELIVERED" data-id="${p.id}" title="Creates a feedback task (+2 days) and an expansion review (+14 days). No client message.">Delivered</button>` : ''}
+      ${p.status === 'DELIVERED' ? `<button class="btn small" data-proj-status="CLOSED" data-id="${p.id}">Close</button>` : ''}${p.opportunity_id ? `<button class="btn small ghost" data-open="opp" data-id="${p.opportunity_id}">Opportunity</button>` : ''}</div></article>`;
+}
+function viewProjects() {
+  const c = state.com; if (!c) return empty('Projects not loaded.');
+  const active = c.projects.filter((p) => ['CONFIRMED', 'PLANNING', 'LIVE'].includes(p.status)); const done = c.projects.filter((p) => ['DELIVERED', 'CLOSED'].includes(p.status));
+  return `<h2>Projects</h2>
+    <p class="muted small">Won work, created automatically when an opportunity is marked Won. Money is shown per currency and only from recorded figures: client charge (contract), supplier cost (confirmed), gross profit, invoiced and collected (Finance). Delivering a project raises a feedback task and, later, one contextual expansion review — never an automatic client message.</p>
+    <h3>Active (${active.length})</h3>${active.map(projectCard).join('') || empty('No active projects. Win an opportunity to create one.')}
+    <h3>Delivered (${done.length})</h3>${done.map(projectCard).join('') || '<p class="muted small">None yet.</p>'}`;
+}
+
+// ---------------------------------------------------------------- 06 · Account intelligence (company drawer)
+function accountBlock(id) {
+  const a = state.account[id];
+  if (!a) return '<p class="muted small">Loading account intelligence…</p>';
+  if (a.error) return `<p class="bad-text small">Account intelligence unavailable: ${esc(a.error)}</p>`;
+  const s = a.strength || {};
+  return `<h3>Account intelligence</h3>
+    <div class="grid2 small">${kv('Relationship strength', `${pill(s.label || 'NONE', s.label === 'STRONG' ? 'ok' : s.label === 'WARM' ? 'info' : '')} ${esc(s.score ?? 0)}/100 <span class="faint">(behaviour only)</span>`)}
+      ${kv('Why now', esc(a.why_now || '—'))}${kv('Relevant NOYA services', esc((a.services || []).slice(0, 8).join(' · ') || '—'))}${kv('Partnership', a.partnership ? esc(`${human(a.partnership.partner_class)} · ${human(a.partnership.stage)}`) : '—')}</div>
+    ${(s.components || []).length ? `<details class="small"><summary>How the strength is built</summary>${s.components.map((c) => `<div>+${esc(c.points)} ${esc(c.evidence)}</div>`).join('')}<div class="faint">${esc(s.method || '')}</div></details>` : ''}
+    <h4>Routes in</h4>${(a.paths || []).map((p) => `<div class="mini"><div class="t">${esc(p.route)} ${provPill(p.provenance)}</div><div class="m">${esc(p.detail || '')}</div></div>`).join('') || '<p class="muted small">No route yet — no email history, contact, LinkedIn connection, introduction or shared-event partner.</p>'}
+    ${(a.events || []).length ? `<h4>Events / signals</h4>${a.events.map((e) => `<div class="mini"><div class="t">${esc(e.title)} ${urgPill(e.urgency)}</div><div class="m">${esc(human(e.role))}${e.event_date ? ` · ${esc(fmtDay(e.event_date))}` : ''}${e.source_url ? ` · <a href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">source</a>` : ''}</div></div>`).join('')}` : ''}
+    ${(a.open_opportunities || []).length ? `<h4>Open opportunities</h4>${a.open_opportunities.map((o) => `<div class="mini clickable" data-open="opp" data-id="${o.id}"><div class="t">${esc(PNAME(o.product) || o.type)} · score ${esc(o.score)} ${pill(S(o.status))}</div><div class="m">${esc(o.angle || o.next_action || '')}</div></div>`).join('')}` : ''}
+    ${(a.past_opportunities || []).length ? `<div class="small faint">Past: ${a.past_opportunities.map((o) => `${esc(o.type)} (${esc(S(o.status))})`).join(' · ')}</div>` : ''}
+    ${(a.outreach_history || []).length ? `<details class="small mt6"><summary>Outreach history (${a.outreach_history.length})</summary>${a.outreach_history.slice(0, 20).map((h) => `<div>${esc(shortDay(h.at))} · ${esc(h.channel)} ${esc(String(h.direction || '').toLowerCase())} · ${esc(h.subject || '')} <span class="faint">${esc(h.summary || '')}</span>${h.thread ? ` · ${gmailLink(h.thread, 'Gmail')}` : ''}</div>`).join('')}</details>` : ''}
+    ${(a.sources || []).length ? `<div class="small faint mt6">Sources: ${a.sources.map((u) => `<a href="${esc(/^https?:/.test(u) ? u : `https://${u}`)}" target="_blank" rel="noopener noreferrer">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(' · ')}</div>` : ''}`;
+}
+async function loadAccount(id) {
+  const { data, error } = await sb.rpc('hq_account', { p_company: id });
+  state.account[id] = error ? { error: error.message } : data;
+  render();
+}
+
+// ---------------------------------------------------------------- 01 · Command additions (action first)
+function commandPanels() {
+  const c = state.com; if (!c) return '';
+  const hot = c.signals.filter((s) => ['RESEARCH', 'QUALIFIED'].includes(s.stage) && ['NOW', 'D7'].includes(s.urgency) && (s.relevance || 0) >= 75).slice(0, 5);
+  const deals = c.queue.filter((x) => ['PROPOSAL', 'NEGOTIATION', 'DISCOVERY'].includes(x.stage)).slice(0, 5);
+  const engagedNoMeeting = c.queue.filter((x) => x.stage === 'ENGAGED').slice(0, 3);
+  const strategic = c.partners.filter((p) => ['PRODUCTIVE', 'STRATEGIC'].includes(p.stage) || (p.class === 'DISTRIBUTION' && p.stage === 'ACTIVE')).slice(0, 5);
+  const dormantProductive = c.partners.filter((p) => p.health === 'DORMANT' && (p.opportunities || p.revenue_invoices));
+  const projects = c.projects.filter((p) => ['CONFIRMED', 'PLANNING', 'LIVE'].includes(p.status)).slice(0, 5);
+  const risks = [...c.projects.filter((p) => p.issues > 0).map((p) => [`${p.name}: ${p.issues} unresolved issue${p.issues > 1 ? 's' : ''}`, 'projects']),
+    ...dormantProductive.map((p) => [`${p.name}: partner has gone quiet but has produced business before`, 'partners']),
+    ...c.signals.filter((s) => s.urgency === 'NOW' && s.stage === 'RESEARCH' && !(s.qualification?.questions || [])[7]?.ok).slice(0, 3).map((s) => [`${s.title.slice(0, 70)} — act now, but no route in yet`, 'radar'])];
+  const teamLoad = {}; (state.data?.tasks || []).filter((t) => openStatuses.includes(t.status)).forEach((t) => { const k = t.assigned_to || 'Unassigned'; teamLoad[k] = (teamLoad[k] || 0) + 1; });
+  const li = (t, go, sub = '') => `<div class="mini clickable" data-go="${go}"><div class="t">${t}</div>${sub ? `<div class="m">${sub}</div>` : ''}</div>`;
+  return `<div class="ov-grid3 mt8">
+    <section class="panel"><header><h3>New high-quality opportunities</h3><button class="btn small ghost" data-go="radar">Radar</button></header><div class="body">
+      ${hot.map((s) => li(`${urgPill(s.urgency)} ${esc(s.title.slice(0, 90))}`, 'radar', `${esc(s.qualification?.answered ?? 0)}/10 answered${s.qualification?.missing?.length ? ` · missing: ${esc(s.qualification.missing.join(', '))}` : ''}`)).join('') || '<div class="empty">Nothing urgent on the radar.</div>'}</div></section>
+    <section class="panel"><header><h3>Meetings · proposals · negotiations</h3><button class="btn small ghost" data-go="actions">Queue</button></header><div class="body">
+      ${[...engagedNoMeeting.map((x) => li(`${esc(x.company)} replied positively — meeting not booked yet`, 'actions', esc(x.next_action || ''))), ...deals.map((x) => li(`${esc(x.company)} · ${esc(SALES_STAGE[x.stage])}`, 'actions', esc(x.next_action || '')))].join('') || '<div class="empty">No live deals at meeting or proposal stage.</div>'}</div></section>
+    <section class="panel"><header><h3>Strategic partnerships</h3><button class="btn small ghost" data-go="partners">Partners</button></header><div class="body">
+      ${strategic.map((p) => li(`${esc(p.name)} · ${esc(human(p.stage))}`, 'partners', `${esc(p.opportunities)} opps · ${esc(p.revenue_invoices)} paid · ${esc(human(p.health))}`)).join('') || '<div class="empty">No partner has earned Productive / Strategic yet (needs real business through them).</div>'}</div></section>
+    <section class="panel"><header><h3>Active projects</h3><button class="btn small ghost" data-go="projects">Operations</button></header><div class="body">
+      ${projects.map((p) => li(`${esc(p.name)} · ${esc(human(p.status))}`, 'projects', `${p.issues ? `<span class="bad-text">${esc(p.issues)} issue(s)</span> · ` : ''}${esc(p.open_tasks)} open tasks`)).join('') || '<div class="empty">No active projects.</div>'}</div></section>
+    <section class="panel"><header><h3>Risks / blockers</h3></header><div class="body">
+      ${risks.map(([t, go]) => li(esc(t), go)).join('') || '<div class="empty">No commercial risks flagged.</div>'}</div></section>
+    <section class="panel"><header><h3>Team action</h3><button class="btn small ghost" data-go="tasks">Tasks</button></header><div class="body">
+      ${Object.entries(teamLoad).map(([k, n]) => `<div class="sig"><span>${esc(k)}</span><span class="faint">${esc(n)} open</span></div>`).join('') || '<div class="empty">No open tasks.</div>'}
+      <div class="small faint mt6">Roles: ${esc(Object.entries(c.team?.routing || {}).map(([r, m]) => `${human(r)} → ${m}`).join(' · '))}</div></div></section>
+  </div>`;
+}
+function teamPanel() {
+  const c = state.com; if (!c) return '';
+  return `<h3>Team & roles</h3><p class="muted small">Every opportunity and action has an owner. New work is routed by role; one person can hold every role today and the team can grow without changing the system.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Role</th><th>Owner</th></tr></thead><tbody>${ROLES.map((r) => `<tr><td>${esc(human(r))}</td><td>${esc(c.team?.routing?.[r] || '—')}</td></tr>`).join('')}</tbody></table></div>
+    <div class="btn-row"><button class="btn small" data-modal="role-route">Assign a role</button></div>`;
 }
 
 // ---------------------------------------------------------------- modals
@@ -1512,6 +1839,73 @@ function renderAnyModal(m) {
         ${sel('Relationship', 'f-rel', [['', `Keep (${c.relationship_status || 'none'})`], ['prospect', 'Prospect'], ['client', 'Client'], ['partner', 'Partner'], ['supplier', 'Supplier'], ['mixed', 'Mixed'], ['inactive', 'Inactive']])}
         <div class="grid2">${fld('Country (from a reliable source)', 'f-country', 'text', c.country || '', 'maxlength="80"')}${fld('Website', 'f-web', 'text', c.website || '', 'maxlength="200"')}</div>
         <p class="small muted">Only fill the country from real evidence (their website, a signature, a call). Unknown stays unknown.</p>`, 'Save'); }
+    case 'sig-capture':
+      return form('Capture a signal', `<p class="small muted">Only real, sourced developments. The source link is required. Name only organisations that the source itself names.</p>
+        ${fld('What happened (title)', 'f-title', 'text', '', 'maxlength="200"')}${fld('Source link', 'f-url', 'url', '', 'placeholder="https://…"')}
+        <div class="grid2">${fld('Source name', 'f-srcname')}${fld('Destination', 'f-dest')}</div>
+        ${area('Summary — facts stated in the source', 'f-summary', '', 'rows="3"')}${area('Why NOYA should care', 'f-why', '', 'rows="2"')}
+        <div class="grid2">${fld('Event start', 'f-d1', 'date')}${fld('Event end', 'f-d2', 'date')}</div>
+        ${area('Organisations named in the source — one per line: Name | ROLE', 'f-orgs', '', 'rows="3" placeholder="El Gouna Film Festival | ORGANISER"')}`, 'Capture');
+    case 'sig-edit': { const s = (state.com?.signals || []).find((x) => x.id === m.id) || {};
+      return form('Edit signal', `<div class="grid2">${fld('Event start', 'f-d1', 'date', s.event_date || '')}${fld('Event end', 'f-d2', 'date', s.event_end || '')}</div>
+        ${sel('Playbook', 'f-pb', [['', 'None'], ...(state.com?.playbooks || []).map((p) => [p.code, p.name])], s.playbook || '')}
+        <div class="grid2">${sel('Category', 'f-cat', Object.entries(CATEGORY_LABEL), s.category || 'OTHER')}${sel('Region', 'f-region', Object.entries(REGION_LABEL), s.region || 'EGYPT')}</div>
+        <div class="grid2">${sel('Owner', 'f-owner', teamOptions(), s.owner || 'Adam')}${fld('Next action due', 'f-due', 'date', s.next_action_due || '')}</div>
+        ${fld('Next action', 'f-next', 'text', s.next_action || '', 'maxlength="300"')}
+        ${area('Why NOYA should care', 'f-why', s.why || '', 'rows="2"')}${area('Problem NOYA solves for them', 'f-problem', s.problem || '', 'rows="2"')}${area('Commercial angle', 'f-angle', s.angle || '', 'rows="2"')}`, 'Save'); }
+    case 'sig-dismiss':
+      return form('Dismiss this signal', `${area('Why is it not worth pursuing? (kept, so the system learns)', 'f-reason', '', 'rows="2"')}`, 'Dismiss', true);
+    case 'sig-org':
+      return form('Add an organisation', `${fld('Organisation', 'f-org', 'text', '', 'maxlength="120"')}${sel('Role around this signal', 'f-role', ORG_ROLES.map((r) => [r, human(r)]), 'ORGANISER')}
+        ${fld('Evidence — where it is named', 'f-evidence', 'text', '', 'maxlength="300"')}${sel('Existing company (optional)', 'f-company', companyOptions(), '')}`, 'Add');
+    case 'sig-promote': { const s = (state.com?.signals || []).find((x) => x.id === m.id) || {}; const pb = playbook(s.playbook) || {};
+      const prodFor = (role) => (pb.target_orgs || []).find((t) => t.org_role === role)?.product || (s.products || [])[0] || '';
+      const trackFor = (role) => (pb.target_orgs || []).find((t) => t.org_role === role)?.track || pb.track || 'SALES';
+      return form('Create commercial opportunities', `<p class="small muted">One event, several opportunities — one per organisation and product. The event itself is not duplicated. Organisations without a contact get a find-the-decision-maker task; nothing is sent.</p>
+        ${(s.orgs || []).map((o, i) => `<div class="promote-row"><label class="check"><input type="checkbox" id="f-t-${i}" data-org="${o.id}" ${i < 4 ? 'checked' : ''}> <b>${esc(o.name)}</b> <span class="faint">(${esc(human(o.role))})</span></label>
+          <div class="grid2">${sel('Product', `f-p-${i}`, (state.com?.products || []).map((p) => [p.code, PNAME(p.code)]), prodFor(o.role))}${sel('Track', `f-k-${i}`, [['EVENT', 'Event'], ['SALES', 'Sales'], ['PARTNERSHIP', 'Partnership']], trackFor(o.role))}</div></div>`).join('') || '<p class="bad-text small">Add at least one organisation named in the source first.</p>'}`, 'Create'); }
+    case 'opp-commercial': { const x = (state.com?.queue || []).find((q) => q.id === m.id) || {};
+      return form(`Commercial — ${esc(x.company || '')}`, `${scoreTable(x.score)}
+        <div class="grid2">${sel('Product', 'f-prod', [['', 'None'], ...(state.com?.products || []).map((p) => [p.code, PNAME(p.code)])], x.product || '')}${sel('Playbook', 'f-pb', [['', 'None'], ...(state.com?.playbooks || []).map((p) => [p.code, p.name])], x.playbook || '')}</div>
+        <div class="grid2">${sel('Track', 'f-track', [['SALES', 'Sales'], ['PARTNERSHIP', 'Partnership'], ['EVENT', 'Event']], x.track || 'SALES')}${sel('Owner', 'f-owner', teamOptions(), x.owner || 'Adam')}</div>
+        <div class="grid2">${fld('Next action', 'f-next', 'text', x.next_action || '', 'maxlength="300"')}${fld('Due', 'f-due', 'date', x.due || '')}</div>
+        ${area('Angle', 'f-angle', x.angle || '', 'rows="2"')}
+        <h4>Money — only with evidence (never an estimate)</h4>
+        <div class="grid2">${fld('Client-stated budget', 'f-budget', 'number', x.client_budget ?? '', 'min="0" step="0.01"')}${fld('Proposal value', 'f-proposal', 'number', x.proposal_value ?? '', 'min="0" step="0.01"')}</div>
+        <div class="grid2">${fld('Contracted value', 'f-contract', 'number', x.contracted_value ?? '', 'min="0" step="0.01"')}${fld('Currency', 'f-cur', 'text', x.currency || '', 'maxlength="3" placeholder="GBP / USD / EUR / EGP"')}</div>
+        ${fld('Evidence (who said it, where — e.g. "Proposal sent 3 Oct, email")', 'f-evidence', 'text', x.value_evidence || '', 'maxlength="300"')}
+        <h4>Priority override (optional)</h4><div class="grid2">${fld('Override score (0–100, empty = none)', 'f-override', 'number', x.score?.override?.score ?? '', 'min="0" max="100"')}${fld('Reason (required with an override)', 'f-oreason', 'text', x.score?.override?.reason || '')}</div>`, 'Save'); }
+    case 'partner-edit': { const p = (state.com?.partners || []).find((x) => x.company_id === m.company && (!m.type || x.class === m.type)) || {};
+      return form(m.company ? `Partnership — ${esc(company(m.company)?.name || p.name || '')}` : 'New partner', `${m.company ? '' : sel('Company', 'f-company', companyOptions(), '')}
+        <div class="grid2">${sel('Type', 'f-class', [['SUPPLY', 'Supply / delivery'], ['DISTRIBUTION', 'Distribution / revenue']], p.class || m.type || 'DISTRIBUTION')}${sel('Stage', 'f-stage', PARTNER_STAGES.map((s) => [s, human(s)]), p.stage || 'TARGET')}</div>
+        <p class="small faint">Productive needs at least one opportunity, project or paid invoice through the partner; Strategic needs paid revenue plus two or more. The system checks.</p>
+        <div class="grid2">${fld('Category', 'f-cat', 'text', p.category || '', 'placeholder="Hotel, yacht, concierge firm, agency…"')}${fld('Geography', 'f-geo', 'text', p.geography || '')}</div>
+        ${area('What they provide NOYA', 'f-gives', p.provides_noya || '', 'rows="2"')}${area('What NOYA provides them', 'f-gets', p.noya_provides || '', 'rows="2"')}
+        <div class="grid2">${fld('Commercial terms', 'f-terms', 'text', p.terms || '')}${fld('Preferred rates', 'f-rates', 'text', p.rates || '')}</div>
+        <div class="grid2">${fld('Commission / referral', 'f-comm', 'text', p.commission || '')}${fld('Exclusivity', 'f-excl', 'text', p.exclusivity || '')}</div>
+        <div class="grid2">${fld('Next action', 'f-next', 'text', p.next_action || '')}${fld('Due', 'f-due', 'date', p.next_action_due || '')}</div>${sel('Relationship owner', 'f-owner', teamOptions(), p.owner || 'Adam')}`, 'Save'); }
+    case 'project-edit': { const p = (state.com?.projects || []).find((x) => x.id === m.id) || {};
+      return form(`Project — ${esc(p.name || '')}`, `${sel('Status', 'f-status', ['CONFIRMED', 'PLANNING', 'LIVE', 'DELIVERED', 'CLOSED', 'CANCELLED'].map((s) => [s, human(s)]), p.status || 'CONFIRMED')}
+        <div class="grid2">${fld('Starts', 'f-d1', 'date', p.starts_on || '')}${fld('Ends', 'f-d2', 'date', p.ends_on || '')}</div>
+        <div class="grid2">${fld('Destination', 'f-dest', 'text', p.destination || '')}${fld('Attendees', 'f-att', 'number', p.attendees ?? '', 'min="0"')}</div>
+        ${area('Brief', 'f-brief', p.brief || '', 'rows="3"')}
+        <div class="grid2">${fld('Client charge (contract)', 'f-charge', 'number', p.client_charge ?? '', 'min="0" step="0.01"')}${fld('Supplier cost (confirmed)', 'f-cost', 'number', p.supplier_cost ?? '', 'min="0" step="0.01"')}</div>
+        <div class="grid2">${fld('Currency', 'f-cur', 'text', p.currency || '', 'maxlength="3"')}${sel('Owner', 'f-owner', teamOptions(), p.owner || 'Adam')}</div>
+        ${area('Client feedback', 'f-feedback', p.feedback || '', 'rows="2"')}`, 'Save'); }
+    case 'project-item': { const p = (state.com?.projects || []).find((x) => x.id === m.id) || {}; const it = (p.items || []).find((i) => i.id === m.draft) || {};
+      return form(it.id ? 'Edit item' : `Add to ${esc(p.name || 'project')}`, `<div class="grid2">${sel('Type', 'f-type', ITEM_TYPES.map((t) => [t, human(t)]), it.item_type || 'HOTEL')}${sel('Status', 'f-status', ['OPEN', 'CONFIRMED', 'DONE', 'ISSUE', 'CANCELLED'].map((s) => [s, human(s)]), it.status || 'OPEN')}</div>
+        ${fld('Title', 'f-title', 'text', it.title || '', 'maxlength="160"')}${area('Detail', 'f-detail', it.detail || '', 'rows="2"')}
+        <div class="grid2">${sel('Supplier (optional)', 'f-supplier', companyOptions(), it.supplier_company_id || '')}${fld('When', 'f-when', 'datetime-local', it.starts_at ? String(it.starts_at).slice(0, 16) : '')}</div>
+        <div class="grid2">${fld('Cost', 'f-cost', 'number', it.cost ?? '', 'min="0" step="0.01"')}${fld('Charge', 'f-charge', 'number', it.charge ?? '', 'min="0" step="0.01"')}</div>
+        ${fld('Currency', 'f-cur', 'text', it.currency || p.currency || '', 'maxlength="3"')}${it.id ? '<label class="check"><input type="checkbox" id="f-del"> Remove this item</label>' : ''}`, 'Save'); }
+    case 'edge-add':
+      return form('Record a real relationship', `<p class="small muted">Only what really happened — e.g. "Sara (Aman) introduced us to Brand X", "Agency Y works with Brand Z". Evidence is required.</p>
+        ${sel('From (company)', 'f-from', companyOptions(), '')}${fld('…or from a person / name', 'f-fromlabel', 'text', '', 'maxlength="120"')}
+        ${sel('Relationship', 'f-rel', [['INTRODUCED', 'Introduced NOYA to'], ['REFERRED', 'Referred business to NOYA from'], ['WORKS_WITH', 'Works with']], 'INTRODUCED')}
+        ${sel('To (company)', 'f-to', companyOptions(), m.company || '')}${fld('Evidence', 'f-evidence', 'text', '', 'maxlength="300" placeholder="Email 12 Oct from Sara; meeting note…"')}`, 'Save');
+    case 'role-route':
+      return form('Assign a role', `${sel('Role', 'f-role', ROLES.map((r) => [r, human(r)]), 'SALES')}${fld('Team member name', 'f-member', 'text', '', 'maxlength="80"')}${fld('Email (optional)', 'f-email', 'email')}
+        <p class="small faint">New work for this role is assigned to this person from now on. Existing owners are not changed.</p>`, 'Assign');
     case 'service-edit': { const v = (state.ins?.services || []).find((x) => x.id === m.id) || {};
       return form(`Update cost — ${esc(v.service || '')}`, `<p class="small muted">Only enter what an invoice or plan page shows. Leave the amount empty if it is not known — it stays UNKNOWN. This changes the register only; it never buys or upgrades anything.</p>
         ${fld('Plan', 'f-plan', 'text', v.current_plan || '', 'maxlength="160"')}
@@ -1592,7 +1986,14 @@ function renderAnyModal(m) {
 async function submitModal() {
   const m = state.modal; const btn = $('#m-ok'); if (btn) btn.disabled = true;
   const done = async (fn, args, text) => { state.modal = null; return call(fn, args, text); };
-  const need = (v, msg) => { if (v) return true; state.notice = { err: true, text: msg }; if (btn) btn.disabled = false; render(); return false; };
+  // Validation message shown inside the form — never re-render (that would wipe what was typed).
+  const need = (v, msg) => {
+    if (v) return true;
+    const modal = $('.modal'); let el = modal && modal.querySelector('.m-err');
+    if (modal && !el) { el = document.createElement('p'); el.className = 'm-err banner err small'; modal.insertBefore(el, modal.querySelector('.btn-row')); }
+    if (el) el.textContent = msg; else { state.notice = { err: true, text: msg }; render(); }
+    if (btn) btn.disabled = false; return false;
+  };
   switch (m.kind) {
     case 'task-dismiss': { const r = val('f-reason'); if (!need(r, 'A reason is required.')) return; return done('hq_task_dismiss', { p_task: m.id, p_reason: r }, 'Task closed.'); }
     case 'touch': { const s = val('f-summary'); if (!need(s, 'Say briefly what happened.')) return;
@@ -1614,6 +2015,56 @@ async function submitModal() {
       render(); return r; }
     case 'draft-edit': { const t = val('f-text'); if (!need(t, 'The message is empty.')) return; return done('hq_draft_action', { p_draft: m.id, p_action: 'SAVE', p_text: t }, 'Draft saved.'); }
     case 'conn-status': return done('hq_connection_update', { p_connection: m.conn, p_status: val('f-status'), p_how_we_know: val('f-how'), p_follow_up: val('f-follow') }, 'Updated.');
+    case 'sig-capture': {
+      if (!need(val('f-title') && val('f-url'), 'A title and a source link are required — no source, no signal.')) return;
+      const orgs = String(val('f-orgs') || '').split('\n').map((l) => l.split('|').map((x) => x.trim())).filter((x) => x[0]).map(([name, role]) => ({ name, role: (role || 'OTHER').toUpperCase().replace(/\s+/g, '_') }));
+      return done('hq_signal_capture', { p: { title: val('f-title'), source_url: val('f-url'), source_name: val('f-srcname'), destination: val('f-dest'), summary: val('f-summary'),
+        why: val('f-why'), event_date: val('f-d1'), event_end: val('f-d2'), orgs } }, 'Signal captured — it is now on the radar with its playbook and qualification.'); }
+    case 'sig-edit':
+      return done('hq_signal_update', { p_id: m.id, p: { event_date: val('f-d1'), event_end: val('f-d2'), playbook_code: val('f-pb'), category: val('f-cat'), region: val('f-region'),
+        owner: val('f-owner'), next_action: val('f-next'), next_action_due: val('f-due'), why: val('f-why'), problem_noya_solves: val('f-problem'), commercial_angle: val('f-angle') } }, 'Signal updated.');
+    case 'sig-dismiss':
+      if (!need(val('f-reason'), 'Say why — it is kept so the radar learns.')) return;
+      return done('hq_signal_update', { p_id: m.id, p: { stage: 'DISMISSED', dismissed_reason: val('f-reason') } }, 'Signal dismissed (reason kept).');
+    case 'sig-org':
+      if (!need(val('f-org'), 'Name the organisation.')) return;
+      return done('hq_signal_org', { p_signal: m.id, p_org_name: val('f-org'), p_role: val('f-role'), p_evidence: val('f-evidence'), p_company: val('f-company'), p_remove: null }, 'Organisation added.');
+    case 'sig-promote': {
+      const targets = [...document.querySelectorAll('.modal input[id^="f-t-"]')].filter((el) => el.checked).map((el) => { const i = el.id.slice(4);
+        return { org_id: el.dataset.org, product: val(`f-p-${i}`), track: val(`f-k-${i}`) }; });
+      if (!need(targets.length, 'Choose at least one organisation.')) return;
+      const r = await done('hq_signal_promote', { p_signal: m.id, p_targets: targets }, 'Opportunities created in Sales & Outreach.');
+      if (r?.ok) { state.notice = { err: false, text: `${r.created.length} opportunit${r.created.length === 1 ? 'y' : 'ies'} created (${r.created.map((x) => x.company).join(', ')}) — see Action queue.` }; render(); }
+      return r; }
+    case 'opp-commercial': {
+      const x0 = (state.com?.queue || []).find((q) => q.id === m.id) || {};
+      const money3 = [val('f-budget'), val('f-proposal'), val('f-contract')].some((v) => v != null);
+      if (!need(!money3 || (val('f-cur') && val('f-evidence')), 'A money value needs its currency and written evidence.')) return;
+      if (!need(val('f-override') == null || val('f-oreason'), 'An override needs a reason.')) return;
+      return done('hq_opportunity_commercial', { p_opp: m.id, p: { product_code: val('f-prod'), playbook_code: val('f-pb'), track: val('f-track'), owner: val('f-owner'),
+        next_action: val('f-next'), next_action_due: val('f-due'), angle: val('f-angle'), client_budget: val('f-budget'), proposal_value: val('f-proposal'),
+        contracted_value: val('f-contract'), currency: val('f-cur'), value_evidence: val('f-evidence'),
+        ...(String(val('f-override') ?? '') !== String(x0.score?.override?.score ?? '') || (val('f-override') != null && val('f-oreason') !== (x0.score?.override?.reason || null))
+          ? { score_override: val('f-override'), score_override_reason: val('f-oreason') } : {}) } }, 'Saved.'); }
+    case 'partner-edit': {
+      const co = m.company || val('f-company'); if (!need(co, 'Choose the company.')) return;
+      return done('hq_partner_upsert', { p_company: co, p_class: val('f-class'), p: { stage: val('f-stage'), category: val('f-cat'), geography: val('f-geo'), provides_noya: val('f-gives'),
+        noya_provides: val('f-gets'), terms: val('f-terms'), rates: val('f-rates'), commission: val('f-comm'), exclusivity: val('f-excl'), next_action: val('f-next'), next_action_due: val('f-due'), owner: val('f-owner') } }, 'Partnership saved.'); }
+    case 'project-edit':
+      return done('hq_project_update', { p_project: m.id, p: { status: val('f-status'), starts_on: val('f-d1'), ends_on: val('f-d2'), destination: val('f-dest'), attendees: val('f-att'),
+        brief: val('f-brief'), client_charge: val('f-charge'), supplier_cost: val('f-cost'), currency: val('f-cur'), owner: val('f-owner'), feedback: val('f-feedback') } }, 'Project updated.');
+    case 'project-item':
+      if (!need($('#f-del')?.checked || val('f-title'), 'Give the item a title.')) return;
+      return done('hq_project_item', { p_project: m.id, p_item: m.draft || null, p: $('#f-del')?.checked ? { delete: true } : { item_type: val('f-type'), status: val('f-status'), title: val('f-title'),
+        detail: val('f-detail'), supplier_company_id: val('f-supplier'), starts_at: val('f-when'), cost: val('f-cost'), charge: val('f-charge'), currency: val('f-cur') } }, 'Project item saved.');
+    case 'edge-add': {
+      const from = val('f-from'); const to = val('f-to');
+      if (!need((from || val('f-fromlabel')) && to && val('f-evidence'), 'From, to and evidence are all required.')) return;
+      return done('hq_edge_add', { p: { from_type: from ? 'COMPANY' : 'PERSON', from_id: from, from_label: from ? company(from)?.name : val('f-fromlabel'), relation: val('f-rel'),
+        to_type: 'COMPANY', to_id: to, to_label: company(to)?.name, evidence: val('f-evidence') } }, 'Relationship recorded (with evidence).'); }
+    case 'role-route':
+      if (!need(val('f-member'), 'Name the team member.')) return;
+      return done('hq_role_route', { p_role: val('f-role'), p_member: val('f-member'), p_email: val('f-email') }, 'Role assigned.');
     case 'service-edit': {
       const cost = val('f-cost'); const ccy = val('f-ccur');
       if (cost != null && !ccy) { // flag on the field itself so nothing typed is lost
@@ -1721,6 +2172,7 @@ function openDrawer(kind, id) {
   state.drawer = { kind, id }; state.q = ''; state.menu = false; render();
   const tk = { opp: 'opportunity', company: 'company', contact: 'contact' }[kind];
   if (tk && !state.timeline[`${tk}:${id}`]) loadTimeline(tk, id);
+  if (kind === 'company' && !state.account[id]) loadAccount(id);
 }
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); state.notice = { err: false, text: 'Copied. Paste it into LinkedIn / Instagram, send, then press Mark sent.' }; }
@@ -1730,6 +2182,7 @@ async function copyText(t) {
 
 function bind() {
   document.querySelectorAll('[data-flex]').forEach((el) => { el.style.flex = el.dataset.flex; });
+  document.querySelectorAll('[data-w]').forEach((el) => { el.style.width = `${el.dataset.w}%`; });
   const on = (sel2, ev, fn) => document.querySelectorAll(sel2).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
   on('[data-tab]', 'click', (b) => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; state.menu = false; state.drawer = null; render(); window.scrollTo(0, 0); });
   on('[data-go]', 'click', (b, e) => {
@@ -1748,6 +2201,25 @@ function bind() {
   on('button[data-rf]', 'click', (b) => { state.relF.tab = b.dataset.v; state.relF.i = 0; render(); });
   on('[data-one-toggle]', 'click', () => { state.oneByOne = !state.oneByOne; state.oIdx = 0; try { localStorage.setItem('hq.oneByOne', state.oneByOne ? '1' : ''); } catch { /* private mode */ } render(); });
   on('[data-o-step]', 'click', (b) => { state.oIdx = Math.max(0, (state.oIdx || 0) + Number(b.dataset.oStep)); render(); window.scrollTo(0, 0); });
+  on('button[data-rdf]', 'click', (b) => { state.radarF[b.dataset.rdf] = b.dataset.v; render(); });
+  on('input[data-rdf], select[data-rdf]', 'change', (el) => { state.radarF[el.dataset.rdf] = el.value; render(); });
+  on('[data-radar-q]', 'click', (b) => { state.radarF = { h: 'ALL', region: '', cat: '', q: b.dataset.radarQ }; state.tab = 'radar'; render(); window.scrollTo(0, 0); });
+  on('button[data-acf]', 'click', (b) => { state.actF[b.dataset.acf] = b.dataset.v; render(); });
+  on('select[data-acf]', 'change', (el) => { state.actF[el.dataset.acf] = el.value; render(); });
+  on('button[data-paf]', 'click', (b) => { state.parF[b.dataset.paf] = b.dataset.v; render(); });
+  on('select[data-paf]', 'change', (el) => { state.parF[el.dataset.paf] = el.value; render(); });
+  on('button[data-evf]', 'click', (b) => { state.evF[b.dataset.evf] = b.dataset.v; render(); });
+  on('[data-sig-stage]', 'click', async (b) => {
+    const r = await call('hq_signal_update', { p_id: b.dataset.id, p: { stage: b.dataset.sigStage } }, `Signal moved to ${SIG_STAGE[b.dataset.sigStage]?.[0] || b.dataset.sigStage}.`);
+    if (r && r.ok === false && r.missing) { state.notice = { err: true, text: `Not qualified yet — still missing: ${r.missing.join(' · ')}` }; render(); }
+  });
+  on('[data-org-crm]', 'click', (b) => call('hq_signal_org_to_crm', { p_org: b.dataset.orgCrm }, 'In the CRM — a find-the-decision-maker task is in Tasks. Record a real person with Add contact.'));
+  on('[data-prep-outreach]', 'click', async (b) => {
+    const r = await call('hq_prepare_outreach', { p_opp: b.dataset.prepOutreach, p_contact: null }, 'Outreach drafted from the product template — approve it in Sales & Outreach → Outreach → Ready (nothing is sent).');
+    if (r && r.ok === false) { state.notice = { err: true, text: `Not ready: missing ${(r.missing || []).join(', ') || r.reason}. ${(r.missing || []).includes('contact') ? 'Add a real contact at the company first.' : ''}` }; render(); }
+  });
+  on('[data-proj-status]', 'click', (b) => call('hq_project_update', { p_project: b.dataset.id, p: { status: b.dataset.projStatus } },
+    b.dataset.projStatus === 'DELIVERED' ? 'Delivered — feedback task in 2 days, expansion review in 14 days (internal only).' : 'Project updated.'));
   on('[data-rel-step]', 'click', (b) => { state.relF.i = Math.max(0, (state.relF.i || 0) + Number(b.dataset.relStep)); render(); });
   on('[data-rel-status]', 'click', async (b) => {
     // Fast path for phone review: save, update the card in place, move on; refresh everything in the background.
@@ -1806,7 +2278,8 @@ function bind() {
 
 const VIEWS = { overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: viewFinance, costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
-  intelligence: viewIntelligence, reports: viewReports, system: viewSystem, help: viewHelp };
+  intelligence: viewIntelligence, reports: viewReports, system: (d) => viewSystem(d) + teamPanel(), help: viewHelp,
+  radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects };
 
 // Refresh: every 60s normally, every 5s for two minutes after an approval. Paused while typing,
 // or while a modal / record / menu is open.

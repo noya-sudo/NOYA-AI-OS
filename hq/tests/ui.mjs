@@ -23,6 +23,46 @@ const insight = JSON.parse(readFileSync('tests/fixtures/insight.json', 'utf8'));
 const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json', 'utf8'));
 mkdirSync('tests/out', { recursive: true });
 
+// Commercial core fixture (self-contained, shaped like hq_commercial / hq_account).
+const cOpps = snapshot.opportunities.slice(0, 3);
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
+const qs = (answered, missing) => ({ answered, of: 10, complete: answered === 10, missing, urgency: 'NOW',
+  questions: ['What happened?', 'Why should NOYA care?', 'Who is behind it?', 'What problem could NOYA solve?', 'Which NOYA product?', 'Who likely decides?', 'Why would they care about NOYA?', 'Can we reach them?', 'When should we approach?', 'What happens next?']
+    .map((q) => ({ q, a: missing.includes(q) ? null : 'answer', ok: !missing.includes(q) })) });
+const commercial = {
+  generated_at: new Date().toISOString(),
+  team: { members: [{ name: 'Adam', roles: ['CEO', 'SALES'] }], routing: { CEO: 'Adam', SALES: 'Adam', PARTNERSHIPS: 'Adam', SDR: 'Adam', EVENTS: 'Adam', OPERATIONS: 'Adam', ACCOUNT_MANAGEMENT: 'Adam', REVOPS: 'Adam' } },
+  weights: { strategic_fit: 25, timing: 20, service_fit: 20, access: 15, commercial_evidence: 10, source_confidence: 10 },
+  products: [{ code: 'EVENT_CONCIERGE_DESK', name: 'NOYA Event Concierge Desk', summary: 'On-ground guest desk.', email_template: { subject: '{{event}} guests', body: 'Hi {{first_name}},' }, dm_template: 'Hi', follow_up_sequence: [{ day: 3, channel: 'EMAIL', purpose: 'Idea', message: 'One idea' }], objections: [{ objection: 'Agency handles it', response: 'We are their ground layer' }], call_points: ['Guest volumes'], included_services: ['24/7 guest line'], upsells: ['Sponsor guest programme'] },
+    { code: 'VIP_GUEST_DESK', name: 'NOYA VIP Guest Desk', summary: 'Discreet VIP host.', email_template: { subject: 'VIP guests', body: 'Hi' }, follow_up_sequence: [], objections: [], call_points: [], included_services: [], upsells: [] }],
+  playbooks: [{ code: 'FILM_FESTIVAL', name: 'Film festival', trigger_desc: 'A film festival with international guests.', track: 'EVENT', product_codes: ['VIP_GUEST_DESK', 'EVENT_CONCIERGE_DESK'], value_proposition: 'More than cars and tables.',
+    decision_roles: ['Head of Guest Relations'], services: ['VIP handling', 'Room blocks'], research_questions: ['Who runs guest relations?'], objections: [], proof_required: [], upsells: [],
+    target_orgs: [{ org_role: 'ORGANISER', why: 'VIP guest services', product: 'VIP_GUEST_DESK', track: 'EVENT' }], performance: { signals: 2, opportunities: 1, contacted: 0, engaged: 0, won: 0, lost: 0 } }],
+  signals: [
+    { id: 's1', title: 'El Gouna Film Festival 2026 takes place 15–23 October', source_name: 'CairoScene', source_url: 'https://cairoscene.com/x', discovered_at: new Date().toISOString(), event_date: '2026-10-15', event_end: '2026-10-23',
+      destination: 'El Gouna', category: 'ENTERTAINMENT', region: 'EGYPT', relevance: 90, confidence: 85, urgency: 'NOW', stage: 'RESEARCH', provenance: 'SOURCE_BACKED', why: 'International guests for nine days.',
+      playbook: 'FILM_FESTIVAL', products: ['VIP_GUEST_DESK'], owner: 'Adam', next_action: 'Find the Head of Guest Relations', qualification: qs(9, ['Can we reach them?']),
+      ai: { angle: 'VIP guest desk for talent and sponsors', decision_roles: ['Head of Guest Relations'], provenance: 'INFERRED (AI from stored source text)' },
+      orgs: [{ id: 'org-1', name: 'El Gouna Film Festival', role: 'ORGANISER', company_id: null, provenance: 'SOURCE_BACKED', partner: false }], opportunities: [], projects: [] },
+    { id: 's2', title: 'HYROX Cairo 2026, 14–15 November', source_name: 'HYROX', source_url: 'https://hyrox.com/event/hyrox-cairo/', discovered_at: new Date().toISOString(), event_date: '2026-11-14', event_end: '2026-11-15',
+      destination: 'Cairo', category: 'SPORTS', region: 'EGYPT', relevance: 85, confidence: 80, urgency: 'NOW', stage: 'QUALIFIED', provenance: 'SOURCE_BACKED', why: 'First race in Egypt.',
+      playbook: 'FILM_FESTIVAL', products: ['EVENT_CONCIERGE_DESK'], owner: 'Adam', next_action: 'Create opportunities', qualification: qs(10, []),
+      orgs: [{ id: 'org-2', name: 'HYROX', role: 'ORGANISER', company_id: directory.companies[0].id, provenance: 'SOURCE_BACKED', partner: false }], opportunities: [], projects: [] },
+    { id: 's3', title: 'Old airshow', source_url: 'https://x', urgency: 'PASSED', stage: 'DISMISSED', category: 'TRAVEL', region: 'EGYPT', qualification: qs(7, []), orgs: [], opportunities: [], projects: [] }],
+  queue: cOpps.map((o, i) => ({ id: o.id, company: o.company_name, company_id: directory.companies[0].id, person: 'Sara Khalil', role: 'Director', segment: 'HOSPITALITY', track: i ? 'SALES' : 'EVENT',
+    trigger: 'El Gouna Film Festival 2026', product: 'VIP_GUEST_DESK', playbook: 'FILM_FESTIVAL', angle: 'VIP guest services', path: i ? 'NONE' : 'WARM',
+    strength: { label: i ? 'NONE' : 'WARM', score: i ? 0 : 25, components: i ? [] : [{ evidence: '3 emails from them', points: 12 }] }, next_action: 'Prepare outreach', owner: 'Adam', due: today,
+    status: 'RESEARCHING', stage: 'CONTACT_IDENTIFIED', has_draft: false, provenance: 'SOURCE_BACKED',
+    score: { score: 80 - i * 10, computed: 80 - i * 10, components: [{ key: 'timing', label: 'Timing / urgency', points: 20, max: 20, why: 'Act now' }], note: 'Priority score, not money and not a probability of winning.' } })),
+  partners: [{ id: 'p1', company_id: directory.companies[1].id, name: directory.companies[1].name, class: 'SUPPLY', category: 'Hotel', stage: 'ACTIVE', health: 'GOOD', opportunities: 0, projects: 0, revenue_invoices: 0, events: [], provenance: 'MANUALLY_CONFIRMED' }],
+  projects: [{ id: 'pr1', name: 'Test Co — VIP Guest Desk', status: 'PLANNING', company: 'Test Co', items: [{ id: 'it1', item_type: 'HOTEL', title: 'Suites block', status: 'CONFIRMED' }], open_tasks: 1, issues: 0,
+    invoiced: [], collected: [], currency: 'EUR', client_charge: 10000, supplier_cost: 6500, gross_profit: 3500, opportunity_id: cOpps[0].id, signal_id: 's1', project_type: 'VIP_GUEST_DESK' }],
+  supply_partners: { Hotel: 1 },
+};
+const account = { company: { id: directory.companies[0].id, name: directory.companies[0].name }, strength: { score: 25, label: 'WARM', components: [{ points: 12, evidence: '3 emails from them' }], method: 'Behaviour only' },
+  paths: [{ route: 'Direct email history', detail: '2 sent · 3 received', provenance: 'VERIFIED' }], people: [], linkedin: [], open_opportunities: [], past_opportunities: [],
+  events: [{ title: 'El Gouna Film Festival 2026', role: 'ORGANISER', urgency: 'NOW' }], services: ['VIP handling'], why_now: 'El Gouna Film Festival 2026', outreach_history: [], notes: [], sources: ['https://cairoscene.com/x'] };
+
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
   const p = join('dist', req.url === '/' ? 'index.html' : req.url.split('?')[0]);
@@ -33,8 +73,10 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(4173, r));
 
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
-  'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update'];
-const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
+  'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update',
+  'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
+  'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route'];
+const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
   'hq_create_opportunity', 'hq_import_connections', ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
@@ -71,6 +113,9 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_directory') return route.fulfill({ json: directory });
       if (m[1] === 'hq_insight') return route.fulfill({ json: insight });
       if (m[1] === 'hq_relationships') return route.fulfill({ json: relationships });
+      if (m[1] === 'hq_commercial') return route.fulfill({ json: commercial });
+      if (m[1] === 'hq_account') return route.fulfill({ json: account });
+      if (m[1] === 'hq_signal_promote') return route.fulfill({ json: { ok: true, created: [{ opportunity_id: cOpps[0].id, company: 'HYROX', product: body.p_targets[0]?.product, track: 'EVENT', has_contact: false }] } });
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
       if (m[1] === 'hq_create_opportunity') return route.fulfill({ json: { ok: true, opportunity_id: data.opportunities[0].id, company_id: null, company_reused: true } });
       if (m[1] === 'hq_import_connections') return route.fulfill({ json: { ok: true, new: body.p_rows.length - 1, updated: 1, duplicates: 0, skipped: 0, upserted: body.p_rows.length } });
@@ -237,6 +282,73 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForTimeout(300);
   const su = last(calls, 'hq_service_update');
   check('Cost edit → hq_service_update (amount, currency, evidence), audited server-side', su && su.body.p_id === hunter.id && su.body.p.monthly_cost === '34' && su.body.p.currency === 'usd' && /INV-1/.test(su.body.p.verification_note), JSON.stringify(su?.body.p));
+
+  // Commercial core: 8 frozen sections, radar, action queue, partnerships, events, operations, account intelligence.
+  const groups = await page.locator('.side .nav-group h6').allInnerTexts();
+  check('Navigation is frozen at exactly 8 sections (01 Command … 08 Performance & System)', groups.length === 8 && /01/.test(groups[0]) && /Command/i.test(groups[0]) && /08/.test(groups[7]) && /Performance/i.test(groups[7]), groups.join(' | '));
+  await page.click('.side [data-tab=radar]');
+  const radar = await page.locator('main').innerText();
+  check('Radar: horizons Now / 7 / 30 / 90 / longer-term; region and category filters', ['Now / urgent', '7 days', '30 days', '90 days', 'Longer term'].every((w) => radar.includes(w)) && (await page.locator('main select[data-rdf=region] option').count()) === 6);
+  check('Radar: signal shows source, qualification 9/10 and what is missing', /CairoScene/.test(radar) && /9\/10/.test(radar) && /Can we reach them\?/.test(radar) && (await page.locator('main a[href="https://cairoscene.com/x"]').count()) === 1);
+  check('Radar: AI reading is labelled as AI, separate from source facts', /AI reading of the source/.test(radar));
+  await page.locator('#sig-s1 [data-org-crm]').click(); await page.waitForTimeout(250);
+  check('Radar: organisation → Add to CRM + find-decision-maker task (hq_signal_org_to_crm)', last(calls, 'hq_signal_org_to_crm')?.body.p_org === 'org-1');
+  await page.locator('#sig-s1 [data-sig-stage=QUALIFIED]').click(); await page.waitForTimeout(250);
+  check('Radar: Qualify goes through the server gate (hq_signal_update stage QUALIFIED)', last(calls, 'hq_signal_update')?.body.p.stage === 'QUALIFIED');
+  await page.locator('#sig-s2 [data-modal=sig-promote]').click(); await page.waitForSelector('.modal');
+  await page.click('#m-ok'); await page.waitForTimeout(300);
+  const pr = last(calls, 'hq_signal_promote');
+  check('Radar: one signal → opportunities per organisation + product (hq_signal_promote)', pr && pr.body.p_signal === 's2' && pr.body.p_targets[0].org_id === 'org-2' && pr.body.p_targets[0].product === 'VIP_GUEST_DESK', JSON.stringify(pr?.body));
+  await page.click('main [data-modal=sig-capture]'); await page.waitForSelector('.modal');
+  await page.fill('#f-title', 'Brand X opens in Cairo'); await page.click('#m-ok'); await page.waitForTimeout(200);
+  check('Capture: a signal without a source link is refused, typed text kept', !last(calls, 'hq_signal_capture') && /source link/i.test(await page.locator('.modal .m-err').innerText().catch(() => '')) && (await page.inputValue('#f-title')) === 'Brand X opens in Cairo');
+  await page.fill('#f-url', 'https://example.com/brand-x'); await page.fill('#f-orgs', 'Brand X | BRAND'); await page.click('#m-ok'); await page.waitForTimeout(300);
+  const cap = last(calls, 'hq_signal_capture');
+  check('Capture: source link + named organisations sent (hq_signal_capture)', cap && cap.body.p.source_url === 'https://example.com/brand-x' && cap.body.p.orgs[0].role === 'BRAND');
+  await page.click('.side [data-tab=actions]');
+  const act = await page.locator('main').innerText();
+  const firstAct = await page.locator('main article.card.act').first().innerText();
+    check('Action queue: who / why / what to offer / path / next / owner / due, highest priority first', /80/.test(firstAct) && /Why now/i.test(firstAct) && /Offer/i.test(firstAct) && /Relationship path/i.test(firstAct) && /Owner/i.test(firstAct) && /due/i.test(firstAct));
+  check('Action queue: one CRM, segment views (Private, Corporate, Brands, Production, Sports, Events, Hospitality, Weddings, Agencies, Concierge, Real estate, Sourcing)', ['Private / UHNW', 'Corporate', 'Brands', 'Production', 'Sports', 'Events', 'Hospitality', 'Weddings', 'Agencies', 'Concierge partners', 'Real estate', 'Luxury sourcing'].every((w) => act.includes(w)));
+  await page.locator('main article.card.act [data-prep-outreach]').first().click(); await page.waitForTimeout(250);
+  check('Action queue: Prepare outreach → hq_prepare_outreach (then the existing approval queue; nothing sent)', last(calls, 'hq_prepare_outreach')?.body.p_opp === cOpps[0].id);
+  await page.locator('main article.card.act [data-modal=opp-commercial]').first().click(); await page.waitForSelector('.modal');
+  check('Commercial: score breakdown shown, with "not money" note', /not money/i.test(await page.locator('.modal').innerText()));
+  await page.fill('#f-proposal', '25000'); await page.click('#m-ok'); await page.waitForTimeout(200);
+  check('Commercial: a money value without currency + evidence is refused (no fake pipeline)', !last(calls, 'hq_opportunity_commercial'));
+  await page.fill('#f-cur', 'EUR'); await page.fill('#f-evidence', 'Proposal sent 3 Oct (email)'); await page.fill('#f-override', '95'); await page.click('#m-ok'); await page.waitForTimeout(200);
+  check('Commercial: a score override without a reason is refused', !last(calls, 'hq_opportunity_commercial'));
+  await page.fill('#f-oreason', 'Warm intro from their CEO'); await page.click('#m-ok'); await page.waitForTimeout(300);
+  const oc = last(calls, 'hq_opportunity_commercial');
+  check('Commercial: proposal value with currency + evidence, override with reason (hq_opportunity_commercial)', oc && oc.body.p.proposal_value === '25000' && oc.body.p.currency === 'EUR' && /Proposal sent/.test(oc.body.p.value_evidence) && oc.body.p.score_override === '95', JSON.stringify(oc?.body.p).slice(0, 200));
+  await page.click('.side [data-tab=partners]');
+  const par = await page.locator('main').innerText();
+  check('Partnerships: supply vs distribution explained; productive/strategic earned by activity only', /Supply partners/.test(par) && /Distribution partners/.test(par) && /never by prestige/.test(par));
+  await page.click('main [data-paf=tab][data-v=ACTIVE]');
+  await page.locator('main article.card.partner [data-modal=partner-edit]').first().click(); await page.waitForSelector('.modal');
+  await page.selectOption('#f-stage', 'PRODUCTIVE'); await page.click('#m-ok'); await page.waitForTimeout(300);
+  check('Partnerships: update → hq_partner_upsert (server checks the evidence for Productive)', last(calls, 'hq_partner_upsert')?.body.p.stage === 'PRODUCTIVE');
+  await page.click('.side [data-tab=events]');
+  const ev = await page.locator('main').innerText();
+  check('Events: upcoming events with what NOYA can win and the organisations', /El Gouna Film Festival/.test(ev) && /What NOYA can win/.test(ev) && /Organiser → VIP Guest Desk/i.test(ev));
+  await page.click('.side [data-tab=projects]');
+  const pj = await page.locator('main').innerText();
+  check('Operations: project with items, client charge, supplier cost and gross profit per currency', /Suites block/.test(pj) && /EUR 10,000/.test(pj) && /EUR 6,500/.test(pj) && /EUR 3,500/.test(pj));
+  await page.click('main [data-proj-status=DELIVERED]'); await page.waitForTimeout(250);
+  check('Operations: Delivered → hq_project_update (feedback + expansion tasks, no client message)', last(calls, 'hq_project_update')?.body.p.status === 'DELIVERED');
+  await page.click('main [data-modal=project-item]'); await page.waitForSelector('.modal');
+  await page.selectOption('#f-type', 'TRANSFER'); await page.fill('#f-title', 'Airport VIP arrivals'); await page.click('#m-ok'); await page.waitForTimeout(250);
+  check('Operations: add item → hq_project_item', last(calls, 'hq_project_item')?.body.p.item_type === 'TRANSFER');
+  await page.click('.side [data-tab=library]');
+  check('Library: products (templates, follow-ups, objections) and playbooks with real outcomes', /Film festival/.test(await page.locator('main').innerText()) && /not money and not a probability/.test(await page.locator('main').innerText()));
+  await page.click('.side [data-tab=companies]');
+  await page.locator('main tr[data-open=company]').first().click(); await page.waitForSelector('.drawer'); await page.waitForTimeout(300);
+  const drw = await page.locator('.drawer').innerText();
+    check('Account intelligence in the company record (strength with evidence, routes in, why now)', calls.some((c) => c.fn === 'hq_account') && /Account intelligence/i.test(drw) && /Routes in/i.test(drw) && /Direct email history/.test(drw) && /WARM/i.test(drw));
+  await page.click('.drawer [data-close-drawer]');
+  await page.click('.side [data-tab=overview]');
+  const cmd = await page.locator('main').innerText();
+  check('Command: action-first modules (opportunities, deals, partnerships, projects, risks, team)', ['New high-quality opportunities', 'Meetings · proposals · negotiations', 'Strategic partnerships', 'Active projects', 'Risks / blockers', 'Team action'].every((w) => cmd.toLowerCase().includes(w.toLowerCase())));
 
   // Finance: new record + definitions.
   await page.click('.side [data-tab=finance]');
@@ -513,7 +625,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#m-ok');
   await page.waitForSelector('.drawer');
   await step('10 + New opportunity from the phone opens the new record', !!last(calls, 'hq_create_opportunity'));
-  for (const tab of ['relationships', 'linkedin', 'contacts', 'companies', 'markets', 'costs', 'growth', 'help', 'system']) {
+  for (const tab of ['relationships', 'linkedin', 'contacts', 'companies', 'markets', 'costs', 'growth', 'help', 'system', 'radar', 'actions', 'partners', 'events', 'projects', 'library']) {
     await closeDrawer(page);
     await page.click('#bmenu');
     await page.click(`.sheet [data-tab=${tab}]`);

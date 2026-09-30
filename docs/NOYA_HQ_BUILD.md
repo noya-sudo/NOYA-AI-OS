@@ -2,6 +2,9 @@
 
 Status as of 30 Sep 2026 (01:00 Cairo). HQ is the control layer over Supabase and n8n. It is not another database.
 
+## Commercial OS (V3)
+See `docs/NOYA_COMMERCIAL_OS.md`. The acceptance test is `supabase/tests/commercial_acceptance.sql` (run in the Supabase SQL runner; it rolls back and reports as JSON in the error). Migrations `20261001100000`–`20261001106000`. Workflow 17 is `n8n/17_signal_analyst.workflow.ts`.
+
 ## Status (30 Sep 2026 — operating layer)
 
 | Item | Designed | Coded | Tested | Live data | Live |

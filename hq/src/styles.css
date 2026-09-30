@@ -303,3 +303,18 @@ label.btn input[type=file] { display: none; }
 .pill.ghost { background: transparent; border: 1px dashed var(--line); }
 @media (max-width: 640px) { .card.rel.review .chip { flex: 1 1 calc(33% - 6px); text-align: center; } }
 .evidence { margin-top: 3px; color: var(--ok); }
+/* Commercial core: radar, action queue, partnerships, events, operations */
+.score-badge { display: inline-block; min-width: 30px; padding: 1px 7px; border-radius: 12px; border: 1px solid var(--line-2); font-size: 12px; font-weight: 600; text-align: center; cursor: help; }
+.score-badge.mid { border-color: var(--info); color: var(--info); }
+.score-badge.hi { background: var(--navy); border-color: var(--navy); color: #fff; }
+.qual { display: grid; gap: 4px; }
+.qbar { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+.qbar span { display: block; height: 100%; background: var(--navy); }
+.qual ol { margin: 6px 0 0; padding-left: 18px; }
+.orgs { display: grid; gap: 4px; margin-top: 4px; }
+.org { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; }
+.org > span { flex: 1 1 220px; }
+.promote-row { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+label.check { display: flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
+.score-tbl td { padding: 4px 6px; }
+.card.proj .item { white-space: nowrap; }

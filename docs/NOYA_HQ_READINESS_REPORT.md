@@ -1,6 +1,13 @@
 # NOYA HQ — Commercial Operating System Readiness Report (V2.2)
 30 Sep 2026. Every figure comes from live Supabase.
 
+## V3 — commercial operating system (30 Sep 2026)
+- **HQ is frozen at 8 sections:** Command · Intelligence & Opportunities · Sales & Outreach · Partnerships · Events & Experiences · Clients & Relationships · Operations · Performance & System.
+- **Chain is live:** signal → qualified (10 questions) → opportunity → outreach from product template → approval → Gmail draft → reply → proposal → project/partnership → revenue → expansion. Full design: `docs/NOYA_COMMERCIAL_OS.md`.
+- **No fake pipeline:** 33 AI values moved to legacy; any money now needs evidence. Live fake pipeline = 0.
+- **Acceptance:** 6 real signals × 19 steps pass (Mel Gibson correctly stays in Research). The test found 6 defects, now fixed. UI tests: 152/152 pass. Security scan passes.
+- **Workflow 17 (Signal Analyst):** runs daily at 10:45 Cairo. The AI proposes organisations and angles; the database keeps only names in the source text.
+
 ## V2.2 — ready for use (30 Sep 2026)
 - **Reply tracking every 30 minutes** (was 15). About 1,440 fewer n8n runs a month.
   - Nothing is missed: the search starts from a fixed date and each email is handled once.
