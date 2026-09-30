@@ -1,29 +1,52 @@
 # NOYA System Dependency Register
 
-The live register is the `system_services` table, shown in HQ → **System costs**. This file is a snapshot from 30 Sep 2026.
+The live register is the `system_services` table, shown in HQ → **System costs**. This file is a snapshot from 30 Sep 2026. Edit costs in HQ with **Update from invoice**. Every change is audited.
 
 **UNKNOWN** means that no invoice or plan page has confirmed the figure yet. It is never zero.
 
-| Service | Purpose | Plan | Cost type | Monthly | Limit | What breaks without it | Alternative | Credential kept in | Renewal |
-|---|---|---|---|---|---|---|---|---|---|
-| n8n Cloud | Runs every workflow (00–14) | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN (executions) | All automation stops | Self-hosted n8n | n8n account (Adam) | UNKNOWN |
-| n8n AI gateway credits | Gemini 3.1 Flash-Lite, GPT-5 mini | Included in n8n plan | UNKNOWN | UNKNOWN | UNKNOWN | AI falls back to deterministic output | Own Gemini/OpenAI key | Managed by n8n | — |
-| Anthropic API | Premium model, manual escalation only | Pay as you go (balance low) | Pay as you go | — | Account balance | Nothing in normal operation | Leave unused | n8n credential "Anthropic" | — |
-| Supabase | CRM, HQ auth, server functions | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | HQ and all workflows stop | None (core) | Supabase dashboard; n8n credential | UNKNOWN |
-| Hunter | Email finding/verification | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | No new VERIFIED emails | Manual verification | n8n credential | UNKNOWN |
-| Serper | Google search for research | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN (~2,061 searches/month projected) | Discovery stops | Firecrawl search | n8n credential | UNKNOWN |
-| Firecrawl | Reads company websites | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN (~180 calls/month projected) | Research is shallower | Plain HTTP fetch | n8n credential | UNKNOWN |
-| Google Workspace (noya@) | Drafts, sending, reply tracking | UNKNOWN | UNKNOWN | UNKNOWN | — | No drafts, sends or reply tracking | None (core) | n8n credential "NOYA Gmail" | UNKNOWN |
-| Cloudflare | Hosts hq.noyaconcierge.com | UNKNOWN (static, usually free tier) | UNKNOWN | UNKNOWN | — | HQ unreachable (data safe) | Any static host | Cloudflare account | — |
-| Windsor.ai | Instagram / paid media data | Free plan | Usage limited | 0 | 1 account | Marketing data stops (already stale) | Instagram Graph API | n8n credential | — |
-| GitHub | Code repository | UNKNOWN | UNKNOWN | UNKNOWN | — | No new deploys | Any git host | GitHub (noya-sudo) | — |
-| Domain noyaconcierge.com | Website, email, HQ | UNKNOWN | UNKNOWN | UNKNOWN | — | Email, site and HQ stop if it lapses | None | Registrar | **UNKNOWN — record it** |
-| LinkedIn (Adam personal) | Warm network, manual messages | Free | Free | 0 | LinkedIn's own limits | Nothing automated | — | None stored (by design) | — |
+| Service | Purpose | Plan (evidence) | Cost type | Monthly | Limit | What breaks without it | Alternative | Credential kept in |
+|---|---|---|---|---|---|---|---|---|
+| n8n Cloud | Runs every workflow (00–16) | **UNKNOWN.** No n8n invoice in noya@. Two earlier trials on noya@ ended unpaid (workspace "noya", Nov 2025; "noyaconcierge", 14 Aug 2026). The live instance noyaprivate.app.n8n.cloud is billed elsewhere, or is a trial. | UNKNOWN | UNKNOWN | UNKNOWN (executions) | All automation stops | Self-hosted n8n | n8n account (Adam) |
+| n8n AI gateway credits | Gemini 3.1 Flash-Lite, GPT-5 mini | Included in the n8n plan | UNKNOWN | UNKNOWN | UNKNOWN | AI falls back to deterministic output | Own Gemini/OpenAI key | Managed by n8n |
+| Anthropic API | Premium model, manual only | Pay as you go (balance low) | Pay as you go | — | Balance | Nothing | Leave unused | n8n credential |
+| Supabase | CRM, HQ auth, server functions | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | HQ and all workflows stop | None (core) | Supabase; n8n credential |
+| Hunter | Email finding/verification | **Free plan, 50 credits/month** (Hunter email, 27 Sep 2026) | Usage limited | 0 | 50 credits/month | No new VERIFIED emails | Manual verification | n8n credential |
+| Serper | Google search for research | UNKNOWN. No sign-up or billing email in noya@, so it is under another email. | UNKNOWN | UNKNOWN | ~2,061 searches/month projected | Discovery stops | Firecrawl search | n8n credential |
+| Firecrawl | Reads company websites | **Free credits**, 50% used by 23 Sep 2026 (Firecrawl email) | Usage limited | 0 | Free allowance | Research is shallower | Plain HTTP fetch | n8n credential |
+| Google Workspace (noya@) | Drafts, sending, reply tracking | **Business Standard**, monthly invoice auto-charged (Google emails; invoice 5669140503, 1 Sep 2026). The amount is only in the PDF. | Fixed monthly | UNKNOWN (in PDF) | Per user | No drafts, sends or reply tracking | None (core) | n8n credential "NOYA Gmail" |
+| Stripe (NOYA payments) — **new** | Client card payments | Monthly Stripe tax invoices, Aug 2025 – Aug 2026 | Pay as you go | Fees per transaction | — | No card payments | Bank transfer | Stripe account |
+| Cloudflare | Hosts hq.noyaconcierge.com | UNKNOWN (static, usually free tier) | UNKNOWN | UNKNOWN | — | HQ unreachable (data safe) | Any static host | Cloudflare account |
+| Windsor.ai | Instagram / paid-media data | Free plan | Usage limited | 0 | 1 account | Marketing data stops (already stale) | Instagram Graph API | n8n credential |
+| GitHub | Code repository | UNKNOWN | UNKNOWN | UNKNOWN | — | No new deploys | Any git host | GitHub |
+| Domain noyaconcierge.com | Website, email, HQ | UNKNOWN | UNKNOWN | UNKNOWN | — | Everything stops if it lapses | None | Registrar — **record the renewal date** |
+| LinkedIn (Adam personal) | Warm network, manual messages | Free | Free | 0 | LinkedIn's limits | Nothing automated | — | None stored |
+
+## Cost reconciliation (30 Sep 2026)
+Evidence comes from NOYA's own Gmail (noya@), billing emails only.
+
+- **Confirmed fixed monthly:** £0 / $0 confirmed. Google Workspace Business Standard is a fixed monthly cost, but the amount is only in the PDF invoice.
+- **Usage-based:**
+  - Hunter: free, 50 credits a month.
+  - Firecrawl: free credits.
+  - Stripe: fees per transaction.
+  - Anthropic: pay as you go, unused.
+  - Windsor: free.
+- **Remaining UNKNOWN (7):** n8n Cloud, n8n AI credits, Serper, Supabase, Cloudflare, GitHub, domain.
+- **Will get expensive as volume grows:**
+  1. **Serper:** ~2,061 searches a month. It is the biggest usage-priced service.
+  2. **n8n executions:** reply tracking alone runs ~2,880 times a month.
+  3. **Hunter:** ~60 checks a month projected against 50 free credits. It runs out late each month.
+  4. **Firecrawl:** free credits were half used by 23 Sep.
+- **Downgrade or remove without hurting reliability:**
+  - **Anthropic API:** no automatic workflow uses it.
+  - **Windsor.ai:** stale data, and 3 accounts on a 1-account plan.
+  - **Reply tracking:** move from every 15 minutes to every 30. This halves ~2,880 n8n runs, but only matters if the plan is limited by executions.
+- **Risk:** Google Workspace card payments were declined six times (Dec 2025 – Jun 2026). No decline since 1 Jun. Keep a valid card on file.
 
 ## Budget view
-- **Known fixed monthly:** none confirmed yet.
-- **Pay as you go:** Anthropic (unused on automatic paths).
-- **Unknown exposure:** 11 services. Verify each before increasing volume.
+- **Known fixed monthly:** no amount confirmed yet. Google Workspace Business Standard is fixed, amount in the PDF invoice.
+- **Pay as you go:** Anthropic (unused on automatic paths), Stripe fees.
+- **Unknown exposure:** 7 services with no plan evidence, plus the Google Workspace amount. Verify each before increasing volume.
 - **AI spend guard (configured):** USD 30/month in `system_config.ai_budget`, cheap models only above 100%. This is a guard, not a measured spend.
 - **Usage counts (actual, 30-day projection):**
   - 2,061 Serper searches, 180 Firecrawl calls, 60 Hunter checks;

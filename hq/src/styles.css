@@ -291,3 +291,15 @@ label.btn input[type=file] { display: none; }
 .prep ul { margin: 0; padding-left: 18px; }
 .prep li { margin: 3px 0; }
 .card.rel .email { margin: 6px 0; padding: 8px 10px; }
+/* Past relationships: status chips + one-at-a-time review (thumb-sized on phones) */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
+.chip { min-height: 36px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.chip:hover { border-color: var(--navy); }
+.chip.sug { border-color: var(--navy); border-style: dashed; }
+.chip.on { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 600; }
+.chip:disabled { opacity: .5; cursor: default; }
+.card.rel .ai { margin: 6px 0; padding: 8px 10px; background: var(--panel-2); border-left: 3px solid var(--line); border-radius: 0 4px 4px 0; }
+.review-nav { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.pill.ghost { background: transparent; border: 1px dashed var(--line); }
+@media (max-width: 640px) { .card.rel.review .chip { flex: 1 1 calc(33% - 6px); text-align: center; } }
+.evidence { margin-top: 3px; color: var(--ok); }

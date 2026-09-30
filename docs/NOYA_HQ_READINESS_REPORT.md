@@ -1,5 +1,41 @@
-# NOYA HQ — Commercial Operating System Readiness Report (V2)
+# NOYA HQ — Commercial Operating System Readiness Report (V2.1)
 30 Sep 2026. Every figure comes from live Supabase.
+
+## V2.1 — relationship layer activated
+**Relationship summaries (workflow 16, `Gh4IYcQNfQJFrts3`, published):**
+- All 44 two-way relationships now have a short AI summary.
+  - Source: subjects and Gmail previews already imported. No message bodies.
+  - The Gmail thread stays the evidence. HQ labels the summary as AI and shows the facts (counts, dates, who wrote last, verbatim preview) separately.
+- Fact guards run on the server:
+  - "Reply now" only when they genuinely wrote last within 60 days.
+  - "Client" only when the CRM already says client. Otherwise it is shown as a partner / supplier.
+- Suggested status: Reply now 8, Reconnect 8, Partner 3, Later 20, Long term 1, Not relevant 4. **Adam's status is separate and has not been set yet.**
+- Runs daily at 06:50, at most 15 a day, only for new or changed relationships.
+
+**Past relationships → Review:**
+- One card at a time, most urgent first. Seven status chips; one tap saves and moves to the next.
+- Reply now / Reconnect / Later create internal tasks. Partner / Client update the CRM. Not relevant hides the item.
+- Nothing is ever sent. Every change is audited.
+
+**Outreach:** "One at a time" mode on the phone (Back / Skip). Approve still asks for confirmation.
+
+**LinkedIn: ready for the export.**
+- Each connection is matched against CRM companies, CRM people, active opportunities and NOYA Gmail relationships, and the evidence is shown in words.
+- "Linked to NOYA" ranks people by that evidence only. Relationship strength stays Unknown.
+- Re-importing never duplicates (profile link normalised).
+- Tested on rolled-back data:
+  - 5 rows became 3 people;
+  - YKONE matched on company, person, opportunity and Gmail;
+  - Purple Ski matched through Gmail;
+  - the stranger got no evidence.
+
+**Countries:** UNKNOWN went from 25 to 4 companies.
+- 21 were set from real evidence (website, address, public listing), each noted and audited.
+- The 4 left have no reliable evidence: Beyond Members Club, Double Culture Films, Sporting Founders, Summits (Pangea).
+
+**Costs:** reconciled from NOYA's billing emails. See the dependency register. Every service can now be corrected in HQ with **Update from invoice**; an amount without a currency is refused, and every change is audited.
+
+**Tests:** 118/118 UI checks. The security scan passes with 30 allow-listed functions and no send path.
 
 ## Historical email reconciliation — results
 Source: NOYA's own Gmail (noya@noyaconcierge.com), read through the existing Google connection.
@@ -97,7 +133,7 @@ Every item links to its Gmail thread. Actions: Add to CRM, Draft reconnect / fol
 - Collected, Outstanding, Won, Pipeline and Forecast are kept separate, per currency, with no FX.
 
 ## Markets
-**Ready.** Europe 27 companies, North America 19, GCC 10, Egypt 2, Unknown 25. Bridges are shown. Market-size data is never invented.
+**Ready.** Europe 35 companies, GCC 21, North America 21, Rest of world 7, Egypt 2, Global 1, Unknown 4. Bridges are shown. Market-size data is never invented.
 
 ## Growth
 **Ready.** Verticals, channels, stalled deals, reactivation and recommended actions, each with its reason.
@@ -114,7 +150,7 @@ Every item links to its Gmail thread. Actions: Add to CRM, Draft reconnect / fol
 **Ready.** Workflows 14 and 15 report failures to the shared error workflow.
 
 ## Security
-- Browser: publishable key only; 28 allow-listed functions, all admin-checked and audited; no send path.
+- Browser: publishable key only; 30 allow-listed functions, all admin-checked and audited; no send path.
 - Gmail: read-only, metadata only; ignored mail keeps no content.
 - The drafting wake token lives in Supabase Vault. The webhook carries no data.
 - LinkedIn: no password or cookie is stored.
@@ -135,26 +171,29 @@ Every item links to its Gmail thread. Actions: Add to CRM, Draft reconnect / fol
 - Past relationships are in the Menu.
 
 ## Known software cost
-No monthly cost confirmed. **£0 / $0 known fixed.**
+- **Amounts:** none confirmed.
+- **Free, with evidence:** Hunter (50 credits a month) and Firecrawl (free credits).
+- **Fixed, amount in the PDF invoice:** Google Workspace Business Standard.
 
 ## Unknown cost exposure
-11 services marked "UNKNOWN — VERIFY BEFORE SCALE". The n8n plan's execution allowance is the most important unknown.
+7 services have no plan evidence: n8n Cloud, n8n AI credits, Serper, Supabase, Cloudflare, GitHub and the domain.
+- The n8n plan is the most important unknown. The live instance is not billed to noya@.
 
 ## Paid services awaiting approval
 None.
 
 ## Outstanding data gaps
-1. **Unknown country:** 25 companies have no country. Set it with Edit details from evidence; it is not guessed.
-2. **Relationships outside the CRM:** 42 real email relationships are not yet in the CRM. They are Adam's to add or hide.
+1. **Unknown country:** 4 companies, with no reliable evidence yet.
+2. **Relationship review:** 44 relationships have suggestions but no status from Adam. Past relationships → Review takes about 10 minutes on the phone.
 3. **LinkedIn:** connections are not yet imported.
 4. **Earlier mail:** mail older than 12 months was not imported. It can be extended on request.
 
 ## Remaining blockers
 - **Adam:** upload the LinkedIn export.
-- **Adam:** share the n8n, Hunter, Serper and Firecrawl plans or invoices.
+- **Adam:** confirm the n8n plan (n8n → Settings → Usage and plan) and the Serper account. Neither is billed to noya@.
 - **Website:** connect the new website form at cutover.
 
 ## Recommended next build
-1. **AI relationship summaries (optional, small):** from subject and preview only, for the 44 two-way relationships. The thread stays the evidence.
+1. (Done in V2.1: AI relationship summaries.)
 2. **n8n execution-health snapshot:** last success and failure per workflow.
 3. **Website form cutover** to workflow 10d, with an end-to-end proof.

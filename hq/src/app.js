@@ -54,6 +54,20 @@ const REL_STATE = {
   DO_NOT_CONTACT: ['Do not contact', 'bad', 'Marked do-not-contact.'],
   INBOUND_ONLY: ['They wrote to NOYA', 'info', 'They emailed NOYA; there is no reply from NOYA in this mailbox.'],
 };
+// Adam's relationship status (seven choices). Picking one creates internal tasks only — never a message.
+const REL_STATUS = {
+  REPLY_NOW: ['Reply now', 'bad', 'Creates a reply task due today.'],
+  RECONNECT: ['Reconnect', 'info', 'Creates a reconnect task in 2 days.'],
+  FOLLOW_UP_LATER: ['Later', 'warn', 'Creates a follow-up task in 14 days.'],
+  LONG_TERM: ['Long term', '', 'No task. Stays in the history.'],
+  EXISTING_PARTNER: ['Partner', 'ok', 'Marks them as a partner / supplier.'],
+  CLIENT: ['Client', 'ok', 'Marks them as a client (handle personally).'],
+  NOT_RELEVANT: ['Not relevant', '', 'Hides it. The email history is kept.'],
+};
+const REL_ORDER = ['REPLY_NOW', 'RECONNECT', 'EXISTING_PARTNER', 'CLIENT', 'FOLLOW_UP_LATER', 'LONG_TERM', 'NOT_RELEVANT'];
+const relSuggested = (g) => g.review?.suggested || g.rule_status || null;
+const relRank = (g) => { const i = REL_ORDER.indexOf(relSuggested(g)); return i < 0 ? 99 : i; };
+const unesc = (t) => String(t ?? '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 const ANGLE = {
   BRAND_PRODUCTION: 'Local execution for shoots, creator trips and launches in Egypt: locations, permits, logistics, hospitality.',
   HOSPITALITY: 'Two-way partnership: NOYA sends clients; the property hosts brand and creator trips.',
@@ -68,8 +82,8 @@ const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 const state = {
   session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'overview', loading: false,
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
-  rel: null, relF: { tab: 'REPLIED', q: '' }, outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
-  contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'warm' },
+  rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
+  contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
 };
 
@@ -279,7 +293,7 @@ function navBadge(key) {
   const ov = state.ov; const d = state.data;
   if (key === 'overview' && ov) { const p1 = ov.actions.filter((a) => a.prio === 'P1').length; return p1 ? `<span class="badge hot">${p1}</span>` : ''; }
   if (key === 'outreach' && ov) { const n = ov.scorecard.approvals_ready.n; return n ? `<span class="badge">${n}</span>` : ''; }
-  if (key === 'relationships' && state.rel) { const n = state.rel.groups.filter((g) => !g.dismissed && g.state === 'REPLIED').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
+  if (key === 'relationships' && state.rel) { const n = state.rel.groups.filter((g) => !g.dismissed && g.received > 0 && !g.review?.status && (relSuggested(g) === 'REPLY_NOW' || g.state === 'REPLIED')).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'linkedin' && ov) { const n = ov.actions.filter((a) => a.kind === 'LINKEDIN').length; return n ? `<span class="badge">${n}</span>` : ''; }
   if (key === 'inbox' && d) { const n = repliesForAdam(d).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'website' && ov) { const n = ov.website.filter((w) => w.status === 'NEW').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
@@ -557,8 +571,14 @@ function viewOutreach(d) {
     RESEARCHING: 'Still missing a verified person or channel. The research agents keep working on these (up to 10 a day, highest priority first).',
   }[t];
   let body = '';
-  if (t === 'READY') body = tabs.READY.map(approvalCard).join('') || empty('No email outreach waiting for approval.');
-  else if (t === 'LINKEDIN' || t === 'INSTAGRAM') body = tabs[t].map(manualChannelCard).join('') || empty('Nothing ready on this channel.');
+  // One-at-a-time mode for phones: one card, Back / Skip; acting on it moves to the next automatically.
+  const one = state.oneByOne && ['READY', 'LINKEDIN', 'INSTAGRAM'].includes(t) && tabs[t].length > 0;
+  const oi = Math.min(state.oIdx || 0, Math.max(0, tabs[t].length - 1));
+  const list = one ? [tabs[t][oi]] : tabs[t];
+  const oneNav = ['READY', 'LINKEDIN', 'INSTAGRAM'].includes(t) && tabs[t].length > 1 ? `<div class="review-nav"><button class="btn small ${state.oneByOne ? 'primary' : 'ghost'}" data-one-toggle>${state.oneByOne ? 'One at a time: on' : 'One at a time'}</button>
+    ${one ? `<span><span class="small"><b>${oi + 1}</b> of ${tabs[t].length}</span> <button class="btn small ghost" data-o-step="-1" ${oi === 0 ? 'disabled' : ''}>Back</button><button class="btn small ghost" data-o-step="1" ${oi >= tabs[t].length - 1 ? 'disabled' : ''}>Skip</button></span>` : ''}</div>` : '';
+  if (t === 'READY') body = oneNav + (list.map(approvalCard).join('') || empty('No email outreach waiting for approval.'));
+  else if (t === 'LINKEDIN' || t === 'INSTAGRAM') body = oneNav + (list.map(manualChannelCard).join('') || empty('Nothing ready on this channel.'));
   else if (t === 'FOLLOW-UP') body = `<div class="list">${tabs[t].map((x) => `<div class="row"><div class="t">${esc(sentence(x.title))}</div><div class="meta">${esc(x.company_name || '')} · due ${esc(fmtDay(x.due_at))}${new Date(x.due_at) < new Date() ? ' · <span class="bad-text">overdue</span>' : ''}</div>
       <div class="btn-row mt6">${x.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : ''}<button class="btn small primary" data-modal="touch" data-channel="EMAIL" data-task="${x.id}" data-opp="${x.opportunity_id || ''}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${x.id}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${x.id}">No longer needed</button></div></div>`).join('') || empty('No follow-ups due.')}</div>`;
   else if (t === 'RESEARCHING') body = `<div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Vertical</th><th>Market</th><th>Contact</th><th class="num">Priority</th><th>Next</th></tr></thead><tbody>${tabs[t].sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0)).map((o) => { const f = facts(o.id); return `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}</td><td>${esc(V(f.vertical))}</td><td>${esc(M(f.origin_market))} → ${esc(M(f.opportunity_market))}</td><td>${esc(o.contact_name || '—')}</td><td class="num">${esc(o.priority ?? '—')}</td><td class="small">${esc(o.next_action || '')}</td></tr>`; }).join('')}</tbody></table></div>`;
@@ -961,29 +981,48 @@ function viewCompanies() {
 }
 
 // ---------------------------------------------------------------- PREVIOUS RELATIONSHIPS (NOYA Gmail history)
-function relCard(g) {
+function relStatusChips(g) {
+  const cur = g.review?.status; const sug = relSuggested(g);
+  return `<div class="chips" role="group" aria-label="Set status">${REL_ORDER.map((k) => `<button class="chip ${cur === k ? 'on' : ''} ${!cur && sug === k ? 'sug' : ''}" data-rel-status="${k}" data-id="${esc(g.key)}" title="${esc(REL_STATUS[k][2])}">${esc(REL_STATUS[k][0])}</button>`).join('')}</div>`;
+}
+function relCard(g, review = false) {
   const [label, cls, why] = REL_STATE[g.state] || [g.state, '', ''];
+  const rv = g.review || {}; const sug = relSuggested(g);
   const rec = g.company_id ? `data-open="company" data-id="${g.company_id}"` : g.contact_id ? `data-open="contact" data-id="${g.contact_id}"` : '';
   const draftTarget = g.contact_id ? `data-contact="${g.contact_id}"` : g.company_id ? `data-company="${g.company_id}"` : '';
-  return `<article class="card rel">
+  const lastBy = g.last_in && (!g.last_out || g.last_in > g.last_out) ? 'them' : 'NOYA';
+  return `<article class="card rel${review ? ' review' : ''}">
     <div class="card-head"><div><div class="co">${esc(g.name)}</div><div class="muted small">${esc([g.company && g.company !== g.name ? g.company : '', g.domain].filter(Boolean).join(' · '))}</div></div>
-      <div class="pills"><span class="pill ${cls}" title="${esc(why)}">${esc(label)}</span>${g.in_crm ? pill('in CRM', 'ok') : pill('not in CRM', 'warn')}${g.vertical ? pill(V(g.vertical)) : ''}${g.opportunity_status ? pill(S(g.opportunity_status)) : ''}</div></div>
-    <div class="small">${g.sent} sent by NOYA · ${g.received} ${g.received === 1 ? 'reply' : 'replies'} · ${g.threads} thread${g.threads > 1 ? 's' : ''} · first ${esc(shortDay(g.first_at))} · last ${esc(shortDay(g.last_at))}</div>
+      <div class="pills">${rv.status ? `<span class="pill ${REL_STATUS[rv.status]?.[1] || ''}" title="Set by you ${esc(rv.status_at ? shortDay(rv.status_at) : '')}">You: ${esc(REL_STATUS[rv.status]?.[0] || rv.status)}</span>` : sug ? `<span class="pill ghost" title="${esc(rv.suggested_reason || 'From the email facts')}">Suggested: ${esc(REL_STATUS[sug]?.[0] || sug)}</span>` : ''}
+        <span class="pill ${cls}" title="${esc(why)}">${esc(label)}</span>${g.in_crm ? pill('in CRM', 'ok') : pill('not in CRM', 'warn')}${g.opportunity_status ? pill(S(g.opportunity_status)) : ''}</div></div>
+    <div class="small"><b>Facts</b> · ${g.sent} sent by NOYA · ${g.received} from them · last ${esc(shortDay(g.last_at))} by ${lastBy} · ${g.threads} thread${g.threads > 1 ? 's' : ''} since ${esc(shortDay(g.first_at))}</div>
     ${g.subject ? `<div class="small mt6"><b>Subject:</b> ${esc(g.subject)}</div>` : ''}
-    ${g.snippet ? `<div class="email small"><pre>${esc(String(g.snippet).replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&'))}</pre></div>` : ''}
-    ${g.summary ? `<div class="small"><b>Summary</b> <span class="faint">(AI, from the thread)</span>: ${esc(g.summary)}</div>` : ''}
-    <div class="small faint">${esc(why)}</div>
+    ${g.snippet ? `<div class="email small"><div class="faint">Latest preview (verbatim)</div><pre>${esc(unesc(g.snippet))}</pre></div>` : ''}
+    ${rv.summary ? `<div class="ai small"><div class="faint">AI summary — from subjects and previews only; check the thread before acting</div>${esc(rv.summary)}${rv.their_position ? `<div class="mt6"><b>What they said:</b> ${esc(rv.their_position)}</div>` : ''}${sug && !rv.status && rv.suggested_reason ? `<div class="faint mt6">Why ${esc(REL_STATUS[sug]?.[0] || sug)}: ${esc(rv.suggested_reason)}</div>` : ''}</div>` : `<div class="small faint">${esc(why)}</div>`}
+    ${g.received > 0 ? relStatusChips(g) : ''}
     <div class="btn-row mt6">${gmailLink(g.reply_thread || g.last_thread, 'Open in Gmail').replace('<a ', '<a class="btn small" ')}
       ${g.in_crm ? `<button class="btn small" ${rec}>Open record</button><button class="btn small primary" data-modal="draft-request" data-channel="EMAIL" data-type="${g.state === 'FOLLOW_UP' ? 'FOLLOW_UP' : 'RECONNECTION'}" ${draftTarget}>Draft ${g.state === 'FOLLOW_UP' ? 'follow-up' : 'reconnect'}</button>`
         : `<button class="btn small primary" data-modal="history-add" data-id="${esc(g.key)}">Add to CRM</button>`}
-      ${g.dismissed ? `<button class="btn small ghost" data-hist-act="RESTORE" data-id="${esc(g.key)}">Restore</button>` : `<button class="btn small ghost" data-hist-act="DISMISS" data-id="${esc(g.key)}" title="Not relevant — hide it (the email history is kept)">Not relevant</button>`}
+      ${g.received > 0 ? '' : g.dismissed ? `<button class="btn small ghost" data-hist-act="RESTORE" data-id="${esc(g.key)}">Restore</button>` : `<button class="btn small ghost" data-hist-act="DISMISS" data-id="${esc(g.key)}" title="Not relevant — hide it (the email history is kept)">Not relevant</button>`}
+      ${g.received > 0 && g.dismissed ? `<button class="btn small ghost" data-hist-act="RESTORE" data-id="${esc(g.key)}">Restore</button>` : ''}
     </div></article>`;
+}
+function relReview(rows) {
+  if (!rows.length) return empty('All two-way relationships have a status. See Reviewed.');
+  const i = Math.min(state.relF.i || 0, rows.length - 1);
+  return `<div class="review-nav"><span class="small"><b>${i + 1}</b> of ${rows.length} to review</span>
+      <span><button class="btn small ghost" data-rel-step="-1" ${i === 0 ? 'disabled' : ''}>Back</button><button class="btn small ghost" data-rel-step="1" ${i >= rows.length - 1 ? 'disabled' : ''}>Skip</button></span></div>
+    ${relCard(rows[i], true)}`;
 }
 function viewRelationships() {
   const rel = state.rel; if (!rel) return empty(`Email history not loaded${state.errors.rel ? `: ${state.errors.rel}` : ''}.`);
   const f = state.relF; const q = f.q.trim().toLowerCase(); const all = rel.groups;
   const live = all.filter((g) => !g.dismissed);
+  const toReview = live.filter((g) => g.received > 0 && !g.review?.status)
+    .sort((a, b) => relRank(a) - relRank(b) || String(b.last_at).localeCompare(String(a.last_at)));
   const tabs = {
+    REVIEW: toReview,
+    REVIEWED: all.filter((g) => g.review?.status).sort((a, b) => REL_ORDER.indexOf(a.review.status) - REL_ORDER.indexOf(b.review.status)),
     REPLIED: live.filter((g) => g.received > 0 && g.state === 'REPLIED'),
     RECONNECT: live.filter((g) => g.received > 0 && g.state !== 'REPLIED'),
     NOT_IN_CRM: live.filter((g) => g.received > 0 && !g.in_crm),
@@ -991,8 +1030,10 @@ function viewRelationships() {
     DISMISSED: all.filter((g) => g.dismissed),
     ALL: all,
   };
-  const labels = { REPLIED: 'They wrote last', RECONNECT: 'Worth reconnecting', NOT_IN_CRM: 'Not in CRM yet', NO_REPLY: 'Emailed, no reply', DISMISSED: 'Hidden', ALL: 'All' };
+  const labels = { REVIEW: 'Review', REVIEWED: 'Reviewed', REPLIED: 'They wrote last', RECONNECT: 'Worth reconnecting', NOT_IN_CRM: 'Not in CRM yet', NO_REPLY: 'Emailed, no reply', DISMISSED: 'Hidden', ALL: 'All' };
   const intro = {
+    REVIEW: 'One at a time, most urgent first. Tap a status — it saves and moves to the next. Nothing is ever sent.',
+    REVIEWED: 'Relationships you have given a status. Change it any time.',
     REPLIED: 'People who answered NOYA and wrote last. Check whether you owe them a reply.',
     RECONNECT: 'Real two-way conversations from the last 12 months. Restart them personally — never with a cold introduction.',
     NOT_IN_CRM: 'Real conversations with people who are not in the CRM yet. Add the ones that matter; hide the rest.',
@@ -1007,8 +1048,8 @@ function viewRelationships() {
     <div class="tabs">${Object.keys(tabs).map((k) => `<button data-rf="tab" data-v="${k}" class="${f.tab === k ? 'on' : ''}">${labels[k]} <span class="n">${tabs[k].length}</span></button>`).join('')}</div>
     <div class="filters"><input data-rf="q" placeholder="Name, company, domain, subject…" value="${esc(f.q)}"></div>
     <p class="muted small">${esc(intro)}</p>
-    ${rows.slice(0, 80).map(relCard).join('') || empty('Nothing here.')}
-    ${rows.length > 80 ? `<p class="small faint">Showing 80 of ${rows.length}. Narrow with the filter.</p>` : ''}`;
+    ${f.tab === 'REVIEW' && !q ? relReview(rows) : (rows.slice(0, 80).map((g) => relCard(g)).join('') || empty('Nothing here.'))}
+    ${rows.length > 80 && f.tab !== 'REVIEW' ? `<p class="small faint">Showing 80 of ${rows.length}. Narrow with the filter.</p>` : ''}`;
 }
 
 // ---------------------------------------------------------------- LINKEDIN
@@ -1023,7 +1064,10 @@ function viewLinkedin() {
   const conns = dir.connections; const f = state.netF; const q = f.q.trim().toLowerCase();
   const acts = (state.ov?.actions || []).filter((a) => a.kind === 'LINKEDIN');
   const due = conns.filter((c) => c.next_follow_up_at && c.next_follow_up_at <= todayKey() && c.status !== 'DO_NOT_CONTACT');
+  // Evidence score: only real links count (active deal, email history, CRM person, CRM company). Strength is never inferred.
+  const score = (c) => (c.active_opps > 0 ? 4 : 0) + (c.email_history > 0 ? 3 : 0) + (c.matched_contact_id ? 2 : 0) + (c.matched_company_id ? 1 : 0);
   const lists = {
+    known: conns.filter((c) => score(c) > 0).sort((a, b) => score(b) - score(a) || String(a.name).localeCompare(String(b.name))),
     warm: conns.filter((c) => c.active_opps > 0).sort((a, b) => b.active_opps - a.active_opps),
     matched: conns.filter((c) => c.matched_company_id),
     emailed: conns.filter((c) => c.email_history > 0),
@@ -1040,10 +1084,10 @@ function viewLinkedin() {
       <div class="body">${drafts.map(draftRow).join('') || '<div class="empty">No drafts. Use "Draft message" on any person, company or connection.</div>'}</div></section>
     <section class="panel mt8"><header><h3>People you already know</h3><span class="small faint">${conns.length} connections imported</span></header>
       <div class="body">${conns.length ? `
-        <div class="tabs">${[['warm', 'At active prospects'], ['emailed', 'Also emailed NOYA'], ['followup', 'Follow-up due'], ['matched', 'At known companies'], ['all', 'All']].map(([k, l]) => `<button data-nf="only" data-v="${k}" class="${f.only === k ? 'on' : ''}">${l} <span class="n">${lists[k].length}</span></button>`).join('')}</div>
+        <div class="tabs">${[['known', 'Linked to NOYA'], ['warm', 'At active prospects'], ['emailed', 'Also emailed NOYA'], ['followup', 'Follow-up due'], ['matched', 'At known companies'], ['all', 'All']].map(([k, l]) => `<button data-nf="only" data-v="${k}" class="${f.only === k ? 'on' : ''}">${l} <span class="n">${lists[k].length}</span></button>`).join('')}</div>
         <div class="filters"><input data-nf="q" placeholder="Name, company, role…" value="${esc(f.q)}"><select data-nf="vertical">${opt('', f.vertical || '', 'All verticals')}${Object.entries(VERTICAL_LABEL).map(([k, l]) => opt(k, f.vertical || '', l)).join('')}</select></div>
         <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>Status</th><th>Relationship</th><th>Next follow-up</th></tr></thead><tbody>
-        ${rows.slice(0, 200).map((c) => `<tr class="clickable" data-open="connection" data-id="${c.id}"><td>${esc(c.name || '—')}<div class="muted small">${esc(c.position || '')}</div></td>
+        ${rows.slice(0, 200).map((c) => `<tr class="clickable" data-open="connection" data-id="${c.id}"><td>${esc(c.name || '—')}<div class="muted small">${esc(c.position || '')}</div>${(c.evidence || []).length ? `<div class="small evidence">${(c.evidence || []).map((e) => `<div>✓ ${esc(e)}</div>`).join('')}</div>` : ''}</td>
           <td>${esc(c.company || '—')}${c.active_opps ? ` ${pill(`${c.active_opps} active opp${c.active_opps > 1 ? 's' : ''}`, 'info')}` : ''}${c.email_history ? ` ${pill('emailed before', 'ok')}` : ''}${c.matched_contact_id ? ` ${pill('in CRM')}` : ''}</td><td>${pill(sentence(c.status.replace(/_/g, ' ')))}</td>
           <td class="small" title="No data source measures relationship strength; it stays UNKNOWN until you describe how you know them.">${c.how_we_know ? esc(c.how_we_know) : 'Unknown'}</td>
           <td class="small">${esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No connections match.</td></tr>'}</tbody></table></div>
@@ -1122,6 +1166,8 @@ function viewCosts() {
   const fixed = {}; active.filter((s) => s.cost_type === 'FIXED_MONTHLY' && s.monthly_cost != null).forEach((s) => { fixed[s.currency || '?'] = (fixed[s.currency || '?'] || 0) + Number(s.monthly_cost); });
   const unknown = active.filter((s) => s.cost_type === 'UNKNOWN' || (s.cost_type !== 'FREE' && s.monthly_cost == null));
   const payg = active.filter((s) => s.cost_type === 'PAY_AS_YOU_GO');
+  const usageBased = active.filter((s) => ['PAY_AS_YOU_GO', 'USAGE_LIMITED'].includes(s.cost_type));
+  const fixedNoAmount = active.filter((s) => s.cost_type === 'FIXED_MONTHLY' && s.monthly_cost == null);
   const u = (p) => (ins.cost_usage || []).find((x) => x.period === p) || {};
   const usage = [['Google searches (Serper)', 'serper_searches'], ['Website reads (Firecrawl)', 'firecrawl_calls'], ['Email checks (Hunter)', 'hunter_checks'], ['AI research calls', 'ai_calls_discovery'], ['AI reply reading', 'reply_ai_calls'], ['CEO briefs', 'brief_runs']];
   const b = ins.budget || {};
@@ -1132,6 +1178,14 @@ function viewCosts() {
       <section class="panel"><header><h3>Unknown exposure</h3></header><div class="body"><div class="big bad-text">${unknown.length}</div><div class="small">service${unknown.length === 1 ? '' : 's'} with cost UNKNOWN — verify before scale</div></div></section>
       <section class="panel"><header><h3>Pay as you go</h3></header><div class="body"><div class="big">${payg.length}</div><div class="small">${esc(payg.map((s) => s.service).join(', ') || 'none')}</div>${b.monthly_budget_usd ? `<div class="small faint mt6">AI spend cap configured: USD ${esc(b.monthly_budget_usd)}/month (cheap models only above 100%).</div>` : ''}</div></section>
     </div>
+    <h3>Cost reconciliation</h3>
+    <div class="tbl-wrap"><table><tbody>
+      <tr><th>Confirmed fixed monthly</th><td class="small">${Object.keys(fixed).length ? Object.entries(fixed).map(([c, v]) => esc(money(v, c))).join(' · ') : 'None confirmed.'}${fixedNoAmount.length ? ` Fixed, amount not yet read: ${esc(fixedNoAmount.map((s) => s.service).join(', '))}.` : ''}</td></tr>
+      <tr><th>Usage-based</th><td class="small">${usageBased.map((s) => `${esc(s.service)} <span class="faint">(${esc(s.usage_limit || s.usage_cost || COST_TYPE[s.cost_type])})</span>`).join(' · ') || '—'}</td></tr>
+      <tr><th>Remaining UNKNOWN</th><td class="small">${esc(unknown.map((s) => s.service).join(', ') || 'None')}</td></tr>
+      <tr><th>Likely to grow with volume</th><td class="small">${active.filter((s) => s.scale_risk && !/healthy/i.test(s.scale_risk)).map((s) => `<div><b>${esc(s.service)}:</b> ${esc(s.scale_risk)}</div>`).join('') || '—'}</td></tr>
+      <tr><th>Downgrade / remove candidates</th><td class="small">${active.filter((s) => s.downgrade_note && !/^Keep/.test(s.downgrade_note) && !/^Already/.test(s.downgrade_note)).map((s) => `<div><b>${esc(s.service)}:</b> ${esc(s.downgrade_note)}</div>`).join('') || '—'}</td></tr>
+    </tbody></table></div>
     <h3>Paid services awaiting your approval (${pending.length})</h3>
     ${pending.length ? pending.map((s) => `<div class="row"><div class="t">${esc(s.service)}</div><div class="small">${esc(s.purpose)} · ${esc(s.usage_cost || '')}</div></div>`).join('') : '<p class="muted small">None. Nothing paid is pending.</p>'}
     <div class="banner small">Rule: before any paid service, plan upgrade, API credit or connector is added, HQ shows the tool, purpose, why the current stack cannot do it, the free option, the paid option, monthly and usage cost, and what happens if NOYA stops paying — then waits for your approval.</div>
@@ -1161,7 +1215,8 @@ function viewCosts() {
           <div class="kv"><div class="k">Alternative</div><div class="v">${esc(s.alternative || '—')}</div></div>
           <div class="kv"><div class="k">Credential kept in</div><div class="v">${esc(s.credentials_location || '—')}</div></div>
           <div class="kv"><div class="k">Renewal</div><div class="v">${esc(s.renewal_date ? fmtDay(s.renewal_date) : 'UNKNOWN')}</div></div>
-        </div>${s.verification_note ? `<p class="small faint">${esc(s.verification_note)}</p>` : ''}</details>`).join('')}</div>`; }).join('')}`;
+        </div>${s.verification_note ? `<p class="small faint"><b>Evidence:</b> ${esc(s.verification_note)}</p>` : ''}${s.scale_risk ? `<p class="small"><b>As volume grows:</b> ${esc(s.scale_risk)}</p>` : ''}${s.downgrade_note ? `<p class="small"><b>Downgrade / remove:</b> ${esc(s.downgrade_note)}</p>` : ''}
+        <div class="btn-row"><button class="btn small" data-modal="service-edit" data-id="${s.id}">Update from invoice</button></div></details>`).join('')}</div>`; }).join('')}`;
 }
 
 // ---------------------------------------------------------------- MARKETS / GROWTH
@@ -1422,6 +1477,14 @@ function renderAnyModal(m) {
         ${sel('Relationship', 'f-rel', [['', `Keep (${c.relationship_status || 'none'})`], ['prospect', 'Prospect'], ['client', 'Client'], ['partner', 'Partner'], ['supplier', 'Supplier'], ['mixed', 'Mixed'], ['inactive', 'Inactive']])}
         <div class="grid2">${fld('Country (from a reliable source)', 'f-country', 'text', c.country || '', 'maxlength="80"')}${fld('Website', 'f-web', 'text', c.website || '', 'maxlength="200"')}</div>
         <p class="small muted">Only fill the country from real evidence (their website, a signature, a call). Unknown stays unknown.</p>`, 'Save'); }
+    case 'service-edit': { const v = (state.ins?.services || []).find((x) => x.id === m.id) || {};
+      return form(`Update cost — ${esc(v.service || '')}`, `<p class="small muted">Only enter what an invoice or plan page shows. Leave the amount empty if it is not known — it stays UNKNOWN. This changes the register only; it never buys or upgrades anything.</p>
+        ${fld('Plan', 'f-plan', 'text', v.current_plan || '', 'maxlength="160"')}
+        <div class="grid2">${sel('Cost type', 'f-ctype', Object.entries(COST_TYPE), v.cost_type)}${sel('Confirmed from an invoice / plan page?', 'f-verified', [['true', 'Yes'], ['false', 'Not yet']], String(!!v.verified))}</div>
+        <div class="grid2">${fld('Monthly cost (empty = UNKNOWN)', 'f-cost', 'number', v.monthly_cost ?? '', 'min="0" step="0.01"')}${fld('Currency', 'f-ccur', 'text', v.currency || '', 'maxlength="3" placeholder="GBP / USD / EUR"')}</div>
+        <div class="grid2">${fld('Usage cost', 'f-ucost', 'text', v.usage_cost || '', 'maxlength="160"')}${fld('Limit / allowance', 'f-limit', 'text', v.usage_limit || '', 'maxlength="160"')}</div>
+        ${fld('Renewal date', 'f-renew', 'date', v.renewal_date || '')}
+        ${area('Evidence (invoice number, date, where you saw it)', 'f-evidence', v.verification_note || '', 'rows="3" maxlength="600"')}`, 'Save'); }
     case 'finance': {
       const r = m.id ? state.ins.finance.records.find((x) => x.id === m.id) || {} : {};
       const locked = r.id && r.status !== 'DRAFT';
@@ -1516,6 +1579,13 @@ async function submitModal() {
       render(); return r; }
     case 'draft-edit': { const t = val('f-text'); if (!need(t, 'The message is empty.')) return; return done('hq_draft_action', { p_draft: m.id, p_action: 'SAVE', p_text: t }, 'Draft saved.'); }
     case 'conn-status': return done('hq_connection_update', { p_connection: m.conn, p_status: val('f-status'), p_how_we_know: val('f-how'), p_follow_up: val('f-follow') }, 'Updated.');
+    case 'service-edit': {
+      const cost = val('f-cost'); const ccy = val('f-ccur');
+      if (cost != null && !ccy) { // flag on the field itself so nothing typed is lost
+        const el = $('#f-ccur'); el.setCustomValidity('Add the currency for this amount (no conversion is ever applied).'); el.reportValidity();
+        el.addEventListener('input', () => el.setCustomValidity(''), { once: true }); if (btn) btn.disabled = false; return; }
+      return done('hq_service_update', { p_id: m.id, p: { current_plan: val('f-plan'), cost_type: val('f-ctype'), verified: val('f-verified') === 'true', monthly_cost: cost,
+        currency: ccy, usage_cost: val('f-ucost'), usage_limit: val('f-limit'), renewal_date: val('f-renew'), verification_note: val('f-evidence') } }, 'Cost register updated.'); }
     case 'vertical': return done('hq_company_update', { p_company: m.company, p_vertical: val('f-vertical'), p_relationship: val('f-rel'), p_country: val('f-country'), p_website: val('f-web') }, 'Company updated.');
     case 'finance': {
       const r = m.id ? state.ins.finance.records.find((x) => x.id === m.id) : null;
@@ -1627,14 +1697,28 @@ function bind() {
     const anchor = b.dataset.anchor && document.getElementById(b.dataset.anchor);
     if (anchor) anchor.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
   });
-  on('[data-otab]:not([data-go])', 'click', (b) => { state.outreachTab = b.dataset.otab; render(); });
+  on('[data-otab]:not([data-go])', 'click', (b) => { state.outreachTab = b.dataset.otab; state.oIdx = 0; render(); });
   on('[data-open]', 'click', (b, e) => { e.stopPropagation(); openDrawer(b.dataset.open, b.dataset.id); });
   on('[data-close-drawer]', 'click', () => { state.drawer = null; render(); });
   on('[data-modal]', 'click', (b, e) => { e.stopPropagation(); const x = b.dataset; state.menu = false;
     state.modal = { kind: x.modal, id: x.id || null, opp: x.opp || null, task: x.task || null, channel: x.channel || null, conn: x.conn || null, contact: x.contact || null, company: x.company || null, draft: x.draft || null, next: x.next || null, type: x.type || null }; render(); });
   on('[data-hist-act]', 'click', (b) => call('hq_history_action', { p_key: b.dataset.id, p_action: b.dataset.histAct }, b.dataset.histAct === 'DISMISS' ? 'Hidden from the list (kept in the history).' : 'Restored.'));
   on('[data-relq]', 'click', (b, e) => { e.stopPropagation(); state.relF = { tab: 'ALL', q: b.dataset.relq }; state.tab = 'relationships'; state.q = ''; render(); window.scrollTo(0, 0); });
-  on('button[data-rf]', 'click', (b) => { state.relF.tab = b.dataset.v; render(); });
+  on('button[data-rf]', 'click', (b) => { state.relF.tab = b.dataset.v; state.relF.i = 0; render(); });
+  on('[data-one-toggle]', 'click', () => { state.oneByOne = !state.oneByOne; state.oIdx = 0; try { localStorage.setItem('hq.oneByOne', state.oneByOne ? '1' : ''); } catch { /* private mode */ } render(); });
+  on('[data-o-step]', 'click', (b) => { state.oIdx = Math.max(0, (state.oIdx || 0) + Number(b.dataset.oStep)); render(); window.scrollTo(0, 0); });
+  on('[data-rel-step]', 'click', (b) => { state.relF.i = Math.max(0, (state.relF.i || 0) + Number(b.dataset.relStep)); render(); });
+  on('[data-rel-status]', 'click', async (b) => {
+    // Fast path for phone review: save, update the card in place, move on; refresh everything in the background.
+    const k = b.dataset.relStatus; const g = (state.rel?.groups || []).find((x) => x.key === b.dataset.id); if (!g) return;
+    document.querySelectorAll(`[data-rel-status][data-id="${CSS.escape(g.key)}"]`).forEach((el) => { el.disabled = true; });
+    const { data, error } = await sb.rpc('hq_relationship_status', { p_key: g.key, p_status: k });
+    if (error || data?.ok === false) { state.notice = { err: true, text: error ? error.message : explain(data) }; render(); return; }
+    g.review = { ...(g.review || {}), status: k, status_at: new Date().toISOString() };
+    g.dismissed = k === 'NOT_RELEVANT' ? 'DISMISSED' : null;
+    state.notice = { err: false, text: `${g.name}: ${REL_STATUS[k][0]}. ${REL_STATUS[k][2]}` };
+    render(); load(true);
+  });
   on('input[data-rf]', 'change', (el) => { state.relF.q = el.value; render(); });
   on('[data-copy]', 'click', (b, e) => { e.stopPropagation(); copyText(b.dataset.copy); });
   on('[data-draft-act]', 'click', (b) => call('hq_draft_action', { p_draft: b.dataset.id, p_action: b.dataset.draftAct, p_text: null }, b.dataset.draftAct === 'RETRY' ? 'Draft re-requested.' : 'Draft discarded.'));

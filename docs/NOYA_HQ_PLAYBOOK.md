@@ -6,7 +6,7 @@ hq.noyaconcierge.com works on your phone. Use the bottom bar: Today · Replies �
 1. **Today.** Clear every P1 first: replies, meeting requests and website enquiries.
    - Use **Open email** to reply in Gmail.
    - Use **Record meeting** after any call. Two lines is enough; pick the new stage and HQ books the follow-up.
-2. **Outreach → Ready.** Read each email card.
+2. **Outreach → Ready.** Read each email card. On the phone, tap **One at a time** to see a single card with Back / Skip.
    - **Approve & Draft** creates a Gmail draft. You then press Send in Gmail.
    - Or use **Edit**, **Hold**, **Reject** (with a reason), or **Change channel**.
 3. **Outreach → LinkedIn / Instagram.** For each message:
@@ -14,7 +14,10 @@ hq.noyaconcierge.com works on your phone. Use the bottom bar: Today · Replies �
    2. **Open LinkedIn**, then paste and send it yourself.
    3. Press **Mark sent**. This closes the task and books one follow-up.
 4. **Follow-up tab.** Follow up once, then once more at most, then move the contact to Long term.
-5. **Past relationships → They wrote last.** Answer anyone still waiting on you (each item opens the Gmail thread).
+5. **Past relationships → Review.** One relationship at a time, most urgent first. Read the facts and the verbatim preview, then tap one status:
+   - **Reply now** (a reply task today) · **Reconnect** (task in 2 days) · **Later** (task in 14 days) · **Long term** · **Partner** · **Client** · **Not relevant** (hidden, history kept).
+   - It saves and moves to the next. **Skip** leaves it for later. Nothing is ever sent.
+   - The dashed chip is HQ's suggestion. The AI summary is read from subjects and previews only, so open the Gmail thread before replying.
 6. Glance at **System health**. Green means nothing to do.
 
 ## Weekly — 45 minutes (Monday)
@@ -24,12 +27,12 @@ hq.noyaconcierge.com works on your phone. Use the bottom bar: Today · Replies �
    - Add a record when a client confirms. Mark it **Sent** when the invoice goes out.
    - **Record payment** when money lands.
    - Chase anything **Overdue**.
-4. **LinkedIn → People you already know.** Pick 5 people at active prospects and press **Draft message**. Send the drafts you like.
-5. **Past relationships → Worth reconnecting.** Restart 3 real conversations. Use **Add to CRM** for the useful ones and **Not relevant** for the rest.
+4. **LinkedIn → Linked to NOYA.** People ranked by real evidence (active deal, email history, CRM person, CRM company), each with the evidence shown. Pick 5 and press **Draft message**. Send the drafts you like. How well you know someone stays Unknown until you record it.
+5. **Past relationships → Reviewed.** Check the Reconnect and Later tasks were done. Use **Add to CRM** for the useful ones not yet in the CRM.
 6. **Reports.** Read the weekly review.
 
 ## Monthly — 1 hour
-1. **System costs.** Fill every UNKNOWN cost and renewal date from invoices. Decide whether to keep each paid service.
+1. **System costs.** Open a service → **Update from invoice**. Enter the plan, amount + currency and the invoice reference. An amount without a currency is refused. Then read Cost reconciliation: what is fixed, what grows with volume, and what can be downgraded.
 2. **Markets.** Choose where to push next month: Europe → Egypt, GCC → Egypt / Europe, or Egypt → International.
 3. **LinkedIn.** Re-import your connections export (Me → Settings & Privacy → Data privacy → Get a copy of your data → Connections).
 4. **Companies with unknown country.** Set the country from real evidence (Edit details). Never guess.

@@ -33,7 +33,7 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(4173, r));
 
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
-  'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact'];
+  'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
   'hq_create_opportunity', 'hq_import_connections', ...WRITES];
 const results = [];
@@ -218,6 +218,22 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('System costs: unknown exposure equals register, paid-software gate shown', costs.includes(`${unknown}\n`) && /UNKNOWN — verify before scale/.test(costs) && /then waits for your approval/.test(costs), `${unknown}`);
   check('System costs: every dependency listed with what breaks and where the credential lives', (await page.locator('main details.row').count()) === insight.services.filter((s) => s.status !== 'RETIRED').length && /Credential kept in/.test(await page.locator('main details.row').first().innerHTML()));
 
+  check('System costs: reconciliation shows fixed / usage / UNKNOWN / growth risks / downgrade candidates', ['Confirmed fixed monthly', 'Usage-based', 'Remaining UNKNOWN', 'Likely to grow with volume', 'Downgrade / remove candidates'].every((w) => costs.toLowerCase().includes(w.toLowerCase())) && /Serper:/.test(costs) && /Anthropic API:/.test(costs));
+  const hunter = insight.services.find((s) => s.service === 'Hunter');
+  await page.locator('main details.row', { hasText: 'Hunter' }).locator('summary').click();
+  await page.locator('main details.row', { hasText: 'Hunter' }).locator('[data-modal=service-edit]').click();
+  await page.waitForSelector('.modal');
+  await page.fill('#f-cost', '34');
+  await page.click('#m-ok');
+  await page.waitForTimeout(200);
+  check('Cost edit: an amount without a currency is refused on the field, typed amount kept', !last(calls, 'hq_service_update') && /currency/i.test(await page.$eval('#f-ccur', (e) => e.validationMessage)) && (await page.inputValue('#f-cost')) === '34');
+  await page.fill('#f-ccur', 'usd');
+  await page.fill('#f-evidence', 'Invoice INV-1, 1 Oct 2026');
+  await page.click('#m-ok');
+  await page.waitForTimeout(300);
+  const su = last(calls, 'hq_service_update');
+  check('Cost edit → hq_service_update (amount, currency, evidence), audited server-side', su && su.body.p_id === hunter.id && su.body.p.monthly_cost === '34' && su.body.p.currency === 'usd' && /INV-1/.test(su.body.p.verification_note), JSON.stringify(su?.body.p));
+
   // Finance: new record + definitions.
   await page.click('.side [data-tab=finance]');
   const fin = await page.locator('main').innerText();
@@ -242,8 +258,15 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForSelector('.modal');
   const im = await page.locator('.modal').innerText();
   check('import preview: 2 connections found, 1 skipped', /2 connections found/.test(im) && /1 lines skipped/.test(im), im.replace(/\n/g, ' | ').slice(0, 120));
+  // After import the server returns matches with evidence (simulated here: one connection linked to YKONE).
+  directory.connections.push({ id: '00000000-0000-0000-0000-0000000000c1', name: 'Omar Nasser', first_name: 'Omar', last_name: 'Nasser', company: 'YKONE Middle East', position: 'Partner',
+    profile_url: 'https://www.linkedin.com/in/omarn', status: 'NOT_CONTACTED', active_opps: 1, email_history: 1, matched_company_id: directory.companies[0].id, matched_contact_id: null,
+    how_we_know: null, next_follow_up_at: null, vertical: 'BRAND_PRODUCTION', history_key: 'd:ykone.com',
+    evidence: ['Company matches CRM account: YKONE Middle East', 'Active opportunity at their company: 1', 'Emailed with NOYA (Gmail): 1 sent, 1 received'] });
   await page.click('#m-ok');
   await page.waitForTimeout(400);
+  const liAfter = await page.locator('main').innerText();
+  check('LinkedIn: matched people listed first with their evidence; strength stays Unknown', /Linked to NOYA\s*1/i.test(liAfter) && /Company matches CRM account: YKONE/.test(liAfter) && /Emailed with NOYA \(Gmail\)/.test(liAfter) && /Unknown/.test(liAfter), liAfter.match(/Linked to NOYA\s*\d+/i)?.[0]);
   const ic = last(calls, 'hq_import_connections');
   check('import sends only the needed fields, dates as ISO, quoted commas kept', ic && ic.body.p_rows.length === 2 && ic.body.p_rows[0].connected_on === '2024-05-01'
     && ic.body.p_rows[0].company === 'Aman Resorts, Ltd' && Object.keys(ic.body.p_rows[0]).sort().join() === 'company,connected_on,email,first_name,last_name,position,url', JSON.stringify(ic?.body.p_rows[0]));
@@ -254,6 +277,13 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('Outreach tabs: Ready / Follow-up / LinkedIn / Instagram / Sent / Replied / Hold / Researching', ['Ready', 'Follow-up', 'Linkedin', 'Instagram', 'Sent', 'Replied', 'Hold', 'Researching'].every((t) => new RegExp(t, 'i').test(otabs)), otabs.replace(/\n/g, ' '));
   const readyCards = await page.locator('article.card.ready').count();
   check('Ready: cards equal the live approval-ready queue', readyCards === approvalsLive, `${readyCards}`);
+  if (readyCards > 1) {
+    await page.click('main [data-one-toggle]');
+    const one = await page.locator('article.card.ready').count();
+    await page.click('main [data-o-step="1"]');
+    check('Outreach one at a time: one card, Skip advances', one === 1 && /2\s*of/.test(await page.locator('main .review-nav').innerText()) && (await page.locator('article.card.ready').count()) === 1);
+    await page.click('main [data-one-toggle]');
+  }
   const cardText = await page.locator('article.card.ready').first().innerText();
   check('card shows person, role, verified email, ESTIMATED value, why now, market route, message',
     /Contact/i.test(cardText) && /Position/i.test(cardText) && /Email verified/i.test(cardText) && /ESTIMATED/i.test(cardText) && /Why now/i.test(cardText) && /→/.test(cardText));
@@ -324,6 +354,19 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const replied = relationships.groups.filter((g) => !g.dismissed && g.received > 0 && g.state === 'REPLIED').length;
   check('Past relationships: "They wrote last" count equals Gmail history', new RegExp(`They wrote last\\s*${replied}`).test(relText), `${replied}`);
   check('Past relationships: source and scan size stated (provenance)', /noya@noyaconcierge\.com/.test(relText) && relText.includes(String(relationships.state.scanned)));
+  const toReview = relationships.groups.filter((g) => !g.dismissed && g.received > 0 && !g.review?.status);
+  check('Review mode: opens one card at a time, most urgent first', (await page.locator('main article.card.rel').count()) === 1 && new RegExp(`1\\s*of ${toReview.length}`).test(relText), `${toReview.length}`);
+  const firstCard = await page.locator('main article.card.rel').innerText();
+  check('Review card: facts, verbatim preview and AI summary are labelled separately', /Facts/.test(firstCard) && /Latest preview \(verbatim\)/.test(firstCard) && /AI summary — from subjects and previews only/.test(firstCard) && /YKONE/.test(firstCard), firstCard.split('\n')[0]);
+  check('Review card: seven status choices, suggestion marked', (await page.locator('main article.card.rel [data-rel-status]').count()) === 7 && (await page.locator('main .chip.sug').count()) === 1);
+  await page.click('main [data-rel-step="1"]');
+  check('Review: Skip moves to the next relationship', /2\s*of/.test(await page.locator('main .review-nav').innerText()));
+  await page.click('main [data-rel-status=RECONNECT]');
+  await page.waitForTimeout(300);
+  const rs = last(calls, 'hq_relationship_status');
+  check('Status chip → hq_relationship_status (key + status), no send path', rs && rs.body.p_status === 'RECONNECT' && typeof rs.body.p_key === 'string' && !calls.some((c) => /send/.test(c.fn)), JSON.stringify(rs?.body));
+  await page.click('main .tabs button[data-v=REVIEWED]');
+  check('Reviewed tab lists relationships with your status', /you: /i.test(await page.locator('main').innerText()));
   await page.click('main .tabs button[data-v=NOT_IN_CRM]');
   const firstNotInCrm = relationships.groups.find((g) => !g.dismissed && g.received > 0 && !g.in_crm);
   await page.locator('main article.card.rel [data-modal=history-add]').first().click();
@@ -335,6 +378,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('Add to CRM calls hq_history_action ADD_TO_CRM with the group key', ha && ha.body.p_action === 'ADD_TO_CRM' && ha.body.p_key === firstNotInCrm.key, JSON.stringify(ha?.body).slice(0, 160));
   await closeDrawer(page);
   await page.click('.side [data-tab=relationships]');
+  await page.click('main .tabs button[data-v=NO_REPLY]');
   await page.locator('main article.card.rel [data-hist-act=DISMISS]').first().click();
   await page.waitForTimeout(300);
   check('Not relevant → hq_history_action DISMISS (history kept)', last(calls, 'hq_history_action')?.body.p_action === 'DISMISS');
@@ -436,6 +480,17 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#bmenu');
   await page.click('.sheet [data-tab=relationships]');
   await step('7b past relationships from the menu: who wrote last, with Gmail links', /They wrote last/.test(await page.locator('main').innerText()) && (await page.locator('main a[href*="mail.google.com"]').count()) > 0);
+  const chip = await page.locator('main .chip').first().boundingBox();
+  await page.click('main [data-rel-status=REPLY_NOW]');
+  await page.waitForTimeout(300);
+  await step('7c review one at a time: thumb-sized status chips, one tap saves', chip && chip.height >= 36 && last(calls, 'hq_relationship_status')?.body.p_status === 'REPLY_NOW');
+  await page.click('.bnav [data-tab=outreach]').catch(async () => { await page.click('#bmenu'); await page.click('.sheet [data-tab=outreach]'); });
+  const readyN = await page.locator('article.card.ready').count();
+  if (readyN > 1) {
+    await page.click('main [data-one-toggle]');
+    await step('7d Outreach one at a time: a single card with Back / Skip', (await page.locator('article.card.ready').count()) === 1 && /1\s*of/.test(await page.locator('main .review-nav').innerText()));
+    await page.click('main [data-one-toggle]');
+  } else await step('7d Outreach one at a time (fewer than 2 ready cards — toggle hidden)', true);
   await page.click('#bmenu');
   await page.waitForSelector('.sheet');
   const sheetBtns = await page.locator('.sheet-grid button').count();
