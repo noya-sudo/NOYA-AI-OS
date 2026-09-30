@@ -1,5 +1,28 @@
-# NOYA HQ — Commercial Operating System Readiness Report (V2.1)
+# NOYA HQ — Commercial Operating System Readiness Report (V2.2)
 30 Sep 2026. Every figure comes from live Supabase.
+
+## V2.2 — ready for use (30 Sep 2026)
+- **Reply tracking every 30 minutes** (was 15). About 1,440 fewer n8n runs a month.
+  - Nothing is missed: the search starts from a fixed date and each email is handled once.
+  - The health signal now allows one missed run (75 minutes).
+  - A manual run is still available (n8n → workflow 13 → Manual Sync).
+- **LinkedIn import ready for the real export:**
+  - One canonical profile link per person, so www / country sub-domain / http / trailing-slash variants never create a duplicate.
+  - Duplicates inside the file are ignored.
+  - Re-import updates rather than adds.
+  - A person who changed company is re-matched.
+  - The result states new / already known / duplicates / skipped.
+- **LinkedIn speed:** matching was tuned for large exports. Tested on live data, then rolled back:
+  - 200-row batch: 0.23 s (was ~5 s);
+  - 4,200 connections re-matched: 0.8 s (was 22 s);
+  - HQ loads 4,000 connections in 0.25 s.
+- **Today → Warm opportunities:** up to 6 existing relationships that deserve action now.
+  - Evidence only: NOYA Gmail threads, CRM records, matched LinkedIn connections.
+  - Your confirmed status outranks HQ's suggestion, and every row shows which it is.
+  - Reply now comes first, then the deepest reconnects.
+  - Nothing is sent from it.
+- **Review order:** Reply now first (newest first), then reconnects ranked by how much they wrote to NOYA.
+- **Standing decisions:** no n8n plan change until the allowance is known; no Serper volume increase until the plan is confirmed; Google Cloud is Adam's and stays unused; no new paid tool.
 
 ## V2.1 — relationship layer activated
 **Relationship summaries (workflow 16, `Gh4IYcQNfQJFrts3`, published):**
@@ -142,7 +165,7 @@ Every item links to its Gmail thread. Actions: Add to CRM, Draft reconnect / fol
 **Ready.**
 - 13 services in the register.
 - New "How often the automations run" table:
-  - reply tracking: ~2,880 runs a month;
+  - reply tracking: ~1,440 runs a month (every 30 minutes since 30 Sep);
   - history sync: ~180 a month;
   - drafting: ~60 a month plus your requests.
 

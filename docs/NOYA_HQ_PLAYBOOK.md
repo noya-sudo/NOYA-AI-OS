@@ -3,7 +3,7 @@
 hq.noyaconcierge.com works on your phone. Use the bottom bar: Today · Replies · Outreach · Search · Menu.
 
 ## Daily — 15 minutes (09:00)
-1. **Today.** Clear every P1 first: replies, meeting requests and website enquiries.
+1. **Today.** Clear every P1 first: replies, meeting requests and website enquiries. Then glance at **Warm opportunities**: existing relationships to act on now, each marked as your status or HQ's suggestion.
    - Use **Open email** to reply in Gmail.
    - Use **Record meeting** after any call. Two lines is enough; pick the new stage and HQ books the follow-up.
 2. **Outreach → Ready.** Read each email card. On the phone, tap **One at a time** to see a single card with Back / Skip.

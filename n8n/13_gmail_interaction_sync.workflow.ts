@@ -8,9 +8,9 @@ const schedule = trigger({
   type: 'n8n-nodes-base.scheduleTrigger',
   version: 1.2,
   config: {
-    name: 'Every 15 Minutes',
+    name: 'Every 30 Minutes',
     position: [0, 200],
-    parameters: { rule: { interval: [{ field: 'minutes', minutesInterval: 15 }] } }
+    parameters: { rule: { interval: [{ field: 'minutes', minutesInterval: 30 }] } }
   }
 });
 

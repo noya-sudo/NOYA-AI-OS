@@ -73,7 +73,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_relationships') return route.fulfill({ json: relationships });
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
       if (m[1] === 'hq_create_opportunity') return route.fulfill({ json: { ok: true, opportunity_id: data.opportunities[0].id, company_id: null, company_reused: true } });
-      if (m[1] === 'hq_import_connections') return route.fulfill({ json: { ok: true, upserted: body.p_rows.length, skipped: 0 } });
+      if (m[1] === 'hq_import_connections') return route.fulfill({ json: { ok: true, new: body.p_rows.length - 1, updated: 1, duplicates: 0, skipped: 0, upserted: body.p_rows.length } });
       if (WRITES.includes(m[1])) return route.fulfill({ json: { ok: true, id: '00000000-0000-0000-0000-000000000009' } });
       return route.fulfill({ status: 404, json: { message: 'not allowed in test' } });
     }
@@ -97,6 +97,10 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForSelector('.q-row');
   check('login leads to Today; data via the four read RPCs with bearer token',
     ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_relationships'].every((fn) => calls.some((c) => c.fn === fn && c.auth.startsWith('Bearer ey'))));
+  const warm = await page.locator('main section.panel', { hasText: 'Warm opportunities' }).innerText();
+  const warmFirst = await page.locator('main .mini.warm').first().innerText();
+  check('Today: Warm opportunities lists reply-now relationships first, labelled as suggestion vs your status', /YKONE|Purple/i.test(warmFirst) && /Suggested: Reply now/i.test(warmFirst) && /They wrote last/.test(warmFirst) && !/kulm/i.test(warm), warmFirst.split('\n')[0]);
+  check('Today: warm panel is evidence-only and never sends', (await page.locator('main .mini.warm').count()) <= 6 && /Nothing is sent from here/.test(warm) && (await page.locator('main .mini.warm a[href*="mail.google.com"]').count()) > 0);
   const counts = await page.locator('.counts').innerText();
   const n = (p) => overview.actions.filter((a) => a.prio === p).length;
   check('Today: P1/P2/P3 counts equal hq_overview actions', counts.includes(`P1 ${n('P1')}`) && counts.includes(`P2 ${n('P2')}`) && counts.includes(`P3 ${n('P3')}`), counts.replace(/\n/g, ' '));
@@ -253,11 +257,11 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('.side [data-tab=linkedin]');
   const li = await page.locator('main').innerText();
   check('LinkedIn: never-auto-send statement and options gate present', /Nothing is ever sent automatically/.test(li) && /options and approval/i.test(li));
-  const csv = 'Notes:\n"When exporting your connection data, you may notice that some of the email addresses are missing."\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\nSara,Khalil,https://www.linkedin.com/in/sara-khalil,,"Aman Resorts, Ltd",Director of Sales,01 May 2024\nOmar,Nasser,https://www.linkedin.com/in/omarn,,YKONE Middle East,Partner,15 Jan 2023\nBad,Row,https://example.com/x,,X,Y,01 Jan 2020\n';
+  const csv = 'Notes:\n"When exporting your connection data, you may notice that some of the email addresses are missing."\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\nSara,Khalil,https://www.linkedin.com/in/sara-khalil,,"Aman Resorts, Ltd",Director of Sales,01 May 2024\nOmar,Nasser,https://www.linkedin.com/in/omarn,,YKONE Middle East,Partner,15 Jan 2023\nOmar,Nasser,https://uk.linkedin.com/in/OmarN/,,YKONE Middle East,Partner,15 Jan 2023\nBad,Row,https://example.com/x,,X,Y,01 Jan 2020\n';
   await page.setInputFiles('#li-file', { name: 'Connections.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
   await page.waitForSelector('.modal');
   const im = await page.locator('.modal').innerText();
-  check('import preview: 2 connections found, 1 skipped', /2 connections found/.test(im) && /1 lines skipped/.test(im), im.replace(/\n/g, ' | ').slice(0, 120));
+  check('import preview: 2 connections found, 1 skipped, same person twice counted once', /2 connections found/.test(im) && /1 lines skipped/.test(im) && /1 duplicate lines ignored/.test(im), im.replace(/\n/g, ' | ').slice(0, 120));
   // After import the server returns matches with evidence (simulated here: one connection linked to YKONE).
   directory.connections.push({ id: '00000000-0000-0000-0000-0000000000c1', name: 'Omar Nasser', first_name: 'Omar', last_name: 'Nasser', company: 'YKONE Middle East', position: 'Partner',
     profile_url: 'https://www.linkedin.com/in/omarn', status: 'NOT_CONTACTED', active_opps: 1, email_history: 1, matched_company_id: directory.companies[0].id, matched_contact_id: null,
@@ -266,6 +270,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#m-ok');
   await page.waitForTimeout(400);
   const liAfter = await page.locator('main').innerText();
+  check('import result reports new / already known / duplicates / skipped', /LinkedIn import done: 1 new, 1 already known \(updated\), 1 duplicates ignored, 1 skipped/.test(liAfter), liAfter.match(/LinkedIn import done[^\n]*/)?.[0]);
   check('LinkedIn: matched people listed first with their evidence; strength stays Unknown', /Linked to NOYA\s*1/i.test(liAfter) && /Company matches CRM account: YKONE/.test(liAfter) && /Emailed with NOYA \(Gmail\)/.test(liAfter) && /Unknown/.test(liAfter), liAfter.match(/Linked to NOYA\s*\d+/i)?.[0]);
   const ic = last(calls, 'hq_import_connections');
   check('import sends only the needed fields, dates as ISO, quoted commas kept', ic && ic.body.p_rows.length === 2 && ic.body.p_rows[0].connected_on === '2024-05-01'

@@ -474,6 +474,7 @@ function viewOverview(d) {
         </section>
       </div>
     </div>
+    ${warmPanel()}
     <div class="ov-grid3">
       <section class="panel"><header><h3>Replies · 14 days</h3><button class="btn small ghost" data-go="inbox">Replies</button></header>
         <div class="body">${replies.length ? replies.slice(0, 5).map((r) => `<div class="mini clickable" ${r.opportunity_id ? `data-open="opp" data-id="${r.opportunity_id}"` : ''}>
@@ -492,6 +493,39 @@ function viewOverview(d) {
           ${(() => { const n = (state.ins?.services || []).filter((x) => x.status === 'ACTIVE' && (x.cost_type === 'UNKNOWN' || (x.cost_type !== 'FREE' && x.monthly_cost == null))).length; return n ? `<div class="small mt6"><button class="linkish" data-go="costs">${n} software costs UNKNOWN — verify before scale</button></div>` : ''; })()}
         </div></section>
     </div>`;
+}
+// Warm opportunities: existing relationships that deserve action now. Real evidence only
+// (NOYA Gmail threads, CRM records, LinkedIn matches); your confirmed status outranks HQ's suggestion.
+function warmOpportunities() {
+  const out = []; const byKey = {};
+  const days = (t) => (t ? Math.floor((Date.now() - new Date(t)) / 86400000) : 999);
+  (state.rel?.groups || []).filter((g) => !g.dismissed && g.received > 0).forEach((g) => {
+    const mine = g.review?.status; const sug = relSuggested(g); const st = mine || sug;
+    if (!['REPLY_NOW', 'RECONNECT'].includes(st)) return;
+    const theyLast = g.last_in && (!g.last_out || g.last_in > g.last_out);
+    let score = (st === 'REPLY_NOW' ? 100 : 60) + (mine ? 10 : 0) + (g.opportunity_status ? 8 : 0) + Math.max(0, 30 - days(g.last_at) / 6);
+    const facts = [`${theyLast ? 'They wrote last' : 'NOYA wrote last'} ${shortDay(g.last_at)}`, `${g.sent} sent · ${g.received} from them`];
+    if (g.opportunity_status) facts.push(`deal: ${S(g.opportunity_status).toLowerCase()}`);
+    const item = { key: g.key, name: g.name, st, mine: !!mine, score, facts, thread: g.reply_thread || g.last_thread, why: g.review?.their_position || '' };
+    byKey[g.key] = item; out.push(item);
+  });
+  (state.dir?.connections || []).filter((c) => c.status !== 'DO_NOT_CONTACT' && (c.active_opps > 0 || c.email_history > 0)).forEach((c) => {
+    if (c.history_key && byKey[c.history_key]) { byKey[c.history_key].facts.push(`LinkedIn: ${c.name}`); byKey[c.history_key].score += 5; return; }
+    if (!c.active_opps) return; // LinkedIn alone is only warm when there is a live deal at their company
+    out.push({ conn: c.id, name: `${c.name}${c.company ? ` · ${c.company}` : ''}`, st: 'LINKEDIN', mine: false, score: 40 + c.active_opps * 5,
+      facts: (c.evidence || []).slice(0, 2), why: '' });
+  });
+  return out.sort((a, b) => b.score - a.score).slice(0, 6);
+}
+function warmPanel() {
+  const w = warmOpportunities(); if (!state.rel) return '';
+  const lbl2 = (x) => (x.st === 'LINKEDIN' ? pill('LinkedIn · you send', 'info') : x.mine ? pill(`You: ${REL_STATUS[x.st][0]}`, REL_STATUS[x.st][1]) : `<span class="pill ghost" title="HQ suggestion from the email facts — not confirmed by you">Suggested: ${esc(REL_STATUS[x.st][0])}</span>`);
+  return `<section class="panel mt8"><header><h3>Warm opportunities</h3><button class="btn small ghost" data-go="relationships">Review all</button></header>
+    <div class="body">${w.length ? w.map((x) => `<div class="mini warm"><div class="t">${esc(x.name)} ${lbl2(x)}</div>
+      <div class="m">${esc(x.facts.join(' · '))}</div>${x.why ? `<div class="m faint">AI reading of their emails: ${esc(x.why)}</div>` : ''}
+      <div class="btn-row mt6">${x.thread ? gmailLink(x.thread, 'Open in Gmail').replace('<a ', '<a class="btn small" ') : ''}${x.conn ? `<button class="btn small" data-open="connection" data-id="${x.conn}">Open</button>` : `<button class="btn small" data-relq="${esc(x.name)}">Review</button>`}</div></div>`).join('')
+      : '<div class="empty">No warm relationship needs action right now.</div>'}
+      <p class="src">Only existing relationships with real evidence: NOYA Gmail threads, CRM records and matched LinkedIn connections. Nothing is sent from here.</p></div></section>`;
 }
 const signalName = (n) => ({ 'Gmail sync (13)': 'Email reply tracking', 'Daily CEO brief (11)': 'Daily CEO brief', 'Outbound drafts (12)': 'Gmail drafts', 'Discovery (02/03/04/06/08)': 'Prospect research' }[n] || n);
 
@@ -1019,7 +1053,8 @@ function viewRelationships() {
   const f = state.relF; const q = f.q.trim().toLowerCase(); const all = rel.groups;
   const live = all.filter((g) => !g.dismissed);
   const toReview = live.filter((g) => g.received > 0 && !g.review?.status)
-    .sort((a, b) => relRank(a) - relRank(b) || String(b.last_at).localeCompare(String(a.last_at)));
+    // Reply-now first (newest first); reconnects by depth of the exchange (their emails), then recency.
+    .sort((a, b) => relRank(a) - relRank(b) || (relSuggested(a) === 'RECONNECT' ? b.received - a.received : 0) || String(b.last_at).localeCompare(String(a.last_at)));
   const tabs = {
     REVIEW: toReview,
     REVIEWED: all.filter((g) => g.review?.status).sort((a, b) => REL_ORDER.indexOf(a.review.status) - REL_ORDER.indexOf(b.review.status)),
@@ -1191,7 +1226,7 @@ function viewCosts() {
     <div class="banner small">Rule: before any paid service, plan upgrade, API credit or connector is added, HQ shows the tool, purpose, why the current stack cannot do it, the free option, the paid option, monthly and usage cost, and what happens if NOYA stops paying — then waits for your approval.</div>
     <h3>How often the automations run</h3>
     <div class="tbl-wrap"><table><thead><tr><th>Automation</th><th>When it runs</th><th class="num">Runs / month (max)</th></tr></thead><tbody>
-      <tr><td>Reply tracking (Gmail)</td><td>Every 15 minutes</td><td class="num">~2,880</td></tr>
+      <tr><td>Reply tracking (Gmail)</td><td>Every 30 minutes (run it now from n8n → workflow 13 → Manual Sync)</td><td class="num">~1,440</td></tr>
       <tr><td>Email history sync (Gmail)</td><td>Every 3 hours, 07:00–22:00</td><td class="num">~180</td></tr>
       <tr><td>Message drafting</td><td>Only when you ask for a draft, plus 2 safety checks a day</td><td class="num">~60 + your requests</td></tr>
       <tr><td>Other workflows</td><td>See n8n → Executions</td><td class="num">UNKNOWN</td></tr>
@@ -1283,7 +1318,7 @@ const QA = [
 function viewHelp() {
   return `<h2>Help &amp; playbook</h2>
     <section class="panel"><header><h3>How to run NOYA from HQ</h3></header><div class="body playbook">
-      <h4>Daily — 15 minutes (09:00)</h4><ol><li>Today → answer every P1 (replies, meetings, website enquiries).</li><li>Outreach → Ready: approve, edit or hold each email; then send the Gmail drafts.</li><li>Outreach → LinkedIn: copy, open profile, send, press Mark sent.</li><li>Past relationships → They wrote last: answer anyone waiting on you.</li><li>Record any call or meeting from yesterday.</li><li>Glance at System: green means nothing to do.</li></ol>
+      <h4>Daily — 15 minutes (09:00)</h4><ol><li>Today → answer every P1 (replies, meetings, website enquiries).</li><li>Outreach → Ready: approve, edit or hold each email; then send the Gmail drafts.</li><li>Outreach → LinkedIn: copy, open profile, send, press Mark sent.</li><li>Past relationships → Review: Reply now first, one tap per relationship.</li><li>Record any call or meeting from yesterday.</li><li>Glance at System: green means nothing to do.</li></ol>
       <h4>Weekly — 45 minutes (Monday)</h4><ol><li>Pipeline → Stale only: move, follow up or close each.</li><li>Growth: act on the recommended actions; review what vertical / market is replying.</li><li>Finance: record payments; chase anything Overdue.</li><li>LinkedIn → People you already know: pick 5 warm people at active prospects.</li><li>Past relationships → Worth reconnecting: restart 3 real conversations; add the useful ones to the CRM.</li><li>Read the weekly review in Reports.</li></ol>
       <h4>Monthly — 1 hour</h4><ol><li>System costs: fill any Unknown cost from invoices; check renewals.</li><li>Markets: decide where to push next month (Europe, GCC, Egypt).</li><li>Re-import LinkedIn connections if you have added many.</li><li>Decide what to stop doing.</li></ol>
     </div></section>
@@ -1546,7 +1581,7 @@ function renderAnyModal(m) {
         <div class="btn-row"><button class="btn" data-close>Close</button></div></div></div>`;
     case 'import': {
       const rows = m.rows || [];
-      return form('Import LinkedIn connections', `<p><b>${rows.length}</b> connections found${m.skipped ? `, ${m.skipped} lines skipped (no profile link)` : ''}.</p>
+      return form('Import LinkedIn connections', `<p><b>${rows.length}</b> connections found${m.skipped ? `, ${m.skipped} lines skipped (no profile link)` : ''}${m.dups ? `, ${m.dups} duplicate lines ignored` : ''}.</p>
         <p class="small muted">Saved: name, company, position, profile link, connected date${rows.some((r) => r.email) ? ', and email where the person shared it with you' : ''}. Nothing else. Re-importing updates existing people.</p>
         <p class="small">${rows.slice(0, 3).map((r) => esc(`${r.first_name || ''} ${r.last_name || ''} — ${r.company || ''}`)).join('<br>')}${rows.length > 3 ? '<br>…' : ''}</p>`, `Import ${rows.length}`);
     }
@@ -1626,14 +1661,17 @@ async function submitModal() {
       if (r?.ok) { state.notice = { err: false, text: r.company_reused ? 'Opportunity created under the existing company (no duplicate).' : 'Opportunity and company created.' }; openDrawer('opp', r.opportunity_id); }
       return r; }
     case 'import': {
-      const rows = m.rows || []; state.modal = null; let up = 0; let skip = m.skipped || 0; let err = null;
+      const rows = m.rows || []; state.modal = null; let nw = 0; let upd = 0; let dup = m.dups || 0; let skip = m.skipped || 0; let err = null;
       state.notice = { err: false, text: `Importing ${rows.length} connections…` }; render();
       for (let i = 0; i < rows.length; i += 500) {
         const { data, error } = await sb.rpc('hq_import_connections', { p_rows: rows.slice(i, i + 500) });
         if (error || data?.ok === false) { err = error?.message || explain(data); break; }
-        up += data.upserted; skip += data.skipped;
+        nw += data.new ?? data.upserted ?? 0; upd += data.updated ?? 0; dup += data.duplicates ?? 0; skip += data.skipped ?? 0;
+        state.notice = { err: false, text: `Importing… ${Math.min(i + 500, rows.length)} of ${rows.length}` }; render();
       }
-      state.notice = err ? { err: true, text: `Import stopped after ${up}: ${err}` } : { err: false, text: `Imported ${up} connections${skip ? ` (${skip} skipped — no LinkedIn profile link)` : ''}.` };
+      const summary = `${nw} new, ${upd} already known (updated)${dup ? `, ${dup} duplicates ignored` : ''}${skip ? `, ${skip} skipped (no profile link)` : ''}`;
+      state.notice = err ? { err: true, text: `Import stopped after ${nw + upd}: ${err}` } : { err: false, text: `LinkedIn import done: ${summary}. People linked to NOYA are listed first.` };
+      state.netF.only = 'known';
       await load(true); return null; }
     default: return null;
   }
@@ -1664,15 +1702,18 @@ function parseConnections(text) {
   if (h < 0) return { error: 'This does not look like LinkedIn\'s Connections.csv (no "First Name" / "URL" header).' };
   const idx = (n) => rows[h].findIndex((c) => c.trim().toLowerCase() === n);
   const I = { first: idx('first name'), last: idx('last name'), url: idx('url'), email: idx('email address'), company: idx('company'), position: idx('position'), on: idx('connected on') };
-  const good = []; let skipped = 0;
+  const good = []; let skipped = 0; let dups = 0; const seen = new Set();
   rows.slice(h + 1).forEach((r) => {
     if (r.every((c) => !c.trim())) return;
     const url = (r[I.url] || '').trim();
-    if (!/linkedin\.com\/in\//i.test(url)) { skipped += 1; return; }
+    const slug = (url.toLowerCase().match(/linkedin\.com\/in\/([^/?#\s]+)/) || [])[1];
+    if (!slug) { skipped += 1; return; }
+    if (seen.has(slug)) { dups += 1; return; } // same person twice in the file (www / country sub-domain / trailing slash)
+    seen.add(slug);
     good.push({ first_name: r[I.first] || null, last_name: r[I.last] || null, url, email: I.email >= 0 ? (r[I.email] || null) : null,
       company: r[I.company] || null, position: r[I.position] || null, connected_on: liDate(r[I.on]) });
   });
-  return { rows: good, skipped };
+  return { rows: good, skipped, dups };
 }
 
 // ---------------------------------------------------------------- events
@@ -1759,7 +1800,7 @@ function bind() {
     if (file.size > 20 * 1024 * 1024) { state.notice = { err: true, text: 'File is larger than 20 MB — choose Connections.csv only.' }; render(); return; }
     const res = parseConnections(await file.text());
     if (res.error) { state.notice = { err: true, text: res.error }; render(); return; }
-    state.modal = { kind: 'import', rows: res.rows, skipped: res.skipped }; render();
+    state.modal = { kind: 'import', rows: res.rows, skipped: res.skipped, dups: res.dups }; render();
   });
 }
 
