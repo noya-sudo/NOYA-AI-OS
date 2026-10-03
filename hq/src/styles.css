@@ -318,3 +318,12 @@ label.btn input[type=file] { display: none; }
 label.check { display: flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
 .score-tbl td { padding: 4px 6px; }
 .card.proj .item { white-space: nowrap; }
+
+/* queue health (daily operating target) */
+.qh-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.qh { border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 6px; padding: 8px 10px; }
+.qh .k { font-size: 12px; opacity: .75; }
+.qh .v { font-size: 20px; font-weight: 600; margin-top: 2px; }
+.qh .m { font-size: 12px; margin-top: 2px; }
+.qh.short { border-color: rgba(220, 120, 90, .55); }
+@media (max-width: 720px) { .qh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

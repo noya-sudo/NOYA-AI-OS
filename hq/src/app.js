@@ -158,7 +158,7 @@ const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 // ---------------------------------------------------------------- data
 async function load(silent = false) {
   if (!silent) { state.loading = true; render(); }
-  const [dash, ov, dir, ins, rel, com] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial')]);
+  const [dash, ov, dir, ins, rel, com, exe] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial'), sb.rpc('hq_execution')]);
   state.loading = false;
   state.errors = {};
   if (dash.error) {
@@ -169,6 +169,7 @@ async function load(silent = false) {
   if (ins.error) state.errors.ins = ins.error.message; else state.ins = ins.data;
   if (rel.error) state.errors.rel = rel.error.message; else state.rel = rel.data;
   if (com.error) state.errors.com = com.error.message; else state.com = com.data;
+  if (exe.error) state.errors.exec = exe.error.message; else state.exec = exe.data;
   render();
 }
 
@@ -1738,8 +1739,30 @@ async function loadAccount(id) {
 }
 
 // ---------------------------------------------------------------- 01 · Command additions (action first)
+// Daily operating target (Adam, 3 Oct): 15 quality actions/day, 3 days (45) ready. Shortfalls are shown, never padded.
+function execPanel() {
+  const q = state.exec?.queue; if (!q) return state.errors.exec ? `<div class="banner err">Queue health not loaded: ${esc(state.errors.exec)}</div>` : '';
+  const go = { email: 'outreach', linkedin: 'linkedin', follow_up: 'tasks', warm: 'relationships' };
+  return `<section class="panel mt8 queue-health"><header><h3>Today's 15 · queue health</h3><span class="small faint">${esc(q.ready)} / ${esc(q.target)} quality actions ready for the next 3 days</span></header><div class="body">
+    <div class="qh-grid">${q.lines.map((l) => `<div class="qh clickable ${l.shortfall ? 'short' : 'ok'}" data-go="${go[l.key]}"><div class="k">${esc(l.label)}</div>
+      <div class="v">${esc(l.ready)}<span class="faint"> / ${esc(l.target)}</span></div><div class="m">${l.shortfall ? `<span class="bad-text">short by ${esc(l.shortfall)}</span>` : `${esc(l.per_day)} a day · covered`}</div></div>`).join('')}</div>
+    <div class="small faint mt6">${esc(q.rule)} Working universe: ${esc(q.universe)} qualified accounts (target ${esc(q.universe_target)}).</div></div></section>`;
+}
+const SEG_LABEL = { PRIVATE_OFFICE: 'Private office / EA / FO', TRAVEL_PARTNER: 'Travel advisors & DMCs', BRAND_PR_PRODUCTION: 'Brands / PR / production', WEDDING_EVENTS: 'Weddings & events',
+  HOTELS_HOSPITALITY: 'Hotels & hospitality', LIVE_SIGNAL: 'Live signals', MEMBER_COMMUNITIES: 'Member communities', CORPORATE_EVENTS: 'Corporate & events', TALENT: 'Talent', OTHER: 'Other' };
+function weeklyPanel() {
+  const w = state.exec?.weekly; if (!w) return '';
+  const cols = [['qualified', 'New accounts'], ['contacts', 'Usable contacts'], ['verified', 'Verified emails'], ['linkedin_ready', 'LinkedIn-ready'], ['sends', 'Sends'], ['replies', 'Replies'],
+    ['positive', 'Positive'], ['meetings', 'Meetings'], ['proposals', 'Proposals'], ['wins', 'Wins']];
+  const weeks = [...new Set(w.rows.map((r) => r.week_start))].sort().reverse().slice(0, 2);
+  const block = (wk) => { const rows = w.rows.filter((r) => r.week_start === wk);
+    return `<h4 class="mt8">Week of ${esc(rows[0]?.week || wk)}</h4><div class="tbl-wrap"><table><thead><tr><th>Segment</th>${cols.map(([, l]) => `<th>${l}</th>`).join('')}<th>Revenue</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr><td>${esc(SEG_LABEL[r.segment] || r.segment)}</td>${cols.map(([k]) => `<td>${esc(r[k] || 0)}</td>`).join('')}<td>${r.revenue ? esc(Object.entries(r.revenue).map(([c, a]) => `${c} ${a}`).join(' · ')) : '—'}</td></tr>`).join('')}</tbody></table></div>`; };
+  return `<section class="panel mt8"><header><h3>Prospecting by segment · weekly</h3><span class="small faint">Allocation changes are recommendations only — never automatic</span></header><div class="body">
+    ${weeks.map(block).join('') || '<div class="empty">No activity recorded yet.</div>'}<div class="small faint mt6">${esc(w.note)}</div></div></section>`;
+}
 function commandPanels() {
-  const c = state.com; if (!c) return '';
+  const c = state.com; if (!c) return execPanel();
   const hot = c.signals.filter((s) => ['RESEARCH', 'QUALIFIED'].includes(s.stage) && ['NOW', 'D7'].includes(s.urgency) && (s.relevance || 0) >= 75).slice(0, 5);
   const deals = c.queue.filter((x) => ['PROPOSAL', 'NEGOTIATION', 'DISCOVERY'].includes(x.stage)).slice(0, 5);
   const engagedNoMeeting = c.queue.filter((x) => x.stage === 'ENGAGED').slice(0, 3);
@@ -1751,7 +1774,7 @@ function commandPanels() {
     ...c.signals.filter((s) => s.urgency === 'NOW' && s.stage === 'RESEARCH' && !(s.qualification?.questions || [])[7]?.ok).slice(0, 3).map((s) => [`${s.title.slice(0, 70)} — act now, but no route in yet`, 'radar'])];
   const teamLoad = {}; (state.data?.tasks || []).filter((t) => openStatuses.includes(t.status)).forEach((t) => { const k = t.assigned_to || 'Unassigned'; teamLoad[k] = (teamLoad[k] || 0) + 1; });
   const li = (t, go, sub = '') => `<div class="mini clickable" data-go="${go}"><div class="t">${t}</div>${sub ? `<div class="m">${sub}</div>` : ''}</div>`;
-  return `<div class="ov-grid3 mt8">
+  return `${execPanel()}<div class="ov-grid3 mt8">
     <section class="panel"><header><h3>New high-quality opportunities</h3><button class="btn small ghost" data-go="radar">Radar</button></header><div class="body">
       ${hot.map((s) => li(`${urgPill(s.urgency)} ${esc(s.title.slice(0, 90))}`, 'radar', `${esc(s.qualification?.answered ?? 0)}/10 answered${s.qualification?.missing?.length ? ` · missing: ${esc(s.qualification.missing.join(', '))}` : ''}`)).join('') || '<div class="empty">Nothing urgent on the radar.</div>'}</div></section>
     <section class="panel"><header><h3>Meetings · proposals · negotiations</h3><button class="btn small ghost" data-go="actions">Queue</button></header><div class="body">
@@ -2277,7 +2300,7 @@ function bind() {
 }
 
 const VIEWS = { overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
-  contacts: viewContacts, companies: viewCompanies, finance: viewFinance, costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
+  contacts: viewContacts, companies: viewCompanies, finance: () => viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
   intelligence: viewIntelligence, reports: viewReports, system: (d) => viewSystem(d) + teamPanel(), help: viewHelp,
   radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects };
 

@@ -23,6 +23,15 @@ const insight = JSON.parse(readFileSync('tests/fixtures/insight.json', 'utf8'));
 const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json', 'utf8'));
 mkdirSync('tests/out', { recursive: true });
 
+// Execution fixture (shaped like hq_execution: queue health + weekly metrics by segment).
+const execution = { queue: { ready: 42, target: 45, universe: 136, universe_target: '300–500 qualified named accounts, built progressively',
+  rule: 'Quality first: a shortfall is shown, never filled with weak prospects.',
+  lines: [{ key: 'email', label: 'New emails', per_day: 5, ready: 15, target: 15, shortfall: 0 }, { key: 'linkedin', label: 'LinkedIn / DM', per_day: 5, ready: 37, target: 15, shortfall: 0 },
+    { key: 'follow_up', label: 'Follow-ups due', per_day: 3, ready: 10, target: 9, shortfall: 0 }, { key: 'warm', label: 'Warm reconnects / replies', per_day: 2, ready: 3, target: 6, shortfall: 3 }] },
+  weekly: { weeks: ['28 Sep'], note: 'Allocation changes are recommendations only.', rows: [
+    { week: '28 Sep', week_start: '2026-09-28', segment: 'BRAND_PR_PRODUCTION', qualified: 11, contacts: 5, verified: 4, linkedin_ready: 2, sends: 5, replies: 2, positive: 2, meetings: 0, proposals: 0, wins: 0, revenue: null },
+    { week: '28 Sep', week_start: '2026-09-28', segment: 'TRAVEL_PARTNER', qualified: 8, contacts: 8, verified: 0, linkedin_ready: 3, sends: 0, replies: 0, positive: 0, meetings: 0, proposals: 0, wins: 0, revenue: null }] } };
+
 // Commercial core fixture (self-contained, shaped like hq_commercial / hq_account).
 const cOpps = snapshot.opportunities.slice(0, 3);
 const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
@@ -76,7 +85,7 @@ const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_l
   'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update',
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
   'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route'];
-const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
+const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
   'hq_create_opportunity', 'hq_import_connections', ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
@@ -114,6 +123,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_insight') return route.fulfill({ json: insight });
       if (m[1] === 'hq_relationships') return route.fulfill({ json: relationships });
       if (m[1] === 'hq_commercial') return route.fulfill({ json: commercial });
+      if (m[1] === 'hq_execution') return route.fulfill({ json: execution });
       if (m[1] === 'hq_account') return route.fulfill({ json: account });
       if (m[1] === 'hq_signal_promote') return route.fulfill({ json: { ok: true, created: [{ opportunity_id: cOpps[0].id, company: 'HYROX', product: body.p_targets[0]?.product, track: 'EVENT', has_contact: false }] } });
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
@@ -348,6 +358,11 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('.drawer [data-close-drawer]');
   await page.click('.side [data-tab=overview]');
   const cmd = await page.locator('main').innerText();
+  check('Command: queue health shows 15/day target and an honest shortfall (warm 3/6)', /Today's 15/i.test(cmd) && /short by 3/i.test(cmd) && /42 \/ 45/.test(cmd));
+  await page.click('.side [data-tab=finance]');
+  const finW = await page.locator('main').innerText();
+  check('Performance: weekly prospecting by segment (sends, replies, positive) — allocation never automatic', /Prospecting by segment/i.test(finW) && /Brands \/ PR \/ production/i.test(finW) && /Travel advisors/i.test(finW) && /recommendations only/i.test(finW));
+  await page.click('.side [data-tab=overview]');
   check('Command: action-first modules (opportunities, deals, partnerships, projects, risks, team)', ['New high-quality opportunities', 'Meetings · proposals · negotiations', 'Strategic partnerships', 'Active projects', 'Risks / blockers', 'Team action'].every((w) => cmd.toLowerCase().includes(w.toLowerCase())));
 
   // Finance: new record + definitions.
