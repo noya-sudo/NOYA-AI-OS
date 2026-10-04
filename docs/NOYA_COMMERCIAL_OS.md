@@ -84,8 +84,72 @@ The acceptance test's contacts are labelled TEST and rolled back. A real run nee
 ## Execution rules (3 Oct 2026)
 
 - **Daily target: 15 quality actions.** 5 new emails, 5 LinkedIn messages, 3 follow-ups, 2 warm reconnects, with 3 working days (45) kept ready. `queue_health()` shows each line's shortfall on Command. A shortfall is shown, never filled with weak prospects.
-- **Follow-ups.** Marking a hand-sent LinkedIn / WhatsApp / Instagram / email task *done* logs the send and books follow-up 1 for +4 days. Marking follow-up 1 done books follow-up 2 for about +10 days. A reply, a call, a proposal, a decline or do-not-contact cancels whatever is pending. Nothing is ever sent automatically. *Dismiss* means it wasn't sent, and books nothing.
+- **Follow-ups.** Marking a hand-sent LinkedIn / WhatsApp / Instagram / email task *done* logs the send and books follow-up 1 for +4 days. Marking follow-up 1 done books follow-up 2 for +6 days (changed 4 Oct). A reply, a call, a proposal, a decline or do-not-contact cancels whatever is pending. Nothing is ever sent automatically. *Dismiss* means it wasn't sent, and books nothing.
 - **Queue order.** 1) warm relationships; 2) people who replied before; 3) repeat-referral B2B partners; 4) high-quality new accounts; 5) speculative cold targets last. Celebrity cold DMs with no warm route are parked (status WAITING).
 - **Working universe.** A company counts only with a written reason (`companies.universe_status = 'QUALIFIED'` plus `universe_reason`). The target is 300–500, built progressively. Batch 1 (3 Oct) added 39 researched accounts: 8 private office, 8 travel partners, 7 brand/PR/production (shortfall of 1, shown honestly), 6 weddings, 6 hotels and 4 live signals.
-- **Hunter.** LinkedIn first. Hunter is used only for high-priority named people with no public email, after Adam approves a paid plan. New prospect opportunities are created as READY or RESEARCHING (never NEW), so workflow 05 doesn't spend credits on them.
+- **Hunter.** LinkedIn first. Hunter is used only for high-priority named people with no public email. No paid plan (decision: wait two weeks, 4 Oct). New prospect opportunities are created as READY or RESEARCHING (never NEW), so workflow 05 doesn't spend credits on them.
 - **Measurement.** `commercial_weekly_metrics()` gives weekly figures by segment: new accounts, contacts, verified emails, LinkedIn-ready, sends, replies, positive replies, meetings, proposals, wins and revenue. It appears under Performance → Finance. Allocation changes are recommendations for Adam only.
+
+## Operating standard (4 Oct 2026)
+
+Migration `20261004100000_operating_standard.sql`; check `supabase/tests/operating_standard.sql` (rolled back, 5/5 pass).
+
+**Working account universe** (`companies.universe_status`, re-run with `universe_reclassify()`):
+
+| Status | Rule | 4 Oct |
+|---|---|---|
+| QUALIFIED | written reason + confirmed decision maker + usable channel (verified personal email, LinkedIn profile or prepared LinkedIn message, or Instagram for a non-formal sector) | 64 |
+| NEEDS_REVIEW | person exists but unconfirmed, or confirmed with no usable channel | 21 |
+| RESEARCHING | no named person yet | 51 |
+| PARKED / EXCLUDED | Adam's decision; never overwritten | 0 |
+
+Before 4 Oct all 136 were counted as qualified. That was wrong.
+
+**People.** `contacts.identity_status` is CONFIRMED or NEEDS_VERIFICATION. It is set from evidence: an inferred title, "needs verification", an appointment date to re-check, or a person who has left. A send task (LinkedIn / Instagram / WhatsApp / email READY) for an unconfirmed person becomes **VERIFY FIRST** (trigger `verify_first_gate`), so it never counts as send-ready.
+
+- Mark it done when the person is confirmed: they become CONFIRMED and the message returns to the send queue.
+- Dismiss it if it is the wrong person.
+
+`hq_prepare_outreach` refuses unconfirmed people (`PERSON_NOT_CONFIRMED`).
+
+**Cold-email standard.**
+
+- *Structure:* Hi [First Name] → why them (one real sentence) → who NOYA is (one sentence) → commercial fit → one CTA. 90–130 words.
+- *Subject:* short and professional, for example "NOYA x [Company]", "Egypt partnership" or "Egypt production support".
+- *Signature:*
+  ```
+  Best,
+  Adam Elshazly
+  Founder, NOYA Concierge
+  Global concierge & lifestyle management
+  noyaconcierge.com · @noyaconcierge
+  adam@noyaconcierge.com
+  ```
+  Workflow 12 makes the website, Instagram and email clickable. No logo, banner or images.
+- *Where it applies:* workflow 05's prompt and code (gate flags anything under 85 or over 140 words, banned phrases, links or images, no CTA) and the 13 playbook templates.
+- `outreach_quality(subject, body)` → PASS / NEEDS_EDIT / BLOCKED:
+  - BLOCKED: wrong signature, unfilled placeholder, banned phrase, or a link or image in the body;
+  - NEEDS_EDIT: length, greeting, more than one question, no CTA, or subject.
+- `queue_health()` counts an email only if its draft is not BLOCKED, and counts a draft already in Gmail only once.
+
+**Hunter ROI** (`hunter_roi()`, on Command):
+
+| Credits | Usable emails | Sent | Replies | Meetings |
+|---|---|---|---|---|
+| 48 | 11 (34%, 4.4 credits each) | 5 | 1 | 0 |
+
+Workflow 05 has an IF gate: Hunter runs only for priority ≥ 85, a confirmed contact (confidence ≥ 85) and no verified email. Search candidates never reach Hunter.
+
+**Follow-ups.** Two steps, both from actual sends: +4 days, then +6 days after follow-up 1 is sent. Both cancel automatically on a reply, a call, a proposal, a decline or do-not-contact.
+
+**Clean-out (4 Oct).**
+
+- Celebrity cold approaches with no warm route (Huda Kattan, Samih Sawiris, Kendall Jenner) moved to LONG_TERM.
+- Five opportunities with unconfirmed contacts moved from READY to RESEARCHING.
+- El Gouna duplicate signal (lineup article) dismissed as `DUPLICATE_OF` the active festival signal. It had no opportunities, so nothing was merged, and the evidence is kept in its notes.
+
+**Two-week operating period (4–18 Oct).**
+
+- No building, no purchases, no automatic sends.
+- About 15 actions a day, warm first. Shortfalls stay visible.
+- Weekly clean-out check-in on 11 Oct; NOYA Commercial Performance Review on 18 Oct.

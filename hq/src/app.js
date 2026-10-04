@@ -1746,7 +1746,13 @@ function execPanel() {
   return `<section class="panel mt8 queue-health"><header><h3>Today's 15 · queue health</h3><span class="small faint">${esc(q.ready)} / ${esc(q.target)} quality actions ready for the next 3 days</span></header><div class="body">
     <div class="qh-grid">${q.lines.map((l) => `<div class="qh clickable ${l.shortfall ? 'short' : 'ok'}" data-go="${go[l.key]}"><div class="k">${esc(l.label)}</div>
       <div class="v">${esc(l.ready)}<span class="faint"> / ${esc(l.target)}</span></div><div class="m">${l.shortfall ? `<span class="bad-text">short by ${esc(l.shortfall)}</span>` : `${esc(l.per_day)} a day · covered`}</div></div>`).join('')}</div>
-    <div class="small faint mt6">${esc(q.rule)} Working universe: ${esc(q.universe)} qualified accounts (target ${esc(q.universe_target)}).</div></div></section>`;
+    <div class="small faint mt6">${esc(q.rule)}${q.verify_first ? ` ${esc(q.verify_first)} people need verifying before they count (VERIFY FIRST tasks).` : ''}</div>
+    <div class="small mt6">Working universe: ${Object.entries(q.universe_by_status || { QUALIFIED: q.universe }).map(([k, v]) => `${esc(human(k))} ${esc(v)}`).join(' · ')} <span class="faint">(target ${esc(q.universe_target)})</span></div>
+    ${hunterLine()}</div></section>`;
+}
+function hunterLine() {
+  const h = state.exec?.hunter; if (!h) return '';
+  return `<div class="small mt6 hunter-roi">Hunter ROI: ${esc(h.credits)} credits → ${esc(h.usable_emails)} usable emails (${esc(h.usable_rate ?? 0)}%, ${esc(h.credits_per_usable ?? '—')} credits each) → ${esc(h.sent)} sent → ${esc(h.replies)} replies → ${esc(h.meetings)} meetings <span class="faint">· ${esc(h.gate)}</span></div>`;
 }
 const SEG_LABEL = { PRIVATE_OFFICE: 'Private office / EA / FO', TRAVEL_PARTNER: 'Travel advisors & DMCs', BRAND_PR_PRODUCTION: 'Brands / PR / production', WEDDING_EVENTS: 'Weddings & events',
   HOTELS_HOSPITALITY: 'Hotels & hospitality', LIVE_SIGNAL: 'Live signals', MEMBER_COMMUNITIES: 'Member communities', CORPORATE_EVENTS: 'Corporate & events', TALENT: 'Talent', OTHER: 'Other' };

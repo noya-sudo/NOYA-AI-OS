@@ -24,7 +24,9 @@ const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json
 mkdirSync('tests/out', { recursive: true });
 
 // Execution fixture (shaped like hq_execution: queue health + weekly metrics by segment).
-const execution = { queue: { ready: 42, target: 45, universe: 136, universe_target: '300–500 qualified named accounts, built progressively',
+const execution = { hunter: { credits: 48, usable_emails: 11, usable_rate: 34, credits_per_usable: 4.4, sent: 5, replies: 1, meetings: 0, gate: 'Hunter runs only for a confirmed, high-priority decision maker.' },
+  queue: { ready: 42, target: 45, universe: 64, universe_target: '300–500 named accounts, built progressively', verify_first: 4,
+  universe_by_status: { QUALIFIED: 64, NEEDS_REVIEW: 21, RESEARCHING: 51 },
   rule: 'Quality first: a shortfall is shown, never filled with weak prospects.',
   lines: [{ key: 'email', label: 'New emails', per_day: 5, ready: 15, target: 15, shortfall: 0 }, { key: 'linkedin', label: 'LinkedIn / DM', per_day: 5, ready: 37, target: 15, shortfall: 0 },
     { key: 'follow_up', label: 'Follow-ups due', per_day: 3, ready: 10, target: 9, shortfall: 0 }, { key: 'warm', label: 'Warm reconnects / replies', per_day: 2, ready: 3, target: 6, shortfall: 3 }] },
@@ -359,6 +361,8 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('.side [data-tab=overview]');
   const cmd = await page.locator('main').innerText();
   check('Command: queue health shows 15/day target and an honest shortfall (warm 3/6)', /Today's 15/i.test(cmd) && /short by 3/i.test(cmd) && /42 \/ 45/.test(cmd));
+  check('Command: working universe by status (Qualified / Needs review / Researching) and VERIFY FIRST count', /Qualified 64/i.test(cmd) && /Needs review 21/i.test(cmd) && /Researching 51/i.test(cmd) && /4 people need verifying/i.test(cmd));
+  check('Command: Hunter ROI chain (credits → usable → sent → replies → meetings)', /48 credits → 11 usable emails/.test(cmd) && /5 sent → 1 replies → 0 meetings/.test(cmd));
   await page.click('.side [data-tab=finance]');
   const finW = await page.locator('main').innerText();
   check('Performance: weekly prospecting by segment (sends, replies, positive) — allocation never automatic', /Prospecting by segment/i.test(finW) && /Brands \/ PR \/ production/i.test(finW) && /Travel advisors/i.test(finW) && /recommendations only/i.test(finW));

@@ -11,8 +11,8 @@ const co = o._company || {};
 function clean(t) {
   return String(t || '')
     .replace(/\r/g, '')
-    .replace(/[‐‑‒]/g, '-')
-    .replace(/ /g, ' ')
+    .replace(/[\u2010\u2011\u2012]/g, '-')
+    .replace(/\u00a0/g, ' ')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -26,13 +26,14 @@ emailBody = emailBody.replace(/\n*(Best|Kind regards|Best regards|Regards),?\s*\
 const ROLE_WORDS = /\/|\bthe\b|\bteam\b|\bfounders?\b|\bdirector\b|\bpartnerships?\b|\bhead\b|\bmanager\b|\bofficer\b|\blead\b|\bmarketing\b|\bmembership\b|\bmembers\b|\bevents?\b|\bsales\b|\bpress\b|\bconcierge\b|\bdepartment\b|\bsponsorship\b|\bcommercial\b|\bsir\b|\bmadam\b/i;
 function personFirst(v) {
   const f = String(v || '').trim().split(/\s+/)[0] || '';
-  return (f && !ROLE_WORDS.test(f) && /^[A-Za-z\u00C0-\u024F'\-]{2,}$/.test(f)) ? f : '';
+  return (f && !ROLE_WORDS.test(f) && /^[A-Za-z\u00c0-\u024f'\-]{2,}$/.test(f)) ? f : '';
 }
 const knownFirst = personFirst(c.first_name) || personFirst(o.contact_first_name) || personFirst(ai.decision_maker_name);
 emailBody = emailBody.replace(/^(Hi|Hello|Dear)\s+[^\n,]*,/, function (g) {
   return ROLE_WORDS.test(g) ? (knownFirst ? 'Hi ' + knownFirst + ',' : 'Hello,') : g;
 });
-if (emailBody) emailBody += '\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com';
+// Standard cold-outreach signature (Adam, 4 Oct 2026); workflow 12 turns website / Instagram / email into links.
+if (emailBody) emailBody += '\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nGlobal concierge & lifestyle management\nnoyaconcierge.com \u00b7 @noyaconcierge\nadam@noyaconcierge.com';
 const linkedinMsg = oneLine(ai.linkedin_message || ai.linkedin_instagram_message);
 const instagramDm = oneLine(ai.instagram_dm);
 
@@ -70,20 +71,23 @@ const emailStyle = warm ? 'MINIMAL_BRANDED' : 'PLAIN_PERSONAL';
 // Adam sees exactly what to fix, and 05 never sends anything.
 const BANNED = ["i hope you're well", 'i hope you are well', 'i hope this email finds you well', 'i wanted to introduce noya',
   'explore synergies', 'synergies', 'unparalleled', 'world-class', 'world class', 'elevate', 'seamless luxury',
-  'bespoke excellence', 'bespoke solutions', 'luxury redefined', 'curated to perfection', 'we are delighted', 'free call', 'free 15'];
+  'bespoke excellence', 'bespoke solutions', 'luxury redefined', 'curated to perfection', 'we are delighted', 'free call', 'free 15',
+  'i wanted to reach out', 'i am reaching out', "i'm reaching out", 'elevate your journey', 'world-class experiences'];
 const bodyNoSig = emailBody.replace(/\n\nBest,[\s\S]*$/, '');
 const words = bodyNoSig ? bodyNoSig.split(/\s+/).filter(Boolean).length : 0;
 const gate = [];
 if (emailBody) {
-  if (words < 55) gate.push('EMAIL_TOO_SHORT(' + words + 'w)');
-  if (words > 150) gate.push('EMAIL_TOO_LONG(' + words + 'w)');
-  if (!/\?/.test(bodyNoSig)) gate.push('NO_CLEAR_CTA');
+  // Standard (4 Oct 2026): 90-130 words; a small tolerance before flagging.
+  if (words < 85) gate.push('EMAIL_TOO_SHORT(' + words + 'w)');
+  if (words > 140) gate.push('EMAIL_TOO_LONG(' + words + 'w)');
+  if (!/\?|short call|introduction call|right person/i.test(bodyNoSig)) gate.push('NO_CLEAR_CTA');
+  if (/https?:\/\/|calendly|<img|\[image/i.test(bodyNoSig)) gate.push('LINK_OR_IMAGE_IN_BODY');
   if (!/^(Hi|Hello)\b/.test(bodyNoSig)) gate.push('OPENING_NOT_HI');
 }
 const allCopy = (emailBody + ' ' + (ai.email_subject || '') + ' ' + linkedinMsg + ' ' + instagramDm).toLowerCase();
 BANNED.forEach(function (b) { if (allCopy.indexOf(b) !== -1) gate.push('BANNED_PHRASE:' + b); });
 if (/based in egypt/i.test(allCopy)) gate.push('POSITIONING_BASED_IN_EGYPT');
-if (linkedinMsg && (linkedinMsg.length < 150 || linkedinMsg.length > 600)) gate.push('LINKEDIN_LENGTH(' + linkedinMsg.length + ')');
+if (linkedinMsg && (linkedinMsg.length < 150 || linkedinMsg.length > 350)) gate.push('LINKEDIN_LENGTH(' + linkedinMsg.length + ')');
 if (instagramDm && instagramDm.length > 450) gate.push('INSTAGRAM_LENGTH(' + instagramDm.length + ')');
 if (!ai.why_now) gate.push('NO_WHY_NOW');
 if (primary === 'LINKEDIN' && !linkedinMsg) gate.push('PRIMARY_LINKEDIN_WITHOUT_MESSAGE');
@@ -179,3 +183,4 @@ followUpPlan,
 'OUTREACH_READY_JSON: ' + JSON.stringify(ready)
 ].join('\n');
 return { json: { ...o, _draft_text: draftText, _outreach_ready: ready } };
+
