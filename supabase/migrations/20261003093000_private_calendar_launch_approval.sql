@@ -1,7 +1,10 @@
--- HOW TO RUN (one paste): Supabase dashboard -> project gagbhykzmtstekpqujyl -> SQL editor ->
--- paste this whole file -> Run once (the approvals only touch rows still VERIFIED; the audit log adds a line per run).
--- (The Supabase connector in Claude's session holds approval writes for a confirmation it
--- cannot show, so this one step is Adam's.)
+-- STATUS (verified by query, 4 Oct 2026): APPLIED on 3 Oct 2026, 20:49-20:53 UTC, one event per
+-- transaction (gate on, approve, gate off, audit) through the Supabase connector: 17 events APPROVED,
+-- 17 CALENDAR_APPROVE / OK audit rows. Shakira is VERIFIED, unapproved and off the public calendar.
+-- Not yet written (the connector held both): Shakira's "held" note and its BLOCKED audit row.
+-- Safe to re-run in full: the approvals only touch rows still VERIFIED and the audit insert skips
+-- events that already have a CALENDAR_APPROVE row, so a re-run now adds only the Shakira note and
+-- its BLOCKED row. (Supabase dashboard -> project gagbhykzmtstekpqujyl -> SQL editor -> paste -> Run.)
 -- Private Calendar launch approval (3 Oct 2026). Adam approved the launch set in writing
 -- ("APPROVE V3 FINAL") on condition that every event is re-checked against its official source
 -- first and that nothing with uncertain or moving dates is approved.
@@ -36,7 +39,8 @@ select set_config('noya.calendar_gate', 'off', true);
 
 update public.intelligence set notes = 'Held at launch (3 Oct 2026): the date has already moved once (7 Apr -> 28 Nov 2026, regional situation) and only the promoter''s official ticketing confirms it. Not approved and not on the public calendar; re-check with the artist''s and promoter''s channels before approving.' where id = '1b37cea5-e949-4f4e-90ad-d62755f029b5' and calendar_status = 'VERIFIED';  -- shakira-pyramids-of-giza-2026
 
-insert into public.approval_audit (action, result, actor, detail) values
+insert into public.approval_audit (action, result, actor, detail)
+select v.action, v.result, v.actor, v.detail from (values
   ('CALENDAR_APPROVE', 'OK', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '1218021c-645c-454f-97b7-47ead048da24', 'calendar_slug', 'el-gouna-film-festival-2026', 'rechecked', '2026-10-03')),
   ('CALENDAR_APPROVE', 'OK', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '68158dc6-7c6f-4c69-8852-8fb8e4680747', 'calendar_slug', 'abu-simbel-sun-festival-october-2026', 'rechecked', '2026-10-03')),
   ('CALENDAR_APPROVE', 'OK', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '94108f87-5858-4bce-88bc-e3e7f99e8096', 'calendar_slug', 'art-basel-paris-2026', 'rechecked', '2026-10-03')),
@@ -54,6 +58,11 @@ insert into public.approval_audit (action, result, actor, detail) values
   ('CALENDAR_APPROVE', 'OK', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '046b1f38-d372-473d-a6d5-58f517c9bb85', 'calendar_slug', 'uefa-champions-league-final-2027', 'rechecked', '2026-10-03')),
   ('CALENDAR_APPROVE', 'OK', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '6582907f-7b16-44f7-aeb1-3da95042764a', 'calendar_slug', 'royal-ascot-2027', 'rechecked', '2026-10-03')),
   ('CALENDAR_APPROVE', 'OK', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', 'f2042774-e656-4ff5-ad7f-2504386b9132', 'calendar_slug', 'wimbledon-2027', 'rechecked', '2026-10-03')),
-  ('CALENDAR_APPROVE', 'BLOCKED', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '1b37cea5-e949-4f4e-90ad-d62755f029b5', 'calendar_slug', 'shakira-pyramids-of-giza-2026', 'reason', 'date moved once (7 Apr -> 28 Nov 2026); held until re-confirmed'));
+  ('CALENDAR_APPROVE', 'BLOCKED', 'Adam Elshazly (written approval, APPROVE V3 FINAL)', jsonb_build_object('intelligence_id', '1b37cea5-e949-4f4e-90ad-d62755f029b5', 'calendar_slug', 'shakira-pyramids-of-giza-2026', 'reason', 'date moved once (7 Apr -> 28 Nov 2026); held until re-confirmed'))
+) as v(action, result, actor, detail)
+where not exists (
+  select 1 from public.approval_audit a
+  where a.action = v.action and a.detail->>'intelligence_id' = v.detail->>'intelligence_id'
+);
 
 commit;
