@@ -64,7 +64,7 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
 **Waiting on the CEO**
 - **Share the Drive folder.** Adam's Drive upload of the Mac folder needs sharing with noya@noyaconcierge.com as Viewer. It is not visible yet.
   - Once shared: list it, mirror photographs up to about 7 MB, and run the full read-only scan.
-  - Larger files (RAW, video, large JPEG) need the n8n Google Drive credential (credential step 3 above), or the Mac session in `docs/LOCAL_ASSET_AUDIT.md`.
+  - Larger files (RAW, video, large JPEG) need the n8n Google Drive credential (step 3 of the credential list below), or the Mac session in `docs/LOCAL_ASSET_AUDIT.md`.
 - **Pier 88 x Noya shoot:** 314 files in noya@'s My Drive (Sony RAW + JPEG, Pyramid Hills and El Gouna, April 2025). Every file is over 7 MB, so it needs the same credential or the Mac.
   - Confirm that NOYA owns it, who the photographer is, and that models consented.
 
@@ -73,7 +73,7 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
 - **"NOYA – Drive masters → Sanity"** (n8n, inactive).
   - Reads the published rights register (`/seed/masters.json`) and uploads approved masters from the Drive folder "NOYA Website Masters (approved)" to Sanity as assets.
   - Mirrors open-licence originals into that folder.
-  - The two NOYA masters used today are already copied there.
+  - 14 NOYA originals (Edge Studios, El Gouna) are already copied there.
   - Needs the two credentials below.
 - **"HQ approved events → Sanity drafts"** (n8n, inactive).
   - Creates Studio drafts only; a person publishes.
