@@ -37,6 +37,37 @@
 - **Pier 88 Pyramid Hills stills:** not reviewed (private folder).
 - **Edge Studios shoot:** model consent not recorded, so only frames with faces unseen are used.
 
+## Master-asset audit (6 Oct 2026, in progress)
+
+CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as primary sources, and find the best original of every photograph before sourcing anything new. All reading is read-only; nothing is renamed, moved, deleted or published. Tools and findings live in the noya-website repo (`scripts/asset-audit/`, `docs/asset-audit/`).
+
+**Done**
+- **Website:** all 160 library photographs are fingerprinted. 76 of 123 photo slots could be improved by a stronger NOYA original (`docs/asset-audit/CURATION_TARGETS.md`):
+  - 12 text-led;
+  - 9 supplier screenshots awaiting masters;
+  - 10 below ideal width;
+  - 33 licensed stand-ins;
+  - 26 repeats.
+- **Drive (noya@):** 787 files indexed. The Edge Studios originals give exact masters for 23 site photographs (VERIFIED by fingerprint). 14 of those originals are copied into "NOYA Website Masters (approved)".
+- **Old Squarespace site:** 119 of 120 uploads fingerprinted. These old-site photographs are traced:
+  - `el-gouna-aerial` is a Mac screenshot;
+  - `abu-simbel-facade` is a web download, so it is now rights-unconfirmed (it is not on the site);
+  - the old Edge-3/7/42/93 files come from NOYA's own Edge Studios shoots.
+- **Wind of Fortune:** its 4 yacht photographs are macOS screenshots. They are flagged "replace soon", and the masters are requested in The Cyan draft.
+- **Canva (read-only):** 1,962 images and 226 designs inventoried. Client and personal designs are recorded by id only. Fingerprints of the camera and phone images are being matched now.
+
+**Canva conflicts to know about (do not reuse these designs as they are)**
+- **Eclipse design `DAG7nT3qk0k`:** the cover says "2026 partial eclipse experience, August 10th–14th", but the inside says the journey is built around the total eclipse. The total eclipse over Luxor is 2 Aug 2027. Correct it before any reuse.
+- **Monaco GP 2026 designs:** they give two different date ranges (4–7 vs 5–7 June).
+- **"Noya Concierge Brands and Productions" (`DAHSLweLTGU`):** shows Jacquemus and Dior show imagery as examples. That imagery is third-party; never use it on the website.
+
+**Waiting on the CEO**
+- **Share the Drive folder.** Adam's Drive upload of the Mac folder needs sharing with noya@noyaconcierge.com as Viewer. It is not visible yet.
+  - Once shared: list it, mirror photographs up to about 7 MB, and run the full read-only scan.
+  - Larger files (RAW, video, large JPEG) need the n8n Google Drive credential (credential step 3 above), or the Mac session in `docs/LOCAL_ASSET_AUDIT.md`.
+- **Pier 88 x Noya shoot:** 314 files in noya@'s My Drive (Sony RAW + JPEG, Pyramid Hills and El Gouna, April 2025). Every file is over 7 MB, so it needs the same credential or the Mac.
+  - Confirm that NOYA owns it, who the photographer is, and that models consented.
+
 ## Automation (approval-based; nothing publishes itself)
 
 - **"NOYA – Drive masters → Sanity"** (n8n, inactive).
