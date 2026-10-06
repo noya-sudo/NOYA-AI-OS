@@ -54,7 +54,14 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
   - `abu-simbel-facade` is a web download, so it is now rights-unconfirmed (it is not on the site);
   - the old Edge-3/7/42/93 files come from NOYA's own Edge Studios shoots.
 - **Wind of Fortune:** its 4 yacht photographs are macOS screenshots. They are flagged "replace soon", and the masters are requested in The Cyan draft.
-- **Canva (read-only):** 1,962 images and 226 designs inventoried. Client and personal designs are recorded by id only. Fingerprints of the camera and phone images are being matched now.
+- **Canva (read-only):** 1,962 images and 226 designs inventoried. Client and personal designs are recorded by id only.
+  - 625 camera and phone images were fingerprinted and matched (`docs/asset-audit/MASTER_CATALOGUE.md`).
+  - Canva holds larger copies of 8 site photographs: the Edge Studios pool and boat set, 3,600 px against the site's 3,000.
+- **Master catalogue.**
+  - 25 site photographs have their original in Drive.
+  - 16 live NOYA photographs still need their originals found: the North Coast set, Abu Simbel, the pool and boat set, and the pyramid gift.
+  - Quality question: for `north-coast-villa-dusk`, `north-coast-horizon` and `abu-simbel-ramses`, the only copies found are 1,179 px iPhone exports, while the site serves them at 2,400–2,892 px. If no full-size original exists, these files may be enlargements and will be graded again.
+  - 61 of 119 old-site uploads are traced. The old site's "Fly web.jpg" was an Emirates marketing image.
 
 **Canva conflicts to know about (do not reuse these designs as they are)**
 - **Eclipse design `DAG7nT3qk0k`:** the cover says "2026 partial eclipse experience, August 10th–14th", but the inside says the journey is built around the total eclipse. The total eclipse over Luxor is 2 Aug 2027. Correct it before any reuse.
