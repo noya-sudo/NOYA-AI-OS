@@ -153,3 +153,35 @@ Workflow 05 has an IF gate: Hunter runs only for priority ≥ 85, a confirmed co
 - No building, no purchases, no automatic sends.
 - About 15 actions a day, warm first. Shortfalls stay visible.
 - Weekly clean-out check-in on 11 Oct; NOYA Commercial Performance Review on 18 Oct.
+
+## Commercial Engine V2 (7 Oct 2026)
+
+**Lanes.** `companies.acquisition_lane` holds one of six lanes. The daily mix lives in `system_config.acquisition_mix`, with floor 15 and target 20 in `daily_touch_target`.
+
+| Lane | Daily slots |
+|---|---|
+| BRANDS | 6 |
+| PARTNERSHIPS | 4 |
+| WEDDINGS | 3 |
+| CORPORATE | 3 |
+| EGYPT_EVENTS | 2 |
+| SPORTS_PRIVATE | 2 |
+
+Unused slots are refilled from other lanes, warm routes first.
+
+**Commercial Director.** `commercial_director_plan(p_dry_run, p_target, p_replan)` picks the day's accounts. The pool is QUALIFIED accounts whose relationship state is COLD. It excludes anyone who has an open ready/verify/review/follow-up task, was planned in the last 30 days, or was emailed in the last 60 days. A company that is a CLIENT, PARTNER_ACTIVE, PROPOSAL, MEETING_BOOKED or ACTIVE_CONVERSATION is never planned. Each pick needs a CONFIRMED person with a position. Picks are written to `outreach_candidates`.
+
+**Workflow 18 (Daily Outreach).** Runs weekdays at 08:15 Cairo and defaults to DRY RUN. Each pick goes through:
+1. Plan.
+2. Prompt.
+3. Draft, using the drafting model in `system_config.drafting_model`.
+4. Fact check with Flash-Lite, looking for unsupported claims and presumptions about the recipient.
+5. Hard gate: banned phrases, false familiarity, length, personalisation, and the company-name swap test.
+6. One redraft with the failure reasons.
+7. Save: `READY`, or `DRAFT_REVIEW_REQUIRED` if it still fails.
+
+If the fact check is unavailable, the gate fails closed. In live mode the save creates a `<CHANNEL> READY` or `DRAFT REVIEW` task. When that task is completed the candidate is marked SENT; when it is cancelled, SKIPPED. Nothing sends automatically.
+
+**Dashboard.** `commercial_today()` feeds the HQ "Today · commercial engine" panel. `commercial_learning(weeks)` breaks results down by lane, channel, angle and model.
+
+**Acceptance test (6 Oct).** 16 of 20 accounts were planned (shortfall: Weddings 1, Corporate 2, Sports 1). The free Gemini tier rate-limited the fact-check pass, so all 16 were held for review. Moving the key to billing is the open decision.

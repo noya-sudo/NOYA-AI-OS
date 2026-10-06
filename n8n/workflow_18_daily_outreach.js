@@ -47,7 +47,7 @@ const buildPrompts = node({
       jsCode: `
 var items = ($input.first().json.items) || [];
 var LANE = {
-  BRANDS: 'Brand / campaign opportunity. Suggest a specific campaign, creator, athlete or production idea in Egypt that fits THIS brand. NOYA handles the destination side end to end: locations, stays, movement, permits/local coordination, production support, hospitality.',
+  BRANDS: 'Brand / campaign opportunity. Suggest a specific campaign, creator, athlete or production idea in Egypt that fits THIS brand. NOYA handles the destination side: locations, stays, movement, permits/local coordination, production support, hospitality.',
   PARTNERSHIPS: 'Partnership, NOT client acquisition. Answer: why would this company send business to NOYA? They keep their client; NOYA is their trusted Egypt specialist and on-ground execution partner (Cairo, Nile, Red Sea, North Coast, private-client handling, VIP requests).',
   WEDDINGS: 'Wedding / private event planner. The planner keeps the client and the creative direction; NOYA is the Egypt destination concierge and guest-logistics partner (guest travel, room blocks, VIP arrivals, transfers, guest concierge, pre/post experiences).',
   EGYPT_EVENTS: 'Egypt event partnership. NOYA can host and look after the international guests, VIPs, players or participants who fly in, and can also bring its own clients to the event.',
@@ -56,7 +56,7 @@ var LANE = {
 };
 var FORMAT = {
   EMAIL: 'An email body of 80-120 words (excluding greeting and sign-off) plus a short professional subject under 60 characters (e.g. "NOYA x [Company]", "Egypt production support", "Egypt partnership"). Start with "Hi [First name],". End with the call to action; do NOT add a sign-off or signature.',
-  LINKEDIN: 'A LinkedIn connection note of 200-300 characters (hard limit 300). Start with "Hi [First name],". No signature, no links. subject must be "".',
+  LINKEDIN: 'A LinkedIn connection note of 220-280 characters (LinkedIn rejects anything over 300; count carefully). Start with "Hi [First name],". No signature, no links. subject must be "".',
   INSTAGRAM: 'An Instagram DM of 150-380 characters, conversational, founder-to-founder. No links, no hashtags, no emojis. subject must be "".'
 };
 return items.map(function (it) {
@@ -76,7 +76,8 @@ return items.map(function (it) {
     'Structure, in this order: 1) REASON - why this company/person specifically, citing a concrete fact from the evidence (a campaign, launch, location, appointment, event, destination). 2) OPPORTUNITY - what NOYA sees that could genuinely be useful to them. 3) NOYA RELEVANCE - one concise line on how NOYA fits (no service lists, no company biography). 4) ONE easy next step (a short call, a few ideas, a conversation).',
     'The first sentence must be about THEM, not about NOYA or Adam. If the company name were swapped for another, the message must no longer make sense.',
     'Never write: "I am reaching out", "I\\'m reaching out", "I wanted to reach out", "I wanted to introduce", "I\\'ve been following", "we\\'ve been following", "love what you\\'re doing", "I hope", "big fan", "world-class", "unparalleled", "elevate", "seamless", "bespoke", "synergy", "partnership opportunities", "exclusive access", "luxury experiences". No flattery, no fake familiarity, no exclamation marks, no emojis, at most one question.',
-    'Use ONLY the facts below. Never invent clients, projects, numbers, dates or a relationship. Understated, confident, concise British English.',
+    'Use ONLY the facts below. Never invent clients, projects, numbers, dates or a relationship. Never state what the recipient, their clients or players do, plan, need or lack unless the evidence says so (no "your clients often...", "as you expand...", "your campaigns lack...", "your competitors..."). Offer ideas as possibilities, not as claims about them.',
+    'The next step must be specific and easy (e.g. "I can send three Red Sea location ideas", "happy to share how we would run the guest side"); do not default to "Are you open to a brief call?". Avoid the words "on-ground", "end-to-end", "infrastructure", "seamless". Understated, confident, concise British English.',
     'Return ONLY JSON: {"subject": "...", "message": "..."}',
     '', facts
   ].join('\\n');
@@ -88,18 +89,18 @@ return items.map(function (it) {
 
 const draftModel = languageModel({
   type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', version: 1.1,
-  config: { name: 'Draft Model (Gemini 3 Flash)', parameters: { modelName: 'models/gemini-3-flash-preview', options: { maxOutputTokens: 1500, temperature: 0.5 } }, credentials: geminiCred }
+  config: { name: 'Draft Model (Gemini 3 Flash)', parameters: { modelName: 'models/gemini-3-flash-preview', options: { maxOutputTokens: 8192, temperature: 0.5 } }, credentials: geminiCred }
 });
 const redraftModel = languageModel({
   type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', version: 1.1,
-  config: { name: 'Redraft Model (Gemini 3 Flash)', parameters: { modelName: 'models/gemini-3-flash-preview', options: { maxOutputTokens: 1500, temperature: 0.4 } }, credentials: geminiCred }
+  config: { name: 'Redraft Model (Gemini 3 Flash)', parameters: { modelName: 'models/gemini-3-flash-preview', options: { maxOutputTokens: 8192, temperature: 0.4 } }, credentials: geminiCred }
 });
 
 const draft = node({
   type: '@n8n/n8n-nodes-langchain.chainLlm', version: 1.9,
   config: {
     name: 'Draft (AI)', onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 3000,
-    parameters: { promptType: 'define', text: expr('{{ $json.prompt }}'), batching: { batchSize: 3, delayBetweenBatches: 1000 } },
+    parameters: { promptType: 'define', text: expr('{{ $json.prompt }}'), batching: { batchSize: 1, delayBetweenBatches: 7000 }, needsFallback: true },
     subnodes: { model: draftModel }
   }
 });
@@ -118,7 +119,7 @@ function tokens(s) { return (String(s || '').match(/[A-Za-z0-9][A-Za-z0-9'-]{3,}
 function gate(it, d) {
   var m = d.message, low = m.toLowerCase(), issues = [];
   var BANNED = [/i am reaching out/, /i'?m reaching out/, /wanted to reach out/, /reaching out to/, /wanted to introduce/, /been following/, /we'?ve been following/,
-    /love what you/, /big fan/, /i hope/, /world[- ]class/, /unparalleled/, /elevate/, /seamless/, /bespoke/, /synerg/, /exclusive access/, /luxury experiences/,
+    /love what you/, /big fan/, /are you open to a brief call/, /end-to-end/, /infrastructure/, /i hope/, /world[- ]class/, /unparalleled/, /elevate/, /seamless/, /bespoke/, /synerg/, /exclusive access/, /luxury experiences/,
     /i came across/, /hope this (email|message) finds/];
   BANNED.forEach(function (r) { if (r.test(low)) issues.push('BANNED: ' + r.source); });
   if (/(admire|admired|i'?ve seen your|caught my eye|really enjoyed|so impressed)/.test(low)) issues.push('FALSE_FAMILIARITY');
@@ -146,8 +147,45 @@ function gate(it, d) {
   if (!m) issues.push('EMPTY');
   return { issues: issues, words: words, evidence_terms: hit };
 }
+// Fact-check (Flash-Lite) verdict: any claim not supported by the evidence fails the draft.
+function factcheck(t, issues) {
+  t = String(t || ''); var s = t.indexOf('{'), e = t.lastIndexOf('}'), o = null;
+  try { if (s >= 0 && e > s) o = JSON.parse(t.slice(s, e + 1)); } catch (err) { o = null; }
+  if (!o) { issues.push('FACT_CHECK_UNAVAILABLE'); return; }
+  (o.unsupported_claims || []).slice(0, 3).forEach(function (c) { issues.push('UNSUPPORTED_CLAIM: ' + String(c).slice(0, 140)); });
+  (o.presumptuous || []).slice(0, 2).forEach(function (c) { issues.push('PRESUMPTUOUS: ' + String(c).slice(0, 140)); });
+}
 var SIG = '\\n\\nBest,\\nAdam Elshazly\\nFounder, NOYA Concierge\\nGlobal concierge & lifestyle management\\nnoyaconcierge.com \\u00b7 @noyaconcierge\\nadam@noyaconcierge.com';
 `;
+
+
+const FACT = 'You check one outreach draft against its evidence. List every factual claim in the DRAFT about the recipient (their company, clients, players, plans, needs, history, results) that is NOT directly supported by the EVIDENCE. Also list presumptuous statements (telling them what they lack or need, claims about their competitors). Ideas offered as possibilities are fine. Statements about NOYA are fine. Return ONLY JSON {"unsupported_claims": [], "presumptuous": []}.';
+const fcModel1 = languageModel({
+  type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', version: 1.1,
+  config: { name: 'Fact Check Model (Flash-Lite)', parameters: { modelName: 'models/gemini-3.1-flash-lite', options: { maxOutputTokens: 1024, temperature: 0 } }, credentials: geminiCred }
+});
+const fcModel2 = languageModel({
+  type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', version: 1.1,
+  config: { name: 'Fact Check 2 Model (Flash-Lite)', parameters: { modelName: 'models/gemini-3.1-flash-lite', options: { maxOutputTokens: 1024, temperature: 0 } }, credentials: geminiCred }
+});
+const factCheck1 = node({
+  type: '@n8n/n8n-nodes-langchain.chainLlm', version: 1.9,
+  config: {
+    name: 'Fact Check (AI)', onError: 'continueRegularOutput', retryOnFail: true, maxTries: 5, waitBetweenTries: 5000,
+    parameters: { promptType: 'define', text: expr('{{ ' + JSON.stringify(FACT) + ' + "\\n\\nEVIDENCE:\\n" + $("Build Prompts").item.json.evidence + "\\n" + $("Build Prompts").item.json.why_now + "\\n\\nDRAFT:\\n" + ($json.text || "") }}'),
+      batching: { batchSize: 1, delayBetweenBatches: 4000 } },
+    subnodes: { model: fcModel1 }
+  }
+});
+const factCheck2 = node({
+  type: '@n8n/n8n-nodes-langchain.chainLlm', version: 1.9,
+  config: {
+    name: 'Fact Check 2 (AI)', onError: 'continueRegularOutput', retryOnFail: true, maxTries: 5, waitBetweenTries: 5000,
+    parameters: { promptType: 'define', text: expr('{{ ' + JSON.stringify(FACT) + ' + "\\n\\nEVIDENCE:\\n" + $("Redraft Prompt").item.json.evidence + "\\n" + $("Redraft Prompt").item.json.why_now + "\\n\\nDRAFT:\\n" + ($json.text || "") }}'),
+      batching: { batchSize: 1, delayBetweenBatches: 4000 } },
+    subnodes: { model: fcModel2 }
+  }
+});
 
 const gate1 = node({
   type: 'n8n-nodes-base.code', version: 2,
@@ -157,8 +195,9 @@ const gate1 = node({
       mode: 'runOnceForEachItem',
       jsCode: GATE + `
 var it = $('Build Prompts').item.json;
-var d = parse($json.text || $json.output);
+var d = parse($('Draft (AI)').item.json.text || $('Draft (AI)').item.json.output);
 var g = gate(it, d);
+factcheck($json.text || $json.output, g.issues);
 return { json: Object.assign({}, it, { subject: d.subject, message: d.message, issues: g.issues, evidence_terms: g.evidence_terms, attempts: 1, passed: g.issues.length === 0 }) };`
     }
   }
@@ -197,7 +236,7 @@ const redraft = node({
   type: '@n8n/n8n-nodes-langchain.chainLlm', version: 1.9,
   config: {
     name: 'Redraft (AI)', onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 3000,
-    parameters: { promptType: 'define', text: expr('{{ $json.prompt }}'), batching: { batchSize: 3, delayBetweenBatches: 1000 } },
+    parameters: { promptType: 'define', text: expr('{{ $json.prompt }}'), batching: { batchSize: 1, delayBetweenBatches: 7000 }, needsFallback: true },
     subnodes: { model: redraftModel }
   }
 });
@@ -210,8 +249,9 @@ const gate2 = node({
       mode: 'runOnceForEachItem',
       jsCode: GATE + `
 var it = $('Redraft Prompt').item.json;
-var d = parse($json.text || $json.output);
+var d = parse($('Redraft (AI)').item.json.text || $('Redraft (AI)').item.json.output);
 var g = gate(it, d);
+factcheck($json.text || $json.output, g.issues);
 return { json: Object.assign({}, it, { subject: d.subject, message: d.message, issues: g.issues, evidence_terms: g.evidence_terms, attempts: 2, passed: g.issues.length === 0 }) };`
     }
   }
@@ -259,7 +299,8 @@ export default workflow('noya-18-daily-outreach', '18 - NOYA Commercial Director
   .to(plan)
   .to(buildPrompts)
   .to(draft)
+  .to(factCheck1)
   .to(gate1)
   .to(passed
     .onTrue(packageSave.to(save))
-    .onFalse(redraftPrompt.to(redraft.to(gate2.to(packageSave)))));
+    .onFalse(redraftPrompt.to(redraft.to(factCheck2.to(gate2.to(packageSave))))));

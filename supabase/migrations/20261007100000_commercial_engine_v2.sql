@@ -297,3 +297,25 @@ grant execute on function public.hq_execution() to authenticated;
 -- Lane backfill from the segment rules (explicit, re-runnable).
 update public.companies set acquisition_lane = company_lane(null, prospect_segment, vertical_override, company_type)
  where acquisition_lane is null and universe_status is not null;
+
+-- company_reach: a confirmed, named person with a position is reachable on LinkedIn by name
+-- (previously required a stored LinkedIn URL, which left the Director plan with an empty pool).
+create or replace function public.company_reach(p_company uuid)
+ returns jsonb
+ language sql
+ stable security definer
+ set search_path to 'public'
+as $function$
+  with k as (
+    select ct.*, c.company_type
+      from contacts ct join companies c on c.id = ct.company_id
+     where ct.company_id = p_company and not coalesce(ct.do_not_contact, false) and coalesce(ct.first_name, ct.last_name) is not null)
+  select jsonb_build_object(
+    'people', (select count(*) from k),
+    'confirmed', (select count(*) from k where identity_status = 'CONFIRMED' and position is not null),
+    'unconfirmed', (select count(*) from k where identity_status is distinct from 'CONFIRMED'),
+    'verified_email', exists (select 1 from k where identity_status = 'CONFIRMED' and email_status = 'VERIFIED' and email_kind(email) = 'DIRECT_PERSON_EMAIL'),
+    'linkedin', exists (select 1 from k where identity_status = 'CONFIRMED' and position is not null),
+    'instagram', exists (select 1 from k where identity_status = 'CONFIRMED' and coalesce(instagram, '') <> ''
+                          and coalesce(company_type, '') !~* '(bank|wealth|law|legal|consult|invest|family|financial|insurance|asset|equity)'))
+$function$;
