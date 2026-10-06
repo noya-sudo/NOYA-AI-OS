@@ -1750,6 +1750,20 @@ function execPanel() {
     <div class="small mt6">Working universe: ${Object.entries(q.universe_by_status || { QUALIFIED: q.universe }).map(([k, v]) => `${esc(human(k))} ${esc(v)}`).join(' · ')} <span class="faint">(target ${esc(q.universe_target)})</span></div>
     ${hunterLine()}</div></section>`;
 }
+const LANE_LABEL = { BRANDS: 'Brands & campaigns', PARTNERSHIPS: 'Partnerships', WEDDINGS: 'Weddings & events', EGYPT_EVENTS: 'Egypt events', CORPORATE: 'Corporate', SPORTS_PRIVATE: 'Sports / private' };
+function todayPanel() {
+  const t = state.exec?.today; if (!t) return '';
+  const tot = t.totals || {}; const p = t.planned_today || {};
+  const cols = [['discovered', 'New prospects'], ['send_ready', 'Send-ready'], ['awaiting_approval', 'Awaiting you'], ['linkedin', 'LinkedIn'], ['instagram', 'Instagram'], ['emails', 'Emails'],
+    ['follow_ups_due', 'Follow-ups due'], ['sent_today', 'Sent today'], ['replies_today', 'Replies'], ['meetings_today', 'Meetings']];
+  return `<section class="panel mt8 today-panel"><header><h3>Today · commercial engine</h3><span class="small faint">Target ${esc(t.target?.target ?? 20)} qualified touches a day (floor ${esc(t.target?.floor ?? 15)}) · from system records only</span></header><div class="body">
+    <div class="qh-grid">${cols.slice(0, 5).map(([k, l]) => `<div class="qh"><div class="k">${l}</div><div class="v">${esc(tot[k] ?? 0)}</div></div>`).join('')}</div>
+    <div class="small mt6">Commercial Director today: ${esc(p.planned ?? 0)} planned · ${esc(p.ready ?? 0)} passed QA · ${esc(p.review_required ?? 0)} need review${p.dry_run ? ' <span class="faint">(dry run — nothing queued)</span>' : ''}</div>
+    <div class="tbl-wrap mt6"><table><thead><tr><th>Lane</th>${cols.map(([, l]) => `<th>${l}</th>`).join('')}</tr></thead><tbody>
+      ${(t.lanes || []).map((r) => `<tr><td>${esc(LANE_LABEL[r.lane] || r.lane)}</td>${cols.map(([k]) => `<td>${esc(r[k] ?? 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    ${(t.conversations || []).length ? `<div class="small mt6">In conversation (cold outreach paused): ${t.conversations.map((c) => `${esc(c.company)} <span class="faint">${esc(human(c.state))}</span>`).join(' · ')}</div>` : ''}
+  </div></section>`;
+}
 function hunterLine() {
   const h = state.exec?.hunter; if (!h) return '';
   return `<div class="small mt6 hunter-roi">Hunter ROI: ${esc(h.credits)} credits → ${esc(h.usable_emails)} usable emails (${esc(h.usable_rate ?? 0)}%, ${esc(h.credits_per_usable ?? '—')} credits each) → ${esc(h.sent)} sent → ${esc(h.replies)} replies → ${esc(h.meetings)} meetings <span class="faint">· ${esc(h.gate)}</span></div>`;
@@ -1768,7 +1782,7 @@ function weeklyPanel() {
     ${weeks.map(block).join('') || '<div class="empty">No activity recorded yet.</div>'}<div class="small faint mt6">${esc(w.note)}</div></div></section>`;
 }
 function commandPanels() {
-  const c = state.com; if (!c) return execPanel();
+  const c = state.com; if (!c) return execPanel() + todayPanel();
   const hot = c.signals.filter((s) => ['RESEARCH', 'QUALIFIED'].includes(s.stage) && ['NOW', 'D7'].includes(s.urgency) && (s.relevance || 0) >= 75).slice(0, 5);
   const deals = c.queue.filter((x) => ['PROPOSAL', 'NEGOTIATION', 'DISCOVERY'].includes(x.stage)).slice(0, 5);
   const engagedNoMeeting = c.queue.filter((x) => x.stage === 'ENGAGED').slice(0, 3);
@@ -1780,7 +1794,7 @@ function commandPanels() {
     ...c.signals.filter((s) => s.urgency === 'NOW' && s.stage === 'RESEARCH' && !(s.qualification?.questions || [])[7]?.ok).slice(0, 3).map((s) => [`${s.title.slice(0, 70)} — act now, but no route in yet`, 'radar'])];
   const teamLoad = {}; (state.data?.tasks || []).filter((t) => openStatuses.includes(t.status)).forEach((t) => { const k = t.assigned_to || 'Unassigned'; teamLoad[k] = (teamLoad[k] || 0) + 1; });
   const li = (t, go, sub = '') => `<div class="mini clickable" data-go="${go}"><div class="t">${t}</div>${sub ? `<div class="m">${sub}</div>` : ''}</div>`;
-  return `${execPanel()}<div class="ov-grid3 mt8">
+  return `${execPanel()}${todayPanel()}<div class="ov-grid3 mt8">
     <section class="panel"><header><h3>New high-quality opportunities</h3><button class="btn small ghost" data-go="radar">Radar</button></header><div class="body">
       ${hot.map((s) => li(`${urgPill(s.urgency)} ${esc(s.title.slice(0, 90))}`, 'radar', `${esc(s.qualification?.answered ?? 0)}/10 answered${s.qualification?.missing?.length ? ` · missing: ${esc(s.qualification.missing.join(', '))}` : ''}`)).join('') || '<div class="empty">Nothing urgent on the radar.</div>'}</div></section>
     <section class="panel"><header><h3>Meetings · proposals · negotiations</h3><button class="btn small ghost" data-go="actions">Queue</button></header><div class="body">

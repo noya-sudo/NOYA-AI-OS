@@ -24,7 +24,11 @@ const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json
 mkdirSync('tests/out', { recursive: true });
 
 // Execution fixture (shaped like hq_execution: queue health + weekly metrics by segment).
-const execution = { hunter: { credits: 48, usable_emails: 11, usable_rate: 34, credits_per_usable: 4.4, sent: 5, replies: 1, meetings: 0, gate: 'Hunter runs only for a confirmed, high-priority decision maker.' },
+const execution = { today: { date: '2026-10-07', target: { floor: 15, target: 20 }, totals: { discovered: 16, send_ready: 51, awaiting_approval: 8, linkedin: 46, instagram: 3, emails: 9, follow_ups_due: 18, sent_today: 0, replies_today: 2, meetings_today: 0 },
+    planned_today: { planned: 16, ready: 12, review_required: 4, dry_run: true },
+    lanes: [{ lane: 'BRANDS', discovered: 7, send_ready: 3, awaiting_approval: 0, linkedin: 3, instagram: 1, emails: 0, follow_ups_due: 0, sent_today: 0, replies_today: 0, meetings_today: 0 }],
+    conversations: [{ company: 'YKONE Middle East', state: 'MEETING_BOOKED' }] },
+  hunter: { credits: 48, usable_emails: 11, usable_rate: 34, credits_per_usable: 4.4, sent: 5, replies: 1, meetings: 0, gate: 'Hunter runs only for a confirmed, high-priority decision maker.' },
   queue: { ready: 42, target: 45, universe: 64, universe_target: '300–500 named accounts, built progressively', verify_first: 4,
   universe_by_status: { QUALIFIED: 64, NEEDS_REVIEW: 21, RESEARCHING: 51 },
   rule: 'Quality first: a shortfall is shown, never filled with weak prospects.',
@@ -362,6 +366,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const cmd = await page.locator('main').innerText();
   check('Command: queue health shows 15/day target and an honest shortfall (warm 3/6)', /Today's 15/i.test(cmd) && /short by 3/i.test(cmd) && /42 \/ 45/.test(cmd));
   check('Command: working universe by status (Qualified / Needs review / Researching) and VERIFY FIRST count', /Qualified 64/i.test(cmd) && /Needs review 21/i.test(cmd) && /Researching 51/i.test(cmd) && /4 people need verifying/i.test(cmd));
+  check('Command: Today view (commercial engine by lane, Director plan, conversations paused)', /Today · commercial engine/i.test(cmd) && /16 planned/.test(cmd) && /Brands & campaigns/.test(cmd) && /YKONE Middle East/.test(cmd) && /dry run/i.test(cmd));
   check('Command: Hunter ROI chain (credits → usable → sent → replies → meetings)', /48 credits → 11 usable emails/.test(cmd) && /5 sent → 1 replies → 0 meetings/.test(cmd));
   await page.click('.side [data-tab=finance]');
   const finW = await page.locator('main').innerText();
