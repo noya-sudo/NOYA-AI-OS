@@ -229,8 +229,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .mbrand { display: block; }
   .topbar { padding: 8px 12px; flex-wrap: wrap; }
   .topbar .search { order: 3; flex-basis: 100%; max-width: none; }
-  /* Phone: five fixed bottom tabs + a full menu sheet (replaces the scrolling pill row). */
-  .bnav { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--navy);
+  /* Phone: six fixed bottom tabs + a full menu sheet (replaces the scrolling pill row). */
+  .bnav { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--navy);
     border-top: 1px solid var(--navy-line); padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); }
   .bnav button { background: none; border: 0; color: var(--navy-text); font: inherit; font-size: 12px; padding: 9px 2px; border-radius: 6px; position: relative; }
   .bnav button.active { color: #fff; background: var(--navy-2); font-weight: 600; }
@@ -327,3 +327,33 @@ label.check { display: flex; gap: 6px; align-items: center; font-size: 14px; cur
 .qh .m { font-size: 12px; margin-top: 2px; }
 .qh.short { border-color: rgba(220, 120, 90, .55); }
 @media (max-width: 720px) { .qh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Agents (7 Oct): the commercial team as cards first, so the phone never needs a wide table. */
+.agents-nav { margin-top: 4px; }
+.agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 8px; }
+.agent-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; cursor: pointer; }
+.agent-card:hover { border-color: var(--navy); }
+.agent-detail .agent-card { cursor: default; }
+.agent-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.agent-name { font-size: 15px; font-weight: 600; }
+.am-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 8px; margin-top: 2px; }
+.am-grid div { display: flex; flex-direction: column; min-width: 0; }
+.am-grid b { font-size: 16px; font-weight: 600; }
+.am-grid span { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stuck { color: var(--warn); }
+.targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 16px; }
+.tbar { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.tbar span { display: block; height: 100%; background: var(--navy); }
+.feed-row { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.feed-row:last-child { border-bottom: 0; }
+.feed-t { color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-direction: column; }
+.feed-t small { font-size: 10px; }
+.email-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.email-grid .card { margin-bottom: 0; min-width: 0; }
+.email-line { overflow-wrap: anywhere; }
+.draft-box { background: var(--panel-2); border-radius: 6px; padding: 10px; }
+.draft-box pre { white-space: pre-wrap; font: inherit; font-size: 13px; margin: 6px 0 0; }
+@media (max-width: 860px) {
+  .agent-grid, .email-grid { grid-template-columns: minmax(0, 1fr); }
+  .agents-ceo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

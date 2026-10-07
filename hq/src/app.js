@@ -11,10 +11,12 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
-// The permanent structure: eight sections, frozen. New capability goes inside one of them, never a ninth.
+// The permanent structure: eight numbered sections plus Agents (added at Adam's request, 7 Oct). New capability goes inside one of them.
 const NAV = [
   ['01 · Command', [['overview', 'Today'], ['reports', 'Reports']]],
-  ['02 · Intelligence & Opportunities', [['radar', 'Opportunity radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth'], ['library', 'Products & playbooks']]],
+  // Agents (Adam, 7 Oct): what the virtual commercial department is doing and producing. Today stays what Adam does now.
+  ['Agents', [['agents', 'Agent floor'], ['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed']]],
+  ['02 · Intelligence & Opportunities', [['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth'], ['library', 'Products & playbooks']]],
   ['03 · Sales & Outreach', [['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach'], ['pipeline', 'Pipeline'], ['linkedin', 'LinkedIn'], ['website', 'Website leads']]],
   ['04 · Partnerships', [['partners', 'Partnerships']]],
   ['05 · Events & Experiences', [['events', 'Events']]],
@@ -89,6 +91,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
+  agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, radarAg: '', feedAg: '',
 };
 
 // ---------------------------------------------------------------- utils
@@ -171,6 +174,8 @@ async function load(silent = false) {
   if (com.error) state.errors.com = com.error.message; else state.com = com.data;
   if (exe.error) state.errors.exec = exe.error.message; else state.exec = exe.data;
   render();
+  // The agent floor is heavier: refreshed only while one of its views is open.
+  if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
 }
 
 async function loadTimeline(kind, id) {
@@ -342,7 +347,7 @@ function render() {
       </div>
     </div>
     <nav class="bnav">
-      ${[['overview', 'Today'], ['inbox', 'Replies'], ['outreach', 'Outreach']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
+      ${[['overview', 'Today'], ['agents', 'Agents'], ['inbox', 'Replies'], ['outreach', 'Outreach']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
       <button id="bsearch">Search</button><button id="bmenu" class="${state.menu ? 'active' : ''}">Menu</button>
     </nav>
     ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet">${NAV.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
@@ -1533,7 +1538,7 @@ function viewRadar() {
   const labels = { ALL: 'All', NOW: 'Now / urgent', D7: '7 days', D30: '30 days', D90: '90 days', LATER: 'Longer term / watch', DISMISSED: 'Dismissed' };
   const rows = (tabs[f.h] || tabs.ALL).filter((s) => (!f.region || s.region === f.region) && (!f.cat || s.category === f.cat)
     && (!q || [s.title, s.summary, s.destination, ...(s.orgs || []).map((o) => o.name)].some((v) => String(v ?? '').toLowerCase().includes(q))));
-  return `<h2>Opportunity radar</h2>
+  return `<h2>Signal radar</h2>
     <p class="muted small">Real-world developments that give NOYA a reason to contact someone. The horizon is when to <b>act</b> (events need ~45 days), not the event date. A signal becomes a qualified opportunity only when all 10 questions are answered — otherwise it stays in research.</p>
     <div class="tabs">${Object.keys(tabs).map((k) => `<button data-rdf="h" data-v="${k}" class="${f.h === k ? 'on' : ''}">${labels[k]} <span class="n">${tabs[k].length}</span></button>`).join('')}</div>
     <div class="filters"><input data-rdf="q" placeholder="Event, organisation, destination…" value="${esc(f.q)}">
@@ -2265,6 +2270,7 @@ function bind() {
   document.querySelectorAll('[data-flex]').forEach((el) => { el.style.flex = el.dataset.flex; });
   document.querySelectorAll('[data-w]').forEach((el) => { el.style.width = `${el.dataset.w}%`; });
   const on = (sel2, ev, fn) => document.querySelectorAll(sel2).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
+  bindAgents(on);
   on('[data-tab]', 'click', (b) => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; state.menu = false; state.drawer = null; render(); window.scrollTo(0, 0); });
   on('[data-go]', 'click', (b, e) => {
     e.stopPropagation(); state.tab = b.dataset.go; if (b.dataset.otab) state.outreachTab = b.dataset.otab;
@@ -2357,10 +2363,233 @@ function bind() {
   });
 }
 
+// ---------------------------------------------------------------- AGENTS (Adam, 7 Oct): the virtual commercial department
+// Today = what Adam does now. Agents = what the research team is doing and producing. Every figure comes from hq_agents()
+// (one admin-gated read over companies, contacts, opportunities, drafts, run logs and Gmail state); a click on an agent
+// loads hq_agent(key). Status is derived from real run records, never animated.
+const AGENT_TABS = ['agents', 'agent', 'emails', 'agentradar', 'feed'];
+const AGENT_STATUS = { WORKING: ['Working', 'ok'], WAITING: ['Waiting', ''], BLOCKED: ['Blocked', 'warn'], ERROR: ['Error', 'bad'] };
+const TRUST = { SMTP_VERIFIED: ['SMTP verified', 'ok', 'An email provider confirmed the mailbox accepts mail.'],
+  PUBLICLY_LISTED: ['Publicly listed', 'info', 'Printed on a public page (source linked). Not SMTP-verified.'],
+  NOT_VERIFIABLE: ['Not verifiable', 'warn', 'A verification provider could not confirm this address.'],
+  SOURCE_NOT_RECORDED: ['Source not recorded', 'warn', 'No source URL was stored for this address — check before sending.'] };
+const EMAIL_STATE = { NEW: 'New', READY: 'Ready', SENT: 'Sent', REPLIED: 'Replied', FOLLOW_UP: 'Follow-up', OPEN: 'No draft yet' };
+const EMAIL_FILTERS = [['ALL', 'All'], ['NEW', 'New'], ['PUBLIC', 'Public email'], ['VERIFIED', 'Verified'], ['NEEDS', 'Needs verification'], ['READY', 'Ready'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['FOLLOW_UP', 'Follow-up']];
+const EMAIL_VERTICALS = [['', 'All verticals'], ['PARTNERSHIPS', 'Partnerships'], ['HOSPITALITY', 'Hospitality'], ['BRANDS', 'Brands'], ['WEDDINGS', 'Weddings'], ['CORPORATE', 'Corporate'], ['TRAVEL', 'Travel'], ['MEDIA', 'Media'], ['SPORTS', 'Sports']];
+const agentName = (k) => (state.agents?.agents || []).find((a) => a.key === k)?.name || k || '—';
+const rel = (d) => {
+  if (!d) return '—';
+  const m = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+  if (m < 0) { const f = -m; return f < 60 ? `in ${f} min` : f < 1440 ? `in ${Math.round(f / 60)} h` : fmtDate(d); }
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : fmtDate(d);
+};
+const n0 = (v) => (v == null ? '—' : esc(v));
+async function loadAgents(force = false) {
+  if (state.agentsLoading || (state.agents && !force)) return;
+  state.agentsLoading = true;
+  const { data, error } = await sb.rpc('hq_agents');
+  state.agentsLoading = false;
+  if (error) state.errors.agents = error.message; else { state.agents = data; delete state.errors.agents; }
+  render();
+}
+async function loadAgent(key, force = false) {
+  if (!force && state.agentDetail[key]) return;
+  const { data, error } = await sb.rpc('hq_agent', { p_key: key });
+  state.agentDetail[key] = error ? { error: error.message } : data;
+  render();
+}
+function needAgents() {
+  if (!state.agents) { loadAgents(); return `<p class="muted">${state.errors.agents ? `<span class="bad-text">Agents not loaded: ${esc(state.errors.agents)}</span>` : 'Loading the agent floor…'}</p>`; }
+  return '';
+}
+function agentsTabs(active) {
+  return `<div class="chips agents-nav">${[['agents', 'Agent floor'], ['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed']]
+    .map(([k, l]) => `<button class="chip ${active === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>`;
+}
+function ceoStrip(a) {
+  const c = a.ceo || {}; const t = a.targets || {};
+  const healthy = (a.agents || []).filter((x) => x.status === 'WORKING' || x.status === 'WAITING').length;
+  const tile = (n, l, go, title = '') => `<div class="tile ${go ? 'link' : ''}" ${go ? `data-tab="${go}"` : ''} title="${esc(title)}"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  const bar = (v, lo, hi, label) => `<div class="target"><div class="small"><b>${esc(label)}</b> ${esc(v)} of ${esc(lo)}–${esc(hi)}</div><div class="tbar"><span data-w="${Math.min(100, Math.round((v / hi) * 100))}"></span></div></div>`;
+  return `<div class="tiles agents-ceo">
+      ${tile(`${healthy} / ${(a.agents || []).length}`, 'Agents healthy', null, 'Working or waiting for their next scheduled run. Blocked and error are not healthy.')}
+      ${tile(n0(c.new_companies_24h), 'New companies · 24h')}${tile(n0(c.new_decision_makers_24h), 'New decision makers · 24h')}
+      ${tile(n0(c.new_emails_24h), 'New emails · 24h', 'emails')}${tile(n0(c.ready), 'Ready opportunities', 'outreach')}
+      ${tile(n0(c.replies_7d), 'Replies · 7 days', 'inbox')}${tile(n0(c.calls_7d), 'Calls · 7 days')}</div>
+    <div class="targets mt8">${bar(c.contactable_3d || 0, t.contactable_3d_low, t.contactable_3d_high, 'Contactable opportunities · 3 days')}
+      ${bar(c.hospitality_contactable_3d || 0, t.hospitality_3d_low, t.hospitality_3d_high, 'Hospitality & partnership · 3 days')}
+      <div class="small faint">Contactable = ${esc(t.contactable_means || '')}</div></div>`;
+}
+function bestPanel(a) {
+  const b = a.ceo?.best || [];
+  return `<section class="panel mt8"><header><h3>Best opportunities found ${a.ceo?.best_window_hours === 24 ? 'today' : 'in the last 3 days'}</h3></header><div class="body">
+    ${b.map((x) => `<div class="mini clickable" data-open="company" data-id="${x.company_id}"><div class="t">${esc(x.company)} ${pill(agentName(x.agent))}${x.ready ? ' ' + pill('draft ready', 'ok') : ''}</div>
+      <div class="m">${esc([x.type, x.country].filter(Boolean).join(' · '))}${x.person ? ` · ${esc(x.person)}` : ''}${x.email ? ` · ${esc(x.email)}` : ''}</div>
+      ${x.model ? `<div class="m">→ ${esc(x.model)}</div>` : ''}${x.concept ? `<div class="m">→ ${esc(x.concept)}</div>` : x.angle ? `<div class="m">→ ${esc(x.angle)}</div>` : ''}</div>`).join('') || '<div class="empty">Nothing qualified in this window yet.</div>'}</div></section>`;
+}
+const METRIC_ROWS = {
+  ACQUISITION: [['discovered', 'Companies'], ['qualified', 'Qualified'], ['decision_makers', 'Decision makers'], ['public_emails', 'Emails'], ['linkedin', 'LinkedIn'], ['instagram', 'Instagram'], ['opportunities', 'Opportunities'], ['outreach_ready', 'Ready'], ['researched', 'Researched'], ['searches', 'Searches']],
+  ENRICHMENT: [['companies_enriched', 'Companies enriched'], ['decision_makers', 'People'], ['public_emails', 'Emails'], ['person_emails', 'Personal emails'], ['linkedin', 'LinkedIn'], ['instagram', 'Instagram']],
+  DRAFTING: [['drafted', 'Drafted'], ['ready', 'Ready'], ['review_required', 'Need review'], ['revalidated', 'Revalidated'], ['ai_usd', 'AI $']],
+  REPLY: [['replies', 'Replies'], ['sent_logged', 'Sends logged'], ['gmail_messages_imported', 'Gmail messages']],
+  DIRECTOR: [['planned', 'Touches planned'], ['actions_today', 'Actions today'], ['approved_sends_open', 'Approved sends open']],
+};
+const metricRow = (a) => METRIC_ROWS[a.kind === 'ACQUISITION' ? 'ACQUISITION' : a.key] || [];
+function agentCard(a) {
+  const [sl, sc] = AGENT_STATUS[a.status] || [a.status, ''];
+  const rows = metricRow(a); const top = rows.slice(0, a.kind === 'ACQUISITION' ? 6 : rows.length);
+  const notes = (a.blockers || []).filter((b) => /^Note:/.test(b)); const blocks = (a.blockers || []).filter((b) => !/^Note:/.test(b));
+  const st = a.stuck || {};
+  return `<article class="agent-card clickable" data-agent="${a.key}">
+    <div class="agent-head"><div><div class="agent-name">${esc(a.name)}</div><div class="small faint">${esc(a.kind === 'ACQUISITION' ? 'Acquisition agent' : 'Support agent')}</div></div>
+      <div class="agent-status">${pill(sl, sc)}</div></div>
+    <div class="small mt6">${esc(a.current_work)}</div>
+    <div class="small faint mt6">${esc(a.status_reason)} · last ${esc(rel(a.last_run))}${a.last_run_basis && a.last_run_basis !== 'Run log' ? ` (${esc(a.last_run_basis.toLowerCase())})` : ''} · next ${esc(rel(a.next_run))}</div>
+    <div class="agent-metrics mt6"><div class="small faint">Today</div><div class="am-grid">${top.map(([k, l]) => `<div><b>${n0(a.today?.[k])}</b><span>${l}</span></div>`).join('')}</div>
+      <div class="small faint mt6">Last 3 days</div><div class="am-grid">${top.map(([k, l]) => `<div><b>${n0(a.d3?.[k])}</b><span>${l}</span></div>`).join('')}</div></div>
+    ${a.totals ? `<div class="small mt6">In the universe: ${esc(a.totals.qualified)} qualified · ${esc(a.totals.people)} people · ${esc(a.totals.emails)} emails · <b>${esc(a.totals.ready)} ready for Adam</b></div>` : ''}
+    ${blocks.map((b) => `<div class="small bad-text mt6">Blocked: ${esc(b)}</div>`).join('')}
+    ${a.kind === 'ACQUISITION' && (st.no_decision_maker || st.no_email || st.needs_verification) ? `<div class="small mt6 stuck">Stuck: ${[st.no_decision_maker ? `${st.no_decision_maker} without a decision maker` : '', st.no_email ? `${st.no_email} without an email` : '', st.needs_verification ? `${st.needs_verification} people need verification` : ''].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
+    ${notes.map((b) => `<div class="small faint mt6">${esc(b.replace(/^Note:\s*/, ''))}</div>`).join('')}
+  </article>`;
+}
+function feedList(items, limit) {
+  return (items || []).slice(0, limit).map((f) => `<div class="feed-row ${f.company_id ? 'clickable' : ''}" ${f.company_id ? `data-open="company" data-id="${f.company_id}"` : ''}>
+    <span class="feed-t">${esc(new Date(f.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' }))}<small>${esc(shortDay(f.at))}</small></span>
+    <span><b>${esc(agentName(f.agent))}</b> ${esc(f.text)}</span></div>`).join('') || '<div class="empty">No recorded activity in the last 72 hours.</div>';
+}
+function viewAgents() {
+  const wait = needAgents(); if (wait) return `<h2>Agents</h2>${wait}`;
+  const a = state.agents; const acq = a.agents.filter((x) => x.kind === 'ACQUISITION'); const sup = a.agents.filter((x) => x.kind === 'SUPPORT');
+  return `<div class="ov-head"><h1>Agents</h1><span class="sub">Your commercial team · live from Supabase · ${esc(fmtDate(a.generated_at))} Cairo</span></div>
+    ${agentsTabs('agents')}${ceoStrip(a)}${bestPanel(a)}
+    <h3 class="mt8">Acquisition agents</h3><div class="agent-grid">${acq.map(agentCard).join('')}</div>
+    <h3 class="mt8">Support agents</h3><div class="agent-grid">${sup.map(agentCard).join('')}</div>
+    <section class="panel mt8"><header><h3>Activity</h3><button class="btn small ghost" data-tab="feed">Full feed</button></header><div class="body">${feedList(a.feed, 15)}</div></section>`;
+}
+function personCard(p) {
+  const [tl, tc, tt] = TRUST[p.trust] || [];
+  return `<div class="mini"><div class="t">${esc(p.name || p.email || 'Company inbox')}${p.role ? ` · <span class="faint">${esc(p.role)}</span>` : ''}</div>
+    <div class="m"><a class="clickable" data-open="company" data-id="${p.company_id}">${esc(p.company)}</a>${p.country ? ` · ${esc(p.country)}` : ''} · confidence ${esc((p.confidence || '').toLowerCase().replace('_', ' '))}</div>
+    <div class="m">${p.email ? `${esc(p.email)} ${tl ? `<span title="${esc(tt)}">${pill(tl, tc)}</span>` : ''}${p.email_kind === 'OFFICIAL_COMPANY_INBOX' ? ' ' + pill('company inbox') : ''}` : 'No email yet'}
+      ${p.linkedin ? ` · <a href="${esc(p.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ''}${p.instagram ? ` · <a href="https://instagram.com/${esc(String(p.instagram).replace(/^@/, ''))}" target="_blank" rel="noopener noreferrer">@${esc(String(p.instagram).replace(/^@/, ''))}</a>` : ''}</div>
+    <div class="m faint">Source: ${p.source_url ? `<a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer">${esc((p.source_type || 'link').toLowerCase().replace(/_/g, ' '))}</a>` : esc(p.source || 'not recorded')} · found ${esc(shortDay(p.found_at))}</div></div>`;
+}
+function sectionBody(s) {
+  const it = s.items;
+  switch (s.kind) {
+    case 'companies': return it.map((c) => `<div class="mini clickable" data-open="company" data-id="${c.company_id}"><div class="t">${esc(c.company)} ${c.status ? pill(sentence(c.status)) : ''}</div>
+      <div class="m">${esc([c.type, c.country].filter(Boolean).join(' · '))}${c.people != null ? ` · ${esc(c.people)} people · ${esc(c.emails)} emails` : ''} · ${esc(shortDay(c.found_at))}</div>
+      ${c.missing ? `<div class="m">${esc(c.missing)}${c.attempts ? ` · enrichment attempts ${esc(c.attempts)}` : ''}</div>` : ''}${c.model ? `<div class="m">→ ${esc(c.model)}</div>` : ''}
+      ${c.source ? `<div class="m faint">${esc(/Department/.test(c.source) ? 'Found by the agent' : /WATCHLIST/.test(c.source) ? 'Agent watchlist' : `Added by research: ${c.source}`)}</div>` : ''}</div>`).join('');
+    case 'people': return it.map(personCard).join('');
+    case 'opportunities': return it.map((o) => `<div class="mini clickable" data-open="company" data-id="${o.company_id}"><div class="t">${esc(o.company)}${o.status ? ' ' + pill(sentence(o.status)) : ''}</div>
+      ${o.model ? `<div class="m"><b>${esc(o.model.split(':')[0])}</b></div>${(o.route || []).map((r) => `<div class="m">→ ${esc(r)}</div>`).join('')}` : ''}
+      ${o.concept ? `<div class="m"><b>Egypt concept · ${esc(o.concept.backdrop)}</b></div><div class="m">→ ${esc(o.concept.concept)}</div><div class="m">→ NOYA: ${esc(o.concept.noya_role)}</div>` : ''}
+      ${o.angle ? `<div class="m faint">${esc(o.angle)}</div>` : ''}</div>`).join('');
+    case 'tasks': return it.map((t) => `<div class="mini clickable" data-open="company" data-id="${t.company_id}"><div class="t">${esc(sentence(t.title))}${t.approved ? ' ' + pill('approved by you', 'ok') : ''}</div><div class="m">${esc(t.person || '')} · prepared ${esc(shortDay(t.created_at))}</div></div>`).join('');
+    case 'counts': return `<div class="pills">${Object.entries(it).map(([k, v]) => pill(`${v} ${k.toLowerCase().replace(/_/g, ' ')}`)).join('')}</div>`;
+    case 'runs': return it.map((r) => `<div class="mini"><div class="t">${esc(fmtDate(r.at))}</div><div class="m">${n0(r.searches)} searches · ${n0(r.candidates)} candidates · ${n0(r.researched)} researched · ${n0(r.qualified)} qualified · ${n0(r.known_skipped)} already known</div></div>`).join('');
+    case 'drafts': return it.map((x) => `<div class="mini clickable" data-open="company" data-id="${x.company_id}"><div class="t">${esc(x.company)} ${pill(sentence(x.status))}</div><div class="m">${esc([x.person, x.channel, x.subject].filter(Boolean).join(' · '))}${x.hold_reason ? ` · ${esc(x.hold_reason)}` : ''} · ${esc(shortDay(x.at))}</div></div>`).join('');
+    case 'replies': return it.map((x) => `<div class="mini clickable" data-open="company" data-id="${x.company_id}"><div class="t">${esc(x.company)} ${pill(sentence(String(x.state || '').replace(/_/g, ' ')))}</div><div class="m">${esc(x.subject || '')} · ${esc(fmtDate(x.at))}</div>${x.summary ? `<div class="m faint">${esc(x.summary)}</div>` : ''}</div>`).join('');
+    case 'actions': return it.map((x) => `<div class="mini"><div class="t">${esc(x.rank)}. ${esc(x.action)} · ${esc(x.company || '')}</div><div class="m">${esc(x.detail || '')}</div></div>`).join('');
+    default: return '';
+  }
+}
+function viewAgent() {
+  const wait = needAgents(); if (wait) return wait;
+  const key = state.agentKey; const a = (state.agents.agents || []).find((x) => x.key === key);
+  if (!a) return `${agentsTabs('agents')}<p class="muted">Pick an agent on the floor.</p>`;
+  const d = state.agentDetail[key];
+  if (!d) loadAgent(key);
+  const secs = d?.sections || [];
+  const cur = state.agentSec[key] || secs[0]?.key;
+  const s = secs.find((x) => x.key === cur) || secs[0];
+  const count = (x) => (Array.isArray(x.items) ? x.items.length : Object.keys(x.items || {}).length);
+  return `${agentsTabs('agents')}<button class="btn small ghost" data-tab="agents">← All agents</button>
+    <div class="agent-detail mt8">${agentCard(a)}</div>
+    <p class="small faint">${esc(a.scope)}</p>
+    ${!d ? '<p class="muted">Loading this agent\'s work…</p>' : d.error ? `<div class="banner err">${esc(d.error)}</div>` : `
+    <div class="chips">${secs.map((x) => `<button class="chip ${s && x.key === s.key ? 'on' : ''}" data-agent-sec="${x.key}">${esc(x.title)} · ${count(x)}</button>`).join('')}</div>
+    ${s ? `<section class="panel mt8"><header><h3>${esc(s.title)}</h3></header><div class="body">${sectionBody(s)}</div></section>` : '<p class="muted">Nothing recorded for this agent yet.</p>'}`}`;
+}
+function emailMatches(e, f) {
+  const v = f.v;
+  if (v === 'PARTNERSHIPS' && !(['HOSPITALITY', 'TRAVEL'].includes(e.agent) && e.opportunity)) return false;
+  if (v && v !== 'PARTNERSHIPS' && e.agent !== v) return false;
+  switch (f.s) {
+    case 'NEW': return e.state === 'NEW';
+    case 'PUBLIC': return e.trust === 'PUBLICLY_LISTED';
+    case 'VERIFIED': return e.trust === 'SMTP_VERIFIED';
+    case 'NEEDS': return e.trust !== 'SMTP_VERIFIED';
+    case 'READY': case 'SENT': case 'REPLIED': case 'FOLLOW_UP': return e.state === f.s;
+    default: return true;
+  }
+}
+function emailCard(e) {
+  const [tl, tc, tt] = TRUST[e.trust] || []; const open = state.emailOpen === e.contact_id;
+  return `<article class="card email-card"><div class="card-head"><div><div class="co">${esc(e.person || 'Company inbox')}</div>
+      <div class="small">${esc([e.role, e.company].filter(Boolean).join(' · '))}</div></div>
+      <div class="pills">${pill(EMAIL_STATE[e.state] || e.state, e.state === 'REPLIED' ? 'ok' : e.state === 'READY' ? 'gold' : '')}${pill(agentName(e.agent))}</div></div>
+    <div class="email-line mt6"><b>${esc(e.email)}</b> ${tl ? `<span title="${esc(tt)}">${pill(tl, tc)}</span>` : ''}${e.email_kind === 'OFFICIAL_COMPANY_INBOX' ? ' ' + pill('company inbox') : ' ' + pill('personal')}</div>
+    <div class="small faint">From: ${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">${esc((e.source_type || 'source').toLowerCase().replace(/_/g, ' '))}</a>` : esc(e.source || 'source not recorded')} · ${esc(e.market || 'market unknown')}</div>
+    ${e.opportunity ? `<div class="small mt6"><b>Opportunity:</b> ${esc(e.opportunity)}</div>` : ''}
+    ${e.why_noya ? `<div class="small mt6"><b>Why NOYA:</b> ${esc(e.why_noya)}</div>` : ''}
+    ${e.why_now ? `<div class="small mt6"><b>Why now:</b> ${esc(e.why_now)}</div>` : ''}
+    <div class="small mt6 faint">${e.draft_state ? `Draft: ${esc(sentence(e.draft_state))}` : 'No draft yet'} · relationship ${esc(String(e.prior_relationship || 'unknown').toLowerCase().replace(/_/g, ' '))}${e.last_contact ? ` · last contact ${esc(shortDay(e.last_contact))}` : ''}</div>
+    <div class="btn-row mt6"><button class="btn small" data-email-open="${e.contact_id}">${open ? 'Hide' : 'What to say'}</button><button class="btn small ghost" data-open="company" data-id="${e.company_id}">Account</button></div>
+    ${open ? `<div class="draft-box mt6">${e.draft ? `${e.draft_subject ? `<div><b>${esc(e.draft_subject)}</b></div>` : ''}<pre>${esc(e.draft)}</pre>` : '<span class="small faint">No finished draft for this person yet. The Commercial Director plans drafts nightly; open the account to request one.</span>'}</div>` : ''}
+  </article>`;
+}
+function viewEmails() {
+  const wait = needAgents(); if (wait) return `<h2>Email opportunities</h2>${wait}`;
+  const f = state.emailF; const all = state.agents.email_desk || [];
+  const list = all.filter((e) => emailMatches(e, f));
+  const cnt = (s) => all.filter((e) => emailMatches(e, { s, v: f.v })).length;
+  const shown = list.slice(0, state.emailN);
+  return `<div class="ov-head"><h1>Email opportunities</h1><span class="sub">Every prospect with a usable email · ${esc(all.length)} in total · publicly listed is not the same as SMTP verified</span></div>
+    ${agentsTabs('emails')}
+    <div class="chips">${EMAIL_FILTERS.map(([k, l]) => `<button class="chip ${f.s === k ? 'on' : ''}" data-emf="s" data-v="${k}">${l} · ${cnt(k)}</button>`).join('')}</div>
+    <div class="chips">${EMAIL_VERTICALS.map(([k, l]) => `<button class="chip ${f.v === k ? 'on' : ''}" data-emf="v" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="email-grid mt8">${shown.map(emailCard).join('') || '<p class="muted">No prospects match these filters.</p>'}</div>
+    ${list.length > shown.length ? `<button class="btn full mt8" data-email-more>Show more (${list.length - shown.length})</button>` : ''}`;
+}
+function viewAgentRadar() {
+  const wait = needAgents(); if (wait) return `<h2>Opportunity radar</h2>${wait}`;
+  const f = state.radarAg; const items = (state.agents.radar || []).filter((r) => !f || (f === 'CONCEPT' ? r.kind === 'CONCEPT' : r.agent === f && r.kind !== 'CONCEPT'));
+  const agents = [...new Set((state.agents.radar || []).filter((r) => r.kind !== 'CONCEPT').map((r) => r.agent))];
+  return `<div class="ov-head"><h1>Opportunity radar</h1><span class="sub">Routes to money the agents have found — commercial models, not CRM records</span></div>
+    ${agentsTabs('agentradar')}
+    <div class="chips"><button class="chip ${!f ? 'on' : ''}" data-rag="">All · ${(state.agents.radar || []).length}</button><button class="chip ${f === 'CONCEPT' ? 'on' : ''}" data-rag="CONCEPT">Egypt filmed concepts</button>
+      ${agents.map((k) => `<button class="chip ${f === k ? 'on' : ''}" data-rag="${k}">${esc(agentName(k))}</button>`).join('')}</div>
+    <div class="email-grid mt8">${items.map((r) => `<article class="card radar-card clickable" data-open="company" data-id="${r.company_id}">
+      <div class="co">${esc(r.company)}</div><div class="small"><b>${esc(r.headline)}</b></div>
+      ${(r.lines || []).filter(Boolean).map((l) => `<div class="small">→ ${esc(l)}</div>`).join('')}
+      <div class="small faint mt6">${esc(agentName(r.agent))} · ${esc(shortDay(r.at))}</div></article>`).join('') || '<p class="muted">Nothing on the radar for this filter.</p>'}</div>`;
+}
+function viewFeed() {
+  const wait = needAgents(); if (wait) return `<h2>Activity feed</h2>${wait}`;
+  const f = state.feedAg; const items = (state.agents.feed || []).filter((x) => !f || x.agent === f);
+  return `<div class="ov-head"><h1>Activity feed</h1><span class="sub">Stored events from the last 72 hours — runs, finds, people, drafts, replies, rejections</span></div>
+    ${agentsTabs('feed')}
+    <div class="chips"><button class="chip ${!f ? 'on' : ''}" data-feed-ag="">All</button>${(state.agents.agents || []).map((a) => `<button class="chip ${f === a.key ? 'on' : ''}" data-feed-ag="${a.key}">${esc(a.name)}</button>`).join('')}</div>
+    <section class="panel mt8"><div class="body">${feedList(items, 120)}</div></section>`;
+}
+function bindAgents(on) {
+  on('[data-agent]', 'click', (b) => { state.agentKey = b.dataset.agent; state.tab = 'agent'; render(); loadAgent(b.dataset.agent); window.scrollTo(0, 0); });
+  on('[data-agent-sec]', 'click', (b) => { state.agentSec[state.agentKey] = b.dataset.agentSec; render(); });
+  on('button[data-emf]', 'click', (b) => { state.emailF[b.dataset.emf] = b.dataset.v; state.emailN = 30; render(); });
+  on('[data-email-open]', 'click', (b) => { state.emailOpen = state.emailOpen === b.dataset.emailOpen ? null : b.dataset.emailOpen; render(); });
+  on('[data-email-more]', 'click', () => { state.emailN += 30; render(); });
+  on('[data-rag]', 'click', (b) => { state.radarAg = b.dataset.rag; render(); });
+  on('[data-feed-ag]', 'click', (b) => { state.feedAg = b.dataset.feedAg; render(); });
+}
+
 const VIEWS = { overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: () => viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
   intelligence: viewIntelligence, reports: viewReports, system: (d) => viewSystem(d) + teamPanel(), help: viewHelp,
-  radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects };
+  radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects,
+  agents: viewAgents, agent: viewAgent, emails: viewEmails, agentradar: viewAgentRadar, feed: viewFeed };
 
 // Refresh: every 60s normally, every 5s for two minutes after an approval. Paused while typing,
 // or while a modal / record / menu is open.

@@ -474,3 +474,70 @@ That is ~1,950 searches per 3-day cycle, about $1.95. Before rotation it was ~2,
 - brand and production prospects;
 - sends, replies and calls;
 - Serper usage and AI cost.
+
+## Agents command centre (7 Oct 2026)
+
+**Why.** The agents were producing far more than HQ showed: Today lists only what Adam must do now. **Agents** is a new top-level HQ section, placed after Command. It shows what the virtual commercial department is doing and producing. Today, CRM and Outreach are unchanged.
+
+**Views.**
+- **Agent floor:**
+  - CEO strip: agents healthy, new companies / decision makers / emails in the last 24 hours, ready opportunities, replies and calls in the last 7 days;
+  - targets: contactable opportunities against 60–75 per 3 days, hospitality and partnership against 20–25;
+  - best opportunities found today;
+  - 8 acquisition agents and 4 support agents as cards;
+  - the latest activity.
+- **Agent drill-down** (tap a card): new finds, people (name, role, company, country, email with its trust state, LinkedIn, Instagram, source, confidence), opportunities, ready for Adam, researching (route still missing), rejected or held, discard counts from run logs, recent runs.
+- **Email opportunities:** every prospect with a usable email.
+  - Each card shows person, company, role, agent, market, email, where it came from, verification state, why NOYA, the opportunity, why now, draft state, prior relationship and last contact.
+  - "What to say" opens the finished draft.
+  - Filters: new, public, verified, needs verification, ready, sent, replied, follow-up. Vertical filters: partnerships, hospitality, brands, weddings, corporate, travel, media, sports.
+- **Opportunity radar:** routes to money. Partnership models in plain words ("NOYA places suitable clients in their properties → they refer Egypt requirements back") and filmed Egypt concepts.
+- **Activity feed:** stored events from the last 72 hours: runs, finds, people and emails found, drafts, revalidations, replies, rejections.
+
+**Agents and their evidence.**
+
+| Agent | Territory | Run evidence |
+|---|---|---|
+| Hospitality & Partnerships | lane PARTNERSHIPS | 03 run log |
+| Brands / PR / Production | BRANDS | 02 run log |
+| Weddings & Events | WEDDINGS | 04 run log |
+| Corporate & Private Client | CORPORATE | 06 run log |
+| Travel & Concierge Partnerships | TRAVEL_PRIVATE | 07 run log (added 7 Oct) |
+| Media / Podcast / Content | media targets in any lane | workflow 21 usage and concepts |
+| Sports & Talent | SPORTS_PRIVATE | 08 run log |
+| Egypt Opportunities / Events | EGYPT_EVENTS | last signal saved (09 keeps no run log) |
+| Contact Enrichment | all | workflow 19 usage |
+| Outreach Drafting | all | workflow 18 usage, drafts, revalidations |
+| Reply & Relationship | all | Gmail sync state (13, 15) |
+| Commercial Director | all | plans and today's actions |
+
+**Status rules.** Status comes from stored records only; nothing is animated.
+- **Error:** an open system failure alert for the agent's workflow, or a logged agent that has missed its schedule.
+- **Blocked:** AI budget hold, a provider failure from the health check, or every model call in the last 24 hours refused.
+- **Working:** ran within its expected gap.
+- **Waiting:** otherwise, with the real reason.
+
+Notes such as "drafts using the Flash-Lite fallback" never block.
+
+**Email trust states.**
+
+| State | Meaning |
+|---|---|
+| PUBLICLY LISTED | Printed on a public page, with the source URL. Not SMTP-verified. |
+| SMTP VERIFIED | An email provider confirmed the mailbox. |
+| NOT VERIFIABLE | A verification provider could not confirm the address. |
+| SOURCE NOT RECORDED | No source stored. Check before sending. |
+
+**Security.** Everything is read through `hq_agents()` and `hq_agent(key)`, both gated by `hq_admin_email()`. Helpers (`agents_snapshot`, `agent_detail`, `agent_last_run` and the rest) and `agent_registry` (configuration only) are revoked from anon and authenticated. No CRM data is copied.
+
+**Acceptance.** 186/186 HQ checks pass, including 26 for Agents run against a live snapshot (git-ignored):
+- every agent card;
+- statuses with real reasons;
+- CEO figures;
+- the drill-down (finds, people with sources, opportunities, READY, rejected);
+- email filters and provenance;
+- radar;
+- feed;
+- no write calls;
+- the phone path (bottom-bar Agents → tap Partnerships → today's companies, decision makers, emails, ready);
+- no horizontal overflow at 390px.

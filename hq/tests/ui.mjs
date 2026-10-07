@@ -21,6 +21,9 @@ const overview = JSON.parse(readFileSync('tests/fixtures/overview.json', 'utf8')
 const directory = JSON.parse(readFileSync('tests/fixtures/directory.json', 'utf8'));
 const insight = JSON.parse(readFileSync('tests/fixtures/insight.json', 'utf8'));
 const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json', 'utf8'));
+// Agents fixtures: a trimmed live agents_snapshot() and agent_detail('HOSPITALITY') (git-ignored, real data only).
+const agentsFx = existsSync('tests/fixtures/agents.json') ? JSON.parse(readFileSync('tests/fixtures/agents.json', 'utf8')) : null;
+const agentFx = existsSync('tests/fixtures/agent_hospitality.json') ? JSON.parse(readFileSync('tests/fixtures/agent_hospitality.json', 'utf8')) : null;
 mkdirSync('tests/out', { recursive: true });
 
 // Execution fixture (shaped like hq_execution: queue health + weekly metrics by segment).
@@ -106,7 +109,7 @@ const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_l
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
   'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
-  'hq_create_opportunity', 'hq_import_connections', ...WRITES];
+  'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -144,6 +147,8 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_relationships') return route.fulfill({ json: relationships });
       if (m[1] === 'hq_commercial') return route.fulfill({ json: commercial });
       if (m[1] === 'hq_execution') return route.fulfill({ json: execution });
+      if (m[1] === 'hq_agents') return route.fulfill({ json: agentsFx });
+      if (m[1] === 'hq_agent') return route.fulfill({ json: body?.p_key === 'HOSPITALITY' ? agentFx : { key: body?.p_key, sections: [] } });
       if (m[1] === 'hq_account') return route.fulfill({ json: account });
       if (m[1] === 'hq_signal_promote') return route.fulfill({ json: { ok: true, created: [{ opportunity_id: cOpps[0].id, company: 'HYROX', product: body.p_targets[0]?.product, track: 'EVENT', has_contact: false }] } });
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
@@ -315,7 +320,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
 
   // Commercial core: 8 frozen sections, radar, action queue, partnerships, events, operations, account intelligence.
   const groups = await page.locator('.side .nav-group h6').allInnerTexts();
-  check('Navigation is frozen at exactly 8 sections (01 Command … 08 Performance & System)', groups.length === 8 && /01/.test(groups[0]) && /Command/i.test(groups[0]) && /08/.test(groups[7]) && /Performance/i.test(groups[7]), groups.join(' | '));
+  // 8 numbered sections plus Agents (added at Adam's request, 7 Oct), placed straight after Command.
+  check('Navigation: 8 numbered sections plus Agents after Command', groups.length === 9 && /01/.test(groups[0]) && /Command/i.test(groups[0]) && /^Agents$/i.test(groups[1].trim())
+    && /08/.test(groups[8]) && /Performance/i.test(groups[8]) && groups.filter((g) => /^0\d/.test(g)).length === 8, groups.join(' | '));
   await page.click('.side [data-tab=radar]');
   const radar = await page.locator('main').innerText();
   check('Radar: horizons Now / 7 / 30 / 90 / longer-term; region and category filters', ['Now / urgent', '7 days', '30 days', '90 days', 'Longer term'].every((w) => radar.includes(w)) && (await page.locator('main select[data-rdf=region] option').count()) === 6);
@@ -591,6 +598,65 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.locator('.results [data-relq]').first().click();
   check('search result opens Past relationships filtered to it', (await page.locator('main h2').innerText()) === 'Past relationships' && (await page.locator('main article.card.rel').count()) >= 1);
 
+  // AGENTS: the virtual commercial department, every figure from the live hq_agents() / hq_agent() shapes.
+  if (agentsFx && agentFx) {
+    const A = agentsFx; const writesBefore = calls.filter((c) => WRITES.includes(c.fn)).length;
+    await closeDrawer(page);
+    await page.click('.side [data-tab=agents]');
+    await page.waitForSelector('.agent-card');
+    const floor = await page.locator('main').innerText();
+    check('Agents: every agent has a card (8 acquisition + 4 support)', (await page.locator('.agent-grid .agent-card').count()) === A.agents.length, `${A.agents.length}`);
+    check('Agents: names and live statuses shown', A.agents.every((a) => floor.includes(a.name)) && A.agents.every((a) => floor.includes(a.status_reason)));
+    const healthy = A.agents.filter((a) => ['WORKING', 'WAITING'].includes(a.status)).length;
+    check('Agents: CEO view (healthy, 24h companies, decision makers, emails, ready)', floor.includes(`${healthy} / ${A.agents.length}`) && floor.includes(String(A.ceo.new_companies_24h))
+      && floor.includes(String(A.ceo.new_decision_makers_24h)) && floor.includes(String(A.ceo.new_emails_24h)) && floor.includes(String(A.ceo.ready)));
+    check('Agents: best opportunities found today', !A.ceo.best?.length || floor.includes(A.ceo.best[0].company), A.ceo.best?.[0]?.company);
+    const waiting = A.agents.find((a) => a.status === 'WAITING');
+    check('Agents: status is never faked (waiting agent shows its real reason)', !waiting || (await page.locator('.agent-card', { hasText: waiting.name }).innerText()).includes(waiting.status_reason), waiting?.name);
+    check('Agents: activity feed from stored events', A.feed.slice(0, 3).every((f) => floor.includes(f.text)));
+    await page.screenshot({ path: 'tests/out/agents.png', fullPage: true });
+    const hosp = A.agents.find((a) => a.key === 'HOSPITALITY');
+    await page.locator('.agent-card', { hasText: hosp.name }).first().click();
+    await page.waitForSelector('[data-agent-sec]');
+    check('Agent drill-down loads hq_agent for that agent only', calls.some((c) => c.fn === 'hq_agent' && c.body?.p_key === 'HOSPITALITY'));
+    const chips = await page.locator('[data-agent-sec]').allInnerTexts();
+    check('Drill-down: finds, people, opportunities, ready, researching, rejected', ['New finds', 'People', 'Opportunities', 'Ready for Adam', 'Researching', 'Rejected'].every((t) => chips.some((c) => c.startsWith(t))), chips.join(' | '));
+    const sec = (k) => agentFx.sections.find((x) => x.key === k);
+    check('Drill-down: new finds are real companies', (await page.locator('main .panel').last().innerText()).includes(sec('finds').items[0].company));
+    await page.click('[data-agent-sec=people]');
+    const ppl = await page.locator('main .panel').last().innerText();
+    const p0 = sec('people').items[0];
+    check('Drill-down: people with role, company, source and confidence', ppl.includes(p0.name || p0.email) && ppl.includes(p0.company) && /Source:/.test(ppl) && /confidence/i.test(ppl), p0.name);
+    await page.click('[data-agent-sec=opportunities]');
+    check('Drill-down: opportunities say what NOYA could do', (await page.locator('main .panel').last().innerText()).includes(sec('opportunities').items[0].company));
+    await page.click('[data-agent-sec=ready]');
+    check('Drill-down: READY outreach for Adam', (await page.locator('main .panel').last().innerText()).toLowerCase().includes(sec('ready').items[0].company.toLowerCase()));
+    await page.click('[data-agent-sec=rejected]');
+    check('Drill-down: rejected or held, with the reason', /watchlist|Parked/i.test(await page.locator('main .panel').last().innerText()));
+    await page.screenshot({ path: 'tests/out/agent-hospitality.png', fullPage: true });
+    await page.click('.agents-nav [data-tab=emails]');
+    await page.waitForSelector('.email-card');
+    check('Email opportunities: one card per prospect with an email', (await page.locator('.email-card').count()) === Math.min(30, A.email_desk.length), `${A.email_desk.length}`);
+    const e0 = A.email_desk[0];
+    const ecard = await page.locator('.email-card').first().innerText();
+    check('Email card: email, provenance and verification state', ecard.includes(e0.email) && /From:/.test(ecard) && /(Publicly listed|SMTP verified|Not verifiable|Source not recorded)/i.test(ecard), e0.email);
+    const pub = A.email_desk.filter((e) => e.trust === 'PUBLICLY_LISTED').length;
+    await page.click('[data-emf=s][data-v=PUBLIC]');
+    check('Email filter: Public email', (await page.locator('.email-card').count()) === Math.min(30, pub), `${pub}`);
+    await page.click('[data-emf=s][data-v=VERIFIED]');
+    check('Email filter: Verified (SMTP) is separate from publicly listed', (await page.locator('.email-card').count()) === A.email_desk.filter((e) => e.trust === 'SMTP_VERIFIED').length);
+    await page.click('[data-emf=s][data-v=ALL]');
+    await page.locator('[data-email-open]').first().click();
+    check('Email card: "What to say" opens the draft or says none exists', (await page.locator('.draft-box').count()) === 1);
+    await page.click('.agents-nav [data-tab=agentradar]');
+    await page.waitForSelector('.radar-card');
+    const rad = await page.locator('main').innerText();
+    check('Opportunity radar: routes to money, not records', (await page.locator('.radar-card').count()) === A.radar.length && A.radar.every((r) => rad.includes(r.company)) && rad.includes('→'));
+    await page.click('.agents-nav [data-tab=feed]');
+    check('Activity feed: every stored event listed', (await page.locator('main .feed-row').count()) === A.feed.length);
+    check('Agents views made no write calls', calls.filter((c) => WRITES.includes(c.fn)).length === writesBefore);
+  } else check('Agents fixtures present', false, 'tests/fixtures/agents.json missing');
+
   check('only allow-listed RPCs were called', calls.every((c) => ALLOWED.includes(c.fn)), [...new Set(calls.map((c) => c.fn))].filter((f) => !ALLOWED.includes(f)).join(','));
   check('no JavaScript errors (desktop)', errors.length === 0, errors.join(' | '));
   await browser.close();
@@ -668,6 +734,26 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#m-ok');
   await page.waitForSelector('.drawer');
   await step('10 + New opportunity from the phone opens the new record', !!last(calls, 'hq_create_opportunity'));
+  if (agentsFx) {
+    await closeDrawer(page);
+    await page.click('.bnav [data-tab=agents]');
+    await page.waitForSelector('.agent-card');
+    await step('11 Agents from the bottom bar: cards first', (await page.locator('.agent-card').count()) === agentsFx.agents.length);
+    const hosp = agentsFx.agents.find((a) => a.key === 'HOSPITALITY');
+    await page.locator('.agent-card', { hasText: hosp.name }).first().click();
+    await page.waitForSelector('[data-agent-sec]');
+    const t = await page.locator('.agent-detail').innerText();
+    await step('12 Tap Partnerships agent: new companies, decision makers, emails, ready, latest finds', t.includes(String(hosp.today.discovered)) && t.includes(String(hosp.today.decision_makers))
+      && t.includes(String(hosp.today.public_emails)) && /ready for Adam/i.test(t) && (await page.locator('main .panel .mini').count()) > 0);
+    await page.screenshot({ path: 'tests/out/mobile-agent.png', fullPage: true });
+    for (const tab of ['emails', 'agentradar', 'feed']) {
+      await page.click(`.agents-nav [data-tab=${tab}]`);
+      await page.waitForTimeout(100);
+      const o = await noOverflow(page);
+      check(`mobile 390px: no horizontal page overflow on ${tab}`, o <= 1, `${o}px`);
+    }
+    await page.screenshot({ path: 'tests/out/mobile-emails.png', fullPage: false });
+  }
   for (const tab of ['relationships', 'linkedin', 'contacts', 'companies', 'markets', 'costs', 'growth', 'help', 'system', 'radar', 'actions', 'partners', 'events', 'projects', 'library']) {
     await closeDrawer(page);
     await page.click('#bmenu');
