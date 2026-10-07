@@ -63,6 +63,15 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
   - Quality question: for `north-coast-villa-dusk`, `north-coast-horizon` and `abu-simbel-ramses`, the only copies found are 1,179 px iPhone exports, while the site serves them at 2,400–2,892 px. If no full-size original exists, these files may be enlargements and will be graded again.
   - 61 of 119 old-site uploads are traced. The old site's "Fly web.jpg" was an Emirates marketing image.
 
+- **The Mac folder "NOYA Website" (audited 7 Oct from Adam's Drive upload).** All 230 files were catalogued and the 96 under about 6 MB scanned. Findings: noya-website `docs/asset-audit/mac/2026-10-07-drive-copy/FINDINGS.md`.
+  - It is a working collection: Canva page exports, screenshots of site photographs, web downloads, and 12 Edge Studios originals that are identical to Drive. It holds no new masters.
+  - Adam's picks give five usable El Gouna frames with no faces showing (Edge-44, 45, 46, 101, 102). Edge-101 is now in the website library for dining.
+  - The deck's "NOYA headrest" car image is AI-generated. Never show it as NOYA photography.
+- **Weddings imagery (CEO, 7 Oct).**
+  - Sage photographs show crafted dining, not weddings.
+  - The five Pyramids wedding images Adam sent are other couples' weddings (most likely Jain–Hammond, April 2024) and one AI render, so they are not used.
+  - The route, in order: NOYA's own events with consent → permissioned venue imagery (Pier 88 Pyramid Hills first) → licensed photography (needs CEO approval for spend).
+
 **Canva conflicts to know about (do not reuse these designs as they are)**
 - **Eclipse design `DAG7nT3qk0k`:** the cover says "2026 partial eclipse experience, August 10th–14th", but the inside says the journey is built around the total eclipse. The total eclipse over Luxor is 2 Aug 2027. Correct it before any reuse.
 - **Monaco GP 2026 designs:** they give two different date ranges (4–7 vs 5–7 June).
