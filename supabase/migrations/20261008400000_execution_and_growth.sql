@@ -195,6 +195,8 @@ $$;
 
 -- ---------------------------------------------------------------- revalidation of drafts older than 14 days
 alter table public.tasks add column if not exists revalidated_at timestamptz;
+-- Adam explicitly approved this ready draft for sending (D3, 7 Oct: AC Milan, PSG). It always appears in today's actions; Adam still sends it.
+alter table public.tasks add column if not exists ceo_approved_at timestamptz;
 
 -- Deterministic checks first; workflow 20 adds the one search that confirms the person still holds the role.
 create or replace function public.revalidation_queue(p_limit int default 15)
@@ -299,8 +301,8 @@ returns jsonb language sql stable security definer set search_path = public as $
      where (t.task_type = 'OUTREACH_FOLLOW_UP' or t.title like 'FOLLOW UP%') and coalesce(t.due_at, now()) <= now() + interval '1 day'
        and t.rs in ('COLD', 'CONTACTED_RECENTLY', 'UNKNOWN')),
   ready as (
-    select case when t.lane in ('PARTNERSHIPS', 'TRAVEL_PRIVATE') then 4 else 5 end grp,
-           case when t.lane in ('PARTNERSHIPS', 'TRAVEL_PRIVATE') then 'Partnership outreach' else 'New prospect outreach' end action,
+    select case when t.ceo_approved_at is not null or t.lane in ('PARTNERSHIPS', 'TRAVEL_PRIVATE') then 4 else 5 end grp,
+           case when t.ceo_approved_at is not null then 'Approved send' when t.lane in ('PARTNERSHIPS', 'TRAVEL_PRIVATE') then 'Partnership outreach' else 'New prospect outreach' end action,
            t.id, t.company, t.lane,
            case when t.title like 'EMAIL READY%' then 'EMAIL' when t.title like 'INSTAGRAM%' then 'INSTAGRAM' else 'LINKEDIN' end,
            t.title,
@@ -309,7 +311,7 @@ returns jsonb language sql stable security definer set search_path = public as $
              + case when t.email_status = 'VERIFIED' then 15 when t.title like 'EMAIL READY%' then 12
                     when coalesce(t.linkedin, '') ~* 'linkedin\.com/in/' then 10 when t.title like 'INSTAGRAM%' then 8 else 4 end
              + case when t.created_at > now() - interval '7 days' then 5 else 0 end
-             + coalesce(t.priority, 0) / 20.0,
+             + coalesce(t.priority, 0) / 20.0 + case when t.ceo_approved_at is not null then 100 else 0 end,
            t.created_at
       from open_t t
      where t.title ~ '^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY|WHATSAPP MESSAGE READY|EMAIL READY)'
@@ -317,9 +319,9 @@ returns jsonb language sql stable security definer set search_path = public as $
        and t.contact_id is not null  -- a draft with no named person is not ready to send (W19 looks for one)
        and (t.created_at > now() - interval '14 days' or t.revalidated_at > now() - interval '14 days')),
   allq as (select * from replies union all select * from warm union all select * from follow union all select * from ready),
-  ranked as (select a.*, row_number() over (partition by coalesce(a.task_id::text, a.company) order by a.grp, a.score desc) dup from allq a),
+  ranked as (select a.*, row_number() over (partition by coalesce(a.company, a.task_id::text) order by a.grp, a.score desc) dup from allq a),
   dedup as (select r.*, row_number() over (partition by case when grp in (4, 5) then 4 else grp end order by grp, score desc) gi from ranked r where dup = 1),
-  -- replies and warm opportunities always appear; at least 3 outreach slots (partnerships first) keep new prospects moving;
+  -- one action per company; replies, warm opportunities and drafts Adam approved (ceo_approved_at) always appear; at least 3 outreach slots (partnerships first) keep new prospects moving;
   -- the strongest follow-ups due take the rest of the 15-20
   n as (select greatest(15, least(coalesce(p_limit, 20), 40)) lim, (select count(*) from dedup where grp in (1, 2)) n12,
                (select count(*) from dedup where grp = 3) n3, (select count(*) from dedup where grp in (4, 5)) n45),
@@ -327,6 +329,7 @@ returns jsonb language sql stable security definer set search_path = public as $
   pick as (select d.* from dedup d, quota q
             where d.grp in (1, 2)
                or (d.grp = 3 and d.gi <= q.q3)
+               or (d.grp in (4, 5) and d.action = 'Approved send')
                or (d.grp in (4, 5) and d.gi <= greatest(least(3, (select n45 from n)), q.lim - q.n12 - q.q3)))
   select jsonb_build_object(
     'target', '15-20 commercial actions a working day',

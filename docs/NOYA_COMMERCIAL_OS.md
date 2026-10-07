@@ -379,7 +379,9 @@ Adam's decisions were D1 A, D2 B (modified) and D3 B. The aim is 15–20 commerc
 4. Partnership outreach: the partnerships and travel lanes.
 5. New prospect outreach.
 
-Groups 1 and 2 always appear in full. At least 3 outreach slots stay open so new prospects keep moving. Follow-ups fill the rest.
+Groups 1 and 2 always appear in full. At least 3 outreach slots stay open so new prospects keep moving. Follow-ups fill the rest. Each company appears once, under its highest group.
+
+A ready draft that Adam explicitly approved (`tasks.ceo_approved_at`, for example AC Milan and PSG under D3) always appears, as "Approved send", at the front of the outreach slots. Lane weighting does not apply to it. Adam still sends it himself.
 
 Ready drafts are scored by four things:
 - the lane weight, partnerships highest and sports lowest;
