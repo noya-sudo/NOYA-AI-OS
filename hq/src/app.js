@@ -1762,7 +1762,16 @@ function todayPanel() {
     <div class="tbl-wrap mt6"><table><thead><tr><th>Lane</th>${cols.map(([, l]) => `<th>${l}</th>`).join('')}</tr></thead><tbody>
       ${(t.lanes || []).map((r) => `<tr><td>${esc(LANE_LABEL[r.lane] || r.lane)}</td>${cols.map(([k]) => `<td>${esc(r[k] ?? 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
     ${(t.conversations || []).length ? `<div class="small mt6">In conversation (cold outreach paused): ${t.conversations.map((c) => `${esc(c.company)} <span class="faint">${esc(human(c.state))}</span>`).join(' · ')}</div>` : ''}
+    ${engineLine()}
   </div></section>`;
+}
+// Two separate measures on purpose: what workflow 18 produced on its own vs what was ready only after a human rewrite.
+function engineLine() {
+  const e = state.exec?.engine; const b = state.exec?.ai_budget; if (!e && !b) return '';
+  const usd = (n) => `$${Number(n || 0).toFixed(2)}`;
+  const flag = b && b.status !== 'OK' ? ` <span class="pill warn">${esc(human(b.status))}</span>` : '';
+  return `<div class="small mt6 engine-line">${e && e.drafted ? `Drafting quality (30 days): system ready on its own ${esc(e.system_ready)}/${esc(e.drafted)} (${esc(e.system_ready_pct ?? 0)}%) · ready after human review ${esc(e.final_ready_after_human_review)} · ${esc(e.avg_calls ?? 0)} model calls per account · ${usd(e.avg_cost_usd)} per account` : 'Drafting quality: no workflow 18 drafts recorded yet'}</div>
+    ${b ? `<div class="small mt6 ai-budget">AI drafting cost this month: ${usd(b.mtd_usd)} of ${usd(b.target_usd)} target · ${usd(b.ceiling_usd)} ceiling needs your approval to raise${flag}</div>` : ''}`;
 }
 function hunterLine() {
   const h = state.exec?.hunter; if (!h) return '';
