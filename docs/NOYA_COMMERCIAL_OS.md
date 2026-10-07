@@ -367,3 +367,108 @@ A company with a named person always ranks above a company with only a company r
 - Hyphenated compounds ("Egypt-based") are checked word by word.
 
 **Drafting without a person.** For a company inbox or company Instagram account, workflow 18 writes to the team, starting "Hello,". The evidence states that there is no named person, and the model must never invent one.
+
+## Execution and growth in parallel (7 Oct 2026)
+
+Adam's decisions were D1 A, D2 B (modified) and D3 B. The aim is 15–20 commercial actions a working day, while the agents keep finding 60–75 new contactable prospects every 3 days. The sales backlog never pauses research.
+
+**Daily action queue.** `daily_action_queue(20)` returns between 15 and 20 actions, never fewer than 15, in this order:
+1. Replies needing action: inbound messages with no later outbound in 21 days, plus `REPLY_ACTION` tasks.
+2. Warm opportunities: an active relationship, or a warm-route, reconnect, meeting or approval task.
+3. Follow-ups due within a day, to cold or recently contacted accounts.
+4. Partnership outreach: the partnerships and travel lanes.
+5. New prospect outreach.
+
+Groups 1 and 2 always appear in full. At least 3 outreach slots stay open so new prospects keep moving. Follow-ups fill the rest.
+
+Ready drafts are scored by four things:
+- the lane weight, partnerships highest and sports lowest;
+- `role_score` of the person;
+- the route: a verified email first, then an email draft, a LinkedIn profile, Instagram, anything else;
+- how recent the draft is.
+
+A draft with no named person is not ready to send. It is held out of the queue and counted as `waiting_for_person`, and workflow 19 looks for a decision maker.
+
+**Revalidation, not redrafting (workflow 20, 10:15 Cairo).** Ready drafts older than 14 days drop out of the queue until revalidated. `revalidation_queue(15)` runs the deterministic checks:
+- is the company still qualified?
+- is the relationship still cold?
+- has there been no Gmail interaction since the draft?
+- is there no newer draft for the same person?
+
+The workflow adds two more:
+- a date test on the why-now line;
+- one Serper search, `site:linkedin.com/in "First Last" "Company"`, to confirm the person is still in role. The result is `STILL_IN_ROLE` only when a headline carries both the name and the company, and `MOVED` only when the headline names another employer and the result never mentions this company.
+
+`revalidation_save` then decides:
+
+| Decision | When | Effect |
+|---|---|---|
+| KEEP | Everything still holds | Draft kept; `revalidated_at` set; note added |
+| FIND_PERSON | Still valid, but the draft names no person | Draft kept but out of the send queue; account re-queued for workflow 19 |
+| REPLACE_PERSON | The person moved | Draft closed; account re-queued for workflow 19 |
+| REDRAFT | The why-now date has passed | Draft closed so the planner drafts again from fresh evidence |
+| CLOSE | Not qualified, no longer cold, new Gmail, or a newer duplicate | Draft closed |
+
+First run: 5 drafts from 8–20 Sep. Tarte, Lombard Odier, ALDO and The Qode were set to FIND_PERSON. Scarlet Events was closed because the company is no longer qualified.
+
+**Partnership model on every partner prospect.** `companies.partnership_model` takes one of:
+- `REFERRAL`;
+- `RECIPROCAL` (reciprocal destination support);
+- `PREFERRED_STAY`;
+- `EGYPT_EXECUTION`;
+- `WHITE_LABEL_CONCIERGE`;
+- `GUEST_CONCIERGE`;
+- `CONTENT_TALENT`.
+
+A trigger fills it on insert from lane, type and country (`partnership_model_guess`). A value set by a person or by research is never overwritten. Media, podcast, creator and production targets are `CONTENT_TALENT` in any lane. Client accounts (brands, corporate, sports) have no model by design. The planner puts the model, in words, at the start of the draft angle (`prospect_angle_prefix`).
+
+**Creative concepts (workflow 21, 11:30 Cairo).** For media, podcast, YouTube, publication, creator and production targets:
+- one Flash-Lite call produces CONCEPT (what could be filmed), BACKDROP, NOYA ROLE and COMMERCIAL VALUE;
+- BACKDROP comes from a fixed list: Pyramids of Giza, Mena House, Grand Egyptian Museum, the Nile, Aswan, Luxor, El Gouna, Red Sea, Western Desert, Cairo, or a private villa or resort;
+- the prompt allows only the stored evidence;
+- a deterministic check drops any capitalised word or number that is not in the evidence, the backdrop list or Egypt geography;
+- the budget guardrail runs first;
+- concepts are stored in `creative_concepts` (one per company), and the planner adds the concept to the draft angle.
+
+First run: 4 concepts, all passed, costing about $0.0003.
+
+**Instagram discovery.** Departments 02, 03, 04 and 07 treat a public Instagram profile as a discovery source only when it exposes a business route: an email, a website, a booking or contact route, a founder, a partnerships contact or a management company. The source URL is kept, and nothing is inferred. Workflow 19 searches Instagram only for companies with no Instagram account recorded, and published emails only for companies with no email.
+
+**Search efficiency.**
+- Each department run takes a rotating slice of its query bank (`n8n/live_code_2026_10_07/`). Consecutive runs search different queries.
+- Known accounts are de-duplicated before research.
+- Workflow 19 searches only for the missing route.
+- Deep research runs only on the capped shortlist (6 per run for hotels and partnerships, 4 elsewhere).
+- Discovery searches fell about 45%, and unique coverage rose about 1.5×.
+
+**Serper allowance and cost (workflow 22, every 6 hours).** The workflow reads `GET https://google.serper.dev/account`, which spends no search credit, and stores the balance in `provider_balances`.
+- `serper_usage(3)` reports measured burn once a full day of readings exists. Until then it reports the plan.
+- At 7 Oct 03:05 UTC the balance was 41,045 credits, with a rate limit of 50 a second.
+- Pricing: Starter $50 for 50,000 credits ($1.00 per 1,000), Standard $375 for 500,000 ($0.75 per 1,000). Credits expire after 6 months.
+
+Planned searches a day:
+
+| Source | Searches a day |
+|---|---|
+| Departments 02/03/04/06/07/08 | ~412 |
+| Research, decision maker and resolve passes | ~130 |
+| Workflow 19 | ≤108 |
+| Workflow 20 | ≤15 |
+| **Total** | **~650** |
+
+That is ~1,950 searches per 3-day cycle, about $1.95. Before rotation it was ~2,900 per cycle. The balance lasts about 63 days.
+
+**Next report.** `growth_scorecard(since)` covers:
+- new companies (by source: agents, ChatGPT, other research);
+- new decision makers;
+- new public emails;
+- new company inboxes;
+- new LinkedIn and Instagram routes;
+- outreach-ready count, by lane;
+- hospitality partnerships;
+- partnership prospects with a model;
+- media concepts;
+- wedding prospects;
+- brand and production prospects;
+- sends, replies and calls;
+- Serper usage and AI cost.

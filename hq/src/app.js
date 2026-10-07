@@ -1739,6 +1739,25 @@ async function loadAccount(id) {
 }
 
 // ---------------------------------------------------------------- 01 · Command additions (action first)
+// Today's 15–20 commercial actions (Adam, 7 Oct): replies, warm, follow-ups, partnerships, then the best new prospects.
+// Drafts older than 14 days wait for revalidation (workflow 20); drafts with no named person wait for workflow 19.
+const ACTION_GO = { Reply: 'inbox', 'Warm opportunity': 'relationships', 'Follow up': 'tasks' };
+function actionsPanel() {
+  const a = state.exec?.actions; if (!a) return '';
+  const go = (it) => ACTION_GO[it.action] || (it.channel === 'LINKEDIN' ? 'linkedin' : 'outreach');
+  const waits = [a.waiting_revalidation ? `${esc(a.waiting_revalidation)} older drafts waiting for revalidation` : '', a.waiting_for_person ? `${esc(a.waiting_for_person)} drafts waiting for a named person` : ''].filter(Boolean);
+  return `<section class="panel mt8 actions-panel"><header><h3>Today's actions</h3><span class="small faint">${esc(a.count)} of ${esc(a.target)} · ${esc(Object.entries(a.by_group || {}).map(([k, n]) => `${k} ${n}`).join(' · '))}</span></header><div class="body">
+    ${(a.items || []).map((it) => `<div class="mini clickable" data-go="${go(it)}"><div class="t">${esc(it.rank)}. ${esc(it.action)} · ${esc(it.company || '—')}${it.channel ? ` <span class="faint">${esc(human(it.channel))}</span>` : ''}</div><div class="m">${esc(LANE_LABEL[it.lane] || it.lane || '')}${it.detail ? ` · ${esc(it.detail)}` : ''}</div></div>`).join('') || '<div class="empty">Nothing needs action today.</div>'}
+    ${waits.length ? `<div class="small faint mt6">${waits.join(' · ')}</div>` : ''}
+    ${scorecardLine()}</div></section>`;
+}
+function scorecardLine() {
+  const s = state.exec?.scorecard; if (!s) return '';
+  const src = Object.entries(s.new_companies_by_source || {}).map(([k, n]) => `${k} ${n}`).join(', ');
+  const sp = s.serper || {};
+  return `<div class="small mt6 scorecard-line"><b>Last 3 days:</b> ${esc(s.new_companies ?? 0)} new companies${src ? ` (${esc(src)})` : ''} · ${esc(s.new_decision_makers ?? 0)} decision makers · ${esc(s.new_public_emails ?? 0)} public emails · ${esc(s.new_linkedin_routes ?? 0)} LinkedIn · ${esc(s.new_instagram_routes ?? 0)} Instagram routes · ${esc(s.outreach_ready ?? 0)} outreach-ready · ${esc(s.hospitality_partnerships ?? 0)} hotel/villa/residence partners · ${esc(s.media_concepts ?? 0)} media concepts · ${esc(s.wedding_prospects ?? 0)} wedding · ${esc(s.brands_production_prospects ?? 0)} brands/production · ${esc(s.sends ?? 0)} sent · ${esc(s.replies ?? 0)} replies · ${esc(s.calls ?? 0)} calls</div>
+    ${sp.balance != null ? `<div class="small faint mt6 serper-line">Search: ${esc(sp.per_cycle ?? '—')} searches per 3-day cycle ≈ $${esc(sp.cycle_usd ?? '—')} · balance ${esc(sp.balance)} credits (~${esc(sp.runway_days ?? '—')} days) · ${esc(String(sp.per_day_basis || '').toLowerCase())}</div>` : ''}`;
+}
 // Daily operating target (Adam, 3 Oct): 15 quality actions/day, 3 days (45) ready. Shortfalls are shown, never padded.
 function execPanel() {
   const q = state.exec?.queue; if (!q) return state.errors.exec ? `<div class="banner err">Queue health not loaded: ${esc(state.errors.exec)}</div>` : '';
@@ -1801,7 +1820,7 @@ function weeklyPanel() {
     ${weeks.map(block).join('') || '<div class="empty">No activity recorded yet.</div>'}<div class="small faint mt6">${esc(w.note)}</div></div></section>`;
 }
 function commandPanels() {
-  const c = state.com; if (!c) return execPanel() + todayPanel();
+  const c = state.com; if (!c) return actionsPanel() + execPanel() + todayPanel();
   const hot = c.signals.filter((s) => ['RESEARCH', 'QUALIFIED'].includes(s.stage) && ['NOW', 'D7'].includes(s.urgency) && (s.relevance || 0) >= 75).slice(0, 5);
   const deals = c.queue.filter((x) => ['PROPOSAL', 'NEGOTIATION', 'DISCOVERY'].includes(x.stage)).slice(0, 5);
   const engagedNoMeeting = c.queue.filter((x) => x.stage === 'ENGAGED').slice(0, 3);
@@ -1813,7 +1832,7 @@ function commandPanels() {
     ...c.signals.filter((s) => s.urgency === 'NOW' && s.stage === 'RESEARCH' && !(s.qualification?.questions || [])[7]?.ok).slice(0, 3).map((s) => [`${s.title.slice(0, 70)} — act now, but no route in yet`, 'radar'])];
   const teamLoad = {}; (state.data?.tasks || []).filter((t) => openStatuses.includes(t.status)).forEach((t) => { const k = t.assigned_to || 'Unassigned'; teamLoad[k] = (teamLoad[k] || 0) + 1; });
   const li = (t, go, sub = '') => `<div class="mini clickable" data-go="${go}"><div class="t">${t}</div>${sub ? `<div class="m">${sub}</div>` : ''}</div>`;
-  return `${execPanel()}${todayPanel()}<div class="ov-grid3 mt8">
+  return `${actionsPanel()}${execPanel()}${todayPanel()}<div class="ov-grid3 mt8">
     <section class="panel"><header><h3>New high-quality opportunities</h3><button class="btn small ghost" data-go="radar">Radar</button></header><div class="body">
       ${hot.map((s) => li(`${urgPill(s.urgency)} ${esc(s.title.slice(0, 90))}`, 'radar', `${esc(s.qualification?.answered ?? 0)}/10 answered${s.qualification?.missing?.length ? ` · missing: ${esc(s.qualification.missing.join(', '))}` : ''}`)).join('') || '<div class="empty">Nothing urgent on the radar.</div>'}</div></section>
     <section class="panel"><header><h3>Meetings · proposals · negotiations</h3><button class="btn small ghost" data-go="actions">Queue</button></header><div class="body">

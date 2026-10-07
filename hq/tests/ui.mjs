@@ -24,7 +24,17 @@ const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json
 mkdirSync('tests/out', { recursive: true });
 
 // Execution fixture (shaped like hq_execution: queue health + weekly metrics by segment).
-const execution = { today: { date: '2026-10-07', target: { floor: 15, target: 20 }, totals: { discovered: 16, send_ready: 51, awaiting_approval: 8, linkedin: 46, instagram: 3, emails: 9, follow_ups_due: 18, sent_today: 0, replies_today: 2, meetings_today: 0 },
+const execution = {
+  actions: { target: '15-20 commercial actions a working day', count: 4, waiting_revalidation: 2, waiting_for_person: 16,
+    by_group: { Reply: 1, 'Warm opportunity': 1, 'Follow up': 1, 'Partnership outreach': 1 },
+    items: [{ rank: 1, group: 1, action: 'Reply', company: 'YKONE Middle East', lane: 'BRANDS', channel: 'EMAIL', detail: 'Asked for rates for a March shoot' },
+      { rank: 2, group: 2, action: 'Warm opportunity', company: 'Baron Hotels', lane: 'PARTNERSHIPS', channel: null, detail: 'WARM ROUTE — reconnect' },
+      { rank: 3, group: 3, action: 'Follow up', company: 'Lightfoot Travel', lane: 'TRAVEL_PRIVATE', channel: null, detail: 'FOLLOW UP — day 4' },
+      { rank: 4, group: 4, action: 'Partnership outreach', company: 'Cheval Collection', lane: 'PARTNERSHIPS', channel: 'LINKEDIN', detail: 'LINKEDIN MESSAGE READY — Cheval Collection' }] },
+  scorecard: { new_companies: 43, new_companies_by_source: { Agents: 13, ChatGPT: 13, 'Other research': 17 }, new_decision_makers: 116, new_public_emails: 19, new_linkedin_routes: 121,
+    new_instagram_routes: 27, outreach_ready: 26, hospitality_partnerships: 10, media_concepts: 4, wedding_prospects: 5, brands_production_prospects: 14, sends: 6, replies: 5, calls: 1,
+    serper: { balance: 41045, per_cycle: 1950, cycle_usd: 1.95, runway_days: 63, per_day_basis: 'PLANNED (under a day of readings)' } },
+  today: { date: '2026-10-07', target: { floor: 15, target: 20 }, totals: { discovered: 16, send_ready: 51, awaiting_approval: 8, linkedin: 46, instagram: 3, emails: 9, follow_ups_due: 18, sent_today: 0, replies_today: 2, meetings_today: 0 },
     planned_today: { planned: 16, ready: 12, review_required: 4, dry_run: true },
     lanes: [{ lane: 'BRANDS', discovered: 7, send_ready: 3, awaiting_approval: 0, linkedin: 3, instagram: 1, emails: 0, follow_ups_due: 0, sent_today: 0, replies_today: 0, meetings_today: 0 }],
     conversations: [{ company: 'YKONE Middle East', state: 'MEETING_BOOKED' }] },
@@ -372,6 +382,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('Command: working universe by status (Qualified / Needs review / Researching) and VERIFY FIRST count', /Qualified 64/i.test(cmd) && /Needs review 21/i.test(cmd) && /Researching 51/i.test(cmd) && /4 people need verifying/i.test(cmd));
   check('Command: 3-day cycle shows outreach-ready vs 60–75 and per-agent output', /3-day cycle: 41 outreach-ready of 60–75/.test(cmd) && /Hospitality & partnerships/.test(cmd) && /Travel \/ concierge \/ private/.test(cmd));
   check('Command: drafting quality keeps system vs human-reviewed separate, and AI cost vs budget', /system ready on its own 0\/16/.test(cmd) && /ready after human review 13/.test(cmd) && /\$0\.42 of \$5\.00 target/.test(cmd) && /\$10\.00 ceiling/.test(cmd));
+  check('Command: today\'s actions (15–20, priority groups, waiting counts) and the 3-day scorecard with search cost', /Today's actions/i.test(cmd) && /1\. Reply · YKONE Middle East/.test(cmd)
+    && /4\. Partnership outreach · Cheval Collection/.test(cmd) && /16 drafts waiting for a named person/.test(cmd) && /43 new companies \(Agents 13, ChatGPT 13, Other research 17\)/.test(cmd)
+    && /4 media concepts/.test(cmd) && /1950 searches per 3-day cycle ≈ \$1\.95/.test(cmd));
   check('Command: Today view (commercial engine by lane, Director plan, conversations paused)', /Today · commercial engine/i.test(cmd) && /16 planned/.test(cmd) && /Brands \/ PR \/ production/.test(cmd) && /YKONE Middle East/.test(cmd) && /dry run/i.test(cmd));
   check('Command: Hunter ROI chain (credits → usable → sent → replies → meetings)', /48 credits → 11 usable emails/.test(cmd) && /5 sent → 1 replies → 0 meetings/.test(cmd));
   await page.click('.side [data-tab=finance]');

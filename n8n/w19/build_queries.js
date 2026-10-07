@@ -1,4 +1,4 @@
-// Three searches per company: named people on LinkedIn, the Instagram account (bios often carry the contact route),
+// Up to three searches per company: named people on LinkedIn, the Instagram account (bios often carry the contact route),
 // and emails published on the company's own domain. Role terms follow the agent lane.
 var items = ($input.first().json.items) || [];
 var ROLE = {
@@ -15,7 +15,9 @@ items.forEach(function (c, i) {
   var nm = String(c.company || '').replace(/\(.*?\)/g, ' ').replace(/"/g, '').replace(/\s+/g, ' ').trim();
   var name = '"' + nm + '"';
   out.push({ json: { ci: i, kind: 'LINKEDIN', q: 'site:linkedin.com/in ' + name + ' (' + (ROLE[c.lane] || ROLE.TRAVEL_PRIVATE) + ')' } });
-  out.push({ json: { ci: i, kind: 'INSTAGRAM', q: 'site:instagram.com ' + name } });
-  out.push({ json: { ci: i, kind: 'EMAIL', q: c.domain ? name + ' "@' + c.domain + '"' : name + ' email (partnerships OR sales OR press OR contact)' } });
+  // Search only for what is missing (Adam, 7 Oct: efficient searches): no Instagram search when the account is on file,
+  // no email search when the company already has a published email or inbox.
+  if (!c.instagram) out.push({ json: { ci: i, kind: 'INSTAGRAM', q: 'site:instagram.com ' + name } });
+  if (!c.has_email) out.push({ json: { ci: i, kind: 'EMAIL', q: c.domain ? name + ' "@' + c.domain + '"' : name + ' email (partnerships OR sales OR press OR contact)' } });
 });
 return out;

@@ -39,6 +39,7 @@ returns jsonb language sql stable security definer set search_path = public as $
   select jsonb_build_object('items', coalesce(jsonb_agg(jsonb_build_object(
       'company_id', c.id, 'company', c.name, 'website', c.website, 'domain', c.domain, 'country', c.country, 'city', c.city,
       'company_type', c.company_type, 'lane', c.lane, 'instagram', c.instagram,
+      'has_email', exists (select 1 from contacts e where e.company_id = c.id and e.email is not null and not coalesce(e.do_not_contact, false)),
       'people', (select coalesce(jsonb_agg(jsonb_build_object('first_name', k.first_name, 'last_name', k.last_name, 'position', k.position,
                    'linkedin', k.linkedin, 'email', k.email, 'instagram', k.instagram)), '[]'::jsonb)
                    from contacts k where k.company_id = c.id and coalesce(k.first_name, k.last_name) is not null)
@@ -193,7 +194,7 @@ begin
          and relationship_state(c.id) = 'COLD'
          -- never two agents on one company, never anything already queued or recently planned
          and not exists (select 1 from tasks t where t.company_id = c.id and t.status in ('OPEN', 'IN_PROGRESS', 'WAITING')
-                          and (t.title ~ '^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY|WHATSAPP MESSAGE READY|EMAIL READY|VERIFY FIRST|DRAFT REVIEW|FOLLOW UP)'
+                          and (t.title ~ '^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY|WHATSAPP MESSAGE READY|EMAIL READY|OUTREACH READY|VERIFY|DRAFT REVIEW|FOLLOW UP|HOLD|ADAM PERSONAL OUTREACH|APPROVE OUTREACH|RECONNECT|WARM ROUTE|MEETING)'
                                or t.task_type = 'SALES_OUTREACH_APPROVAL')
                           -- refresh (dry run only): an unsent hand-send draft older than 3 days may be re-drafted for comparison
                           and not (p_refresh and p_dry_run and t.title ~ '^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY|EMAIL READY)'
@@ -238,7 +239,7 @@ begin
       insert into outreach_candidates (run_date, dry_run, lane, company_id, contact_id, opportunity_id, channel, warm_route, why_now, evidence, angle)
       select current_date, p_dry_run, p.lane, p.company_id, p.contact_id, p.opp_id, p.channel, p.warm,
              (select coalesce(o.commercial_trigger, o.reason) from opportunities o where o.id = p.opp_id),
-             p.universe_reason, (select o.angle from opportunities o where o.id = p.opp_id)
+             p.universe_reason, nullif(concat_ws(' ', prospect_angle_prefix(p.company_id), (select o.angle from opportunities o where o.id = p.opp_id)), '')
         from _pool p where p.lane = v_lane and p.rn <= v_quota;
     end loop;
     select count(*) into v_total from outreach_candidates where run_date = current_date and dry_run = p_dry_run;
@@ -247,7 +248,7 @@ begin
       insert into outreach_candidates (run_date, dry_run, lane, company_id, contact_id, opportunity_id, channel, warm_route, why_now, evidence, angle)
       select current_date, p_dry_run, p.lane, p.company_id, p.contact_id, p.opp_id, p.channel, p.warm,
              (select coalesce(o.commercial_trigger, o.reason) from opportunities o where o.id = p.opp_id),
-             p.universe_reason, (select o.angle from opportunities o where o.id = p.opp_id)
+             p.universe_reason, nullif(concat_ws(' ', prospect_angle_prefix(p.company_id), (select o.angle from opportunities o where o.id = p.opp_id)), '')
         from _pool p
        where not exists (select 1 from outreach_candidates oc where oc.company_id = p.company_id and oc.run_date = current_date and oc.dry_run = p_dry_run)
        order by (p.warm is not null) desc, (p.contact_id is not null) desc,
