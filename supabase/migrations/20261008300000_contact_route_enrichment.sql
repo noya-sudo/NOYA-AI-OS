@@ -28,6 +28,7 @@ returns jsonb language sql stable security definer set search_path = public as $
            registrable_domain(c.website) domain
       from companies c
      where c.universe_status in ('QUALIFIED', 'NEEDS_REVIEW', 'RESEARCHING')
+       and coalesce(c.universe_reason, '') !~* '^\[WATCHLIST\]' and coalesce(c.source, '') !~* 'WATCHLIST'
        and coalesce(c.last_enriched_at, '-infinity'::timestamptz) < now() - interval '14 days'
        and coalesce(c.enrichment_attempts, 0) < 3
        and relationship_state(c.id) = 'COLD'
@@ -187,6 +188,8 @@ begin
              (select o.id from opportunities o where o.company_id = c.id and o.status not in ('WON', 'LOST', 'ARCHIVED') order by o.priority desc nulls last, o.created_at desc limit 1) opp_id
         from companies c
        where c.universe_status = 'QUALIFIED'
+         -- an agent's own watchlist save (scored below its minimum) is never planned
+         and coalesce(c.universe_reason, '') !~* '^\[WATCHLIST\]' and coalesce(c.source, '') !~* 'WATCHLIST'
          and relationship_state(c.id) = 'COLD'
          -- never two agents on one company, never anything already queued or recently planned
          and not exists (select 1 from tasks t where t.company_id = c.id and t.status in ('OPEN', 'IN_PROGRESS', 'WAITING')
@@ -216,6 +219,7 @@ begin
       from base b
       left join lateral (select * from contacts k where k.company_id = b.company_id and not coalesce(k.do_not_contact, false)
                       and k.identity_status = 'CONFIRMED' and k.position is not null and role_score(k.position) > 0
+                      and length(btrim(coalesce(k.first_name, ''))) >= 2 and length(btrim(coalesce(k.last_name, ''))) >= 2
                     order by (role_score(k.position) >= 4) desc, (email_kind(k.email) = 'DIRECT_PERSON_EMAIL' and (k.email_status = 'VERIFIED' or coalesce(k.email_source_url, '') <> '')) desc,
                              (coalesce(k.linkedin, '') ~* 'linkedin\.com/in/') desc, (coalesce(k.instagram, '') <> '') desc, role_score(k.position) desc, k.confidence desc nulls last limit 1) k on true
       -- tier 4: a published partnerships / sales / press / events / general inbox (never support, careers or admin)
@@ -246,7 +250,9 @@ begin
              p.universe_reason, (select o.angle from opportunities o where o.id = p.opp_id)
         from _pool p
        where not exists (select 1 from outreach_candidates oc where oc.company_id = p.company_id and oc.run_date = current_date and oc.dry_run = p_dry_run)
-       order by (p.warm is not null) desc, p.rn
+       order by (p.warm is not null) desc, (p.contact_id is not null) desc,
+                -- leftovers follow the agent weights too: sports stays selective
+                p.rn::numeric / greatest(coalesce((v_mix->>p.lane)::numeric, 0), 0.5)
        limit v_left;
     end if;
   end if;

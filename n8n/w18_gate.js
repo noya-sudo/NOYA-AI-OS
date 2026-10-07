@@ -15,7 +15,9 @@ var PRESUME = [/\bmay (require|need|want|be looking)/, /\bmight (need|require|wa
   /\b(requires?|creates?) (a |an )?((complex|significant|real|growing) )?(logistical|need|requirement|demand)/, /\blogical (frontier|next step|addition|fit)/,
   /\bnatural next step/, /\baligns? perfectly/, /\bperfect fit/, /\bcompetitors?\b/, /\b(lack|lacks|lacking)\b/, /\bgap in\b/, /\bstruggl/, /\bpain point/,
   /\bas you (expand|grow|plan|look|scale|move)/, /\byour (upcoming|planned) /, /\bwell[- ]positioned/, /\b(rising|increasing|growing) demand/,
-  /\b(few|no other|none of the|not many) (\w+ )?(brands|companies|planners|agencies|operators|competitors|clubs)\b/, /\bfirst (brand|company|planner) to\b/];
+  /\b(few|no other|none of the|not many) (\w+ )?(brands|companies|planners|agencies|operators|competitors|clubs)\b/, /\bfirst (brand|company|planner) to\b/,
+  /\b(frequent|popular|regular|common|favourite|favorite|natural|obvious) (destination|choice|stop|setting) for (your|their)\b/,
+  /\byour (members|clients|guests|players|customers|travellers|travelers) (often|frequently|regularly|already|increasingly)\b/];
 
 // Proper nouns the draft may use without evidence: NOYA, its founder, Egypt geography and common place/channel names.
 var ALLOWED = ('noya adam elshazly concierge egypt egyptian cairo giza luxor aswan nile red sea north coast sahel gouna el hurghada sharm sheikh sinai siwa ' +
@@ -69,6 +71,9 @@ function evidenceCheck(it, m) {
       if (!/^[A-Z]/.test(w)) return;
       var base = w.replace(/['’]s$/, '').toLowerCase();
       if (ALLOWED.indexOf(base) >= 0) return;
+      // hyphenated compounds ("Egypt-based", "Cairo-led"): fine when every part is allowed, in the evidence, or a plain suffix word
+      if (base.indexOf('-') > 0 && base.split('-').every(function (p) { return !p || ALLOWED.indexOf(p) >= 0 || COMMON.indexOf(p) >= 0 || inCorpus(corpus, p)
+          || /^(based|led|born|run|owned|made|style|wide|level|side|term|end|day|week|night|class|focused|facing|ready|friendly)$/.test(p); })) return;
       if (i === 0 && COMMON.indexOf(base) >= 0) return;
       if (inCorpus(corpus, base) || (/s$/.test(base) && inCorpus(corpus, base.slice(0, -1)))) return;
       if (bad.indexOf(w) < 0) bad.push(w);
@@ -87,7 +92,7 @@ function gate(it, d) {
   if (!m) { issues.push('EMPTY'); return { issues: issues, evidence_terms: [], unsupported: [] }; }
   BANNED.forEach(function (r) { if (r.test(low)) issues.push('BANNED: ' + r.source); });
   PRESUME.forEach(function (r) { if (r.test(low)) issues.push('PRESUMPTUOUS: ' + (low.match(r) || [''])[0]); });
-  if (/(admire|admired|i'?ve seen your|caught my eye|really enjoyed|so impressed)/.test(low)) issues.push('FALSE_FAMILIARITY');
+  if (/(admire|admired|i'?ve seen your|caught my eye|really enjoyed|so impressed|\b(is|are|was) (notable|remarkable|outstanding|commendable))/.test(low)) issues.push('FALSE_FAMILIARITY');
   if (/(amazing|incredible|stunning|impressive|fantastic|beautiful|inspiring|iconic) (work|brand|campaign|collection|events?|weddings?)/.test(low)) issues.push('UNSUPPORTED_COMPLIMENT');
   var lux = (low.match(/\b(luxury|luxurious|exclusive|premium|curated|exquisite|elite|high-end|discerning)\b/g) || []).length;
   if (lux > 1) issues.push('TOO_MANY_LUXURY_ADJECTIVES(' + lux + ')');
@@ -95,7 +100,8 @@ function gate(it, d) {
   if (noya > (it.channel === 'EMAIL' ? 2 : 1)) issues.push('REPEATED_NOYA_BIOGRAPHY');
   if (/[!]|\[|\]|\{\{/.test(m)) issues.push('FORMAT(! or placeholder)');
   if ((m.match(/\?/g) || []).length > 1) issues.push('MORE_THAN_ONE_QUESTION');
-  if (it.first_name && m.indexOf('Hi ' + it.first_name) !== 0 && it.channel !== 'INSTAGRAM') issues.push('GREETING');
+  // every channel opens with a greeting: "Hi <first name>," for a person, "Hello," (or "Hi,") for a team inbox or company account
+  if (it.first_name ? m.indexOf('Hi ' + it.first_name) !== 0 : !/^(hello|hi)\b/i.test(m)) issues.push('GREETING');
   var words = m.split(/\s+/).filter(Boolean).length;
   if (it.channel === 'EMAIL' && (words < 85 || words > 140)) issues.push('LENGTH(' + words + ' words; email 90-130)');
   if (it.channel === 'LINKEDIN' && (m.length < 200 || m.length > 300)) issues.push('LENGTH(' + m.length + ' chars; LinkedIn 220-280)');

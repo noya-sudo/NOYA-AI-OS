@@ -143,6 +143,13 @@ return [{ json: { p_dry_run: false, p_target: null, p_replan: false, batch: 'W18
   model: 'models/gemini-3-flash-preview', thinking_level: 'minimal', max_output_tokens: 1024, pace_ms: 4000 } }];
 """
 
+LIMIT = r"""// n8n stops a run at 300s. Draft at most 10 PLANNED accounts per run; the 22:00 and 22:30 runs pick up the rest
+// (commercial_director_plan returns only candidates still PLANNED for today).
+var MAX = 10;
+var p = $input.first().json || {};
+return [{ json: Object.assign({}, p, { items: (p.items || []).slice(0, MAX), remaining_after_run: Math.max(0, (p.items || []).length - MAX) }) }];
+"""
+
 def js(s):
     return json.dumps(s)
 
@@ -211,7 +218,7 @@ function isTrue(name, field) {{
 const manualRun = trigger({{ type: 'n8n-nodes-base.manualTrigger', version: 1, config: {{ name: 'Manual Dry Run' }} }});
 const weekday = trigger({{
   type: 'n8n-nodes-base.scheduleTrigger', version: 1.2,
-  config: {{ name: 'Daily 10:15 Cairo', parameters: {{ rule: {{ interval: [{{ field: 'cronExpression', expression: '15 10 * * *' }}] }} }} }}
+  config: {{ name: 'Daily 21:30 / 22:00 / 22:30 Cairo', parameters: {{ rule: {{ interval: [{{ field: 'cronExpression', expression: '30 21 * * *' }}, {{ field: 'cronExpression', expression: '0,30 22 * * *' }}] }} }} }}
 }});
 
 const settings = code('Run Settings', {js(SETTINGS)});
@@ -220,6 +227,7 @@ const budgetOk = isTrue('Budget OK?', '["OK", "OVER_TARGET"].includes($json.stat
 const budgetHold = rpc('Budget Hold Alert', 'ai_budget_hold_alert', '{{{{ JSON.stringify({{ p_status: $json.status }}) }}}}');
 const plan = rpc('Commercial Director Plan', 'commercial_director_plan',
   '{{{{ JSON.stringify({{ p_dry_run: $("Run Settings").first().json.p_dry_run, p_target: $("Run Settings").first().json.p_target, p_replan: $("Run Settings").first().json.p_replan }}) }}}}');
+const limitBatch = code('Limit Batch', {js(LIMIT)});
 const buildPrompts = code('Build Prompts', {js(BUILD_PROMPTS)});
 const draft = gemini('Gemini 3 Flash (draft / redraft)');
 const gate1 = code('Quality Gate', {js(GATE1)});
@@ -248,9 +256,9 @@ export default workflow('noya-18-daily-outreach-v2', '18 - NOYA Commercial Direc
   .add(settings)
   .to(budget)
   .to(budgetOk
-    .onTrue(plan.to(buildPrompts.to(draft.to(gate1.to(done
+    .onTrue(plan.to(limitBatch.to(buildPrompts.to(draft.to(gate1.to(done
       .onTrue(packageSave.to(save))
-      .onFalse(redraftPrompt.to(draft)))))))
+      .onFalse(redraftPrompt.to(draft))))))))
     .onFalse(budgetHold));
 """
 

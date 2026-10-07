@@ -283,7 +283,7 @@ Each run researches the next 4 best new candidates; already-researched domains a
 
 Research never pauses because messages are waiting. `discovery_throttle` sets cap 10 with no pause threshold.
 
-Workflow 18 drafts nightly at 21:30 in live mode. Passing drafts become hand-send READY tasks; failures become DRAFT REVIEW. Nothing sends. Workflow 05's schedule is paused, so workflow 18 is the single drafter.
+Workflow 18 drafts nightly in live mode at 21:30, 22:00 and 22:30, at most 10 accounts per run. The instance stops any run at 300 seconds, and each run picks up whatever is still PLANNED. Passing drafts become hand-send READY tasks; failures become DRAFT REVIEW. Nothing sends. Workflow 05's schedule is paused, so workflow 18 is the single drafter.
 
 **Search first.** Serper is the production search layer; Firecrawl is off. Workflow 03 adds 24 rotating hospitality queries a day across 40 destinations in:
 - Egypt;
@@ -354,5 +354,16 @@ Score-0 roles are never saved and never planned. The planner prefers score 4 and
 - otherwise the right company inbox.
 
 A company with a named person always ranks above a company with only a company route. A dry-run test draft never blocks the live plan unless a person reviewed it. When every model call for an account was rate-limited, the candidate is set to `SKIPPED` and planned again the next day.
+
+**Planner guards (7 Oct).**
+- An agent's own watchlist save (scored below its minimum) is never planned or enriched.
+- A person route needs a first and last name.
+- Leftover daily slots follow the agent weights, so sports stays selective.
+
+**Gate additions (7 Oct).**
+- Presumptions such as "frequent destination for your members" and "your clients often…" are caught.
+- So is flattery ("is notable").
+- Every channel must open with a greeting.
+- Hyphenated compounds ("Egypt-based") are checked word by word.
 
 **Drafting without a person.** For a company inbox or company Instagram account, workflow 18 writes to the team, starting "Hello,". The evidence states that there is no named person, and the model must never invent one.
