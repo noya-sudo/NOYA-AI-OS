@@ -77,7 +77,7 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
 CEO direction "CORRECTION — FINAL NOYA IMAGE DIRECTION" (7 Oct) is built on noya-website branch `claude/trusting-brown-6iwrak` (commit `4717f00`). Production (`main`) is unchanged until the CEO approves the merge.
 
 - **One gallery component** (EditorialRail): one dominant photograph with the next partly visible; drag, trackpad and quiet arrows on desktop; swipe with snap on phones. Keyboard and reduced motion supported; no autoplay, no dots. Tested: 19 of 19 interaction checks pass.
-- **Seven galleries, 31 photographs:**
+- **Seven galleries, 33 photographs:**
   - Egypt: one per destination (Cairo and Giza; the Nile; the North Coast; El Gouna and the Red Sea). They replace the 2×2 place grid.
   - Exclusive Access: "Access to the moments worth travelling for." With Adam's own Monte-Carlo Masters and Wembley photographs, plus licensed St. Moritz snow polo. Captions name the occasion only.
   - Weddings: the four Pyramids references, preview only.
