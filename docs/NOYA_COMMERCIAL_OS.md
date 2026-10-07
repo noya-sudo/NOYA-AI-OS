@@ -305,3 +305,54 @@ Workflow 07 adds 16 rotating strategic-partner queries a day across 16 markets.
 - `growth_cycle_report(since)`: by agent, country and vertical; people, email-ready, LinkedIn-ready, research still required, outreach-ready, agent runs and cost.
 - `agent_performance(weeks)`: discovered, qualified, decision makers, ready, sent, replies, positive, calls, proposals, wins and revenue.
 - The HQ Today panel shows the 3-day cycle against 60–75 per agent, AI cost against budget, and system versus human-reviewed draft quality.
+
+## Contact & partnership enrichment: workflow 19 (7 Oct 2026)
+
+**Why.** Departments find companies faster than they find the route in. Workflow 19 finds the route for companies already in the universe. It enriches existing records and never duplicates them, because ChatGPT research writes to the same Supabase.
+
+**Contact hierarchy.** Route types, best first:
+1. Named decision maker plus publicly listed business email. A public email stays `UNVERIFIED`, with its source URL.
+2. Named decision maker plus LinkedIn profile.
+3. Instagram: the person's handle, else the company account.
+4. The right company inbox: partnerships, sales, press, events or general. Never support, careers, privacy or admin addresses.
+
+Hunter runs only after these fail, and only by hand for high-value people.
+
+**Flow** (11:00 / 17:00 / 21:00 Cairo, 12 companies per run):
+1. `enrichment_queue(12)` picks companies with no usable confirmed route, in weighted round robin: hospitality ×3, weddings and brands ×2, travel ×1.5, corporate and Egypt events ×1, sports ×0.5. Each company is retried at most 3 times, at least 14 days apart.
+2. Three Serper searches per company:
+   - LinkedIn profiles, using lane-specific role words;
+   - the Instagram account;
+   - `"Company" "@domain"` for published emails.
+3. One Flash-Lite extraction call per company.
+4. Deterministic anti-fabrication check in `n8n/w19/verify.js`:
+   - every name must appear in the cited search result, and that result must name the company;
+   - emails and handles must appear verbatim;
+   - a role is kept only if it appears in the result;
+   - a LinkedIn profile that names the company outside its headline, for example in education, past roles or memberships, is saved as `NEEDS_VERIFICATION`;
+   - at most 4 people per company, ranked by role.
+5. `enrich_company_routes(p)` saves the results:
+   - matches existing people by LinkedIn URL, email, or company plus name, and fills gaps only;
+   - keeps `source_url`, `source_type` and `route_type`;
+   - accepts an email only on the company's own domain;
+   - logs Flash-Lite usage against the AI budget.
+
+**Role relevance.** `role_score(position)` rates how useful a role is as a route in:
+
+| Score | Roles |
+|---|---|
+| 5 | Founder, owner, CEO, chief, managing director, general manager, partner |
+| 4 | Director, head, VP; partnerships, PR, events, marketing, sales or production managers |
+| 3 | Other managers, producers, planners, executive assistants |
+| 0 | HR, front office, guest relations, F&B floor, spa, legal, procurement, board seats |
+
+Score-0 roles are never saved and never planned. The planner prefers score 4 and above.
+
+**Planner.** `commercial_director_plan` follows the hierarchy:
+- a named person first: email, then LinkedIn, then Instagram, then LinkedIn by name;
+- otherwise the company Instagram account (brands, weddings, hospitality, travel);
+- otherwise the right company inbox.
+
+A company with a named person always ranks above a company with only a company route. A dry-run test draft never blocks the live plan unless a person reviewed it. When every model call for an account was rate-limited, the candidate is set to `SKIPPED` and planned again the next day.
+
+**Drafting without a person.** For a company inbox or company Instagram account, workflow 18 writes to the team, starting "Hello,". The evidence states that there is no named person, and the model must never invent one.

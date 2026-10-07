@@ -25,7 +25,7 @@ var ALLOWED = ('noya adam elshazly concierge egypt egyptian cairo giza luxor asw
 // Ordinary words that can start a sentence.
 var COMMON = ('a an and as at but by for from given having here if in into it its no not of on one our so that the their then there these this those to ' +
   'two three four five we when where which while who with would could should shall can may might happy glad ahead after before since both each every ' +
-  'also just congratulations thanks thank worth noted saw read seeing reading with what how why your you yours my me i ' +
+  'also just congratulations thanks thank worth noted saw read seeing reading with what how why your you yours my me i hello ' +
   'egypt noya cairo').split(' ');
 var STOP = ('the and for with from that this their they have has into over across after before about which while where there these those based brand brands company ' +
   'campaign campaigns travel luxury egypt noya would could should more most such other also been being per new using used through including include').split(' ');
@@ -62,7 +62,7 @@ function inCorpus(corpus, w) {
 // Capitalised words and numbers in the draft must come from the evidence (or the allowed lists).
 function evidenceCheck(it, m) {
   var corpus = corpusOf(it), bad = [];
-  var body = m.replace(/^hi [^,]+,\s*/i, '');
+  var body = m.replace(/^(hi [^,]+|hello),\s*/i, '');
   body.split(/(?<=[.?!:;])\s+|\n+/).forEach(function (sentence) {
     var words = sentence.match(/[A-Za-z][A-Za-z0-9'’&+-]*/g) || [];
     words.forEach(function (w, i) {

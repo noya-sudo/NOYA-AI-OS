@@ -14,12 +14,13 @@ var settings = $('Run Settings').first().json;
 var plan = $input.first().json || {};
 var items = plan.items || [];
 var LANE = {
-  BRANDS: 'Brand or campaign opportunity. Suggest one specific idea in Egypt (a shoot, creator or athlete trip, activation) that fits THIS brand, based only on the evidence. NOYA handles the Egypt side: locations, permits, stays, movement, production support, hospitality.',
-  PARTNERSHIPS: 'Partnership, not client acquisition. They keep their client; NOYA is their Egypt partner on the ground (Cairo, the Nile, the Red Sea, the North Coast, VIP handling), working under their name.',
-  WEDDINGS: 'Wedding or private-event planner. The planner keeps the client and the design; NOYA is the Egypt destination concierge and guest-logistics partner (guest travel, room blocks, transfers, guest concierge).',
+  BRANDS: 'Brand, agency or production opportunity. Suggest one specific idea in Egypt (a shoot, creator or athlete trip, activation, launch) that fits THIS company, based only on the evidence. NOYA handles the Egypt side: locations, access, permits, stays, movement, production support, hospitality. If the company is a podcast, YouTube show, publication, media company or creator-led series, the idea is a filmed episode or feature in Egypt (for example a conversation overlooking the Pyramids, a Grand Egyptian Museum episode, a Nile or Aswan feature, a Red Sea or El Gouna episode), with NOYA arranging location, access, hotel, transport, hospitality and local production. Never pitch Adam as a guest.',
+  PARTNERSHIPS: 'Hospitality or strategic partner. Choose the ONE partnership model the evidence best supports and build the message around it, without listing alternatives: NOYA sends suitable private clients to their property or service; they refer guests or clients who need Egypt to NOYA; reciprocal support (each looks after the other\'s clients); a preferred-stay relationship; NOYA as their white-label Egypt execution partner; concierge support for their guests travelling to Egypt; or creator, talent and brand-trip stays. This is a partnership, not a sales pitch.',
+  TRAVEL_PRIVATE: 'Travel advisor, travel designer, concierge or lifestyle firm, members club, family or private office. They keep the client; NOYA becomes their trusted Egypt specialist and delivers quietly, white-label where they prefer, and can support their clients through NOYA\'s wider network. Choose ONE model from the evidence: referral, reciprocal support, or white-label Egypt execution.',
+  WEDDINGS: 'Wedding or private-event planner. The planner keeps the client and the creative direction; NOYA is the Egypt destination concierge and execution partner (guest accommodation, airport VIP, transport, security, restaurants, pre and post-wedding experiences, guest concierge, venue and local supplier coordination).',
   EGYPT_EVENTS: 'Egypt event partnership. NOYA can look after the international guests, sponsors, players or press who fly in, and can bring its own clients to the event.',
-  CORPORATE: 'Corporate or agency. NOYA is the Egypt delivery partner for incentives, leadership offsites, conferences and executive visits.',
-  SPORTS_PRIVATE: 'Sports or private client. Discreet and low-key. NOYA supports players and families privately in Egypt (villas, privacy, security, transfers). No hype.'
+  CORPORATE: 'Corporate or agency. NOYA is the Egypt delivery partner for executive travel, VIP airport, chauffeur, security, client entertaining, incentives, retreats and conferences.',
+  SPORTS_PRIVATE: 'Sports, talent or entertainment organisation. Discreet and low-key. NOYA supports players, talent and their families privately in Egypt (villas, privacy, security, transfers), or a team or production travelling there. No hype.'
 };
 var FORMAT = {
   EMAIL: 'EMAIL. subject: plain, under 60 characters. message: 90-130 words in three short paragraphs: (1) the reason, citing one concrete fact from EVIDENCE; (2) the opportunity and how NOYA fits, in one or two sentences; (3) one easy next step. Start with "Hi FIRSTNAME,". No sign-off or signature.',
@@ -49,7 +50,9 @@ var out = items.map(function (it, i) {
   var first = it.first_name || '';
   var evidence = [
     'Company: ' + it.company + (it.country ? ' (' + it.country + ')' : '') + (it.company_type ? ', ' + it.company_type : ''),
-    'Person: ' + [it.first_name, it.last_name].filter(Boolean).join(' ') + (it.position ? ', ' + it.position : ''),
+    first ? 'Person: ' + [it.first_name, it.last_name].filter(Boolean).join(' ') + (it.position ? ', ' + it.position : '')
+          : 'Route: ' + (it.channel === 'EMAIL' ? 'the company inbox ' + (it.email || '') + (it.position ? ' (' + it.position + ')' : '')
+                                                 : 'the company Instagram account @' + (it.instagram || '')) + '. No named person: never invent one.',
     'Facts: ' + (it.evidence || ''),
     it.why_now ? 'Why now: ' + it.why_now : '',
     it.contact_notes ? 'About the person: ' + it.contact_notes : '',
@@ -57,7 +60,8 @@ var out = items.map(function (it, i) {
   ].filter(Boolean).join('\n');
   var user = [
     'LANE: ' + (LANE[it.lane] || LANE.CORPORATE),
-    'FORMAT: ' + (FORMAT[it.channel] || FORMAT.LINKEDIN).replace('FIRSTNAME', first),
+    'FORMAT: ' + (first ? (FORMAT[it.channel] || FORMAT.LINKEDIN).replace('FIRSTNAME', first)
+                        : (FORMAT[it.channel] || FORMAT.LINKEDIN).replace('Start with "Hi FIRSTNAME,".', 'Write to the team. Start with "Hello,".')),
     'NEXT STEP for this message: ' + CTA[i % CTA.length] + '.',
     'ANGLE (a hypothesis; use only the parts EVIDENCE supports): ' + (it.angle || ''),
     '', 'EVIDENCE:', evidence
