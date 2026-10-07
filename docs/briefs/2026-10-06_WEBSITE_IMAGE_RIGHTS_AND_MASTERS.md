@@ -67,10 +67,32 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
   - It is a working collection: Canva page exports, screenshots of site photographs, web downloads, and 12 Edge Studios originals that are identical to Drive. It holds no new masters.
   - Adam's picks give five usable El Gouna frames with no faces showing (Edge-44, 45, 46, 101, 102). Edge-101 is now in the website library for dining.
   - The deck's "NOYA headrest" car image is AI-generated. Never show it as NOYA photography.
-- **Weddings imagery (CEO, 7 Oct).**
-  - Sage photographs show crafted dining, not weddings.
-  - The five Pyramids wedding images Adam sent are other couples' weddings (most likely Jain–Hammond, April 2024) and one AI render, so they are not used.
-  - The route, in order: NOYA's own events with consent → permissioned venue imagery (Pier 88 Pyramid Hills first) → licensed photography (needs CEO approval for spend).
+- **Weddings imagery (CEO, 7 Oct, as corrected the same day).**
+  - Sage photographs show crafted dining, not weddings. Pier 88 is dining, never Weddings filler.
+  - The five Pyramids references are other couples' weddings (most likely Jain–Hammond, April 2024; INFERRED) and one AI render. They are Adam's visual direction: rights pending, shown in previews only, never on the live site (see "Galleries" below).
+  - Each is replaced in place through the Studio by a cleared photograph. In order: NOYA's own event photographs with consent → a written licence from the photographer or planner → permissioned venue imagery → licensed photography (spend needs CEO approval).
+
+## Galleries and the visual library (7 Oct 2026: on the preview branch, not live)
+
+CEO direction "CORRECTION — FINAL NOYA IMAGE DIRECTION" (7 Oct) is built on noya-website branch `claude/trusting-brown-6iwrak` (commit `4717f00`). Production (`main`) is unchanged until the CEO approves the merge.
+
+- **One gallery component** (EditorialRail): one dominant photograph with the next partly visible; drag, trackpad and quiet arrows on desktop; swipe with snap on phones. Keyboard and reduced motion supported; no autoplay, no dots. Tested: 19 of 19 interaction checks pass.
+- **Seven galleries, 31 photographs:**
+  - Egypt: one per destination (Cairo and Giza; the Nile; the North Coast; El Gouna and the Red Sea). They replace the 2×2 place grid.
+  - Exclusive Access: "Access to the moments worth travelling for." With Adam's own Monte-Carlo Masters and Wembley photographs, plus licensed St. Moritz snow polo. Captions name the occasion only.
+  - Weddings: the four Pyramids references, preview only.
+  - Brands & Production: The Sage Experience × NOYA, led by Edge-101.
+- **Exclusive Access card on Home and What We Do:** Adam's own Monte-Carlo Masters box view replaces the Monaco Grand Prix image, which was used 7 times (now 5).
+- **Studio:** each gallery is a list under its page (add, remove, drag to reorder; per photograph: crop, focal point, phone focus, alt, caption, source, rights). A "Copy the approved photographs here" button starts editing from the current sequence. A "Rights pending" status keeps a photograph to previews.
+- **Rights gate, verified on a live-mode build:**
+  - no reference image on any page;
+  - their files return 404;
+  - the Weddings page shows exactly today's production photographs.
+- **QA:**
+  - typecheck and lint clean; intake contract 50 of 50;
+  - image audit: 0 failures;
+  - responsive QA: 160 page-and-width checks, 0 issues;
+  - Studio smoke test passes, including the new gallery fields.
 
 **Canva conflicts to know about (do not reuse these designs as they are)**
 - **Eclipse design `DAG7nT3qk0k`:** the cover says "2026 partial eclipse experience, August 10th–14th", but the inside says the journey is built around the total eclipse. The total eclipse over Luxor is 2 Aug 2027. Correct it before any reuse.
@@ -78,9 +100,10 @@ CEO instruction: treat the Mac folder "NOYA Website", Google Drive and Canva as 
 - **"Noya Concierge Brands and Productions" (`DAHSLweLTGU`):** shows Jacquemus and Dior show imagery as examples. That imagery is third-party; never use it on the website.
 
 **Waiting on the CEO**
-- **Share the Drive folder.** Adam's Drive upload of the Mac folder needs sharing with noya@noyaconcierge.com as Viewer. It is not visible yet.
-  - Once shared: list it, mirror photographs up to about 7 MB, and run the full read-only scan.
-  - Larger files (RAW, video, large JPEG) need the n8n Google Drive credential (step 3 of the credential list below), or the Mac session in `docs/LOCAL_ASSET_AUDIT.md`.
+- **Approve publishing the galleries** (merge the branch to `main`). The references stay off the live site either way.
+- **Originals from his phone:** the Monte-Carlo Masters frames (13 Apr 2026; the site uses iOS share copies) and the North Coast iPhone photographs (IMG_6042, IMG_6260) and Abu Simbel (IMG_9090).
+- **North Coast and El Gouna finals:** add them in the Studio galleries (the guide is in noya-website `docs/OPERATIONS.md`, "Galleries").
+- **The Mac folder** is audited (done 7 Oct). Its larger files (RAW, video, large JPEG) need the n8n Google Drive credential (step 3 of the credential list below), or the Mac session in `docs/LOCAL_ASSET_AUDIT.md`.
 - **Pier 88 x Noya shoot:** 314 files in noya@'s My Drive (Sony RAW + JPEG, Pyramid Hills and El Gouna, April 2025). Every file is over 7 MB, so it needs the same credential or the Mac.
   - Confirm that NOYA owns it, who the photographer is, and that models consented.
 
