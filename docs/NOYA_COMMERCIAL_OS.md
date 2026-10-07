@@ -240,3 +240,68 @@ A failed draft gets one redraft that names the exact failures and unsupported wo
 **Planner refresh (dry run only).** `system_config.planner_options.refresh_stale_drafts` lets a dry run re-draft accounts whose hand-send draft has sat unsent for more than 3 days, for comparison. Tasks are never touched.
 
 **Send queue.** On 7 Oct, 59 LinkedIn drafts were ready and unsent (46 older than 3 days). That queue, not supply, is the constraint on the 15–20 a day target.
+
+## Growth Engine: continuous agents (7 Oct 2026)
+
+**Target.** 60–75 new outreach-ready prospects per rolling 3-day cycle (about 23 a day), building a universe of 500+ companies. A prospect counts only when HQ holds a READY task with:
+- company;
+- confirmed person and role;
+- evidence;
+- commercial reason;
+- channel;
+- finished message.
+
+A shortfall is shown, never padded.
+
+**Agents (lane in `companies.acquisition_lane`).**
+
+| # | Agent | Lane | Workflow |
+|---|---|---|---|
+| 1 | Hospitality & strategic partnerships (hotels, boutique/independent, villas, serviced/branded residences, groups, aviation, yachts, chauffeur, security, DMCs, event hospitality) | PARTNERSHIPS | 03, plus supply-side 07 |
+| 2 | Brands / PR / production | BRANDS | 02 |
+| 3 | Weddings & events | WEDDINGS | 04 |
+| 4 | Travel / concierge / private network (advisors, travel designers, concierge and lifestyle firms, clubs, family and private offices, EAs) | TRAVEL_PRIVATE | 07 client-side, private-client side of 06 |
+| 5 | Corporate | CORPORATE | 06 |
+| 6 | Sports / talent / entertainment | SPORTS_PRIVATE | 08, once a day, selective |
+
+Egypt event signals use workflow 17 (EGYPT_EVENTS).
+
+**Daily mix.** `acquisition_mix`: Partnerships 6, Brands 4, Travel 3, Weddings 3, Corporate 3, Sports 1, Egypt events 0. Scaled to `daily_touch_target.target` = 23, with leftovers filled.
+
+**Cadence (Cairo).** Departments 02/03/04/06/07 run three times a day, staggered:
+
+| Workflow | Runs |
+|---|---|
+| 02 | 06:00, 12:00, 18:00 |
+| 03 | 06:30, 12:30, 18:30 |
+| 04 | 07:00, 13:00, 19:00 |
+| 06 | 08:00, 14:00, 20:00 |
+| 07 | 08:30, 14:30, 20:30 |
+| 08 | 09:00 (once a day) |
+
+Each run researches the next 4 best new candidates; already-researched domains are skipped. Mission `max_results` is 10.
+
+Research never pauses because messages are waiting. `discovery_throttle` sets cap 10 with no pause threshold.
+
+Workflow 18 drafts nightly at 21:30 in live mode. Passing drafts become hand-send READY tasks; failures become DRAFT REVIEW. Nothing sends. Workflow 05's schedule is paused, so workflow 18 is the single drafter.
+
+**Search first.** Serper is the production search layer; Firecrawl is off. Workflow 03 adds 24 rotating hospitality queries a day across 40 destinations in:
+- Egypt;
+- UK, France, Italy, Spain, Greece, Switzerland, Monaco;
+- UAE, Saudi Arabia, Qatar, Kuwait.
+
+Workflow 07 adds 16 rotating strategic-partner queries a day across 16 markets.
+
+**Contacts.** Hunter is disabled in all departments; use it only for selected high-value people, by hand. Verified email makes a prospect email-ready; a confirmed person plus LinkedIn makes it LinkedIn-ready.
+
+**Intake.** Triggers classify agent records on arrival:
+- `company_intake`: lane, RESEARCHING (watchlist saves are PARKED), and the reason taken from the agent's "Why NOYA" line.
+- `contact_intake`: CONFIRMED needs name, role and a source (LinkedIn profile URL or source-backed note). Otherwise NEEDS_VERIFICATION, shown as "Likely – verify". A company with no person stays RESEARCHING ("Person required").
+- `contact_requalify`: re-runs the universe rules for that company.
+
+**Duplicates and relationships.** Before research, departments skip known domains (CRM plus Gmail history), recently researched domains and existing relationships. The planner skips anything not COLD: clients, partners, proposals, meetings, active conversations, recent declines, contact in the last 60 days, open tasks, or candidates in the last 30 days.
+
+**Reporting.**
+- `growth_cycle_report(since)`: by agent, country and vertical; people, email-ready, LinkedIn-ready, research still required, outreach-ready, agent runs and cost.
+- `agent_performance(weeks)`: discovered, qualified, decision makers, ready, sent, replies, positive, calls, proposals, wins and revenue.
+- The HQ Today panel shows the 3-day cycle against 60–75 per agent, AI cost against budget, and system versus human-reviewed draft quality.

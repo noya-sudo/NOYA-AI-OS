@@ -1750,7 +1750,7 @@ function execPanel() {
     <div class="small mt6">Working universe: ${Object.entries(q.universe_by_status || { QUALIFIED: q.universe }).map(([k, v]) => `${esc(human(k))} ${esc(v)}`).join(' · ')} <span class="faint">(target ${esc(q.universe_target)})</span></div>
     ${hunterLine()}</div></section>`;
 }
-const LANE_LABEL = { BRANDS: 'Brands & campaigns', PARTNERSHIPS: 'Partnerships', WEDDINGS: 'Weddings & events', EGYPT_EVENTS: 'Egypt events', CORPORATE: 'Corporate', SPORTS_PRIVATE: 'Sports / private' };
+const LANE_LABEL = { PARTNERSHIPS: 'Hospitality & partnerships', BRANDS: 'Brands / PR / production', TRAVEL_PRIVATE: 'Travel / concierge / private', WEDDINGS: 'Weddings & events', CORPORATE: 'Corporate', SPORTS_PRIVATE: 'Sports / talent', EGYPT_EVENTS: 'Egypt event signals' };
 function todayPanel() {
   const t = state.exec?.today; if (!t) return '';
   const tot = t.totals || {}; const p = t.planned_today || {};
@@ -1762,8 +1762,18 @@ function todayPanel() {
     <div class="tbl-wrap mt6"><table><thead><tr><th>Lane</th>${cols.map(([, l]) => `<th>${l}</th>`).join('')}</tr></thead><tbody>
       ${(t.lanes || []).map((r) => `<tr><td>${esc(LANE_LABEL[r.lane] || r.lane)}</td>${cols.map(([k]) => `<td>${esc(r[k] ?? 0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
     ${(t.conversations || []).length ? `<div class="small mt6">In conversation (cold outreach paused): ${t.conversations.map((c) => `${esc(c.company)} <span class="faint">${esc(human(c.state))}</span>`).join(' · ')}</div>` : ''}
+    ${cycleBlock()}
     ${engineLine()}
   </div></section>`;
+}
+// Rolling 3-day cycle: only READY tasks (company, person, role, evidence, channel, finished message) count as outreach-ready.
+function cycleBlock() {
+  const c = state.exec?.cycle; if (!c) return '';
+  const t = c.totals || {}; const tg = c.target || {};
+  const rows = (c.agents || []).filter((a) => a.discovered || a.outreach_ready || a.named_people);
+  return `<div class="small mt6 cycle-line"><b>3-day cycle:</b> ${esc(t.outreach_ready ?? 0)} outreach-ready of ${esc(tg.cycle_floor ?? 60)}–${esc(tg.cycle_target ?? 75)} target · ${esc(t.discovered ?? 0)} discovered · ${esc(t.qualified ?? 0)} qualified · ${esc(t.confirmed_people ?? 0)} confirmed people (${esc(t.email_ready ?? 0)} email, ${esc(t.linkedin_ready ?? 0)} LinkedIn) · ${esc(t.research_required ?? 0)} still need research</div>
+    ${rows.length ? `<div class="tbl-wrap mt6"><table><thead><tr><th>Agent</th><th>Discovered</th><th>Qualified</th><th>People</th><th>Ready</th></tr></thead><tbody>
+      ${rows.map((a) => `<tr><td>${esc(LANE_LABEL[a.lane] || a.lane)}</td><td>${esc(a.discovered)}</td><td>${esc(a.qualified)}</td><td>${esc(a.confirmed_people)}</td><td>${esc(a.outreach_ready)}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
 }
 // Two separate measures on purpose: what workflow 18 produced on its own vs what was ready only after a human rewrite.
 function engineLine() {

@@ -1,5 +1,5 @@
 // Workflow 18 deterministic quality gate (Commercial Engine V2.1, 8 Oct 2026).
-// Embedded verbatim into the "Quality Gate" and "Quality Gate 2" code nodes by n8n/build_w18.py.
+// Embedded verbatim into the "Quality Gate" code node by n8n/build_w18.py.
 // No AI fact-checker: every claim must be checkable against the evidence stored for the account.
 
 var BANNED = [/i am reaching out/, /i'?m reaching out/, /wanted to reach out/, /reaching out to/, /wanted to introduce/, /been following/,
@@ -9,7 +9,7 @@ var BANNED = [/i am reaching out/, /i'?m reaching out/, /wanted to reach out/, /
 
 // Presumptions about the recipient: what they need, lack, plan or feel. Not allowed unless quoted from evidence.
 var PRESUME = [/\bmay (require|need|want|be looking)/, /\bmight (need|require|want)/, /\b(remains?|is|are) (an? )?(untapped|unclaimed|unexplored|overlooked)/,
-  /\buntapped\b/, /\bsuggests? (a|an|that|your|you)\b/, /\b(clear|strong|obvious) (focus|appetite|affinity|preference|need)\b/,
+  /\buntapped\b/, /\bsuggests? (a|an|that|your|you|potential|strong|clear)\b/, /\b(clear|strong|obvious) (focus|appetite|affinity|preference|need)\b/,
   /\byou(r team)? (need|require|are looking|are planning|will need|often|usually|lack)\b/,
   /\byour (clients|players|guests|customers|team|families|members)( often| usually| typically| regularly)? (need|want|seek|require|look for|ask for|prefer|use)\b/,
   /\b(requires?|creates?) (a |an )?((complex|significant|real|growing) )?(logistical|need|requirement|demand)/, /\blogical (frontier|next step|addition|fit)/,
