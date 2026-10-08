@@ -20,7 +20,7 @@ var LANE = {
   WEDDINGS: 'Wedding or private-event planner. The planner keeps the client and the creative direction; NOYA is the Egypt destination concierge and execution partner (guest accommodation, airport VIP, transport, security, restaurants, pre and post-wedding experiences, guest concierge, venue and local supplier coordination).',
   EGYPT_EVENTS: 'Egypt event partnership. NOYA can look after the international guests, sponsors, players or press who fly in, and can bring its own clients to the event.',
   CORPORATE: 'Corporate or agency. NOYA is the Egypt delivery partner for executive travel, VIP airport, chauffeur, security, client entertaining, incentives, retreats and conferences.',
-  SPORTS_PRIVATE: 'Sports, talent or entertainment organisation. Discreet and low-key. NOYA supports players, talent and their families privately in Egypt (villas, privacy, security, transfers), or a team or production travelling there. No hype.'
+  SPORTS_PRIVATE: 'NOYA PRIVATE: the recipient represents athletes, footballers, artists or celebrities (an agency, management company, player-care firm, publicist or private office). Write to the representative, never about a named client: do not name their clients, do not imply that a client needs NOYA, and never mention the private travel of any person. For this lane only, one positioning sentence is expected, close to: I run NOYA Concierge, a global concierge and lifestyle-management company with particularly strong on-ground capability across Egypt; we work discreetly across private travel, hospitality, transport, security coordination and lifestyle requirements. Then: they keep the client relationship; NOYA would simply act as the trusted local execution partner in Egypt (white-label where they prefer). Short, discreet, professional; not a sales pitch, no hype, no celebrity names.'
 };
 var FORMAT = {
   EMAIL: 'EMAIL. subject: plain, under 60 characters. message: 90-130 words in three short paragraphs: (1) the reason, citing one concrete fact from EVIDENCE; (2) the opportunity and how NOYA fits, in one or two sentences; (3) one easy next step. Start with "Hi FIRSTNAME,". No sign-off or signature.',
@@ -62,7 +62,7 @@ var out = items.map(function (it, i) {
     'LANE: ' + (LANE[it.lane] || LANE.CORPORATE),
     'FORMAT: ' + (first ? (FORMAT[it.channel] || FORMAT.LINKEDIN).replace('FIRSTNAME', first)
                         : (FORMAT[it.channel] || FORMAT.LINKEDIN).replace('Start with "Hi FIRSTNAME,".', 'Write to the team. Start with "Hello,".')),
-    'NEXT STEP for this message: ' + CTA[i % CTA.length] + '.',
+    'NEXT STEP for this message: ' + (it.lane === 'SPORTS_PRIVATE' ? 'one simple question: would it be useful to send across a short private-services overview' : CTA[i % CTA.length]) + '.',
     'ANGLE (a hypothesis; use only the parts EVIDENCE supports): ' + (it.angle || ''),
     '', 'EVIDENCE:', evidence
   ].join('\n');
@@ -109,6 +109,9 @@ return $input.all().map(function (x) {
   if (it.unsupported && it.unsupported.length) fix.push('These words are not in EVIDENCE and must not appear: ' + it.unsupported.join(', ') + '.');
   if (it.message) fix.push('Previous draft: ' + it.message);
   fix.push('Write a new draft that fixes every failure. Rewrite the opening rather than deleting a phrase. Do not add any fact that is not in EVIDENCE.');
+  // the redraft often runs on Flash-Lite (rate limit), which writes short: state the length as a hard number
+  if (it.channel === 'EMAIL' && it.issues.some(function (s) { return /^(LENGTH|EMPTY|RATE_LIMITED)/.test(s); }))
+    fix.push('Length is a hard rule: the message must be between 95 and 125 words, in three short paragraphs (the reason, how NOYA fits, one next step). Count the words before answering.');
   var req = JSON.parse(JSON.stringify(it.request));
   req.contents[0].parts[0].text = it.user_prompt + '\n\n' + fix.join('\n');
   req.generationConfig.temperature = 0.3;

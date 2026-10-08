@@ -218,12 +218,12 @@ create or replace function public.commercial_director_plan(p_dry_run boolean def
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_mix jsonb := (select value from system_config where key = 'acquisition_mix');
         v_target int := coalesce(p_target, ((select value from system_config where key = 'daily_touch_target')->>'target')::int, 20);
-        v_total int := 0; v_lane text; v_quota int; v_left int; v_out jsonb; v_superseded int := 0;
+        v_total int := 0; v_lane text; v_quota int; v_left int; v_out jsonb; v_superseded int := 0; v_has_plan boolean; v_topup int;
         p_refresh boolean := coalesce((select (value->>'refresh_stale_drafts')::boolean from system_config where key = 'planner_options'), false);
 begin
   if p_replan then delete from outreach_candidates where run_date = current_date and status = 'PLANNED' and dry_run = p_dry_run; end if;
-  if not exists (select 1 from outreach_candidates where run_date = current_date and dry_run = p_dry_run) then
-    if not p_dry_run then
+  -- LinkedIn / Instagram messages that a verified email now replaces are retired on every live run, not only on planning days
+  if not p_dry_run then
       with s as (
         update tasks t set status = 'CANCELLED', updated_at = now(),
                description = 'Superseded ' || to_char(now() at time zone 'Africa/Cairo', 'DD Mon') || ': a verified email now exists for '
@@ -239,6 +239,7 @@ begin
         from s where oc.task_id = s.id;
       get diagnostics v_superseded = row_count;
     end if;
+  v_has_plan := exists (select 1 from outreach_candidates where run_date = current_date and dry_run = p_dry_run);
     create temp table _pool on commit drop as
     with base as (
       select c.id company_id, c.name, company_lane(c.acquisition_lane, c.prospect_segment, c.vertical_override, c.company_type) lane,
@@ -303,6 +304,7 @@ begin
                coalesce((select o.priority from opportunities o where o.id = p.opp_id), 0) desc, p.name) rn
         from pick1 p where p.channel is not null)
     select * from pick;
+  if not v_has_plan then
     for v_lane, v_quota in select key, round((value::text)::numeric * v_target / 20.0)::int from jsonb_each(v_mix) loop
       insert into outreach_candidates (run_date, dry_run, lane, company_id, contact_id, route_contact_id, opportunity_id, channel, warm_route, why_now, evidence, angle, channel_reason)
       select current_date, p_dry_run, p.lane, p.company_id, p.k_id, case when p.channel = 'EMAIL' then p.route_id end, p.opp_id, p.channel, p.warm,
@@ -323,6 +325,24 @@ begin
                 -- leftovers follow the agent weights too: sports stays selective
                 p.rn::numeric / greatest(coalesce((v_mix->>p.lane)::numeric, 0), 0.5)
        limit v_left;
+    end if;
+  end if;
+  -- Email top-up (8 Oct 2026): a prospect whose email verifies after the day's plan is emailed the same day, not the next
+  -- (live runs only; at most planner_options.email_topup_per_day a day; Brands, Weddings, Travel first).
+  if not p_dry_run then
+    v_topup := greatest(0, coalesce((select (value->>'email_topup_per_day')::int from system_config where key = 'planner_options'), 10)
+                 - (select count(*) from outreach_candidates where run_date = current_date and dry_run = p_dry_run and channel_reason like 'EMAIL TOP-UP%'));
+    if v_topup > 0 then
+      insert into outreach_candidates (run_date, dry_run, lane, company_id, contact_id, route_contact_id, opportunity_id, channel, warm_route, why_now, evidence, angle, channel_reason)
+      select current_date, p_dry_run, p.lane, p.company_id, p.k_id, p.route_id, p.opp_id, p.channel, p.warm,
+             (select coalesce(o.commercial_trigger, o.reason) from opportunities o where o.id = p.opp_id),
+             p.universe_reason, nullif(concat_ws(' ', prospect_angle_prefix(p.company_id), (select o.angle from opportunities o where o.id = p.opp_id)), ''),
+             'EMAIL TOP-UP — verified after the day''s plan, so planned the same day (email first)'
+        from _pool p
+       where p.channel = 'EMAIL'
+         and not exists (select 1 from outreach_candidates oc where oc.company_id = p.company_id and oc.run_date = current_date and oc.dry_run = p_dry_run)
+       order by array_position(array['BRANDS', 'WEDDINGS', 'TRAVEL_PRIVATE', 'PARTNERSHIPS', 'SPORTS_PRIVATE', 'CORPORATE'], p.lane) nulls last, p.rn
+       limit v_topup;
     end if;
   end if;
   select jsonb_build_object(

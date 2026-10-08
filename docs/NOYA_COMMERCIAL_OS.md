@@ -836,3 +836,79 @@ research. Coverage test: low. Of the 54 companies where public research is exhau
 hello@ / enquiries@: Weddings 11, Travel 8, Brands 4), 21 publish no business address at all, and 10 publish only a press
 address or an address that failed verification (accept-all domain or invalid). Remaining levers: provider lookup by name (workflow 25, capped by Hunter Free credits) and a policy on general inboxes for boutique
 firms — both are CEO decisions, recorded in the acceptance report.
+
+## Operating phase: volume through the email-first engine (8 Oct 2026)
+
+No HQ redesign, no new agents. The goal is 75–100 new outreaches actually sent per working week, with email as the primary
+channel. Migration `20261011000000_operating_volume_noya_private.sql`; live n8n code in `n8n/live_code_2026_10_08/`.
+
+**Weekly targets** (`system_config.weekly_send_targets`). New outreaches sent per working week, Monday to Friday, Cairo; a
+"new outreach" is the first message NOYA ever sent to that company:
+
+| Director | Target |
+|---|---|
+| Brands & Production | 20–25 |
+| Weddings | 12–18 |
+| Travel & Concierge | 12–15 |
+| Hospitality | 10–12 |
+| Private Membership / Founders | 8–10 |
+| NOYA Private — Athlete & Talent | 8–12 |
+| Corporate | 3–5 |
+| Media | 2–3 |
+| **Total** | **75–100** |
+
+Each Director keeps a buffer of at least two weeks of untouched qualified prospects with a confirmed decision maker.
+
+**Planner.**
+
+- The lane mix (`acquisition_mix`) is Brands 6, Weddings 4, Travel / Private 4, Hospitality 3, Talent 2, Corporate 1, out of
+  23 touches a day; email fills each lane first.
+- Every live run also retires LinkedIn and Instagram messages that a verified email now replaces (one cold touch per company).
+- Every live run plans an email top-up: prospects that verified after the day's plan get an email draft the same day, at most
+  10 a day (`planner_options.email_topup_per_day`).
+
+**Discovery** (every working day, never paused for waiting drafts; `discovery_throttle` pauses only at 100,000):
+
+- **Brands (02).** Fashion, jewellery, clothing, beauty, watches, automotive and luxury lifestyle brands running destination
+  campaigns, shoots, creator trips, international campaigns, GCC / MENA expansion and production abroad. Also marketing, PR,
+  creative and influencer agencies, and production companies.
+- **Weddings (04).** Planners already running multi-day international weddings and UHNW celebrations.
+- **Travel and Private Founders (07).** Boutique travel firms, luxury travel designers, lifestyle management and DMCs; founder
+  clubs, business and executive communities, members clubs and family-office networks running retreats, dinners, trips and
+  off-sites.
+- **Hospitality (03).** Hotels, villas, resorts and residences open to creator and talent stays, brand shoots, production
+  accommodation and content collaborations. This is the CONTENT_TALENT model, kept apart from preferred-stay outreach.
+- **NOYA Private (06).** Representation agencies and the public Egypt occasions that bring talent.
+- The research ceiling is 12 in 02, 04 and 06. The live cap is `discovery_throttle.normal_research_cap` (10). Each of those
+  runs had been filling exactly to the old cap of 4.
+
+**Drafting.** The W18 redraft states the email length as a hard number when the fallback model drafts. The drafting model's
+free-tier daily quota (about 20 requests) is a known limit; see the operating report.
+
+**HQ Advisor: five decisions a day**, in a fixed order:
+
+1. What needs Adam.
+2. Which Director is furthest under its pro-rated weekly target. It says whether sending or supply is the limit.
+3. The weakest email coverage among the priority lanes.
+4. The strongest commercial opportunities. A NOYA PRIVATE OPPORTUNITY leads when a representation agency has a verified
+   decision-maker email and no NOYA contact yet.
+5. Where to allocate effort, with each priority lane's prospect buffer in weeks of target.
+
+Every line is a count or a record from the database.
+
+**NOYA PRIVATE — ATHLETE & TALENT RELATIONS.** The Sports & Talent Director, upgraded:
+
+- **Mission.** The trusted private concierge and on-ground Egypt partner for elite athletes, footballers, celebrities and
+  artists, through their representatives. The representative keeps the client; NOYA privately handles Egypt, white-label
+  where they prefer.
+- **Representation first.** Roles in order:
+  - agencies: founder / MD, senior agent, agent, player and personal managers, player care and services, lifestyle, client
+    services, commercial, partnerships, operations, travel / logistics;
+  - the celebrity side: talent and artist managers, publicists, tour managers, booking agents, PAs.
+- **Excluded.** Scouting and recruitment are never a route; NOYA does not pitch transfers.
+- **Outreach.** Short and discreet. One positioning sentence, no client names, no private-travel references. One question:
+  would a short private-services overview be useful. The overview is `docs/NOYA_PRIVATE_EGYPT_DESK.md`, a draft for Adam's
+  approval.
+- **Measures.** 8–12 qualified agency outreaches a week. Success is agency relationships, referrals, Egypt trips and talent
+  stays, not famous names.
+- **Privacy.** Public, source-backed evidence only: no private travel data and no personal contact details.
