@@ -541,3 +541,84 @@ Notes such as "drafts using the Flash-Lite fallback" never block.
 - no write calls;
 - the phone path (bottom-bar Agents → tap Partnerships → today's companies, decision makers, emails, ready);
 - no horizontal overflow at 390px.
+
+## Email & Contact Intelligence (8 Oct 2026)
+
+**Why.** Qualified prospects were reaching the outreach desk with a LinkedIn route and no email. The enrichment agent is now **Email & Contact Intelligence**: the right person, the right email, the proof, and the strongest commercial angle. No new HQ section; the work shows on the Agents floor and inside Email opportunities.
+
+**Workflow 23 — Email Intelligence** (03:15, 09:45, 15:45, 23:15 Cairo; 8 companies a run; `n8n/w23/*.js`, built by `n8n/build_w23.py`).
+1. **Queue.** `email_gap_queue()`: qualified, cold, a commercial angle, no usable named or department email. Ranked by strategic value (hospitality first), decision-maker quality, partnership potential and the chance of a public email. A company is retried after 14 days, 3 attempts at most.
+2. **Search (2–4 Serper calls).** The company's own contact / team / about / press / partnerships pages; its domain printed anywhere (press releases, exhibitor directories, speaker pages, PDFs); the known decision makers with the domain; the Instagram profile.
+3. **Read up to 5 official pages** (contact first, then team, partnerships, press, homepage; `/contact` and `/contact-us` when search finds no contact page).
+4. **Extract deterministically.** Mailto links, HTML entities, Cloudflare-protected addresses, "name [at] domain" spellings. Nothing is constructed: an address is kept only if it is printed.
+5. **Attribute.** One Flash-Lite call per company says who owns each address and which priority-role people are printed on the pages.
+6. **Proof check.** An owner must be named next to the address, or the address must spell a named person. A role is kept only if its words are in the evidence. A personal-looking address nobody can be tied to is dropped.
+7. **Save** with `email_intel_save()`: person, role, exact email, source URL, source type, found date, tier, state. Every attempt goes into `email_research`, including NO_EMAIL_FOUND.
+
+**Tiers.** 1 named person · 2 department (partnerships, sales, commercial, marketing, PR, press, media, events, weddings, concierge) · 3 company inbox (info, hello, reservations, enquire), only when nothing better exists · LinkedIn / Instagram are routes, never counted as email leads.
+
+**Honest state.** PUBLICLY LISTED (printed on a public page, source kept, not SMTP-verified) · SMTP VERIFIED (a provider check on record; an imported "verified" with no provider stays unrecorded) · RISKY · INVALID · UNVERIFIED. Hunter is not used by workflow 23.
+
+**What is never saved.**
+- **Wrong domain.** Addresses from a domain that does not carry the company's name: `domain_trusted()`. A news site or awards page saved as the website is surfaced in the company notes, never used.
+- **Discovered domain.** When no trusted website is on file, the official domain is taken from search only if it is almost entirely the company's name. For one-word names, the result must also carry the company's sector, city or country.
+- **Another property's inbox.** For a property on a chain domain (Kempinski Nile Hotel on kempinski.com), an address must name the property.
+- **Sub-unit inboxes.** One outlet or one property, not the company: `fb.reservations.tswq@`, `mandarina.concierge@`, `reservations.ny@`.
+- **Broker addresses.** Data-broker and email-format sites (RocketReach, Datanyze, Prospeo, Unifers and similar), and pages that read like them ("Reveal contact details"). They are checked in the workflow and again in the database.
+- **Placeholders and excluded addresses.** Placeholder patterns (`john.doe@`, `jdoe@`); careers, HR, privacy, support, billing, legal, no-reply.
+
+**Commercial Director, email-first.** For each company the planner takes the first route that exists:
+1. The named decision maker's own published or verified email.
+2. The relevant department inbox, "for the attention of" that named person (stored as `route_contact_id`; the task reads "To: sales@… (Sales inbox, for the attention of …)").
+3. Their LinkedIn profile.
+4. The company inbox for their attention, when no LinkedIn profile is on file.
+5. Instagram.
+6. LinkedIn by name.
+
+Companies with an email route rank first. Drafts keep the approved format: personal reason → NOYA in one sentence → specific fit → one CTA → signature, 90–130 words, no banners.
+
+**Workflow 19, people by vertical.** The LinkedIn search uses each vertical's priority roles (`role_focus()`):
+- hotel: GM, DOSM, commercial, partnerships, PR & communications, owner;
+- villa / residences: founder, owner, MD, head of sales, partnerships, operations, guest experience;
+- travel: founder, MD, partnerships, head of trade, B2B, product;
+- weddings: founder, owner, creative director, lead planner, partner, events director;
+- brands / production: brand partnerships, marketing, PR, experiential, influencer, creative director, executive producer, production, talent;
+- corporate: travel manager, EA, chief of staff, events, workplace experience, travel procurement.
+
+**HQ.**
+- **Every acquisition card carries a company-level email funnel:** qualified → decision makers → direct + department → usable → email ready, plus SMTP-verified, LinkedIn ready and email gaps.
+- **"Email gaps" opens that agent's gap queue inside Email opportunities.** Filters also include Named person and Department.
+- **Email opportunities carry the 3-day email report:**
+  - companies researched;
+  - decision makers found;
+  - named public emails;
+  - department emails;
+  - SMTP-verified;
+  - emails still missing;
+  - LinkedIn-only;
+  - Instagram-only;
+  - email and LinkedIn drafts ready.
+
+**Acceptance test: 25 qualified Hospitality / Partnership companies with no strong email route** (`email_intel_tests`, tag `HOSP25_2026-10-08`; Starwood excluded as a defunct brand).
+
+| Company-level route | Before | After |
+|---|---|---|
+| Named-person email | 1 (4%) | 10 (40%) |
+| Named or department email | 1 (4%) | 11 (44%) |
+| Any usable email (incl. company inbox) | 6 (24%) | 18 (72%) |
+| No email, LinkedIn / Instagram only | 19 | 7 |
+
+- **Saved:** 21 named emails, 4 department inboxes, 11 company inboxes and 8 people from official pages. All publicly listed with their source; none SMTP-verified.
+- **Planner:** it now chooses email for 10 of the 25 (three of them to an inbox for the attention of a named person: two department inboxes, one company inbox).
+- **Cost:** 29 Flash-Lite calls ($0.027) and 107 Serper searches, including a first pass that exposed two faults.
+- **Fixed during the test:**
+  - a grouped site query that returned nothing;
+  - sub-unit inboxes;
+  - broker sites;
+  - a one-word-name domain match (Summits → summits.org, a charity);
+  - empty-string emails (30 contacts) that hid a found address.
+
+  Every wrong row was removed and the rule now rejects it automatically.
+- **Limits:**
+  - JavaScript-only sites (The Bowery Hotel) and big brands that publish forms, not addresses (St. Regis, Maybourne) stay LinkedIn-only.
+  - Many named emails at chains are property PR / marketing contacts: real, published and dated by their source. The planner still prefers a sales or GM route when one exists.

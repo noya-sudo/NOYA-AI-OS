@@ -1,5 +1,8 @@
 // Up to three searches per company: named people on LinkedIn, the Instagram account (bios often carry the contact route),
-// and emails published on the company's own domain. Role terms follow the agent lane.
+// and emails published on the company's own domain. Role terms follow the company's vertical (Adam's priority roles per
+// vertical, from role_focus() in the database: hotel GM / sales / commercial, villa founder / head of sales, travel trade and
+// B2B partnerships, wedding founder / lead planner, brand partnerships / experiential / production, corporate travel / EA / events);
+// the lane list is the fallback when the queue carries no segment.
 var items = ($input.first().json.items) || [];
 var ROLE = {
   PARTNERSHIPS: '"general manager" OR "director of sales" OR "commercial director" OR partnerships OR founder OR owner OR "managing director"',
@@ -14,7 +17,8 @@ var out = [];
 items.forEach(function (c, i) {
   var nm = String(c.company || '').replace(/\(.*?\)/g, ' ').replace(/"/g, '').replace(/\s+/g, ' ').trim();
   var name = '"' + nm + '"';
-  out.push({ json: { ci: i, kind: 'LINKEDIN', q: 'site:linkedin.com/in ' + name + ' (' + (ROLE[c.lane] || ROLE.TRAVEL_PRIVATE) + ')' } });
+  var focus = (c.role_focus || []).slice(0, 7).map(function (r) { return /\s/.test(r) ? '"' + r + '"' : r; }).join(' OR ');
+  out.push({ json: { ci: i, kind: 'LINKEDIN', q: 'site:linkedin.com/in ' + name + ' (' + (focus || ROLE[c.lane] || ROLE.TRAVEL_PRIVATE) + ')' } });
   // Search only for what is missing (Adam, 7 Oct: efficient searches): no Instagram search when the account is on file,
   // no email search when the company already has a published email or inbox.
   if (!c.instagram) out.push({ json: { ci: i, kind: 'INSTAGRAM', q: 'site:instagram.com ' + name } });

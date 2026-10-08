@@ -91,7 +91,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
-  agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, radarAg: '', feedAg: '',
+  agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
 // ---------------------------------------------------------------- utils
@@ -2369,12 +2369,17 @@ function bind() {
 // loads hq_agent(key). Status is derived from real run records, never animated.
 const AGENT_TABS = ['agents', 'agent', 'emails', 'agentradar', 'feed'];
 const AGENT_STATUS = { WORKING: ['Working', 'ok'], WAITING: ['Waiting', ''], BLOCKED: ['Blocked', 'warn'], ERROR: ['Error', 'bad'] };
-const TRUST = { SMTP_VERIFIED: ['SMTP verified', 'ok', 'An email provider confirmed the mailbox accepts mail.'],
-  PUBLICLY_LISTED: ['Publicly listed', 'info', 'Printed on a public page (source linked). Not SMTP-verified.'],
+// Honest email state (Adam, 8 Oct): publicly listed, verified, risky, unverified and invalid are never merged.
+const TRUST = { SMTP_VERIFIED: ['SMTP verified', 'ok', 'A verification provider (Hunter) confirmed the mailbox accepts mail.'],
+  PUBLICLY_LISTED: ['Publicly listed', 'info', 'Printed on a public page (source linked). Valuable, but not SMTP-verified.'],
+  RISKY: ['Risky', 'warn', 'The verifier could not confirm delivery (catch-all or risky domain).'],
+  INVALID: ['Invalid', 'bad', 'The verifier rejected this address. Do not send.'],
+  UNVERIFIED: ['Unverified', 'warn', 'Not verified and no public source recorded — check before sending.'],
   NOT_VERIFIABLE: ['Not verifiable', 'warn', 'A verification provider could not confirm this address.'],
   SOURCE_NOT_RECORDED: ['Source not recorded', 'warn', 'No source URL was stored for this address — check before sending.'] };
+const TIER = { 1: ['Named person', 'gold'], 2: ['Department', ''], 3: ['Company inbox', ''] };
 const EMAIL_STATE = { NEW: 'New', READY: 'Ready', SENT: 'Sent', REPLIED: 'Replied', FOLLOW_UP: 'Follow-up', OPEN: 'No draft yet' };
-const EMAIL_FILTERS = [['ALL', 'All'], ['NEW', 'New'], ['PUBLIC', 'Public email'], ['VERIFIED', 'Verified'], ['NEEDS', 'Needs verification'], ['READY', 'Ready'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['FOLLOW_UP', 'Follow-up']];
+const EMAIL_FILTERS = [['ALL', 'All'], ['NEW', 'New'], ['NAMED', 'Named person'], ['DEPT', 'Department'], ['PUBLIC', 'Public email'], ['VERIFIED', 'Verified'], ['NEEDS', 'Needs verification'], ['READY', 'Ready'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['FOLLOW_UP', 'Follow-up'], ['GAPS', 'Email gaps']];
 const EMAIL_VERTICALS = [['', 'All verticals'], ['PARTNERSHIPS', 'Partnerships'], ['HOSPITALITY', 'Hospitality'], ['BRANDS', 'Brands'], ['WEDDINGS', 'Weddings'], ['CORPORATE', 'Corporate'], ['TRAVEL', 'Travel'], ['MEDIA', 'Media'], ['SPORTS', 'Sports']];
 const agentName = (k) => (state.agents?.agents || []).find((a) => a.key === k)?.name || k || '—';
 const rel = (d) => {
@@ -2429,7 +2434,7 @@ function bestPanel(a) {
 }
 const METRIC_ROWS = {
   ACQUISITION: [['discovered', 'Companies'], ['qualified', 'Qualified'], ['decision_makers', 'Decision makers'], ['public_emails', 'Emails'], ['linkedin', 'LinkedIn'], ['instagram', 'Instagram'], ['opportunities', 'Opportunities'], ['outreach_ready', 'Ready'], ['researched', 'Researched'], ['searches', 'Searches']],
-  ENRICHMENT: [['companies_enriched', 'Companies enriched'], ['decision_makers', 'People'], ['public_emails', 'Emails'], ['person_emails', 'Personal emails'], ['linkedin', 'LinkedIn'], ['instagram', 'Instagram']],
+  ENRICHMENT: [['companies_email_researched', 'Email researched'], ['named_emails_found', 'Named emails'], ['department_emails_found', 'Department emails'], ['inbox_emails_found', 'Company inboxes'], ['no_email_found', 'No public email'], ['people_from_pages', 'People from pages'], ['companies_enriched', 'People searched'], ['decision_makers', 'People found'], ['linkedin', 'LinkedIn']],
   DRAFTING: [['drafted', 'Drafted'], ['ready', 'Ready'], ['review_required', 'Need review'], ['revalidated', 'Revalidated'], ['ai_usd', 'AI $']],
   REPLY: [['replies', 'Replies'], ['sent_logged', 'Sends logged'], ['gmail_messages_imported', 'Gmail messages']],
   DIRECTOR: [['planned', 'Touches planned'], ['actions_today', 'Actions today'], ['approved_sends_open', 'Approved sends open']],
@@ -2447,11 +2452,19 @@ function agentCard(a) {
     <div class="small faint mt6">${esc(a.status_reason)} · last ${esc(rel(a.last_run))}${a.last_run_basis && a.last_run_basis !== 'Run log' ? ` (${esc(a.last_run_basis.toLowerCase())})` : ''} · next ${esc(rel(a.next_run))}</div>
     <div class="agent-metrics mt6"><div class="small faint">Today</div><div class="am-grid">${top.map(([k, l]) => `<div><b>${n0(a.today?.[k])}</b><span>${l}</span></div>`).join('')}</div>
       <div class="small faint mt6">Last 3 days</div><div class="am-grid">${top.map(([k, l]) => `<div><b>${n0(a.d3?.[k])}</b><span>${l}</span></div>`).join('')}</div></div>
-    ${a.totals ? `<div class="small mt6">In the universe: ${esc(a.totals.qualified)} qualified · ${esc(a.totals.people)} people · ${esc(a.totals.emails)} emails · <b>${esc(a.totals.ready)} ready for Adam</b></div>` : ''}
+    ${a.email_funnel ? emailFunnel(a) : a.totals ? `<div class="small mt6">In the universe: ${esc(a.totals.qualified)} qualified · ${esc(a.totals.people)} people · ${esc(a.totals.emails)} emails · <b>${esc(a.totals.ready)} ready for Adam</b></div>` : ''}
     ${blocks.map((b) => `<div class="small bad-text mt6">Blocked: ${esc(b)}</div>`).join('')}
     ${a.kind === 'ACQUISITION' && (st.no_decision_maker || st.no_email || st.needs_verification) ? `<div class="small mt6 stuck">Stuck: ${[st.no_decision_maker ? `${st.no_decision_maker} without a decision maker` : '', st.no_email ? `${st.no_email} without an email` : '', st.needs_verification ? `${st.needs_verification} people need verification` : ''].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
     ${notes.map((b) => `<div class="small faint mt6">${esc(b.replace(/^Note:\s*/, ''))}</div>`).join('')}
   </article>`;
+}
+// Company-level email funnel (Adam, 8 Oct): qualified → named decision maker → direct / department email → usable → ready.
+// Usable = SMTP-verified or publicly listed with its source; company inboxes are not counted as an email lead.
+function emailFunnel(a) {
+  const f = a.email_funnel; const step = (n, l, cls = '') => `<span class="fn-step ${cls}"><b>${n0(n)}</b> ${l}</span>`;
+  return `<div class="funnel mt6"><div class="small faint">Email funnel · companies</div>
+    <div class="fn-row">${step(f.qualified, 'qualified')}<i>→</i>${step(f.decision_makers, 'decision makers')}<i>→</i>${step(f.direct_emails, 'direct')}<i>+</i>${step(f.department_emails, 'department')}<i>→</i>${step(f.usable_emails, 'usable', 'gold')}<i>→</i>${step(f.ready_email, 'email ready', 'ok')}</div>
+    <div class="small mt6">${n0(f.verified)} SMTP-verified · ${n0(f.ready_linkedin)} LinkedIn ready · <button class="linkish" data-gaps="${a.key}">${n0(f.email_gaps)} email gaps</button>${a.totals ? ` · <b>${esc(a.totals.ready)} ready for Adam</b> (all channels)` : ''}</div></div>`;
 }
 function feedList(items, limit) {
   return (items || []).slice(0, limit).map((f) => `<div class="feed-row ${f.company_id ? 'clickable' : ''}" ${f.company_id ? `data-open="company" data-id="${f.company_id}"` : ''}>
@@ -2519,6 +2532,8 @@ function emailMatches(e, f) {
   if (v && v !== 'PARTNERSHIPS' && e.agent !== v) return false;
   switch (f.s) {
     case 'NEW': return e.state === 'NEW';
+    case 'NAMED': return e.tier === 1;
+    case 'DEPT': return e.tier === 2;
     case 'PUBLIC': return e.trust === 'PUBLICLY_LISTED';
     case 'VERIFIED': return e.trust === 'SMTP_VERIFIED';
     case 'NEEDS': return e.trust !== 'SMTP_VERIFIED';
@@ -2531,7 +2546,7 @@ function emailCard(e) {
   return `<article class="card email-card"><div class="card-head"><div><div class="co">${esc(e.person || 'Company inbox')}</div>
       <div class="small">${esc([e.role, e.company].filter(Boolean).join(' · '))}</div></div>
       <div class="pills">${pill(EMAIL_STATE[e.state] || e.state, e.state === 'REPLIED' ? 'ok' : e.state === 'READY' ? 'gold' : '')}${pill(agentName(e.agent))}</div></div>
-    <div class="email-line mt6"><b>${esc(e.email)}</b> ${tl ? `<span title="${esc(tt)}">${pill(tl, tc)}</span>` : ''}${e.email_kind === 'OFFICIAL_COMPANY_INBOX' ? ' ' + pill('company inbox') : ' ' + pill('personal')}</div>
+    <div class="email-line mt6"><b>${esc(e.email)}</b> ${tl ? `<span title="${esc(tt)}">${pill(tl, tc)}</span>` : ''} ${TIER[e.tier] ? pill(...TIER[e.tier]) : e.email_kind === 'OFFICIAL_COMPANY_INBOX' ? pill('company inbox') : pill('personal')}</div>
     <div class="small faint">From: ${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">${esc((e.source_type || 'source').toLowerCase().replace(/_/g, ' '))}</a>` : esc(e.source || 'source not recorded')} · ${esc(e.market || 'market unknown')}</div>
     ${e.opportunity ? `<div class="small mt6"><b>Opportunity:</b> ${esc(e.opportunity)}</div>` : ''}
     ${e.why_noya ? `<div class="small mt6"><b>Why NOYA:</b> ${esc(e.why_noya)}</div>` : ''}
@@ -2541,17 +2556,44 @@ function emailCard(e) {
     ${open ? `<div class="draft-box mt6">${e.draft ? `${e.draft_subject ? `<div><b>${esc(e.draft_subject)}</b></div>` : ''}<pre>${esc(e.draft)}</pre>` : '<span class="small faint">No finished draft for this person yet. The Commercial Director plans drafts nightly; open the account to request one.</span>'}</div>` : ''}
   </article>`;
 }
+const gapMatches = (g, v) => !v || (v === 'PARTNERSHIPS' ? ['HOSPITALITY', 'TRAVEL'].includes(g.agent) : g.agent === v);
+// The email gap queue: qualified, a commercial angle, a person known, no usable named or department email yet — ranked by
+// strategic value, decision-maker quality, partnership potential and the chance of a public email. Workflow 23 works it 4x a day.
+function gapCard(g) {
+  const r = g.routes || {}; const p = (g.people || [])[0]; const open = state.gapOpen === g.company_id;
+  const have = [r.tier3 ? 'company inbox' : '', r.linkedin ? 'LinkedIn' : '', r.instagram ? 'Instagram' : ''].filter(Boolean);
+  return `<article class="card email-card"><div class="card-head"><div><div class="co">${esc(g.company)}</div>
+      <div class="small">${esc([g.company_type, g.city, g.country].filter(Boolean).join(' · '))}</div></div>
+      <div class="pills">${pill(`score ${g.score}`)}${pill(agentName(g.agent))}</div></div>
+    <div class="small mt6"><b>Decision maker:</b> ${p ? `${esc(`${p.first_name} ${p.last_name}`)}${p.position ? ` · ${esc(p.position)}` : ''}` : '<span class="faint">none named yet</span>'}</div>
+    <div class="small"><b>Email:</b> <span class="warn-text">no named or department email yet</span>${have.length ? ` · has ${esc(have.join(', '))}` : ''}</div>
+    ${g.model ? `<div class="small mt6"><b>Model:</b> ${esc(g.model)}</div>` : ''}
+    <div class="small faint mt6">${g.checked_at ? `Searched ${esc(shortDay(g.checked_at))} · ${esc(g.attempts)} attempt${g.attempts === 1 ? '' : 's'}` : 'Not searched for email yet'} · looking for: ${esc((g.role_focus || []).slice(0, 4).join(', '))}</div>
+    <div class="btn-row mt6"><button class="btn small" data-gap-open="${g.company_id}">${open ? 'Hide' : 'Angle'}</button><button class="btn small ghost" data-open="company" data-id="${g.company_id}">Account</button></div>
+    ${open ? `<div class="draft-box mt6 small">${esc(g.angle || 'No angle recorded yet.')}</div>` : ''}
+  </article>`;
+}
+function emailReport(r) {
+  if (!r) return '';
+  const t = (n, l) => `<div class="tile"><div class="n">${n0(n)}</div><div class="l">${l}</div></div>`;
+  return `<div class="tiles agents-ceo mt8">${t(r.companies_researched, 'Companies researched · 3d')}${t(r.decision_makers_found, 'Decision makers found')}
+    ${t(r.named_public_emails, 'Named public emails')}${t(r.department_emails, 'Department emails')}${t(r.verified_emails, 'SMTP-verified')}
+    ${t(r.emails_still_missing, 'Emails still missing')}${t(r.linkedin_only, 'LinkedIn-only')}${t(r.instagram_only, 'Instagram-only')}
+    ${t(r.ready_email_drafts, 'Email drafts ready')}${t(r.ready_linkedin_drafts, 'LinkedIn drafts ready')}</div>`;
+}
 function viewEmails() {
   const wait = needAgents(); if (wait) return `<h2>Email opportunities</h2>${wait}`;
-  const f = state.emailF; const all = state.agents.email_desk || [];
-  const list = all.filter((e) => emailMatches(e, f));
-  const cnt = (s) => all.filter((e) => emailMatches(e, { s, v: f.v })).length;
+  const f = state.emailF; const all = state.agents.email_desk || []; const gaps = state.agents.email_gaps || [];
+  const gapList = gaps.filter((g) => gapMatches(g, f.v));
+  const list = f.s === 'GAPS' ? gapList : all.filter((e) => emailMatches(e, f));
+  const cnt = (s) => (s === 'GAPS' ? gapList.length : all.filter((e) => emailMatches(e, { s, v: f.v })).length);
   const shown = list.slice(0, state.emailN);
   return `<div class="ov-head"><h1>Email opportunities</h1><span class="sub">Every prospect with a usable email · ${esc(all.length)} in total · publicly listed is not the same as SMTP verified</span></div>
-    ${agentsTabs('emails')}
-    <div class="chips">${EMAIL_FILTERS.map(([k, l]) => `<button class="chip ${f.s === k ? 'on' : ''}" data-emf="s" data-v="${k}">${l} · ${cnt(k)}</button>`).join('')}</div>
+    ${agentsTabs('emails')}${emailReport(state.agents.email_report)}
+    <div class="chips mt8">${EMAIL_FILTERS.map(([k, l]) => `<button class="chip ${f.s === k ? 'on' : ''}" data-emf="s" data-v="${k}">${l} · ${cnt(k)}</button>`).join('')}</div>
     <div class="chips">${EMAIL_VERTICALS.map(([k, l]) => `<button class="chip ${f.v === k ? 'on' : ''}" data-emf="v" data-v="${k}">${l}</button>`).join('')}</div>
-    <div class="email-grid mt8">${shown.map(emailCard).join('') || '<p class="muted">No prospects match these filters.</p>'}</div>
+    ${f.s === 'GAPS' ? '<p class="small faint">Qualified, a strong angle and a person known, but no usable named or department email yet. Ranked by strategic value, decision-maker quality, partnership potential and the chance of a public email. The Email & Contact Intelligence agent works this queue four times a day.</p>' : ''}
+    <div class="email-grid mt8">${shown.map(f.s === 'GAPS' ? gapCard : emailCard).join('') || '<p class="muted">No prospects match these filters.</p>'}</div>
     ${list.length > shown.length ? `<button class="btn full mt8" data-email-more>Show more (${list.length - shown.length})</button>` : ''}`;
 }
 function viewAgentRadar() {
@@ -2581,6 +2623,8 @@ function bindAgents(on) {
   on('button[data-emf]', 'click', (b) => { state.emailF[b.dataset.emf] = b.dataset.v; state.emailN = 30; render(); });
   on('[data-email-open]', 'click', (b) => { state.emailOpen = state.emailOpen === b.dataset.emailOpen ? null : b.dataset.emailOpen; render(); });
   on('[data-email-more]', 'click', () => { state.emailN += 30; render(); });
+  on('[data-gap-open]', 'click', (b) => { state.gapOpen = state.gapOpen === b.dataset.gapOpen ? null : b.dataset.gapOpen; render(); });
+  on('[data-gaps]', 'click', (b, ev) => { ev?.stopPropagation?.(); state.emailF = { s: 'GAPS', v: b.dataset.gaps }; state.emailN = 30; state.tab = 'emails'; render(); window.scrollTo(0, 0); });
   on('[data-rag]', 'click', (b) => { state.radarAg = b.dataset.rag; render(); });
   on('[data-feed-ag]', 'click', (b) => { state.feedAg = b.dataset.feedAg; render(); });
 }

@@ -614,8 +614,26 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     const waiting = A.agents.find((a) => a.status === 'WAITING');
     check('Agents: status is never faked (waiting agent shows its real reason)', !waiting || (await page.locator('.agent-card', { hasText: waiting.name }).innerText()).includes(waiting.status_reason), waiting?.name);
     check('Agents: activity feed from stored events', A.feed.slice(0, 3).every((f) => floor.includes(f.text)));
+    // Email & Contact Intelligence (Adam, 8 Oct): a company-level email funnel on every acquisition card
+    const hf = A.agents.find((a) => a.key === 'HOSPITALITY').email_funnel;
+    const hcard = await page.locator('.agent-card', { hasText: 'Hospitality' }).first().innerText();
+    check('Agents: email funnel on the Hospitality card (qualified → decision makers → direct + department → usable → email ready)',
+      [`${hf.qualified} qualified`, `${hf.decision_makers} decision makers`, `${hf.direct_emails} direct`, `${hf.department_emails} department`, `${hf.usable_emails} usable`, `${hf.ready_email} email ready`, `${hf.email_gaps} email gaps`]
+        .every((x) => hcard.replace(/\s+/g, ' ').includes(x)), JSON.stringify(hf));
+    check('Agents: every acquisition card carries its funnel', (await page.locator('.agent-card .funnel').count()) === A.agents.filter((a) => a.kind === 'ACQUISITION').length);
+    const enr = A.agents.find((a) => a.key === 'ENRICHMENT');
+    const ecard0 = await page.locator('.agent-card', { hasText: enr.name }).first().innerText();
+    check('Agents: Email & Contact Intelligence card reports named / department emails and no-email outcomes', /Email & Contact Intelligence/.test(ecard0)
+      && ecard0.includes(String(enr.today.named_emails_found)) && /Named emails/.test(ecard0) && /Department emails/.test(ecard0) && /No public email/.test(ecard0));
     await page.screenshot({ path: 'tests/out/agents.png', fullPage: true });
     const hosp = A.agents.find((a) => a.key === 'HOSPITALITY');
+    await page.locator('.agent-card', { hasText: hosp.name }).first().locator('[data-gaps]').click();
+    await page.waitForSelector('.email-card');
+    const hg = A.email_gaps.filter((g) => g.agent === 'HOSPITALITY');
+    check('Agents: "email gaps" on a card opens that agent\'s gap queue', (await page.locator('.email-card').count()) === Math.min(30, hg.length)
+      && (await page.locator('[data-emf=s][data-v=GAPS].on').count()) === 1, `${hg.length}`);
+    await page.click('.agents-nav [data-tab=agents]');
+    await page.waitForSelector('.agent-card');
     await page.locator('.agent-card', { hasText: hosp.name }).first().click();
     await page.waitForSelector('[data-agent-sec]');
     check('Agent drill-down loads hq_agent for that agent only', calls.some((c) => c.fn === 'hq_agent' && c.body?.p_key === 'HOSPITALITY'));
@@ -636,10 +654,24 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     await page.screenshot({ path: 'tests/out/agent-hospitality.png', fullPage: true });
     await page.click('.agents-nav [data-tab=emails]');
     await page.waitForSelector('.email-card');
+    await page.click('[data-emf=s][data-v=ALL]'); await page.click('[data-emf=v][data-v=""]');
     check('Email opportunities: one card per prospect with an email', (await page.locator('.email-card').count()) === Math.min(30, A.email_desk.length), `${A.email_desk.length}`);
     const e0 = A.email_desk[0];
     const ecard = await page.locator('.email-card').first().innerText();
-    check('Email card: email, provenance and verification state', ecard.includes(e0.email) && /From:/.test(ecard) && /(Publicly listed|SMTP verified|Not verifiable|Source not recorded)/i.test(ecard), e0.email);
+    check('Email card: email, provenance and verification state', ecard.includes(e0.email) && /From:/.test(ecard) && /(Publicly listed|SMTP verified|Risky|Invalid|Unverified|Not verifiable|Source not recorded)/i.test(ecard), e0.email);
+    const rep = A.email_report; const head = await page.locator('main').innerText();
+    check('Email opportunities: 3-day email report (researched, decision makers, named, department, verified, missing, LinkedIn-only, Instagram-only, drafts)',
+      [rep.companies_researched, rep.named_public_emails, rep.department_emails, rep.emails_still_missing, rep.ready_email_drafts].every((n) => head.includes(String(n)))
+      && /Named public emails/i.test(head) && /LinkedIn-only/i.test(head) && /Instagram-only/i.test(head));
+    await page.click('[data-emf=s][data-v=NAMED]');
+    check('Email filter: Named person (tier 1)', (await page.locator('.email-card').count()) === Math.min(30, A.email_desk.filter((e) => e.tier === 1).length));
+    await page.click('[data-emf=s][data-v=DEPT]');
+    check('Email filter: Department (tier 2)', (await page.locator('.email-card').count()) === Math.min(30, A.email_desk.filter((e) => e.tier === 2).length));
+    await page.click('[data-emf=s][data-v=GAPS]');
+    const g0 = A.email_gaps[0]; const gtxt = await page.locator('main').innerText();
+    check('Email gaps: the queue inside Email opportunities (company, decision maker, missing email, score)', (await page.locator('.email-card').count()) === Math.min(30, A.email_gaps.length)
+      && gtxt.includes(g0.company) && /no named or department email yet/i.test(gtxt) && gtxt.toLowerCase().includes(`score ${g0.score}`), g0.company);
+    await page.click('[data-emf=s][data-v=ALL]');
     const pub = A.email_desk.filter((e) => e.trust === 'PUBLICLY_LISTED').length;
     await page.click('[data-emf=s][data-v=PUBLIC]');
     check('Email filter: Public email', (await page.locator('.email-card').count()) === Math.min(30, pub), `${pub}`);
