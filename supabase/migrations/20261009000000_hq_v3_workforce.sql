@@ -159,6 +159,9 @@ begin
     when 'MEMORY' then (select max(x) from (select max(last_run_at) x from gmail_backfill_state union all select max(updated_at) from relationship_reviews) s)
     when 'REPLY' then (select max(last_run_at) from gmail_sync_state)
     when 'DIRECTOR' then (select max(x) from (select max(created_at) x from outreach_candidates union all select max(created_at) from ceo_reports) s)
+    -- 09 writes department_run_metrics from 8 Oct (a run that saves no signal is still a run)
+    when 'EGYPT' then (select max(x) from (select max(recorded_at) x from department_run_metrics where workflow_name like '09 -%'
+                                           union all select (agent_last_run(p_key)->>'at')::timestamptz) s)
     -- 07 only started writing department_run_metrics on 7 Oct: until then its last saved opportunity is the evidence
     when 'TRAVEL' then coalesce((agent_last_run(p_key)->>'at')::timestamptz,
                                 (select max(o.created_at) from opportunities o join companies c on c.id = o.company_id where c.source like '07 -%'))

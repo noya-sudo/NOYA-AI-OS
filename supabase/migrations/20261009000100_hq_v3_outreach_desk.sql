@@ -61,7 +61,7 @@ begin
                     and t.title ~ '^APPROVE OUTREACH' and t.status in ('OPEN', 'IN_PROGRESS', 'WAITING'))),
   t as (
     select t.id task_id, t.title, t.status, t.task_type, t.description, t.created_by, t.created_at, t.due_at, t.company_id, t.contact_id, t.opportunity_id,
-           oc.id cand_id, oc.channel cand_channel, oc.subject cand_subject, oc.draft cand_draft, oc.system_draft, oc.why_now cand_why, oc.angle cand_angle,
+           oc.id cand_id, oc.channel cand_channel, oc.subject cand_subject, oc.draft cand_draft, oc.system_draft, oc.why_now cand_why, oc.evidence cand_evidence, oc.angle cand_angle,
            oc.qa_status, oc.status cand_status, oc.hold_reason, oc.route_contact_id, oc.review_action,
            co.name company, agent_key_of(company_lane(co.acquisition_lane, co.prospect_segment, co.vertical_override, co.company_type), co.company_type, co.notes) director,
            co.partnership_model,
@@ -116,7 +116,7 @@ begin
                                     'email_source', case when b.channel = 'EMAIL' then b.r_source end, 'via_inbox', b.route_contact_id is not null,
                                     'inbox_label', case when b.route_contact_id is not null then b.r_label end,
                                     'linkedin', nullif(b.linkedin, ''), 'instagram', nullif(b.instagram, ''), 'phone', nullif(b.phone, '')),
-        'why_now', left(coalesce(b.cand_why, task_field(b.description, 'WHY THEM'), task_field(b.description, 'Why now')), 300),
+        'why_now', left(coalesce(b.cand_why, nullif(b.cand_evidence, ''), task_field(b.description, 'WHY THEM'), task_field(b.description, 'Why now')), 300),
         'angle', left(coalesce(b.cand_angle, task_field(b.description, 'ANGLE / OFFER'), task_field(b.description, 'Primary angle')), 300),
         'subject', coalesce(b.cand_subject, b.appr_draft->>'subject'),
         'draft', coalesce(b.cand_draft, b.appr_draft->>'body', task_message(b.description)),

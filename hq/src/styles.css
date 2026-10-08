@@ -192,6 +192,13 @@ details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
 .loop span.done { color: var(--navy); font-weight: 600; }
 .loop span.now { background: var(--navy); color: #fff; font-weight: 700; }
 .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+@media (max-width: 640px) {
+  table.stack thead { display: none; }
+  table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100%; }
+  table.stack tr { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  table.stack td { border: 0; padding: 1px 0; text-align: left; overflow-wrap: anywhere; }
+  table.stack td[data-l]::before { content: attr(data-l) ' · '; color: var(--faint); font-size: 11px; }
+}
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; background: var(--panel); position: sticky; top: 0; }
@@ -260,6 +267,7 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 /* Tabs, board, timeline and small helpers (operating layer). */
 .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 8px 0 10px; border-bottom: 1px solid var(--line); }
 .tabs::-webkit-scrollbar { display: none; }
+@media (min-width: 900px) { .tabs { flex-wrap: wrap; } }
 .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 10px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .tabs button.on { color: var(--text); border-bottom-color: var(--navy); font-weight: 600; }
 .tabs .n { font-size: 11px; color: var(--faint); margin-left: 2px; }

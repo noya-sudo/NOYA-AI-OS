@@ -204,3 +204,7 @@ alter function public.task_field(text, text) set search_path = public;
 alter function public.task_message(text) set search_path = public;
 alter function public.partnership_values(text) set search_path = public;
 alter function public.agent_key_of(text, text, text) set search_path = public;
+-- Text helpers are internal: only the SECURITY DEFINER read models (owned by postgres) call them.
+revoke all on function public.task_field(text, text) from public, anon, authenticated;
+revoke all on function public.task_message(text) from public, anon, authenticated;
+revoke all on function public.partnership_values(text) from public, anon, authenticated;

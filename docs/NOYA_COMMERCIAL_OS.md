@@ -714,3 +714,60 @@ Approve never means send.
   - Event Planet;
   - The Ritz-Carlton New York, Westchester (reported rebrand).
 - 18 legitimate non-name domains confirmed.
+
+## HQ V3 — six destinations, the AI workforce, the approval desk (8 Oct 2026) — FROZEN
+
+Adam's final HQ instruction: consolidate, simplify, prove, freeze, operate. Nothing was restarted, no second CRM or database was
+created, and no historical evidence was deleted. Every older screen still exists under **More**.
+
+**Navigation.** Today · Agents · Outreach · Relationships · Club · Operations, then More (Agents & intelligence, Sales,
+Records, Admin). Phone bottom bar: Today · Agents · Outreach · Relationships · More (Club and Operations sit in More).
+
+**Today** shows only what needs Adam: replies, meetings and calls, Gmail drafts to send, failed Gmail drafts, outreach waiting
+for review, due follow-ups, proposals and client issues. No metrics, no engineering warnings.
+
+**Agents** (`hq_directors()`, `hq_director(key)`): ten Directors (Private Membership & Network, Hospitality & Stays, Travel &
+Concierge Network, Brands & Production, Weddings & Private Events, Corporate & White-Label, Media & Culture, Sports & Talent,
+Egypt Growth, Growth Social & Paid Media), the Strategic Partnerships Manager, and seven shared specialists (Research
+Intelligence, Contact Intelligence, Email Intelligence & Verification, Outreach Writer, Relationship Memory, Reply &
+Follow-up, Commercial Director). The n8n workflows stay underneath; `agent_registry.v3_role` / `mission` translate them.
+- Status is derived, never animated: BLOCKED (a hard blocker), ERROR (last real activity older than `max_gap_hours`),
+  WORKING (activity in the last 20 minutes), otherwise SCHEDULED with the next run time.
+- Last run comes from each member's own evidence (`director_last_run`). Workflows 07 (7 Oct) and 09 (8 Oct) now log every
+  run to `department_run_metrics`, so a run that saves nothing is still visible.
+- Every per-Director number adds up to the support agent's total: verification queue (`email_verification_queue().waiting_by_agent`),
+  decision makers missing, email gaps, outreach waiting for Adam.
+- Drill-downs return true totals ("showing the latest 60 of 104"), never a silent cut.
+
+**Outreach desk** (`hq_outreach_desk()`): Needs review / Approved & Gmail drafts / Follow-ups / Sent / Replied / Held /
+Researching. Needs review = open outreach tasks with a usable route (email only when VALID_VERIFIED). Ordered email first,
+then quality-gated drafts, newest first. Actions: Approve (re-checks the recipient, creates one unsent Gmail draft, stores the
+draft id; never sends), Edit (`hq_outreach_edit`, original kept in `system_draft` / audit), Hold (date), Research more (back
+to the agents, contact flagged on WRONG_PERSON / OUTDATED_ROLE, no duplicate), Reject (reason required; the company is held
+from outreach for 180 days with provenance in `company_field_history`), Source. LinkedIn and Instagram: copy, open, Mark sent.
+Every desk action is audited in `approval_audit` as `DESK_*`.
+
+**Follow-ups:** follow-up 1 four days after the real send, follow-up 2 six days after follow-up 1 is sent, never more than
+two; works without an opportunity; any reply cancels them (company / contact match when there is no opportunity).
+
+**Email states:** VALID_VERIFIED, ACCEPT_ALL, PUBLIC_UNVERIFIED, UNKNOWN, INVALID, NOT_FOUND (`email_state_v3`). Only
+VALID_VERIFIED counts toward the 40–50 a day target.
+
+**Club** (`club_people`, `club_benefits`, `club_introductions`, `club_events`; `hq_club`, `hq_club_person`): structure only.
+Nobody is added automatically; communities and introducer routes come from qualified CRM records.
+
+**Operations** (`hq_operations`): confirmed delivery only — clients, won business, projects, revenue records, client issues.
+
+**Growth, Social & Paid Media** (`hq_growth`): honest connection states (Instagram via Windsor paused by the free-plan account
+limit; Metricool connected to Instagram but not readable by HQ; Meta Ads read-only and paused), the content approval pipeline
+(Idea → Draft → Review → Approved → Metricool scheduled → Published → Performance), stored Instagram performance, concepts,
+competitor patterns and attributed leads. Website go-live test enquiries are kept but never counted as leads.
+
+**Acceptance (8 Oct):** A fresh prospect (Aman GM from the official media kit, Hunter-verified) · B outreach (two new verified
+email drafts on the desk) · C approval created a real unsent Gmail draft with its id in 4 seconds (test record to NOYA's own
+mailbox, then deleted) · D desk counts reconcile exactly with open outreach tasks · E/F real Gmail sends detected, follow-up
+at +4.0 days, replies cancelled follow-ups · G every member shows real last/next run · H blocked by Metricool access ·
+I 390 px screens without horizontal scroll. Tests: security scan, 202 classic UI checks, 69 V3 checks.
+
+**Freeze.** No new dashboards, agent categories, navigation redesigns or metrics unless something is broken or real commercial
+performance proves a change is needed.

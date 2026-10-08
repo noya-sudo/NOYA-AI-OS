@@ -105,7 +105,9 @@ const todayKey = () => cairoDay(new Date());
 const daysAgo = (d) => (Date.now() - new Date(d).getTime()) / 86400000;
 const isToday = (d) => d && cairoDay(d) === todayKey();
 const isThisWeek = (d) => d && daysAgo(d) <= 7 && daysAgo(d) >= -0.01;
-const pill = (text, cls = '') => `<span class="pill ${cls}">${esc(text)}</span>`;
+const pill = (text, cls = '') => `<span class="pill ${cls}">${esc(String(text ?? '').replace(/_/g, ' '))}</span>`;
+// Human text: drop a leading internal code ("CODE_NAME — …") and spell out any remaining SNAKE_CASE token.
+const plainText = (t) => String(t || '').replace(/^[A-Z0-9]+(?:_[A-Z0-9]+)+\s*[—:-]+\s*/, '').replace(/\b[A-Z0-9]+(?:_[A-Z0-9]+)+\b/g, (m) => m.toLowerCase().replace(/_/g, ' '));
 
 function department(createdBy) {
   const s = String(createdBy || '');
@@ -141,8 +143,8 @@ function sourceLabel(src) {
 function emailPill(status, kind) {
   const s = String(status || 'UNKNOWN').toUpperCase();
   const cls = s === 'VERIFIED' ? 'ok' : s === 'RISKY' || s === 'UNVERIFIED' ? 'warn' : s === 'INVALID' ? 'bad' : '';
-  const label = s === 'NOT_FOUND' ? 'no email' : s.toLowerCase();
-  return `${pill(`email ${label}`, cls)}${kind === 'OFFICIAL_COMPANY_INBOX' ? ' ' + pill('company inbox') : ''}`;
+  const label = { VERIFIED: 'Email verified', UNVERIFIED: 'Public · not verified', NOT_FOUND: 'No email', INVALID: 'Email invalid', RISKY: 'Email risky' }[s] || 'Email unknown';
+  return `${pill(label, cls)}${kind === 'OFFICIAL_COMPANY_INBOX' ? ' ' + pill('company inbox') : ''}`;
 }
 const facts = (oppId) => state.dir?.opportunity_facts?.[oppId] || {};
 const ready = (oppId) => state.dir?.readiness?.[oppId] || {};
@@ -1071,13 +1073,13 @@ function viewContacts() {
     && (!q || [k.name, k.email, k.position, k.company, k.country].some((v) => String(v ?? '').toLowerCase().includes(q))));
   const counts = {}; dir.contacts.forEach((k) => { const s = String(k.email_status || 'NONE').toUpperCase(); counts[s] = (counts[s] || 0) + 1; });
   return `<h2>Contacts</h2>
-    <p class="muted small"${tip('verified')}>${dir.contacts.length} people. Email status: VERIFIED is confirmed deliverable; RISKY / UNKNOWN / UNVERIFIED are never emailed automatically. Hover an email for its evidence.</p>
+    <p class="muted small"${tip('verified')}>${dir.contacts.length} people. Only a verified email can become an email draft, and nothing is ever sent automatically. Hover an email for its evidence.</p>
     <div class="filters"><input data-cf="q" placeholder="Name, email, company…" value="${esc(f.q)}">
       <select data-cf="email">${opt('', f.email, 'Any email status')}${Object.keys(counts).sort().map((s) => opt(s, f.email, `${s.toLowerCase()} · ${counts[s]}`)).join('')}</select></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>Email</th><th>Last interaction</th><th class="num">Active opps</th></tr></thead>
+    <div class="tbl-wrap"><table class="stack"><thead><tr><th>Person</th><th>Company</th><th>Email</th><th>Last interaction</th><th class="num">Active opps</th></tr></thead>
     <tbody>${rows.map((k) => `<tr class="clickable" data-open="contact" data-id="${k.id}"><td>${esc(k.name || '—')}<div class="muted small">${esc(k.position || '')}</div></td>
       <td>${esc(k.company || '—')}</td><td title="${esc(provenanceTitle(k))}"><span class="small">${esc(k.email || '—')}</span> ${emailPill(k.email_status, k.email_kind)}${k.do_not_contact ? ` ${pill('do not contact', 'bad')}` : ''}</td>
-      <td class="small">${esc(k.last_interaction ? fmtDay(k.last_interaction) : '—')}</td><td class="num">${esc(k.active_opps)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No contacts match.</td></tr>'}</tbody></table></div>`;
+      <td class="small" data-l="Last interaction">${esc(k.last_interaction ? fmtDay(k.last_interaction) : '—')}</td><td class="num" data-l="Active opportunities">${esc(k.active_opps)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No contacts match.</td></tr>'}</tbody></table></div>`;
 }
 
 const QUICK_VERTICALS = [['', 'All'], ['TRAVEL_CONCIERGE', 'Partnerships'], ['BRAND_PRODUCTION', 'Production'], ['HOSPITALITY', 'Hospitality'], ['PRIVATE_UHNW', 'Private / UHNW'], ['CORPORATE', 'Corporate'], ['WEDDINGS_EVENTS', 'Weddings'], ['SPORTS_TALENT', 'Sports / Talent']];
@@ -2581,7 +2583,7 @@ function sectionBody(s) {
     case 'opportunities': return it.map((o) => `<div class="mini clickable" data-open="company" data-id="${o.company_id}"><div class="t">${esc(o.company)}${o.status ? ' ' + pill(sentence(o.status)) : ''}</div>
       ${o.model ? `<div class="m"><b>${esc(o.model.split(':')[0])}</b></div>${(o.route || []).map((r) => `<div class="m">→ ${esc(r)}</div>`).join('')}` : ''}
       ${o.concept ? `<div class="m"><b>Egypt concept · ${esc(o.concept.backdrop)}</b></div><div class="m">→ ${esc(o.concept.concept)}</div><div class="m">→ NOYA: ${esc(o.concept.noya_role)}</div>` : ''}
-      ${o.angle ? `<div class="m faint">${esc(o.angle)}</div>` : ''}</div>`).join('');
+      ${o.angle ? `<div class="m faint">${esc(plainText(o.angle))}</div>` : ''}</div>`).join('');
     case 'tasks': return it.map((t) => `<div class="mini clickable" data-open="company" data-id="${t.company_id}"><div class="t">${esc(sentence(t.title))}${t.approved ? ' ' + pill('approved by you', 'ok') : ''}</div><div class="m">${esc(t.person || '')} · prepared ${esc(shortDay(t.created_at))}</div></div>`).join('');
     case 'counts': return `<div class="pills">${Object.entries(it).map(([k, v]) => pill(`${v} ${k.toLowerCase().replace(/_/g, ' ')}`)).join('')}</div>`;
     case 'runs': return it.map((r) => `<div class="mini"><div class="t">${esc(fmtDate(r.at))}</div><div class="m">${n0(r.searches)} searches · ${n0(r.candidates)} candidates · ${n0(r.researched)} researched · ${n0(r.qualified)} qualified · ${n0(r.known_skipped)} already known</div></div>`).join('');
@@ -2804,7 +2806,8 @@ function directorCard(m) {
     <div class="dc-head"><div><div class="dc-name">${esc(m.name)}</div><div class="dc-role">${esc(ROLE_LABEL[m.role] || '')}</div></div>${pill(sl, sc)}</div>
     <div class="dc-status">${esc(m.status_text || '')}</div>
     ${m.working_on ? `<div class="dc-now">${esc(m.working_on)}</div>` : ''}
-    <div class="dc-last">${m.last_action ? `Last: ${esc(m.last_action.text)} · ${esc(rel(m.last_action.at))}` : '<span class="faint">No recorded activity in the last 7 days</span>'}</div>
+    <div class="dc-last">${m.last_action ? `Last: ${esc(m.last_action.text)} · ${esc(rel(m.last_action.at))}`
+      : m.last_run ? `<span class="faint">Last run ${esc(rel(m.last_run))} · nothing new to report</span>` : '<span class="faint">No recorded run yet</span>'}</div>
     <div class="dc-metrics"><div class="dc-m dc-mh"><span></span><span>Today</span><span>3 days</span></div>${rows.map(([k, l]) => `<div class="dc-m"><span>${l}</span><b>${n0(m.today?.[k])}</b><b>${n0(m.d3?.[k])}</b></div>`).join('')}</div>
     ${hard.map((b) => `<div class="dc-block bad-text">Blocked: ${esc(b.text)}</div>`).join('')}${soft.map((b) => `<div class="dc-block warn-text">${esc(b.text)}</div>`).join('')}
   </article>`;
@@ -2855,7 +2858,7 @@ function dSection(s) {
       ${o.model ? `<div class="m"><b>${esc(String(o.model).split(':')[0])}</b></div>` : ''}
       ${o.value ? `<div class="m">Value to NOYA: ${esc(o.value.to_noya)}</div><div class="m">Value to them: ${esc(o.value.to_partner)}</div>` : ''}
       <div class="m">Right contact: ${o.contact ? `${esc(o.contact.name || '')}${o.contact.role ? `, ${esc(o.contact.role)}` : ''} ${estatePill(o.contact.email_state)}` : '<span class="warn-text">not identified yet</span>'}</div>
-      <div class="m"><b>Next step:</b> ${esc(o.next_step)}</div>${o.angle ? `<div class="m faint">${esc(o.angle)}</div>` : ''}</div>`).join('');
+      <div class="m"><b>Next step:</b> ${esc(plainText(o.next_step))}</div>${o.angle ? `<div class="m faint">${esc(plainText(o.angle))}</div>` : ''}</div>`).join('');
     case 'desk': return it.map((x) => deskRow(x, true)).join('');
     case 'verify': return it.map((v) => `<div class="mini clickable" data-open="company" data-id="${v.company_id}"><div class="t">${esc(v.name || v.email)}${v.position ? ` · <span class="faint">${esc(v.position)}</span>` : ''}</div>
       <div class="m">${esc(v.email)} · ${esc(v.company)} · ${esc(memberName(v.agent))}${v.draft_waiting ? ` · ${pill('draft waiting', 'gold')}` : ''}</div></div>`).join('');
@@ -2955,8 +2958,8 @@ function deskRow(x, readOnly = false) {
       <span class="dr-age" title="Prepared ${esc(fmtDate(x.created_at))}">${x.age_days != null ? `${esc(x.age_days)} d` : ''}</span></div>
     <div class="dr-pills">${pill(memberName(x.director))}${pill(CH_LABEL[x.channel] || x.channel, 'gold')}<span class="dr-route">${deskRoute(x)}</span>${ver}${x.qa === 'FLAGGED' ? pill('quality flag', 'warn') : ''}</div>
     ${x.reason ? `<div class="dr-line warn-text">${esc(x.reason)}</div>` : ''}
-    ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(x.why_now)}</div>` : ''}
-    ${x.angle ? `<div class="dr-line"><span>Angle</span>${esc(x.angle)}</div>` : ''}
+    ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(x.why_now))}</div>` : ''}
+    ${x.angle ? `<div class="dr-line"><span>Angle</span>${esc(plainText(x.angle))}</div>` : ''}
     ${draft ? `<div class="dr-msg">${x.subject ? `<b>${esc(x.subject)}</b> — ` : ''}<span class="faint">${esc(preview)}${draft.length > 150 ? '…' : ''}</span> <button class="linkish" data-desk-open="${esc(x.ref)}">${open ? 'Hide' : 'Read'}</button></div>` : ''}
     ${open ? `<div class="draft-box"><pre>${esc(draft)}</pre>${x.original_draft ? `<details><summary>Original draft (kept)</summary><pre>${esc(x.original_draft)}</pre></details>` : ''}</div>` : ''}
     <div class="dr-act btn-row">${deskButtons(x, readOnly)}</div>
@@ -3075,7 +3078,7 @@ function viewClub() {
   else if (key === 'partner_privileges') body = items.map((p) => `<div class="t-row clickable" data-open="company" data-id="${p.company_id}"><div><div class="t-main">${esc(p.name)} ${pill(sentence(String(p.model).replace(/_/g, ' ')))}</div>${p.value ? `<div class="t-sub">For members: ${esc(p.value.to_noya)}</div>` : ''}</div></div>`).join('');
   else if (key === 'introductions') body = items.map((i) => `<div class="t-row"><div><div class="t-main">${esc(i.from || '')} → ${esc(i.to || '')} ${pill(sentence(i.status))}</div><div class="t-sub">${esc(i.purpose)}</div></div></div>`).join('');
   else if (key === 'events') body = items.map((e) => `<div class="t-row"><div><div class="t-main">${esc(e.title)} ${pill(sentence(e.status))}</div><div class="t-sub">${esc([e.date ? shortDay(e.date) : '', e.city, e.venue].filter(Boolean).join(' · '))}</div></div></div>`).join('');
-  else if (key === 'communities') body = items.map((c) => `<div class="t-row clickable" data-open="company" data-id="${c.company_id}"><div><div class="t-main">${esc(c.name)} ${c.relationship !== 'COLD' ? pill(sentence(c.relationship.replace(/_/g, ' ')), 'info') : ''}</div><div class="t-sub">${esc([c.type, c.city, c.country].filter(Boolean).join(' · '))}</div></div></div>`).join('');
+  else if (key === 'communities') body = items.map((c) => `<div class="t-row clickable" data-open="company" data-id="${c.company_id}"><div><div class="t-main">${esc(c.name)} ${c.relationship !== 'COLD' ? pill(sentence(c.relationship.replace(/_/g, ' ')), 'info') : ''}</div><div class="t-sub">${esc([c.type && /_/.test(c.type) ? sentence(c.type.replace(/_/g, ' ')) : c.type, c.city, c.country].filter(Boolean).join(' · '))}</div></div></div>`).join('');
   const routes = key === 'introducers' || key === 'potential_members' ? `<h3>Routes in the CRM · ${C.introducer_routes.length}</h3><p class="muted small">Confirmed decision makers at private offices, family offices, clubs and communities already in NOYA's records. Add someone only when you know them or have a reason.</p>
     <div class="dlist">${C.introducer_routes.map((r) => `<div class="t-row"><div><div class="t-main">${esc(r.person)}${r.position ? ` · <span class="faint">${esc(r.position)}</span>` : ''}</div><div class="t-sub">${esc(r.company)} ${estatePill(r.email_state)}${r.linkedin ? ` · <a href="${esc(r.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ''}</div></div>
       <div class="t-btns"><button class="btn small" data-club-add="INTRODUCER" data-contact="${r.contact_id}">Introducer</button><button class="btn small ghost" data-club-add="POTENTIAL_MEMBER" data-contact="${r.contact_id}">Potential member</button></div></div>`).join('')}</div>` : '';
