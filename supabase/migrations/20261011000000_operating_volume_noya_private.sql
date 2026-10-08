@@ -197,7 +197,7 @@ begin
                       when v_under.ready > 0
                       then v_under.ready || ' ' || advisor_agent_label(v_under.key) || ' draft' || case when v_under.ready = 1 then ' is' else 's are' end
                            || ' ready; sending ' || case when v_under.ready = 1 then 'it' else 'them' end || ' closes part of the gap, and the other '
-                           || (v_under.expected - v_under.sent - v_under.ready) || ' need more verified prospects.'
+                           || (v_under.expected - v_under.sent - v_under.ready) || case when v_under.expected - v_under.sent - v_under.ready = 1 then ' needs' else ' need' end || ' more verified prospects.'
                       else 'No ' || advisor_agent_label(v_under.key) || ' draft is ready, so supply is the limit: this Director needs more verified prospects.' end,
       'action', case when v_under.ready >= v_under.expected - v_under.sent then 'Review and send the ' || advisor_agent_label(v_under.key) || ' drafts first today.'
                      when v_under.ready > 0 then 'Send the ' || v_under.ready || ' ready ' || advisor_agent_label(v_under.key) || ' draft' || case when v_under.ready = 1 then '' else 's' end

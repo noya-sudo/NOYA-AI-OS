@@ -117,7 +117,7 @@ const claim = node({
       contentType: 'json',
       specifyBody: 'json',
       jsonBody: expr("{{ JSON.stringify({ p_outbound_id: $('Validate Outbound Id').first().json.outbound_id }) }}"),
-      options: { timeout: 20000 }
+      options: { timeout: 60000 }
     },
     credentials: { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } }
   }
@@ -138,9 +138,12 @@ const completeDraft = node({
       contentType: 'json',
       specifyBody: 'json',
       jsonBody: expr("{{ JSON.stringify({ p_outbound_id: $('Validate Outbound Id').first().json.outbound_id, p_gmail_message_id: $json.message.id, p_gmail_thread_id: $json.message.threadId, p_gmail_draft_id: $json.id }) }}"),
-      options: { timeout: 20000 }
+      options: { timeout: 60000 }
     },
-    credentials: { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } }
+    credentials: { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } },
+    retryOnFail: true,
+    maxTries: 3,
+    waitBetweenTries: 5000
   }
 });
 
@@ -159,7 +162,7 @@ const failDraft = node({
       contentType: 'json',
       specifyBody: 'json',
       jsonBody: expr("{{ JSON.stringify({ p_outbound_id: $('Validate Outbound Id').first().json.outbound_id, p_error: String(($json.error && ($json.error.message || $json.error)) || 'gmail draft failed') }) }}"),
-      options: { timeout: 20000 }
+      options: { timeout: 60000 }
     },
     credentials: { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } }
   }

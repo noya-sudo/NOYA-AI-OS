@@ -912,3 +912,24 @@ Every line is a count or a record from the database.
 - **Measures.** 8–12 qualified agency outreaches a week. Success is agency relationships, referrals, Egypt trips and talent
   stays, not famous names.
 - **Privacy.** Public, source-backed evidence only: no private travel data and no personal contact details.
+
+**First operating night (8 Oct 2026).**
+
+- **Approval → Gmail draft.** Two approvals made at 19:36 Cairo timed out inside workflow 12. The database answered slowly,
+  and the claim and record steps each waited only 20 s. onefinestay's Gmail draft had been created and was recorded from the
+  execution's provider ids. Preferred Hotels had no draft and was re-dispatched; both are now unsent drafts in
+  noya@noyaconcierge.com.
+  - Workflow 12 now waits 60 s on its database calls and retries recording the draft. A repeated `outbound_complete` returns
+    NOT_PROCESSING, so the retry is harmless.
+  - The claim is not retried, so it stays exactly-once.
+  - An `outbound_emails` row left in PROCESSING with no `gmail_draft_id` for more than 10 minutes is the signal to check.
+- **Email review desk, reconciled.**
+  - Every EMAIL item awaiting approval has a VERIFIED route at both contact and company level.
+  - Every LinkedIn item carries a documented email-exhaustion fallback, except four older curated tasks (J.P. Morgan,
+    Etihad, Arab Bank, Mandarin Oriental). Their email research is queued; if it verifies, the planner's supersede rule
+    replaces the LinkedIn task with an email.
+  - Verified drafts that fail QA wait in Held with the gate's reason.
+- **NOYA Private pool, cleaned.** The pool keeps representation only.
+  - Parked, with history: LeoVegas (betting operator) and Collegiate Sports Connect (college-recruiting software).
+  - gamma. (Larry Jackson's music and media company) carried a wrong website, gamma.app, which is a different company. It is
+    corrected to thegamma.com per Wikipedia, still unconfirmed, and its LinkedIn draft is on hold to verify first.

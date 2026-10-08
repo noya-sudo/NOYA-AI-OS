@@ -1,7 +1,7 @@
 SUPA = "https://gagbhykzmtstekpqujyl.supabase.co/rest/v1/rpc/"
 SC = "{ supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } }"
 GC = "{ gmailOAuth2: { id: 'OMGm2CkcvDKbJTr3', name: 'NOYA Gmail' } }"
-def rpc(var, fn, name, body, pos):
+def rpc(var, fn, name, body, pos, extra=""):
     return f"""const {var} = node({{
   type: 'n8n-nodes-base.httpRequest',
   version: 4.5,
@@ -17,9 +17,9 @@ def rpc(var, fn, name, body, pos):
       contentType: 'json',
       specifyBody: 'json',
       jsonBody: {body},
-      options: {{ timeout: 20000 }}
+      options: {{ timeout: 60000 }}
     }},
-    credentials: {SC}
+    credentials: {SC}{extra}
   }}
 }});
 """
@@ -138,7 +138,9 @@ const gmailDraft = node({
 """)
 q = lambda s: "expr(" + repr("{{ " + s + " }}") + ")"
 out.append(rpc("claim", "outbound_claim", "Claim Outbound (exactly once)", q(f"JSON.stringify({{ p_outbound_id: {OID} }})"), "[880, 200]"))
-out.append(rpc("completeDraft", "outbound_complete", "Record Draft In CRM", q(f"JSON.stringify({{ p_outbound_id: {OID}, p_gmail_message_id: $json.message.id, p_gmail_thread_id: $json.message.threadId, p_gmail_draft_id: $json.id }})"), "[1540, 140]"))
+out.append(rpc("completeDraft", "outbound_complete", "Record Draft In CRM", q(f"JSON.stringify({{ p_outbound_id: {OID}, p_gmail_message_id: $json.message.id, p_gmail_thread_id: $json.message.threadId, p_gmail_draft_id: $json.id }})"), "[1540, 140]",
+               # 8 Oct 2026: retry is safe here (a repeated outbound_complete returns NOT_PROCESSING); the claim is never retried.
+               ",\n    retryOnFail: true,\n    maxTries: 3,\n    waitBetweenTries: 5000"))
 out.append(rpc("failDraft", "outbound_fail", "Record Draft Failure", q(f"JSON.stringify({{ p_outbound_id: {OID}, p_error: String(($json.error && ($json.error.message || $json.error)) || 'gmail draft failed') }})"), "[1760, 300]"))
 out.append(respond("respondDoneDraft", "Respond Draft Result", q("JSON.stringify($json)"), 200, "[1760, 140]"))
 out.append(respond("respondFailedDraft", "Respond Draft Failure", q("JSON.stringify({ ok: false, reason: 'PROVIDER_ERROR', detail: $json })"), 502, "[1760, 300]"))
