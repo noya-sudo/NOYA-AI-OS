@@ -933,3 +933,5 @@ Every line is a count or a record from the database.
   - Parked, with history: LeoVegas (betting operator) and Collegiate Sports Connect (college-recruiting software).
   - gamma. (Larry Jackson's music and media company) carried a wrong website, gamma.app, which is a different company. It is
     corrected to thegamma.com per Wikipedia, still unconfirmed, and its LinkedIn draft is on hold to verify first.
+- **Re-drafting a failed draft.** Cancelling a draft's review task marks its candidate SKIPPED through the task sync. To re-draft,
+  cancel the task first, then set the candidate back to PLANNED; the next W18 run drafts it and opens a fresh review task.
