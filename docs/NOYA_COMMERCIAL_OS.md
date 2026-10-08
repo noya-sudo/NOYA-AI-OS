@@ -767,7 +767,7 @@ competitor patterns and attributed leads. Website go-live test enquiries are kep
 email drafts on the desk) · C approval created a real unsent Gmail draft with its id in 4 seconds (test record to NOYA's own
 mailbox, then deleted) · D desk counts reconcile exactly with open outreach tasks · E/F real Gmail sends detected, follow-up
 at +4.0 days, replies cancelled follow-ups · G every member shows real last/next run · H blocked by Metricool access ·
-I 390 px screens without horizontal scroll. Tests: security scan, 202 classic UI checks, 69 V3 checks.
+I 390 px screens without horizontal scroll. Tests: security scan, 202 classic UI checks, 70 V3 checks (Today and the Agents strip are held to the same reply and meeting counts).
 
 **Freeze.** No new dashboards, agent categories, navigation redesigns or metrics unless something is broken or real commercial
 performance proves a change is needed.

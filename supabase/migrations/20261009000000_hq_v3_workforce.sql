@@ -308,7 +308,7 @@ begin
       'gmail_drafts_ready', (v_desk->'counts'->>'gmail_drafts_confirmed')::int,
       'replies', (select count(*) from tasks where task_type in ('REPLY_ACTION', 'HUMAN_REVIEW') and status in ('OPEN', 'IN_PROGRESS')),
       'meetings', (select count(*) from tasks where task_type = 'MEETING_ACTION' and status in ('OPEN', 'IN_PROGRESS'))
-                  + (select count(*) from opportunities where status = 'CALL_REQUIRED')),
+                  + (select count(*) from opportunities o where o.status = 'CALL_REQUIRED' and not exists (select 1 from tasks t where t.opportunity_id = o.id and t.task_type = 'MEETING_ACTION' and t.status in ('OPEN', 'IN_PROGRESS')))),
     'members', (select jsonb_agg(jsonb_build_object(
         'key', d.key, 'name', d.name, 'role', d.v3_role, 'mission', d.mission, 'scope', d.scope, 'next_focus', coalesce(d.current_work, d.focus),
         'workflows', d.workflows, 'status', s.status,

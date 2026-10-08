@@ -2743,7 +2743,12 @@ const estatePill = (s) => { const [l, c] = ESTATE[s] || [s || 'No email', '']; r
 // ---------------------------------------------------------------- TODAY: only what needs Adam
 function todayItems(d) {
   const desk = state.desk || {}; const now = new Date(); const end = new Date(`${todayKey()}T23:59:59+03:00`);
-  const replies = repliesForAdam(d);
+  // Replies, plus Adam's own reply / review tasks that have no inbound email behind them (a personal LinkedIn follow-up).
+  const field = (desc, label) => (String(desc || '').match(new RegExp(`^${label}:\\s*(.+)$`, 'mi')) || [])[1] || '';
+  const replies = [...repliesForAdam(d), ...openTasks(d).filter((t) => ['REPLY_ACTION', 'HUMAN_REVIEW'].includes(t.task_type) && !repliesForAdam(d).some((r) => r.task_id === t.id))
+    .map((t) => { const act = field(t.description, 'EXACT ACTION'); return { task_only: true, task_id: t.id, opportunity_id: t.opportunity_id, due_at: t.due_at,
+      company_name: [field(t.description, 'CONTACT').split(',')[0], t.company_name].filter(Boolean).join(' · ') || t.title,
+      summary: act.replace(/\s*(to\s+)?https?:\/\/\S+/g, '').trim() || t.title, url: (act.match(/https?:\/\/\S+/) || [])[0] }; })];
   const meetings = [...(state.ov?.actions || []).filter((a) => a.kind === 'MEETING'),
     ...d.opportunities.filter((o) => o.status === 'CALL_REQUIRED' && !(state.ov?.actions || []).some((a) => a.kind === 'MEETING' && a.opportunity_id === o.id))
       .map((o) => ({ kind: 'CALL', company: o.company_name, person: o.contact_name, opportunity_id: o.id, next_action: o.next_action }))];
@@ -2763,7 +2768,10 @@ function viewToday(d) {
   const row = (main, sub, btns) => `<div class="t-row"><div><div class="t-main">${main}</div>${sub ? `<div class="t-sub">${sub}</div>` : ''}</div><div class="t-btns">${btns}</div></div>`;
   const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date());
   const html = [
-    sec('Replies waiting for you', t.replies.length, t.replies.map((r) => row(`${esc(r.company_name || r.from)} ${pill(REPLY_GROUP[r.classification] || r.classification || 'Reply', r.classification === 'MEETING_REQUEST' ? 'bad' : 'info')}`,
+    sec('Replies waiting for you', t.replies.length, t.replies.map((r) => r.task_only
+      ? row(`${esc(r.company_name)} ${pill('Your follow-up', 'warn')}`, `${esc(r.summary)}${r.due_at && new Date(r.due_at) < new Date() ? ` · <span class="bad-text">overdue since ${esc(shortDay(r.due_at))}</span>` : ''}`,
+        `${r.url ? `<a class="btn small primary" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn</a>` : ''}${r.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${r.opportunity_id}">Open</button>` : ''}<button class="btn small ghost" data-modal="task-done" data-id="${r.task_id}">Done</button>`)
+      : row(`${esc(r.company_name || r.from)} ${pill(REPLY_GROUP[r.classification] || r.classification || 'Reply', r.classification === 'MEETING_REQUEST' ? 'bad' : 'info')}`,
       esc(r.summary || r.subject || ''), `${r.thread_id ? `<a class="btn small primary" href="${GMAIL_THREAD_URL}${esc(r.thread_id)}" target="_blank" rel="noopener noreferrer">Open email</a>` : ''}${r.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${r.opportunity_id}">Record</button>` : ''}${r.task_id ? `<button class="btn small ghost" data-modal="task-done" data-id="${r.task_id}">Done</button>` : ''}`)).join('')),
     sec('Meetings and calls', t.meetings.length, t.meetings.map((m) => row(`${esc(m.person || m.company || '')}${m.person && m.company ? ` · <span class="faint">${esc(m.company)}</span>` : ''}`,
       esc(m.kind === 'CALL' ? `Call requested · ${m.next_action || 'book it'}` : 'Meeting requested in a reply'), m.opportunity_id ? `<button class="btn small primary" data-modal="meeting" data-opp="${m.opportunity_id}" data-task="${m.task_id || ''}">Record meeting</button><button class="btn small" data-open="opp" data-id="${m.opportunity_id}">Open</button>` : '')).join('')),

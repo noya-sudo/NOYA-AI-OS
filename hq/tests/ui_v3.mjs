@@ -95,8 +95,9 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   check('Today: follow-ups due equals the desk', !due || new RegExp(`Follow-ups due\\s*${due}`, 'i').test(today), `${due}`);
   const gm = D.approved.filter((x) => x.gmail_confirmed).length;
   check('Today: Gmail drafts to send equals confirmed Gmail drafts', gm ? new RegExp(`Gmail drafts to send\\s*${gm}`, 'i').test(today) : !/Gmail drafts to send/i.test(today), `${gm}`);
-  const replies = F.snapshot.inbound.filter((r) => r.task_id && ['OPEN', 'IN_PROGRESS', 'WAITING'].includes(r.task_status) && !['OUT_OF_OFFICE', 'UNRELATED'].includes(r.classification)).length;
-  check('Today: replies waiting equals open reply tasks', replies ? new RegExp(`Replies waiting for you\\s*${replies}`, 'i').test(today) : !/Replies waiting/i.test(today), `${replies}`);
+  const replies = DIR.floor.replies; const meets = DIR.floor.meetings;
+  check('Today: replies waiting equals the Agents strip (open reply and review tasks, incl. personal follow-ups)', replies ? new RegExp(`Replies waiting for you\\s*${replies}`, 'i').test(today) : !/Replies waiting/i.test(today), `${replies}`);
+  check('Today: meetings and calls equal the Agents strip (no double count)', meets ? new RegExp(`Meetings and calls\\s*${meets}`, 'i').test(today) : !/Meetings and calls/i.test(today), `${meets}`);
   check('Today: calm — no engineering words, no metrics walls', !/workflow|supabase|n8n|rpc|pipeline value|P1|P2|P3/i.test(today) && (await page.locator('main .tile').count()) === 0);
   await shot(page, 'today-1440');
 
