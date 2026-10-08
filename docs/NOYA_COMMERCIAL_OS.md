@@ -622,3 +622,95 @@ Companies with an email route rank first. Drafts keep the approved format: perso
 - **Limits:**
   - JavaScript-only sites (The Bowery Hotel) and big brands that publish forms, not addresses (St. Regis, Maybourne) stay LinkedIn-only.
   - Many named emails at chains are property PR / marketing contacts: real, published and dated by their source. The planner still prefers a sales or GM route when one exists.
+
+## Verified email chain, hotel routing and domain provenance (8 Oct 2026)
+
+Adam's decisions D1 A / D2 B. The final email flow:
+
+**PUBLIC EMAIL → SMTP VERIFICATION → EMAIL READY → NEEDS REVIEW → ADAM APPROVES → UNSENT GMAIL DRAFT → OPEN IN GMAIL → ADAM SENDS.**
+
+Approve never means send.
+
+**Verification (workflow 24, `9k757A1TUpT6DDq2`, daily 08:40 / 20:40 Cairo, before the drafter)**
+- Reads the live Hunter account first (`hunter_account_save` → `system_config.hunter_account`), then verifies the queue from `email_verification_queue()`:
+  - publicly listed or unsourced addresses at qualified companies, never verified (or more than 90 days ago);
+  - drafts waiting on verification first, then named people, then department inboxes, then general inboxes;
+  - hotels in GM → Commercial → Sales → Partnerships order.
+- PR / press addresses are verified only for content partnerships.
+- Limits come from `system_config.email_verification`:
+  - `daily_cap` 8 and `reserve_verifications` 5 on the Free plan;
+  - `scope` NAMED_DECISION_MAKERS = confirmed named people with role score ≥ 4.
+  - After Adam approves a plan: raise the cap and set `scope` to ALL.
+- `email_verification_save()` maps Hunter results:
+
+| Hunter result | Contact status |
+|---|---|
+| valid | VERIFIED |
+| accept_all / webmail | RISKY |
+| invalid / disposable | INVALID |
+| unknown, 202 / 222 retry, errors | unchanged (free, retried later) |
+
+- A verified address promotes any draft waiting on it to EMAIL READY. An invalid or risky one cancels the draft, and the company goes back to the planner.
+- Never buys credits, never changes the plan, never contacts anyone.
+- **First run (8 Oct, free allowance):** 7 definite answers on named decision makers:
+  - 5 valid: Aman GM, Aman Head of Sales Americas, Preferred Hotels Senior Director Global Sales, Greycoat Lumleys MD, onefinestay Regional Director of Sales;
+  - 1 accept-all: Oberoi Zahra GM;
+  - 1 invalid: Brazen;
+  - 1 Hunter "retry later".
+
+**EMAIL READY means verified**
+- The planner (`commercial_director_plan`) chooses EMAIL only for an SMTP-verified, provider-backed address: the person's own, or a verified department inbox for their attention.
+- A publicly listed address is never EMAIL READY. If workflow 18 drafts to one, it saves `HOLD` and the task is titled **EMAIL NEEDS VERIFICATION** (WAITING). Workflow 24 then decides.
+- `outbound_recipient_block_reason()` uses `email_state()`: VERIFIED requires a provider, not just a status.
+- The Cheval Collection EMAIL READY task (publicly listed PR address) was relabelled, then cancelled under D2.
+
+**Hotel routing (D2)**
+- Applies to stay, reciprocal, referral, guest-concierge and white-label models at hotel / resort / hospitality companies (`partner_hotel_route`).
+- Person order is GM → Commercial Director → Sales Director → Partnerships (`partner_route_rank`). Within that set, someone with a verified route comes first.
+- The chosen person's confirmed LinkedIn beats any department inbox.
+- PR / communications people and PR / press / media inboxes (`pr_role`) are skipped for every partnership model except CONTENT_TALENT: content, press, creator / talent stays, brand trips, editorial.
+- Two open drafts to PR contacts were cancelled with that reason: Cheval Collection, and Four Seasons Red Sea (reciprocal).
+- Dry-run check, rolled back:
+  - Grand-Hôtel du Cap-Ferrat now routes to the GM's LinkedIn, not the two PR emails;
+  - 0 email candidates on 8 Oct, because no planned company had a verified address yet.
+
+**Approval → unsent Gmail draft**
+- HQ › Sales & Outreach › Outreach › **Email review** (the default tab):
+  - separate counts: verified emails ready today (target 40–50), LinkedIn ready, Instagram ready, addresses verified;
+  - the live Hunter balance;
+  - each verified draft with an editable subject and body;
+  - **Approve → create Gmail draft** (`hq_approve_email`).
+- Lists for drafts being created, unsent drafts in Gmail (**Open in Gmail**, `gmail_draft_url`), failures and sent.
+- An unverified address shows the button disabled.
+- `outbound_approve_candidate()` writes one DRAFT row (`outbound_emails.candidate_id`; `opportunity_id` is now optional). It moves the EMAIL READY task to WAITING (`ceo_approved_at`).
+- Workflow 12 creates the Gmail draft, and `outbound_complete()` turns that same task into **SEND APPROVED DRAFT** with the Open in Gmail link.
+- When Adam sends from Gmail, workflow 13 (`gmail_record_manual_send`) logs the interaction and follow-up, and closes the task. A draft deleted in Gmail cancels it.
+- **Send is impossible in three places:**
+  - constraint `outbound_emails_draft_only` (mode = DRAFT);
+  - `outbound_approve()` and `outbound_claim()` refuse SEND;
+  - workflow 12 has no send node (Explicit Send?, Gmail Send and their record / respond nodes removed; `n8n/gen_12_outbound_email_executor.py` regenerated).
+- Rolled-back live test, every step as expected: approve → claim (DRAFT) → complete (task → SEND APPROVED DRAFT + link) → manual send (candidate SENT). SEND was refused, the SEND row was rejected by the constraint, and the unverified candidate was refused.
+
+**Company corrections with provenance**
+- `company_field_history` (old value, new value, reason, source, decided_by) is written by `company_correct()`, the one way corrections are applied.
+- `companies.website_confirmed_at`: an official domain that does not spell the company name (db.com, ff.co, slh.com, ghmhotels.com, psg.fr…) is trusted for email research only once confirmed (`company_research_domain`).
+- Workflow 23 no longer leaves a "please check" note. A name-matched official domain replaces an unconfirmed wrong website, with history.
+- **Starwood Hotels & Resorts:** EXCLUDED (part of Marriott since 2016, source marriott.gcs-web.com). Its opportunity is ARCHIVED and its contacts are kept. Marriott work continues through St. Regis Hotels & Resorts and The St. Regis Cairo.
+- **Corrected:**
+
+| Company | From | To |
+|---|---|---|
+| Maybourne | hospitality-on.com | maybourne.com |
+| Grand-Hôtel du Cap-Ferrat | worldtravelawards.com | fourseasons.com/capferrat |
+| Jet Linx | wealthranking.org | jetlinx.com |
+| Patterson Belknap | pplaw.com | pbwt.com |
+| SNITCH | open.spotify.com | snitch.com (third-party listings, not first-party confirmed) |
+
+- **Cleared and flagged** (no official site found):
+  - Summits: pangeamembersclub.com is Pangea; now NEEDS_REVIEW, identity unresolved;
+  - Beyond Members Club (Instagram URL);
+  - Fait Accompli;
+  - Seven Private Members Club;
+  - Event Planet;
+  - The Ritz-Carlton New York, Westchester (reported rebrand).
+- 18 legitimate non-name domains confirmed.

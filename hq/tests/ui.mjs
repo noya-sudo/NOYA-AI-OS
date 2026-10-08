@@ -24,6 +24,12 @@ const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json
 // Agents fixtures: a trimmed live agents_snapshot() and agent_detail('HOSPITALITY') (git-ignored, real data only).
 const agentsFx = existsSync('tests/fixtures/agents.json') ? JSON.parse(readFileSync('tests/fixtures/agents.json', 'utf8')) : null;
 const agentFx = existsSync('tests/fixtures/agent_hospitality.json') ? JSON.parse(readFileSync('tests/fixtures/agent_hospitality.json', 'utf8')) : null;
+// Email review fixture: a live hq_email_review() read (git-ignored, real data only). Test-only variant: the same real draft once its
+// address is SMTP-verified, so the Approve path can be exercised next to the unverified one.
+const erFx = existsSync('tests/fixtures/email_review.json') ? JSON.parse(readFileSync('tests/fixtures/email_review.json', 'utf8')) : null;
+const ER_TEST_ID = '00000000-0000-0000-0000-0000000000e1';
+const erTest = erFx ? { ...erFx, needs_review: [...erFx.needs_review,
+  ...erFx.needs_review.slice(0, 1).map((x) => ({ ...x, candidate_id: ER_TEST_ID, task_id: null, email_state: 'VERIFIED', verified_at: erFx.verification.last_run, verified_score: 100 }))] } : null;
 mkdirSync('tests/out', { recursive: true });
 
 // Execution fixture (shaped like hq_execution: queue health + weekly metrics by segment).
@@ -109,7 +115,7 @@ const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_l
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
   'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
-  'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', ...WRITES];
+  'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -148,6 +154,8 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_commercial') return route.fulfill({ json: commercial });
       if (m[1] === 'hq_execution') return route.fulfill({ json: execution });
       if (m[1] === 'hq_agents') return route.fulfill({ json: agentsFx });
+      if (m[1] === 'hq_email_review') return route.fulfill({ json: erTest || { counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] } });
+      if (m[1] === 'hq_approve_email') return route.fulfill({ json: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-000000000002' } });
       if (m[1] === 'hq_agent') return route.fulfill({ json: body?.p_key === 'HOSPITALITY' ? agentFx : { key: body?.p_key, sections: [] } });
       if (m[1] === 'hq_account') return route.fulfill({ json: account });
       if (m[1] === 'hq_signal_promote') return route.fulfill({ json: { ok: true, created: [{ opportunity_id: cOpps[0].id, company: 'HYROX', product: body.p_targets[0]?.product, track: 'EVENT', has_contact: false }] } });
@@ -441,7 +449,29 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   // Outreach: tabs, cards, approval flow unchanged.
   await page.click('.side [data-tab=outreach]');
   const otabs = await page.locator('main .tabs').innerText();
-  check('Outreach tabs: Ready / Follow-up / LinkedIn / Instagram / Sent / Replied / Hold / Researching', ['Ready', 'Follow-up', 'Linkedin', 'Instagram', 'Sent', 'Replied', 'Hold', 'Researching'].every((t) => new RegExp(t, 'i').test(otabs)), otabs.replace(/\n/g, ' '));
+  check('Outreach tabs: Email review / Ready / Follow-up / LinkedIn / Instagram / Sent / Replied / Hold / Researching', ['Email review', 'Ready', 'Follow-up', 'Linkedin', 'Instagram', 'Sent', 'Replied', 'Hold', 'Researching'].every((t) => new RegExp(t, 'i').test(otabs)), otabs.replace(/\n/g, ' '));
+  check('Outreach opens on Email review (verified emails waiting for Adam)', /email review/i.test(await page.locator('main .tabs button.on').innerText()));
+  if (erFx) {
+    const erText = await page.locator('main').innerText();
+    check('Email review: separate counts — verified email / LinkedIn / Instagram — and the 40–50 email target', /verified emails ready today/i.test(erText) && /linkedin ready today/i.test(erText) && /instagram ready today/i.test(erText) && /40–50/.test(erText) && /not counted as email/i.test(erText));
+    check('Email review: verification capacity from the live Hunter read (plan, left, reset)', erText.includes(erFx.verification.account.plan) && erText.includes(`${erFx.verification.account.verifications_left} verifications left`) && /resets/i.test(erText));
+    const unv = page.locator(`#er-${erFx.needs_review[0].candidate_id}`);
+    check('Email review: a publicly listed (unverified) address cannot be approved', (await unv.locator('[data-er-approve]').isDisabled()) && /not verified/i.test(await unv.innerText()));
+    const ver = page.locator(`#er-${ER_TEST_ID}`);
+    check('Email review: a verified address shows SMTP-verified and an Approve → Gmail draft button', /smtp-verified/i.test(await ver.innerText()) && !(await ver.locator('[data-er-approve]').isDisabled()));
+    const erButtons = await page.locator('main button').allInnerTexts();
+    check('Email review: no Send button (approve never sends)', !erButtons.some((t) => /\bsend\b/i.test(t)), erButtons.filter((t) => /\bsend\b/i.test(t)).join(','));
+    const writesBeforeEr = calls.filter((c) => WRITES.includes(c.fn)).length;
+    await page.fill(`#er-s-${ER_TEST_ID}`, 'Partnership enquiry: Cheval Collection (edited)');
+    await page.click(`#er-${ER_TEST_ID} [data-er-approve]`);
+    await page.waitForTimeout(400);
+    const ea = calls.filter((c) => c.fn === 'hq_approve_email');
+    check('Approve → exactly one hq_approve_email with the candidate and the edited subject + body',
+      ea.length === 1 && ea[0].body.p_candidate === ER_TEST_ID && ea[0].body.p_subject === 'Partnership enquiry: Cheval Collection (edited)' && ea[0].body.p_body === erFx.needs_review[0].draft);
+    check('Approve message says nothing was sent', /nothing was sent/i.test(await page.locator('main').innerText()));
+    check('Approve made no other write', calls.filter((c) => WRITES.includes(c.fn)).length === writesBeforeEr);
+  } else check('Email review fixture present', false, 'tests/fixtures/email_review.json missing');
+  await page.click('main .tabs [data-otab=READY]');
   const readyCards = await page.locator('article.card.ready').count();
   check('Ready: cards equal the live approval-ready queue', readyCards === approvalsLive, `${readyCards}`);
   if (readyCards > 1) {
@@ -713,6 +743,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('.bnav [data-tab=inbox]');
   await step('3 Replies reachable from the bottom bar', /Replies/.test(await page.locator('main h2').innerText()));
   await page.click('.bnav [data-tab=outreach]');
+  await page.click('main .tabs [data-otab=READY]');
   await page.waitForSelector('article.card.ready');
   const btn = await page.locator('article.card.ready [data-act=approve]').first().boundingBox();
   await step('4 Outreach Ready: approve button tappable (>= 36px)', btn && btn.height >= 36);
@@ -743,6 +774,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForTimeout(300);
   await step('7c review one at a time: thumb-sized status chips, one tap saves', chip && chip.height >= 36 && last(calls, 'hq_relationship_status')?.body.p_status === 'REPLY_NOW');
   await page.click('.bnav [data-tab=outreach]').catch(async () => { await page.click('#bmenu'); await page.click('.sheet [data-tab=outreach]'); });
+  await page.click('main .tabs [data-otab=READY]');
   const readyN = await page.locator('article.card.ready').count();
   if (readyN > 1) {
     await page.click('main [data-one-toggle]');
@@ -808,6 +840,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const { browser, page } = await runScenario({ viewport: { width: 1280, height: 900 }, data: evil });
   await page.waitForSelector('.side');
   await page.click('.side [data-tab=outreach]');
+  await page.click('main .tabs [data-otab=READY]');
   await page.waitForSelector('article.card.ready');
   await page.click('.side [data-tab=companies]');
   const xss = await page.evaluate(() => window.__xss);

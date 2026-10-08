@@ -88,7 +88,7 @@ const state = {
   session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'overview', loading: false,
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
   com: null, account: {}, radarF: { h: 'ALL', region: '', cat: '', q: '' }, actF: { view: 'TODAY', seg: '', owner: '', track: '' }, parF: { tab: 'DEVELOP', cls: '' }, evF: { tab: 'UPCOMING' },
-  rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'READY', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
+  rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
@@ -161,7 +161,7 @@ const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 // ---------------------------------------------------------------- data
 async function load(silent = false) {
   if (!silent) { state.loading = true; render(); }
-  const [dash, ov, dir, ins, rel, com, exe] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial'), sb.rpc('hq_execution')]);
+  const [dash, ov, dir, ins, rel, com, exe, er] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial'), sb.rpc('hq_execution'), sb.rpc('hq_email_review')]);
   state.loading = false;
   state.errors = {};
   if (dash.error) {
@@ -173,6 +173,7 @@ async function load(silent = false) {
   if (rel.error) state.errors.rel = rel.error.message; else state.rel = rel.data;
   if (com.error) state.errors.com = com.error.message; else state.com = com.data;
   if (exe.error) state.errors.exec = exe.error.message; else state.exec = exe.data;
+  if (er.error) state.errors.er = er.error.message; else state.er = er.data;
   render();
   // The agent floor is heavier: refreshed only while one of its views is open.
   if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
@@ -233,8 +234,12 @@ function explain(r) {
     INVALID_STAGE: 'Unknown stage.', INVALID_CHANNEL: 'Unknown channel.', INVALID_STATUS: 'Unknown status.', INVALID_VALUE: 'Unknown value.',
     NOT_FOUND: 'Record not found — it may have been changed. Refresh.',
     OPPORTUNITY_REQUIRED: 'Open an opportunity first.',
+    SEND_DISABLED: 'Sending from HQ is switched off. Approve creates an unsent Gmail draft; you press Send in Gmail.',
+    NOT_AWAITING_REVIEW: 'This email is not waiting for review any more (approved, sent, on hold or skipped). Refresh.',
+    CANDIDATE_NOT_FOUND: 'This draft no longer exists. Refresh.',
+    NOT_AN_EMAIL: 'This is not an email draft.',
   };
-  if (reason.startsWith('EMAIL_NOT_VERIFIED')) return `Blocked: the contact email is ${reason.split(':')[1] || 'not verified'}. Only VERIFIED emails can be drafted.`;
+  if (reason.startsWith('EMAIL_NOT_VERIFIED')) return `Blocked: the email is ${String(reason.split(':')[1] || 'not verified').toLowerCase().replace('_', ' ')}, not SMTP-verified. Only verified emails become Gmail drafts.`;
   if (reason === 'DO_NOT_CONTACT') return 'Blocked: this contact is marked do-not-contact.';
   if (reason === 'NO_CONTACT' || reason === 'NO_EMAIL') return 'Blocked: no contact email on record.';
   return map[reason] || `Not done: ${reason}`;
@@ -596,7 +601,9 @@ function manualChannelCard(a) {
 function viewOutreach(d) {
   const a = d.approvals;
   const acts = state.ov?.actions || [];
+  const er = state.er || {};
   const tabs = {
+    'EMAIL REVIEW': er.needs_review || [],
     READY: a.filter((x) => x.loop_stage === 'PENDING_APPROVAL' && !x.block_reason),
     'FOLLOW-UP': openTasks(d).filter((t) => t.task_type === 'OUTREACH_FOLLOW_UP').sort((x, y) => new Date(x.due_at) - new Date(y.due_at)),
     LINKEDIN: acts.filter((x) => x.kind === 'LINKEDIN'),
@@ -608,6 +615,7 @@ function viewOutreach(d) {
   };
   const t = state.outreachTab;
   const intro = {
+    'EMAIL REVIEW': 'Emails to SMTP-verified addresses only, drafted and checked. Approve creates an unsent draft in noya@noyaconcierge.com — open it in Gmail and send it yourself. Approving never sends.',
     READY: 'Email outreach to a verified person, drafted and checked. Approve creates a Gmail draft — you press Send in Gmail.',
     'FOLLOW-UP': 'Conversations waiting on a follow-up. One follow-up, then an optional final one, then long term — never endless chasing.',
     LINKEDIN: 'Messages from you personally. Open the profile, paste the message, send it yourself, then press Mark sent so the follow-up is booked.',
@@ -624,7 +632,8 @@ function viewOutreach(d) {
   const list = one ? [tabs[t][oi]] : tabs[t];
   const oneNav = ['READY', 'LINKEDIN', 'INSTAGRAM'].includes(t) && tabs[t].length > 1 ? `<div class="review-nav"><button class="btn small ${state.oneByOne ? 'primary' : 'ghost'}" data-one-toggle>${state.oneByOne ? 'One at a time: on' : 'One at a time'}</button>
     ${one ? `<span><span class="small"><b>${oi + 1}</b> of ${tabs[t].length}</span> <button class="btn small ghost" data-o-step="-1" ${oi === 0 ? 'disabled' : ''}>Back</button><button class="btn small ghost" data-o-step="1" ${oi >= tabs[t].length - 1 ? 'disabled' : ''}>Skip</button></span>` : ''}</div>` : '';
-  if (t === 'READY') body = oneNav + (list.map(approvalCard).join('') || empty('No email outreach waiting for approval.'));
+  if (t === 'EMAIL REVIEW') body = emailReview(er);
+  else if (t === 'READY') body = oneNav + (list.map(approvalCard).join('') || empty('No email outreach waiting for approval.'));
   else if (t === 'LINKEDIN' || t === 'INSTAGRAM') body = oneNav + (list.map(manualChannelCard).join('') || empty('Nothing ready on this channel.'));
   else if (t === 'FOLLOW-UP') body = `<div class="list">${tabs[t].map((x) => `<div class="row"><div class="t">${esc(sentence(x.title))}</div><div class="meta">${esc(x.company_name || '')} · due ${esc(fmtDay(x.due_at))}${new Date(x.due_at) < new Date() ? ' · <span class="bad-text">overdue</span>' : ''}</div>
       <div class="btn-row mt6">${x.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : ''}<button class="btn small primary" data-modal="touch" data-channel="EMAIL" data-task="${x.id}" data-opp="${x.opportunity_id || ''}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${x.id}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${x.id}">No longer needed</button></div></div>`).join('') || empty('No follow-ups due.')}</div>`;
@@ -637,6 +646,60 @@ function viewOutreach(d) {
     ${body}`;
 }
 const empty = (t) => `<div class="panel"><div class="body"><div class="empty">${esc(t)}</div></div></div>`;
+
+// ---------------------------------------------------------------- EMAIL REVIEW (verified email -> Adam approves -> unsent Gmail draft)
+// Public email -> SMTP verification (workflow 24) -> email ready -> needs review -> Adam approves -> unsent Gmail draft -> Adam sends.
+const ER_STEPS = ['Public email', 'SMTP-verified', 'Draft written', 'Your review', 'Unsent Gmail draft', 'You send'];
+function emailCounts(er) {
+  const c = er.counts || {}; const v = er.verification || {}; const acc = v.account || {}; const cfg = v.config || {};
+  const tgt = Array.isArray(c.email_target) ? c.email_target.join('–') : '40–50';
+  const stat = (n, label, sub = '') => `<div class="er-stat"><div class="n">${esc(n ?? 0)}</div><div class="l">${esc(label)}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+  const left = acc.verifications_left != null ? `${acc.verifications_left} verifications left` : 'account not read yet';
+  return `<div class="er-stats">
+      ${stat(c.verified_email_ready, 'Verified emails ready today', `target ${esc(tgt)} a day`)}
+      ${stat(c.linkedin_ready, 'LinkedIn ready today', 'separate — not counted as email')}
+      ${stat(c.instagram_ready, 'Instagram ready today', 'separate — not counted as email')}
+      ${stat(c.emails_verified, 'Addresses verified today', `${esc(v.waiting ?? 0)} public addresses waiting`)}
+    </div>
+    <p class="src">Verification: ${esc(cfg.provider || 'HUNTER')} ${esc(acc.plan || '')} · ${esc(left)}${acc.reset_date ? ` · resets ${esc(fmtDay(acc.reset_date))}` : ''} · daily cap ${esc(cfg.daily_cap ?? '—')} · scope ${esc(String(cfg.scope || '').toLowerCase().replace(/_/g, ' '))}${v.last_run ? ` · last run ${esc(fmtDate(v.last_run))}` : ''}</p>
+    <div class="loop">${ER_STEPS.map((l) => `<span>${esc(l)}</span>`).join('')}</div>`;
+}
+function emailReviewCard(x) {
+  const id = esc(x.candidate_id);
+  const to = x.via_inbox ? `${esc(x.to_email)} <span class="muted small">(${esc(x.to_label || 'company inbox')}, for the attention of ${esc(x.person || 'the named person')})</span>` : esc(x.to_email || '—');
+  const verified = x.email_state === 'VERIFIED'
+    ? pill(`SMTP-verified${x.verified_at ? ` ${shortDay(x.verified_at)}` : ''}${x.verified_score != null ? ` · ${x.verified_score}` : ''}`, 'ok')
+    : pill(`Not verified (${String(x.email_state || 'unknown').toLowerCase().replace('_', ' ')})`, 'bad');
+  return `<article class="card er-card" id="er-${id}">
+    <div class="card-head"><div><div class="co">${esc(x.company)}</div><div class="muted small">${esc(x.person || '—')}${x.position ? ` · ${esc(x.position)}` : ''}</div></div>
+      <div class="pills">${verified}${x.qa_status && x.qa_status !== 'PASS' ? pill('Check the draft: quality gate flagged it', 'warn') : ''}</div></div>
+    <div class="kv"><div class="k">To</div><div class="v">${to}</div></div>
+    ${x.why_now ? `<div class="kv mt8"><div class="k">Why now</div><div class="v small">${esc(x.why_now)}</div></div>` : ''}
+    <label class="field mt8"><span>Subject</span><input id="er-s-${id}" maxlength="200" value="${esc(x.subject || '')}"></label>
+    <label class="field"><span>Email</span><textarea id="er-b-${id}" maxlength="8000">${esc(x.draft || '')}</textarea></label>
+    <div class="btn-row">
+      <button class="btn primary" data-er-approve="${id}" ${x.email_state === 'VERIFIED' ? '' : 'disabled'}>Approve → create Gmail draft</button>
+      ${x.task_id ? `<button class="btn ghost" data-modal="task-dismiss" data-id="${esc(x.task_id)}">Reject</button>` : ''}
+    </div>
+    <p class="src">Approve creates one unsent draft in noya@noyaconcierge.com. Nothing is sent until you press Send in Gmail.</p>
+  </article>`;
+}
+function emailReview(er) {
+  if (state.errors?.er) return `<div class="banner err">Email review could not load: ${esc(state.errors.er)}</div>`;
+  const row = (x, right) => `<div class="row"><div class="t">${esc(x.company)} · ${esc(x.person || x.to_email || '')}</div>
+      <div class="meta">${esc(x.to_email || '')} · ${esc(x.subject || '')}</div><div class="btn-row mt6">${right}</div></div>`;
+  const drafting = (er.drafting || []).map((x) => row(x, `${pill('Creating the Gmail draft…', 'info')}${x.outbound_id ? `<button class="btn small" data-act="redispatch" data-id="${esc(x.outbound_id)}">Retry draft creation</button>` : ''}`)).join('');
+  const inGmail = (er.in_gmail || []).map((x) => row(x, `${pill('Unsent draft in Gmail', 'ok')}<a class="btn small primary" href="${esc(x.gmail_url || GMAIL_DRAFTS_URL)}" target="_blank" rel="noopener noreferrer">Open in Gmail</a>`)).join('');
+  const failed = (er.failed || []).map((x) => row(x, `${pill(x.outbound_status === 'DISCARDED' ? 'Draft deleted in Gmail, not sent' : `Draft failed: ${x.error || 'unknown'}`, 'bad')}<button class="btn small" data-er-approve="${esc(x.candidate_id)}">Approve again</button>`)).join('');
+  const sent = (er.sent || []).slice(0, 10).map((x) => row(x, `${pill(`Sent by you ${fmtDay(x.sent_at)}`, 'ok')}${x.thread_id ? gmailLink(x.thread_id, 'Open thread') : ''}`)).join('');
+  const sec = (title, html, none) => `<section class="panel"><header><h3>${esc(title)}</h3></header><div class="body">${html ? `<div class="list">${html}</div>` : `<div class="empty">${esc(none)}</div>`}</div></section>`;
+  return `${emailCounts(er)}
+    ${(er.needs_review || []).map(emailReviewCard).join('') || empty('No verified email waiting for your review. Unverified addresses wait for workflow 24 and never appear here.')}
+    ${drafting ? sec('Creating Gmail drafts', drafting, '') : ''}
+    ${sec('In Gmail — waiting for you to send', inGmail, 'No unsent approved drafts in Gmail.')}
+    ${failed ? sec('Needs attention', failed, '') : ''}
+    ${sec('Sent by you (last 21 days)', sent, 'Nothing sent from approved drafts yet.')}`;
+}
 
 function loopBar(stage) {
   const order = ['PENDING_APPROVAL', 'DRAFT_CREATED', 'SENT', 'REPLIED', 'NEXT'];
@@ -2324,6 +2387,14 @@ function bind() {
   on('[data-draft-act]', 'click', (b) => call('hq_draft_action', { p_draft: b.dataset.id, p_action: b.dataset.draftAct, p_text: null }, b.dataset.draftAct === 'RETRY' ? 'Draft re-requested.' : 'Draft discarded.'));
   on('[data-confirm-task]', 'click', (b) => confirmTask(b.dataset.confirmTask));
   $('#m-ok')?.addEventListener('click', submitModal);
+  on('[data-er-approve]', 'click', async (b) => {
+    const id = b.dataset.erApprove;
+    const subject = $(`#er-s-${id}`)?.value; const body = $(`#er-b-${id}`)?.value;
+    b.disabled = true;
+    const r = await call('hq_approve_email', { p_candidate: id, p_subject: subject ?? null, p_body: body ?? null },
+      'Approved. Creating one unsent draft in noya@noyaconcierge.com — open it in Gmail and send it yourself. Nothing was sent.');
+    if (r && r.ok) state.pollUntil = Date.now() + 120000;
+  });
   on('[data-act]', 'click', async (b) => {
     if (b.dataset.act === 'redispatch') { await call('hq_redispatch', { p_outbound_id: b.dataset.id }, 'Draft creation re-requested.'); state.pollUntil = Date.now() + 120000; return; }
     state.modal = { kind: b.dataset.act, id: b.dataset.id }; render();
