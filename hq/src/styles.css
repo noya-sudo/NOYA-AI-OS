@@ -460,3 +460,32 @@ details.tech summary { font-size: 11px; color: var(--faint); }
   .t-btns .btn, .today-sec header .btn { min-height: 34px; }
   .bnav button { font-size: 11px; }
 }
+
+/* HQ Advisor (Today, Agents) and channel health on Director cards */
+.advisor { background: var(--panel, #fff); border: 1px solid var(--line); border-left: 3px solid var(--navy); border-radius: var(--radius); padding: 14px 16px; margin: 0 0 14px; }
+.adv-brief { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.adv-chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; }
+.adv-chip:hover { border-color: var(--navy); }
+.adv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 2px 0 6px; }
+.adv-head h3 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.adv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.adv-obs { border-top: 1px solid var(--line); padding-top: 8px; }
+.adv-obs:first-child { border-top: 0; padding-top: 0; }
+.adv-k { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--warn, #9a6400); font-weight: 600; }
+.adv-s { font-weight: 600; color: var(--text); }
+.adv-m { color: var(--muted); font-size: 13px; }
+.adv-a { font-size: 13px; color: var(--navy); margin-top: 2px; }
+.adv-changed { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+.advisor-strip .adv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.advisor-strip h6, .modal h6 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.adv-row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.adv-row:last-child { border-bottom: 0; }
+.adv-summary { font-size: 14px; margin: 4px 0 10px; }
+.modal.wide { max-width: 860px; width: calc(100% - 32px); max-height: 88vh; overflow-y: auto; }
+.dc-channel { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.dc-cov { font-size: 13px; margin-bottom: 5px; }
+.ch-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ch-chip { font-size: 11.5px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; color: var(--muted); white-space: nowrap; }
+.ch-chip b { color: var(--text); }
+.ch-chip.ok b { color: var(--ok, #1f7a4d); }
+@media (max-width: 860px) { .advisor-strip .adv-cols { grid-template-columns: 1fr; } .advisor { padding: 12px; } }

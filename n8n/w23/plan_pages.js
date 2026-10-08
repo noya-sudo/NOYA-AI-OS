@@ -1,6 +1,6 @@
 // Choose the official pages to read for each company (research order: contact, team / leadership, partnerships / sales,
-// press / media, media kit, then the homepage). At most 5 pages a company; PDFs are not fetched (their indexed text
-// still comes through the search snippets). Every company gets at least one item so none is dropped.
+// press / media, media kit, then the homepage). At most 7 pages a company; PDFs are not fetched (their indexed text
+// still comes through the search snippets). With no team page in the results, /about is read too. Every company gets at least one item so none is dropped.
 // A company without a trusted website (none on file, or one that does not carry its name, e.g. a news site saved by mistake)
 // gets its official domain from the search results: the first result whose domain carries a distinctive word of the company
 // name. Nothing is read or accepted from any other domain.
@@ -68,14 +68,16 @@ queue.forEach(function (c, ci) {
   });
   picks.sort(function (a, b) { return b.sc - a.sc; });
   var urls = [];
-  picks.forEach(function (p) { var u = p.url.split('#')[0]; if (urls.indexOf(u) < 0 && urls.length < 4) urls.push(u); });
+  picks.forEach(function (p) { var u = p.url.split('#')[0]; if (urls.indexOf(u) < 0 && urls.length < 5) urls.push(u); });
   var home = c.website ? (/^https?:\/\//.test(c.website) ? c.website : 'https://' + c.website) : '';
   if (!onDomain(home, d)) home = origin;
   if (home && onDomain(home, d) && urls.indexOf(home) < 0) urls.push(home);
   // no contact page found by search: try the two conventional addresses
   if (home && onDomain(home, d) && !urls.some(function (u) { return /contact/i.test(u); })) {
-    urls = urls.slice(0, 3); urls.push(home.replace(/\/+$/, '') + '/contact'); urls.push(home.replace(/\/+$/, '') + '/contact-us'); }
-  urls = urls.slice(0, 5);
+    urls = urls.slice(0, 4); urls.push(home.replace(/\/+$/, '') + '/contact'); urls.push(home.replace(/\/+$/, '') + '/contact-us'); }
+  if (home && onDomain(home, d) && !urls.some(function (u) { return /(team|about|people|leadership|founder|who-we-are|our-story)/i.test(u); }))
+    urls.push(home.replace(/\/+$/, '') + '/about');
+  urls = urls.slice(0, 7);
   if (!urls.length) out.push({ json: { ci: ci, url: '', skip: true, dom: found } });
   urls.forEach(function (u) { out.push({ json: { ci: ci, url: u, skip: false, dom: found } }); });
 });

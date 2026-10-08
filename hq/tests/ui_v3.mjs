@@ -9,7 +9,7 @@ import { chromium } from 'playwright-core';
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const fx = (f) => (existsSync(`tests/fixtures/${f}.json`) ? JSON.parse(readFileSync(`tests/fixtures/${f}.json`, 'utf8')) : null);
-const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'director_hospitality', 'director_partnerships', 'director_growth', 'director_email'];
+const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'director_hospitality', 'director_partnerships', 'director_growth', 'director_email', 'advisor', 'weekly'];
 if (need.some((f) => !fx(f))) { console.log(`SKIP ui_v3: live fixtures missing (${need.filter((f) => !fx(f)).join(', ')})`); process.exit(0); }
 const F = Object.fromEntries(need.map((f) => [f, fx(f)]));
 const DET = { HOSPITALITY: F.director_hospitality, PARTNERSHIPS: F.director_partnerships, GROWTH: F.director_growth, EMAIL: F.director_email };
@@ -20,12 +20,13 @@ const READS = {
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
   hq_execution: () => null, hq_email_review: () => ({ counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] }),
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_directors: () => F.directors, hq_club: () => F.club,
+  hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly,
   hq_director: (b) => DET[b?.p_key] || { key: b?.p_key, sections: [] }, hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
 };
 const WRITES = { hq_approve_draft: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a1' },
   hq_approve_email: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a2' },
   hq_outreach_action: { ok: true }, hq_outreach_edit: { ok: true }, hq_save_draft: { ok: true, version: 2 }, hq_task_action: { ok: true }, hq_task_dismiss: { ok: true },
-  hq_club_person: { ok: true, id: '00000000-0000-0000-0000-0000000000c1' }, hq_redispatch: { ok: true }, hq_record_meeting: { ok: true } };
+  hq_club_person: { ok: true, id: '00000000-0000-0000-0000-0000000000c1' }, hq_redispatch: { ok: true }, hq_record_meeting: { ok: true }, hq_advisor_seen: { ok: true } };
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
@@ -99,6 +100,25 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   check('Today: replies waiting equals the Agents strip (open reply and review tasks, incl. personal follow-ups)', replies ? new RegExp(`Replies waiting for you\\s*${replies}`, 'i').test(today) : !/Replies waiting/i.test(today), `${replies}`);
   check('Today: meetings and calls equal the Agents strip (no double count)', meets ? new RegExp(`Meetings and calls\\s*${meets}`, 'i').test(today) : !/Meetings and calls/i.test(today), `${meets}`);
   check('Today: calm — no engineering words, no metrics walls', !/workflow|supabase|n8n|rpc|pipeline value|P1|P2|P3/i.test(today) && (await page.locator('main .tile').count()) === 0);
+  // HQ ADVISOR on Today: greeting, the brief, 3-5 observations (situation -> meaning -> action), what changed.
+  const A = F.advisor;
+  await page.waitForSelector('main .advisor .adv-head');
+  const adv = await page.locator('main .advisor').innerText();
+  check('Today Advisor: greeting, the brief, and at most 5 observations, each with a recommended action',
+    new RegExp(A.greeting, 'i').test(await page.locator('main h1').first().innerText()) && A.brief.every((b) => adv.includes(b.text))
+      && (await page.locator('main .adv-obs').count()) === A.observations.length && A.observations.length <= 5
+      && (await page.locator('main .adv-obs .adv-a').count()) === A.observations.length, `${A.observations.length} observations`);
+  check('Today Advisor: every observation is NOYA data, situation and action shown verbatim (nothing invented in the page)', A.observations.every((o) => adv.includes(o.situation) && adv.includes(o.action)));
+  check('Today Advisor: the visit is marked before the read, so "since" is the previous visit',
+    calls.findIndex((c) => c.fn === 'hq_advisor_seen') >= 0 && calls.findIndex((c) => c.fn === 'hq_advisor_seen') < calls.findIndex((c) => c.fn === 'hq_advisor'));
+  check('Today Advisor: what changed is listed', !(A.changed || []).length || A.changed.every((c) => adv.includes(c.text)));
+  await page.click('main .advisor [data-weekly]');
+  await page.waitForSelector('.modal.wide table');
+  const wk = await page.locator('.modal.wide').innerText();
+  check('Weekly review: sent, reply rate, positive reply rate, meetings, proposals, wins, coverage by Director, weakest bottleneck, allocation',
+    /Reply rate/i.test(wk) && /Positive reply rate/i.test(wk) && /Meetings/i.test(wk) && /Proposals/i.test(wk) && /Wins/i.test(wk)
+      && (await page.locator('.modal.wide tbody tr').count()) === F.weekly.by_director.length && (!F.weekly.weakest_bottleneck || wk.includes(F.weekly.weakest_bottleneck)), wk.slice(0, 120));
+  await page.click('.modal.wide [data-close]');
   await shot(page, 'today-1440');
 
   // AGENTS: the workforce.
@@ -117,6 +137,15 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   const growth = DIR.members.find((m) => m.key === 'GROWTH');
   check('Agents: Growth is honestly blocked by the Windsor plan limit', growth.status === 'BLOCKED' && cards.some((c) => /Growth, Social & Paid Media/.test(c) && /Windsor free plan/.test(c)));
   check('Agents: activity feed is real stored events', (await page.locator('main .feed-row').count()) === Math.min(20, DIR.feed.length) && (await page.locator('main').innerText()).includes(DIR.feed[0].text));
+  const withCh = DIR.members.filter((m) => m.role !== 'SUPPORT' && m.key !== 'GROWTH');
+  const brand = DIR.members.find((m) => m.key === 'BRANDS');
+  check('Agents: every Director shows email coverage and channel health (verified, needs verification, email gap, LinkedIn and Instagram fallback, needs review)',
+    withCh.every((m) => m.channel) && withCh.length === (await page.locator('.dcard .dc-channel').count())
+      && cards.some((c) => /Brands & Production/.test(c) && c.includes(`Email coverage ${brand.channel.coverage_pct}%`) && /LinkedIn fallback/i.test(c) && /needs verification/i.test(c) && /email gap/i.test(c)));
+  check('Agents: email coverage = verified / with a decision maker for every Director', withCh.every((m) => m.channel.coverage_pct === (m.channel.with_dm ? Math.round(100 * m.channel.verified / m.channel.with_dm) : null)));
+  const strip = await page.locator('main .advisor-strip').innerText().catch(() => '');
+  check('Agents: HQ Advisor strip shows bottlenecks and where NOYA is winning or wasting time',
+    A.observations.filter((o) => o.kind === 'BOTTLENECK').every((o) => strip.includes(o.situation)) && (A.winning || []).every((w) => strip.includes(w.text)));
   await shot(page, 'agents-1440');
 
   // Director drill-down: Hospitality & Stays.
@@ -182,6 +211,17 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   check('Desk: technical labels hidden under Technical details', !/SALES_OUTREACH_APPROVAL|OUTREACH_FOLLOW_UP|Workflow \d|EMAIL_CANDIDATE|OPPORTUNITY_DRAFT/.test(vis) && (await page.locator('main details.tech').count()) === (await page.locator('main .drow').count()));
   check('Desk: compact rows carry person, company, Director, channel, route, verification, why-now, angle, subject, preview, age',
     (await page.locator('main .drow .dr-pills').count()) === (await page.locator('main .drow').count()) && /Why now/i.test(vis) && /Angle/i.test(vis) && /\d+ d\b/.test(vis));
+  // Email first: a LinkedIn / Instagram message reaches Needs review only as a documented fallback.
+  const cold = D.needs_review.filter((x) => ['LINKEDIN', 'INSTAGRAM'].includes(x.channel) && /^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY)/.test(x.tech?.title || ''));
+  check('Desk: every LinkedIn / Instagram message in Needs review is a fallback with email-exhaustion evidence', cold.every((x) => x.fallback && x.fallback.evidence), `${cold.length} fallbacks`);
+  check('Desk: messages waiting on email research sit in Researching with the reason', D.researching.filter((x) => /^Email first/.test(x.reason || '')).every((x) => ['LINKEDIN', 'INSTAGRAM'].includes(x.channel)));
+  const fb = cold[0];
+  if (fb) {
+    await page.click('main [data-desk-ch=""]'); if (fb.channel === 'LINKEDIN') await page.click('main [data-desk-ch=LINKEDIN]');
+    const row = await page.locator(`#desk-${fb.ref}`).innerText().catch(() => '');
+    check('Desk: a fallback row says so and shows what email research was done', new RegExp(fb.fallback.label.split(' — ')[0], 'i').test(row) && /email checked/i.test(row) && row.includes(fb.fallback.evidence.slice(0, 40)), row.slice(0, 160));
+    await page.click('main [data-desk-ch=""]');
+  }
   // Approve an email: re-validated server-side, creates an unsent Gmail draft, never a send.
   const em = D.needs_review.find((x) => x.channel === 'EMAIL' && x.approve_via);
   if (em) {

@@ -80,7 +80,7 @@ var disc = {};
 plan.forEach(function (p) { if (p.json && p.json.dom) disc[p.json.ci] = p.json.dom; });
 function domOf(ci, c) { return c.domain || disc[ci] || ''; }
 var byCo = {};
-function co(ci) { return byCo[ci] || (byCo[ci] = { emails: {}, docs: [], fetched: 0, read: 0, searches: 0, scoped: 0 }); }
+function co(ci) { return byCo[ci] || (byCo[ci] = { emails: {}, docs: [], fetched: 0, read: 0, searches: 0, scoped: 0, kinds: {}, urls: [] }); }
 function harvest(ci, c, text, url, viaInstagram) {
   var b = co(ci); var d = domOf(ci, c); var t = String(text || ''); var scope = viaInstagram ? [] : scopeTokens(c.company, d);
   var found = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,24}/gi) || [];
@@ -112,7 +112,7 @@ pages.forEach(function (p, i) {
   var body = typeof j.body === 'string' ? j.body : (typeof j.data === 'string' ? j.data : '');
   var ok = body && (!j.statusCode || j.statusCode < 400);
   if (!ok) return;
-  b.read++;
+  b.read++; b.urls.push(meta.url);
   var text = toText(body);
   harvest(meta.ci, c, text, meta.url, false);
   var sc = scopeTokens(c.company, domOf(meta.ci, c));
@@ -127,7 +127,7 @@ pages.forEach(function (p, i) {
 serp.forEach(function (r, i) {
   var meta = qs[i] && qs[i].json; if (!meta) return;
   var c = queue[meta.ci]; if (!c) return;
-  co(meta.ci).searches++;
+  co(meta.ci).searches++; co(meta.ci).kinds[meta.kind] = 1;
   ((r.json && r.json.organic) || []).slice(0, 10).forEach(function (o) {
     var ig = String(c.instagram || '').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?#].*$/, '').toLowerCase();
     var viaIg = meta.kind === 'INSTAGRAM' && !!ig && String(o.link || '').toLowerCase().indexOf('instagram.com/' + ig) >= 0;
@@ -143,7 +143,10 @@ var out = [];
 queue.forEach(function (c, ci) {
   var b = co(ci);
   var emails = Object.keys(b.emails).map(function (k) { return b.emails[k]; });
-  var research = { searches: b.searches, pages_fetched: b.fetched, pages_read: b.read, emails_seen: emails.length, out_of_scope: b.scoped };
+  // what this pass covered (version 2 = the full email-first checklist): the evidence behind any later LinkedIn fallback
+  var research = { searches: b.searches, pages_fetched: b.fetched, pages_read: b.read, emails_seen: emails.length, out_of_scope: b.scoped,
+    checked: { version: 2, kinds: Object.keys(b.kinds), pages: b.urls.slice(0, 8),
+      people: (c.people || []).filter(function (p) { return p.first_name && p.last_name && !p.email; }).slice(0, 2).map(function (p) { return p.first_name + ' ' + p.last_name; }) } };
   var found = c.domain ? '' : (disc[ci] || '');
   if (!emails.length && !b.docs.length) { out.push({ json: { company: c, found_domain: found, emails: [], docs: [], research: research, has_evidence: false } }); return; }
   var prompt = 'Company: ' + c.company + (domOf(ci, c) ? ' (' + domOf(ci, c) + ')' : '') + (c.country ? ', ' + c.country : '') + (c.company_type ? ', ' + c.company_type : '') +

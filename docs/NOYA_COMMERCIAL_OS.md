@@ -771,3 +771,68 @@ I 390 px screens without horizontal scroll. Tests: security scan, 202 classic UI
 
 **Freeze.** No new dashboards, agent categories, navigation redesigns or metrics unless something is broken or real commercial
 performance proves a change is needed.
+
+## Email-first outreach and the HQ Advisor (8 Oct 2026, final amendment)
+
+Email is the primary cold-outreach channel. LinkedIn is a documented fallback; Instagram a selective lifestyle fallback.
+Migration `20261010000000_email_first.sql`; workflows 23 (upgraded) and 25 (new).
+
+**Route state per decision maker** (`contact_email_route`): VERIFIED (their own VALID_VERIFIED address) · VERIFIED_INBOX (a
+verified partnerships / sales / events inbox for their attention) · NEEDS_VERIFICATION (an address found, waiting for the
+provider check, at most 10 days) · RESEARCH_PENDING (full research has not covered this person: never run, run before they
+were confirmed, older than 60 days, or run before the full checklist) · EXHAUSTED (research done, nothing verifiable).
+`company_email_state` takes the best route across a company's decision makers; `prospect_routes()` lists every qualified company.
+
+**LinkedIn fallback rule.** The planner (`commercial_director_plan`) emails VERIFIED / VERIFIED_INBOX prospects first in every
+lane's quota; it chooses LinkedIn (or Instagram for lifestyle lanes) only for EXHAUSTED prospects and stores the reason
+(`outreach_candidates.channel_reason`: "LINKEDIN FALLBACK — EMAIL EXHAUSTED. Email research DD Mon: N searches (site, indexed,
+docs, person, people web, directory, instagram), M official pages read, K addresses seen. …"). RESEARCH_PENDING and
+NEEDS_VERIFICATION prospects are not planned. A LinkedIn / Instagram message prepared before a verified email existed is
+retired so the email replaces it. On the desk, a LinkedIn / Instagram message is in Needs review only as a fallback (label +
+"Email checked" evidence); otherwise it waits in Researching with the reason.
+
+**Email Intelligence (workflow 23), full checklist.** Per company, up to 7 searches — SITE (contact / team / partnerships /
+press / sales pages), INDEXED (addresses on the domain anywhere: press releases, speaker bios, interviews, exhibitor pages),
+DOCS (PDFs, media kits, press kits, brochures, fact sheets), PERSON (named decision makers + "@domain"), PEOPLE_WEB (the top
+decision maker on speaker pages, interviews, credits, awards), DIRECTORY (wedding directories, travel trade press, agency
+trade press, hotel press, by sector), INSTAGRAM (business bio) — and up to 7 official pages read (adds /about when no team
+page is found). Only an address printed on the company's own domain (or its own Instagram bio) is kept; nothing is guessed or
+built from a pattern; compliance / investor / careers / support inboxes are excluded. Each pass records what it checked
+(`email_research.checked`, version 2). Queue: Brands, Weddings and Travel first, companies whose LinkedIn message is waiting
+jump the queue, 12 companies a run, six runs a day (03:15, 09:45, 12:15, 15:45, 18:15, 23:15 Cairo).
+
+**Provider step.** Verification (workflow 24) now covers every confirmed decision maker's address (role score 3+) and a
+department inbox when no decision-maker address exists, cohort under test first, then Brands → Weddings → Travel →
+Hospitality → Corporate. Workflow 25 (Hunter Email Finder, 20:55 Cairo) looks up a person by name + company domain only when
+the company and person are established and public research is EXHAUSTED; the address is saved only when Hunter verifies it
+valid on that domain (`email_finder_log`), after verification has used its share and with a credit reserve.
+
+**Channel health and email coverage** (`director_channel_health`, on every Director card): verified email · needs
+verification · email gap · LinkedIn fallback · Instagram fallback · needs review, and EMAIL COVERAGE = qualified prospects
+with a VALID_VERIFIED email / qualified prospects with a confirmed decision maker.
+
+**HQ Advisor** (`hq_advisor`, `hq_advisor_seen`, `hq_weekly_review`). Today opens with the greeting, a one-line brief (replies,
+verified emails waiting for approval, approved Gmail drafts unsent, meetings, overdue follow-ups, Brands against its 8–12 a day
+target) and at most five observations, each situation → meaning → recommended action, ranked: replies, unsent Gmail drafts,
+emails to review, CONTACT ENRICHMENT BOTTLENECK (a Director with 8+ decision makers below 30% coverage), verification capacity,
+research backlog, overdue follow-ups, prospect buffer. "Since your last visit" lists what changed. Agents carries the
+bottlenecks and where NOYA is winning / wasting time (30 days of real replies and sends; LinkedIn reliance). The weekly
+review: sent (email / LinkedIn), reply and positive-reply rate, meetings, proposals, wins, verified emails, email vs LinkedIn
+drafts, coverage and results by Director, strongest opportunities, weakest bottleneck, recommended allocation. Rules fire only
+on their numbers; nothing is invented.
+
+**Cohort acceptance EF-COHORT-1008 (8 Oct 2026).** 60 qualified companies (20 Brands & Production, 20 Weddings & Events,
+20 Travel & Concierge), each with a confirmed decision maker, all fully researched (average 6.0–6.5 searches and 4.3–5.0
+official pages per company), then verified (workflow 24, 20:40 Cairo). `email_first_cohort_report('EF-COHORT-1008')`:
+
+| Cohort | Qualified | Correct DM | Public email found (named / dept) | VALID_VERIFIED | LinkedIn fallback (with evidence) | Email in Needs review | Email coverage |
+|---|---|---|---|---|---|---|---|
+| Brands & Production | 20 | 20 | 6 | 2 | 16 (16) | 0 | 10% |
+| Weddings & Events | 20 | 20 | 5 | 1 | 16 (16) | 0 | 5% |
+| Travel & Concierge | 20 | 20 | 5 | 3 | 17 (17) | 0 | 15% |
+
+Rule test: passed — every LinkedIn fallback carries its email-exhaustion evidence; no prospect was routed to LinkedIn before
+research. Coverage test: low. Of the 54 companies where public research is exhausted, 23 publish a general inbox (info@ /
+hello@ / enquiries@: Weddings 11, Travel 8, Brands 4), 21 publish no business address at all, and 10 publish only a press
+address or an address that failed verification (accept-all domain or invalid). Remaining levers: provider lookup by name (workflow 25, capped by Hunter Free credits) and a policy on general inboxes for boutique
+firms — both are CEO decisions, recorded in the acceptance report.

@@ -28,7 +28,9 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_commercial', 'hq_execution', 'hq_account', 'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial',
   'hq_partner_upsert', 'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email',
   // HQ V3 (9 Oct): admin-gated reads and audited desk / club writes
-  'hq_outreach_desk', 'hq_operations', 'hq_directors', 'hq_director', 'hq_club', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person'];
+  'hq_outreach_desk', 'hq_operations', 'hq_directors', 'hq_director', 'hq_club', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person',
+  // Email-first amendment (8 Oct): the HQ Advisor, its visit marker and the weekly review (admin-gated)
+  'hq_advisor', 'hq_advisor_seen', 'hq_weekly_review'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

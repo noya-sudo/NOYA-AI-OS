@@ -21,6 +21,16 @@ const overview = JSON.parse(readFileSync('tests/fixtures/overview.json', 'utf8')
 const directory = JSON.parse(readFileSync('tests/fixtures/directory.json', 'utf8'));
 const insight = JSON.parse(readFileSync('tests/fixtures/insight.json', 'utf8'));
 const relationships = JSON.parse(readFileSync('tests/fixtures/relationships.json', 'utf8'));
+// Test-only variant: live data can hold no ready approval (every pending one blocked for a reason). The approval-loop checks need one,
+// so a real blocked draft whose address was unverified is treated as verified in memory only, and the Today scorecard counts it too.
+if (!snapshot.approvals.some((a) => a.loop_stage === 'PENDING_APPROVAL' && !a.block_reason)) {
+  const a = snapshot.approvals.find((x) => x.loop_stage === 'PENDING_APPROVAL' && /^EMAIL_NOT_VERIFIED/.test(x.block_reason || '') && x.draft?.subject && x.draft?.body);
+  if (a) {
+    Object.assign(a, { block_reason: null, email_status: 'VERIFIED' });
+    overview.scorecard.approvals_ready.n += 1;
+    console.log(`NOTE  no ready approval in the live data; the test treats ${a.company_name}'s draft as verified (in memory only)`);
+  }
+}
 // Agents fixtures: a trimmed live agents_snapshot() and agent_detail('HOSPITALITY') (git-ignored, real data only).
 const agentsFx = existsSync('tests/fixtures/agents.json') ? JSON.parse(readFileSync('tests/fixtures/agents.json', 'utf8')) : null;
 const agentFx = existsSync('tests/fixtures/agent_hospitality.json') ? JSON.parse(readFileSync('tests/fixtures/agent_hospitality.json', 'utf8')) : null;
@@ -115,11 +125,13 @@ const fx = (f) => (existsSync(`tests/fixtures/${f}.json`) ? JSON.parse(readFileS
 const V3FX = { desk: fx('desk'), ops: fx('operations'), directors: fx('directors'), club: fx('club'),
   HOSPITALITY: fx('director_hospitality'), PARTNERSHIPS: fx('director_partnerships'), GROWTH: fx('director_growth'), EMAIL: fx('director_email') };
 const V3 = { hq_outreach_desk: () => V3FX.desk, hq_operations: () => V3FX.ops, hq_directors: () => V3FX.directors, hq_club: () => V3FX.club,
-  hq_director: (b) => V3FX[b?.p_key] || { key: b?.p_key, sections: [] }, hq_growth: () => V3FX.GROWTH?.growth };
+  hq_director: (b) => V3FX[b?.p_key] || { key: b?.p_key, sections: [] }, hq_growth: () => V3FX.GROWTH?.growth,
+  hq_advisor: () => fx('advisor'), hq_weekly_review: () => fx('weekly') };
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
   'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update',
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
-  'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person', 'hq_redispatch'];
+  'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person', 'hq_redispatch',
+  'hq_advisor_seen'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
   'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
 const results = [];

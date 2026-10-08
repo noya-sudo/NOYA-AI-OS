@@ -183,6 +183,7 @@ async function load(silent = false) {
   if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
   if (state.directors && ['agents', 'director'].includes(state.tab)) { loadV3('directors', 'hq_directors', {}, true); if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true); }
   if (state.club && state.tab === 'club') loadV3('club', 'hq_club', {}, true);
+  loadAdvisor();
 }
 
 async function loadTimeline(kind, id) {
@@ -368,7 +369,7 @@ function render() {
     </nav>
     ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['club', 'Club'], ['ops', 'Operations']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? renderDrawer(state.drawer) : ''}
-    ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : renderAnyModal(state.modal)) : ''}`;
+    ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : renderAnyModal(state.modal)) : ''}`;
   bind();
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
@@ -405,6 +406,7 @@ function prettyAction(a) {
   const who = a.person || a.company || '';
   switch (a.kind) {
     case 'MEETING': return `Reply to ${who} — meeting requested`;
+    case 'REPLY': return `Reply to ${who}${a.person && a.company ? ` (${a.company})` : ''}`;
     case 'APPROVE': return `Approve outreach to ${a.person ? `${a.person} (${a.company})` : a.company}${/Adam personal/.test(a.action) ? ' — personal' : ''}`;
     case 'LINKEDIN': return `Message ${who} on LinkedIn`;
     case 'INSTAGRAM': return `DM ${a.company || who} on Instagram`;
@@ -2740,6 +2742,65 @@ const ESTATE = { VALID_VERIFIED: ['Valid · verified', 'ok'], ACCEPT_ALL: ['Acce
   UNKNOWN: ['Unknown', 'warn'], INVALID: ['Invalid', 'bad'], NOT_FOUND: ['No email', ''] };
 const estatePill = (s) => { const [l, c] = ESTATE[s] || [s || 'No email', '']; return pill(l, c); };
 
+// ---------------------------------------------------------------- HQ ADVISOR: Adam's Chief of Staff across every Director
+// hq_advisor(): the brief, 3-5 observations (situation -> meaning -> action), what changed since the last visit, where NOYA is
+// winning and wasting time. hq_advisor_seen() marks the visit first, so "since" is the previous visit. All from NOYA data.
+async function loadAdvisor() {
+  if (state.busy.advisor) return;
+  if (!state.advisorSeen) { state.advisorSeen = true; await sb.rpc('hq_advisor_seen'); }
+  loadV3('advisor', 'hq_advisor', {}, true);
+}
+function advisorToday() {
+  const A = state.advisor;
+  if (!A) return state.errors.advisor ? '' : '<section class="advisor"><p class="muted small">HQ Advisor is reading the Directors…</p></section>';
+  const brief = (A.brief || []).map((b) => `<button class="adv-chip" data-go="${esc(b.tab)}">${esc(b.text)}</button>`).join('');
+  const obs = (A.observations || []).map((o) => `<li class="adv-obs ${o.kind === 'BOTTLENECK' ? 'bottleneck' : o.kind === 'ATTENTION' ? 'attention' : ''}">
+      ${o.title ? `<div class="adv-k">${esc(o.title)}</div>` : ''}<div class="adv-s">${esc(o.situation)}</div><div class="adv-m">${esc(o.meaning)}</div>
+      <div class="adv-a">→ ${esc(o.action)}</div></li>`).join('');
+  const changed = (A.changed || []).map((c) => c.text).join(' · ');
+  return `<section class="advisor">${brief ? `<div class="adv-brief">${brief}</div>` : ''}
+    <div class="adv-head"><h3>HQ Advisor</h3><button class="linkish" data-weekly>Weekly review</button></div>
+    ${obs ? `<ol class="adv-list">${obs}</ol>` : '<p class="muted small">Nothing to flag: the Directors are on plan.</p>'}
+    ${changed ? `<p class="adv-changed"><b>Since ${esc(fmtDate(A.since))}:</b> ${esc(changed)}</p>` : ''}</section>`;
+}
+function advisorAgents() {
+  const A = state.advisor; if (!A) return '';
+  const b = (A.observations || []).filter((o) => o.kind === 'BOTTLENECK');
+  if (!b.length && !(A.winning || []).length && !(A.wasting || []).length) return '';
+  return `<section class="panel advisor-strip"><header><h3>HQ Advisor</h3><button class="linkish" data-weekly>Weekly review</button></header><div class="body adv-cols">
+    <div><h6>Bottlenecks</h6>${b.map((o) => `<div class="adv-row"><b>${esc(o.title || '')}</b> ${esc(o.situation)} <span class="faint">→ ${esc(o.action)}</span></div>`).join('') || '<p class="muted small">None.</p>'}</div>
+    <div><h6>Where NOYA is winning</h6>${(A.winning || []).map((w) => `<div class="adv-row">${esc(w.text)}</div>`).join('') || '<p class="muted small">No replies in the last 30 days yet.</p>'}
+      <h6 class="mt8">Where time is being wasted</h6>${(A.wasting || []).map((w) => `<div class="adv-row">${esc(w.text)}</div>`).join('') || '<p class="muted small">Nothing flagged.</p>'}</div></div></section>`;
+}
+function weeklyModal() {
+  const W = state.weekly;
+  let body = waitFor('weekly', 'the weekly review');
+  if (W) {
+    const t = W.this_week || {}; const p = W.previous_week || {};
+    const tl = (n, l) => `<div class="tile"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+    body = `<p class="adv-summary">This week: ${esc(plural(n0(t.sent), 'message sent', 'messages sent'))} (${n0(t.sent_email)} email, ${n0(t.sent_linkedin)} LinkedIn; ${n0(p.sent)} the week before),
+        ${esc(plural(n0(t.replies), 'reply', 'replies'))}${W.reply_rate_pct != null ? ` (${W.reply_rate_pct}%)` : ''}, ${esc(plural(n0(W.meetings), 'meeting', 'meetings'))}, ${esc(plural(n0(W.wins), 'win', 'wins'))}.</p>
+      <div class="tiles">${tl(n0(t.sent), 'Outreach sent')}${tl(W.reply_rate_pct != null ? `${W.reply_rate_pct}%` : '—', 'Reply rate')}${tl(W.positive_reply_rate_pct != null ? `${W.positive_reply_rate_pct}%` : '—', 'Positive reply rate')}
+        ${tl(n0(W.meetings), 'Meetings')}${tl(n0(W.proposals), 'Proposals')}${tl(n0(W.wins), 'Wins')}${tl(n0(W.verified_emails), 'Verified emails')}${tl(`${n0(W.email_drafts)} / ${n0(W.linkedin_drafts)}`, 'Email / LinkedIn drafts')}</div>
+      <div class="tbl-wrap mt8"><table class="stack"><thead><tr><th>Director</th><th class="num">Email coverage</th><th class="num">Verified / with decision maker</th><th class="num">LinkedIn fallback</th><th class="num">Sent</th><th class="num">Replies</th></tr></thead><tbody>
+        ${(W.by_director || []).map((d) => `<tr><td>${esc(d.label)}</td><td class="num" data-l="Email coverage">${d.coverage_pct == null ? '—' : `${esc(d.coverage_pct)}%`}</td><td class="num" data-l="Verified / with decision maker">${n0(d.verified)} / ${n0(d.with_dm)}</td>
+          <td class="num" data-l="LinkedIn fallback">${n0(d.linkedin_fallback)}</td><td class="num" data-l="Sent">${n0(d.sent)}</td><td class="num" data-l="Replies">${n0(d.replies)}</td></tr>`).join('')}</tbody></table></div>
+      ${(W.strongest_opportunities || []).length ? `<h6 class="mt8">Strongest opportunities</h6>${W.strongest_opportunities.map((o) => `<div class="adv-row"><b>${esc(o.company)}</b> · ${esc(sentence(String(o.status || '').replace(/_/g, ' ')))}${o.next ? ` <span class="faint">→ ${esc(o.next)}</span>` : ''}</div>`).join('')}` : ''}
+      ${W.weakest_bottleneck ? `<h6 class="mt8">Weakest bottleneck</h6><div class="adv-row">${esc(W.weakest_bottleneck)}</div>` : ''}
+      ${W.recommended_allocation ? `<h6 class="mt8">Recommended allocation</h6><div class="adv-row">${esc(W.recommended_allocation)}</div>` : ''}`;
+  }
+  return `<div class="modal-bg"><div class="modal wide"><h3>Weekly review</h3><p class="small faint">The last 7 days, from NOYA's own records.</p>${body}
+    <div class="btn-row mt8"><button class="btn ghost" data-close>Close</button></div></div></div>`;
+}
+// Channel health on every Director (email first): coverage = qualified with a verified email / qualified with a decision maker.
+function channelRow(c) {
+  if (!c) return '';
+  const low = c.coverage_pct != null && c.coverage_pct < 30 && c.with_dm >= 8;
+  const chip = (n, l, cls = '') => `<span class="ch-chip ${cls}"><b>${n0(n)}</b> ${l}</span>`;
+  return `<div class="dc-channel"><div class="dc-cov ${low ? 'warn-text' : ''}">Email coverage <b>${c.coverage_pct == null ? '—' : `${c.coverage_pct}%`}</b> <span class="faint">· ${n0(c.verified)} of ${n0(c.with_dm)} with a decision maker</span></div>
+    <div class="ch-chips">${chip(c.verified, 'verified email', 'ok')}${chip(c.needs_verification, 'needs verification')}${chip(c.email_gap, 'email gap')}${chip(c.linkedin_fallback, 'LinkedIn fallback')}${chip(c.instagram_fallback, 'Instagram fallback')}${chip(c.needs_review, 'needs review')}</div></div>`;
+}
+
 // ---------------------------------------------------------------- TODAY: only what needs Adam
 function todayItems(d) {
   const desk = state.desk || {}; const now = new Date(); const end = new Date(`${todayKey()}T23:59:59+03:00`);
@@ -2789,7 +2850,7 @@ function viewToday(d) {
     sec('Proposals', t.proposals.length, t.proposals.map((o) => row(`${esc(o.company_name)}`, `${esc(S(o.status))}${o.next_action ? ` · ${esc(o.next_action)}` : ''}`, `<button class="btn small" data-open="opp" data-id="${o.id}">Open</button>`)).join('')),
     sec('Client issues', t.issues.length, t.issues.map((i) => row(esc(i.title), `due ${esc(shortDay(i.due_at))}`, '<button class="btn small" data-tab="ops">Operations</button>')).join('')),
   ].join('');
-  return `${head('Today', esc(day))}
+  return `${head(state.advisor?.greeting || 'Today', esc(day))}${advisorToday()}
     ${html || '<div class="calm"><div class="calm-t">Nothing needs you right now.</div><div class="t-sub">Replies, approvals, Gmail drafts, meetings, proposals and due follow-ups appear here the moment they exist.</div></div>'}`;
 }
 
@@ -2817,6 +2878,7 @@ function directorCard(m) {
     <div class="dc-last">${m.last_action ? `Last: ${esc(m.last_action.text)} · ${esc(rel(m.last_action.at))}`
       : m.last_run ? `<span class="faint">Last run ${esc(rel(m.last_run))} · nothing new to report</span>` : '<span class="faint">No recorded run yet</span>'}</div>
     <div class="dc-metrics"><div class="dc-m dc-mh"><span></span><span>Today</span><span>3 days</span></div>${rows.map(([k, l]) => `<div class="dc-m"><span>${l}</span><b>${n0(m.today?.[k])}</b><b>${n0(m.d3?.[k])}</b></div>`).join('')}</div>
+    ${m.role !== 'SUPPORT' && m.key !== 'GROWTH' ? channelRow(m.channel) : ''}
     ${hard.map((b) => `<div class="dc-block bad-text">Blocked: ${esc(b.text)}</div>`).join('')}${soft.map((b) => `<div class="dc-block warn-text">${esc(b.text)}</div>`).join('')}
   </article>`;
 }
@@ -2837,6 +2899,7 @@ function viewAgentsV3() {
       ${tile(`${n0(f.agents_healthy)} / ${n0(f.agents_total)}`, 'Agents healthy')}${tile(n0(f.qualified_24h), 'New qualified · 24h')}${tile(n0(f.decision_makers_24h), 'New decision makers · 24h')}
       ${tile(n0(f.verified_emails_24h), 'New verified emails · 24h')}${tile(n0(f.needs_review), 'Needs review', 'desk', 'data-desk-tab="NEEDS_REVIEW"')}
       ${tile(n0(f.gmail_drafts_ready), 'Gmail drafts ready', 'desk', 'data-desk-tab="APPROVED"')}${tile(n0(f.replies), 'Replies to handle', 'today')}${tile(n0(f.meetings), 'Meetings', 'today')}</div>
+    ${advisorAgents()}
     <h3>Directors</h3><div class="dgrid">${by('DIRECTOR').map(directorCard).join('')}</div>
     <h3>Strategic partnerships</h3><div class="dgrid">${by('MANAGER').map(directorCard).join('')}</div>
     <h3>Shared specialists</h3><div class="dgrid compact">${by('SUPPORT').map(directorCard).join('')}</div>
@@ -2964,8 +3027,9 @@ function deskRow(x, readOnly = false) {
   return `<article class="drow" id="desk-${esc(x.ref)}">
     <div class="dr-top"><div class="dr-who"><b>${esc(x.person || x.company || '—')}</b>${x.role ? ` <span class="faint">· ${esc(x.role)}</span>` : ''}${x.person && x.company ? ` · <a class="clickable" data-open="company" data-id="${x.company_id}">${esc(x.company)}</a>` : ''}</div>
       <span class="dr-age" title="Prepared ${esc(fmtDate(x.created_at))}">${x.age_days != null ? `${esc(x.age_days)} d` : ''}</span></div>
-    <div class="dr-pills">${pill(memberName(x.director))}${pill(CH_LABEL[x.channel] || x.channel, 'gold')}<span class="dr-route">${deskRoute(x)}</span>${ver}${x.qa === 'FLAGGED' ? pill('quality flag', 'warn') : ''}</div>
+    <div class="dr-pills">${pill(memberName(x.director))}${pill(CH_LABEL[x.channel] || x.channel, 'gold')}<span class="dr-route">${deskRoute(x)}</span>${ver}${x.fallback ? pill(x.fallback.label, 'warn') : ''}${x.qa === 'FLAGGED' ? pill('quality flag', 'warn') : ''}</div>
     ${x.reason ? `<div class="dr-line warn-text">${esc(x.reason)}</div>` : ''}
+    ${x.fallback?.evidence ? `<div class="dr-line"><span>Email checked</span>${esc(x.fallback.evidence)}</div>` : ''}
     ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(x.why_now))}</div>` : ''}
     ${x.angle ? `<div class="dr-line"><span>Angle</span>${esc(plainText(x.angle))}</div>` : ''}
     ${draft ? `<div class="dr-msg">${x.subject ? `<b>${esc(x.subject)}</b> — ` : ''}<span class="faint">${esc(preview)}${draft.length > 150 ? '…' : ''}</span> <button class="linkish" data-desk-open="${esc(x.ref)}">${open ? 'Hide' : 'Read'}</button></div>` : ''}
@@ -3115,6 +3179,7 @@ function bindV3(on) {
   on('[data-dir-sec]', 'click', (b) => { state.dirSec[state.dirKey] = b.dataset.dirSec; render(); });
   on('select[data-feed-dir]', 'change', (el) => { state.feedDir = el.value; render(); });
   on('[data-feed-all]', 'click', () => { state.feedAll = !state.feedAll; render(); });
+  on('[data-weekly]', 'click', () => { state.modal = { kind: 'weekly' }; render(); loadV3('weekly', 'hq_weekly_review', {}, true); });
   on('[data-desk-tab]', 'click', (b) => { state.deskTab = b.dataset.deskTab; state.deskPage = 0; if (!b.dataset.go) render(); });
   on('[data-desk-ch]', 'click', (b) => { state.deskCh = b.dataset.deskCh; state.deskPage = 0; render(); });
   on('select[data-desk-dir]', 'change', (el) => { state.deskDir = el.value; state.deskPage = 0; render(); });
