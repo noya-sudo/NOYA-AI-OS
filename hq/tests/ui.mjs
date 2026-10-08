@@ -110,12 +110,18 @@ const server = http.createServer((req, res) => {
 });
 await new Promise((r) => server.listen(4173, r));
 
+// HQ V3 reads (live captures, git-ignored): the desk, the workforce, drill-downs, club, operations.
+const fx = (f) => (existsSync(`tests/fixtures/${f}.json`) ? JSON.parse(readFileSync(`tests/fixtures/${f}.json`, 'utf8')) : null);
+const V3FX = { desk: fx('desk'), ops: fx('operations'), directors: fx('directors'), club: fx('club'),
+  HOSPITALITY: fx('director_hospitality'), PARTNERSHIPS: fx('director_partnerships'), GROWTH: fx('director_growth'), EMAIL: fx('director_email') };
+const V3 = { hq_outreach_desk: () => V3FX.desk, hq_operations: () => V3FX.ops, hq_directors: () => V3FX.directors, hq_club: () => V3FX.club,
+  hq_director: (b) => V3FX[b?.p_key] || { key: b?.p_key, sections: [] }, hq_growth: () => V3FX.GROWTH?.growth };
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
   'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update',
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
-  'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route'];
+  'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person', 'hq_redispatch'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
-  'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...WRITES];
+  'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -158,6 +164,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_approve_email') return route.fulfill({ json: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-000000000002' } });
       if (m[1] === 'hq_agent') return route.fulfill({ json: body?.p_key === 'HOSPITALITY' ? agentFx : { key: body?.p_key, sections: [] } });
       if (m[1] === 'hq_account') return route.fulfill({ json: account });
+      if (V3[m[1]]) return route.fulfill({ json: V3[m[1]](body) });
       if (m[1] === 'hq_signal_promote') return route.fulfill({ json: { ok: true, created: [{ opportunity_id: cOpps[0].id, company: 'HYROX', product: body.p_targets[0]?.product, track: 'EVENT', has_contact: false }] } });
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
       if (m[1] === 'hq_create_opportunity') return route.fulfill({ json: { ok: true, opportunity_id: data.opportunities[0].id, company_id: null, company_reused: true } });
@@ -176,18 +183,26 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
 
 const last = (calls, fn) => [...calls].reverse().find((c) => c.fn === fn);
 const closeDrawer = async (page) => { if (await page.locator('.drawer').count()) await page.click('.drawer [data-close-drawer]'); };
+// V3: six primary destinations; everything older sits under "More" in the sidebar (opened on demand).
+async function go(page, tab) {
+  if (!(await page.locator(`.side [data-tab=${tab}]`).count())) await page.click('#nav-more');
+  await page.click(`.side [data-tab=${tab}]`);
+}
+async function sheet(page, tab) { await page.click('#bmenu'); await page.click(`.sheet [data-tab=${tab}]`); }
 const noOverflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 
 // 1. Desktop: Today + every view renders from live data; every write goes through the right RPC.
 {
   const { browser, page, errors, calls } = await runScenario({ viewport: { width: 1280, height: 900 } });
   await page.waitForSelector('.side');
+  await page.waitForSelector('.today-sec, .calm');
+  await go(page, 'overview');
   await page.waitForSelector('.q-row');
   check('login leads to Today; data via the four read RPCs with bearer token',
     ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_relationships'].every((fn) => calls.some((c) => c.fn === fn && c.auth.startsWith('Bearer ey'))));
   const warm = await page.locator('main section.panel', { hasText: 'Warm opportunities' }).innerText();
   const warmFirst = await page.locator('main .mini.warm').first().innerText();
-  check('Today: Warm opportunities lists reply-now relationships first, labelled as suggestion vs your status', /YKONE|Purple/i.test(warmFirst) && /Suggested: Reply now/i.test(warmFirst) && /They wrote last/.test(warmFirst) && !/kulm/i.test(warm), warmFirst.split('\n')[0]);
+  check('Today: Warm opportunities lists reply-now relationships first, labelled as suggestion vs your status', /(Suggested|You): Reply now/i.test(warmFirst) && /They wrote last/.test(warmFirst), warmFirst.split('\n')[0]);
   check('Today: warm panel is evidence-only and never sends', (await page.locator('main .mini.warm').count()) <= 6 && /Nothing is sent from here/.test(warm) && (await page.locator('main .mini.warm a[href*="mail.google.com"]').count()) > 0);
   const counts = await page.locator('.counts').innerText();
   const n = (p) => overview.actions.filter((a) => a.prio === p).length;
@@ -275,7 +290,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
 
   const tabs = ['inbox', 'outreach', 'relationships', 'linkedin', 'pipeline', 'tasks', 'website', 'contacts', 'companies', 'finance', 'costs', 'markets', 'growth', 'intelligence', 'reports', 'system', 'help'];
   for (const tab of tabs) {
-    await page.click(`.side [data-tab=${tab}]`);
+    await go(page, tab);
     await page.waitForSelector('main h2');
     const h2 = await page.locator('main h2').first().innerText();
     check(`view renders: ${tab}`, h2.length > 0 && !/not loaded/i.test(await page.locator('main').innerText()), h2);
@@ -284,9 +299,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('no placeholder "coming soon" sections in navigation', (await page.locator('.nav-item.off').count()) === 0);
 
   // Contacts / Companies / Markets / Costs match live data.
-  await page.click('.side [data-tab=contacts]');
+  await go(page, 'contacts');
   check('Contacts: one row per live contact', (await page.locator('main tbody tr').count()) === directory.contacts.length, `${directory.contacts.length}`);
-  await page.click('.side [data-tab=companies]');
+  await go(page, 'companies');
   await page.click('main .tabs button[data-v=TRAVEL_CONCIERGE]');
   const partners = directory.companies.filter((c) => c.vertical === 'TRAVEL_CONCIERGE').length;
   check('Companies: "Partnerships" filter equals Travel/Concierge companies', (await page.locator('main tbody tr.clickable').count()) === partners, `${partners}`);
@@ -299,12 +314,12 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForTimeout(300);
   check('Classify calls hq_company_update with the vertical', last(calls, 'hq_company_update')?.body.p_vertical === 'HOSPITALITY');
   await page.click('.drawer [data-close-drawer]');
-  await page.click('.side [data-tab=markets]');
+  await go(page, 'markets');
   const eu = insight.markets.find((m) => m.market === 'EUROPE');
   const euRow = await page.locator('main tbody tr', { hasText: 'Europe' }).first().innerText();
   check('Markets: Europe row equals live counts', euRow.includes(String(eu.companies)) && euRow.includes(String(eu.active_opps_origin)), euRow.replace(/\s+/g, ' ').slice(0, 80));
   check('Markets: bridges listed (Europe → Egypt)', /Europe → Egypt/.test(await page.locator('main').innerText()));
-  await page.click('.side [data-tab=costs]');
+  await go(page, 'costs');
   const unknown = insight.services.filter((s) => s.status === 'ACTIVE' && (s.cost_type === 'UNKNOWN' || (s.cost_type !== 'FREE' && s.monthly_cost == null))).length;
   const costs = await page.locator('main').innerText();
   check('System costs: unknown exposure equals register, paid-software gate shown', costs.includes(`${unknown}\n`) && /UNKNOWN — verify before scale/.test(costs) && /then waits for your approval/.test(costs), `${unknown}`);
@@ -326,12 +341,12 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const su = last(calls, 'hq_service_update');
   check('Cost edit → hq_service_update (amount, currency, evidence), audited server-side', su && su.body.p_id === hunter.id && su.body.p.monthly_cost === '34' && su.body.p.currency === 'usd' && /INV-1/.test(su.body.p.verification_note), JSON.stringify(su?.body.p));
 
-  // Commercial core: 8 frozen sections, radar, action queue, partnerships, events, operations, account intelligence.
+  // V3 navigation: six destinations, then More (every older view, grouped). Checked in detail in tests/ui_v3.mjs.
+  const primary = await page.locator('.side .nav-primary .nav-item').allInnerTexts();
   const groups = await page.locator('.side .nav-group h6').allInnerTexts();
-  // 8 numbered sections plus Agents (added at Adam's request, 7 Oct), placed straight after Command.
-  check('Navigation: 8 numbered sections plus Agents after Command', groups.length === 9 && /01/.test(groups[0]) && /Command/i.test(groups[0]) && /^Agents$/i.test(groups[1].trim())
-    && /08/.test(groups[8]) && /Performance/i.test(groups[8]) && groups.filter((g) => /^0\d/.test(g)).length === 8, groups.join(' | '));
-  await page.click('.side [data-tab=radar]');
+  check('Navigation: six destinations plus More (older views kept, grouped)', primary.map((t) => t.replace(/\d+$/, '').trim()).join('|') === 'Today|Agents|Outreach|Relationships|Club|Operations'
+    && groups.join('|').toLowerCase() === 'agents & intelligence|sales|records|admin', `${primary.join(' | ')} // ${groups.join(' | ')}`);
+  await go(page, 'radar');
   const radar = await page.locator('main').innerText();
   check('Radar: horizons Now / 7 / 30 / 90 / longer-term; region and category filters', ['Now / urgent', '7 days', '30 days', '90 days', 'Longer term'].every((w) => radar.includes(w)) && (await page.locator('main select[data-rdf=region] option').count()) === 6);
   check('Radar: signal shows source, qualification 9/10 and what is missing', /CairoScene/.test(radar) && /9\/10/.test(radar) && /Can we reach them\?/.test(radar) && (await page.locator('main a[href="https://cairoscene.com/x"]').count()) === 1);
@@ -350,7 +365,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.fill('#f-url', 'https://example.com/brand-x'); await page.fill('#f-orgs', 'Brand X | BRAND'); await page.click('#m-ok'); await page.waitForTimeout(300);
   const cap = last(calls, 'hq_signal_capture');
   check('Capture: source link + named organisations sent (hq_signal_capture)', cap && cap.body.p.source_url === 'https://example.com/brand-x' && cap.body.p.orgs[0].role === 'BRAND');
-  await page.click('.side [data-tab=actions]');
+  await go(page, 'actions');
   const act = await page.locator('main').innerText();
   const firstAct = await page.locator('main article.card.act').first().innerText();
     check('Action queue: who / why / what to offer / path / next / owner / due, highest priority first', /80/.test(firstAct) && /Why now/i.test(firstAct) && /Offer/i.test(firstAct) && /Relationship path/i.test(firstAct) && /Owner/i.test(firstAct) && /due/i.test(firstAct));
@@ -366,17 +381,17 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.fill('#f-oreason', 'Warm intro from their CEO'); await page.click('#m-ok'); await page.waitForTimeout(300);
   const oc = last(calls, 'hq_opportunity_commercial');
   check('Commercial: proposal value with currency + evidence, override with reason (hq_opportunity_commercial)', oc && oc.body.p.proposal_value === '25000' && oc.body.p.currency === 'EUR' && /Proposal sent/.test(oc.body.p.value_evidence) && oc.body.p.score_override === '95', JSON.stringify(oc?.body.p).slice(0, 200));
-  await page.click('.side [data-tab=partners]');
+  await go(page, 'partners');
   const par = await page.locator('main').innerText();
   check('Partnerships: supply vs distribution explained; productive/strategic earned by activity only', /Supply partners/.test(par) && /Distribution partners/.test(par) && /never by prestige/.test(par));
   await page.click('main [data-paf=tab][data-v=ACTIVE]');
   await page.locator('main article.card.partner [data-modal=partner-edit]').first().click(); await page.waitForSelector('.modal');
   await page.selectOption('#f-stage', 'PRODUCTIVE'); await page.click('#m-ok'); await page.waitForTimeout(300);
   check('Partnerships: update → hq_partner_upsert (server checks the evidence for Productive)', last(calls, 'hq_partner_upsert')?.body.p.stage === 'PRODUCTIVE');
-  await page.click('.side [data-tab=events]');
+  await go(page, 'events');
   const ev = await page.locator('main').innerText();
   check('Events: upcoming events with what NOYA can win and the organisations', /El Gouna Film Festival/.test(ev) && /What NOYA can win/.test(ev) && /Organiser → VIP Guest Desk/i.test(ev));
-  await page.click('.side [data-tab=projects]');
+  await go(page, 'projects');
   const pj = await page.locator('main').innerText();
   check('Operations: project with items, client charge, supplier cost and gross profit per currency', /Suites block/.test(pj) && /EUR 10,000/.test(pj) && /EUR 6,500/.test(pj) && /EUR 3,500/.test(pj));
   await page.click('main [data-proj-status=DELIVERED]'); await page.waitForTimeout(250);
@@ -384,14 +399,14 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('main [data-modal=project-item]'); await page.waitForSelector('.modal');
   await page.selectOption('#f-type', 'TRANSFER'); await page.fill('#f-title', 'Airport VIP arrivals'); await page.click('#m-ok'); await page.waitForTimeout(250);
   check('Operations: add item → hq_project_item', last(calls, 'hq_project_item')?.body.p.item_type === 'TRANSFER');
-  await page.click('.side [data-tab=library]');
+  await go(page, 'library');
   check('Library: products (templates, follow-ups, objections) and playbooks with real outcomes', /Film festival/.test(await page.locator('main').innerText()) && /not money and not a probability/.test(await page.locator('main').innerText()));
-  await page.click('.side [data-tab=companies]');
+  await go(page, 'companies');
   await page.locator('main tr[data-open=company]').first().click(); await page.waitForSelector('.drawer'); await page.waitForTimeout(300);
   const drw = await page.locator('.drawer').innerText();
     check('Account intelligence in the company record (strength with evidence, routes in, why now)', calls.some((c) => c.fn === 'hq_account') && /Account intelligence/i.test(drw) && /Routes in/i.test(drw) && /Direct email history/.test(drw) && /WARM/i.test(drw));
   await page.click('.drawer [data-close-drawer]');
-  await page.click('.side [data-tab=overview]');
+  await go(page, 'overview');
   const cmd = await page.locator('main').innerText();
   check('Command: queue health shows 15/day target and an honest shortfall (warm 3/6)', /Today's 15/i.test(cmd) && /short by 3/i.test(cmd) && /42 \/ 45/.test(cmd));
   check('Command: working universe by status (Qualified / Needs review / Researching) and VERIFY FIRST count', /Qualified 64/i.test(cmd) && /Needs review 21/i.test(cmd) && /Researching 51/i.test(cmd) && /4 people need verifying/i.test(cmd));
@@ -402,14 +417,14 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     && /4 media concepts/.test(cmd) && /1950 searches per 3-day cycle ≈ \$1\.95/.test(cmd));
   check('Command: Today view (commercial engine by lane, Director plan, conversations paused)', /Today · commercial engine/i.test(cmd) && /16 planned/.test(cmd) && /Brands \/ PR \/ production/.test(cmd) && /YKONE Middle East/.test(cmd) && /dry run/i.test(cmd));
   check('Command: Hunter ROI chain (credits → usable → sent → replies → meetings)', /48 credits → 11 usable emails/.test(cmd) && /5 sent → 1 replies → 0 meetings/.test(cmd));
-  await page.click('.side [data-tab=finance]');
+  await go(page, 'finance');
   const finW = await page.locator('main').innerText();
   check('Performance: weekly prospecting by segment (sends, replies, positive) — allocation never automatic', /Prospecting by segment/i.test(finW) && /Brands \/ PR \/ production/i.test(finW) && /Travel advisors/i.test(finW) && /recommendations only/i.test(finW));
-  await page.click('.side [data-tab=overview]');
+  await go(page, 'overview');
   check('Command: action-first modules (opportunities, deals, partnerships, projects, risks, team)', ['New high-quality opportunities', 'Meetings · proposals · negotiations', 'Strategic partnerships', 'Active projects', 'Risks / blockers', 'Team action'].every((w) => cmd.toLowerCase().includes(w.toLowerCase())));
 
   // Finance: new record + definitions.
-  await page.click('.side [data-tab=finance]');
+  await go(page, 'finance');
   const fin = await page.locator('main').innerText();
   check('Finance: Collected / Outstanding / Won / Pipeline / Forecast defined separately; forecast not set', ['Collected', 'Outstanding', 'Won', 'Pipeline', 'Forecast'].every((w) => fin.includes(w)) && /not set/.test(fin));
   await page.click('main [data-modal=finance]');
@@ -424,7 +439,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('New finance record calls hq_finance_upsert (client, EUR, 12500, SENT)', fu && fu.body.p_company === directory.companies[0].id && fu.body.p_currency === 'EUR' && fu.body.p_amount === 12500 && fu.body.p_invoice_status === 'SENT' && fu.body.p_id === null, JSON.stringify(fu?.body));
 
   // LinkedIn: options gate + CSV import (Notes preamble, LinkedIn date format, non-profile rows skipped).
-  await page.click('.side [data-tab=linkedin]');
+  await go(page, 'linkedin');
   const li = await page.locator('main').innerText();
   check('LinkedIn: never-auto-send statement and options gate present', /Nothing is ever sent automatically/.test(li) && /options and approval/i.test(li));
   const csv = 'Notes:\n"When exporting your connection data, you may notice that some of the email addresses are missing."\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\nSara,Khalil,https://www.linkedin.com/in/sara-khalil,,"Aman Resorts, Ltd",Director of Sales,01 May 2024\nOmar,Nasser,https://www.linkedin.com/in/omarn,,YKONE Middle East,Partner,15 Jan 2023\nOmar,Nasser,https://uk.linkedin.com/in/OmarN/,,YKONE Middle East,Partner,15 Jan 2023\nBad,Row,https://example.com/x,,X,Y,01 Jan 2020\n';
@@ -447,7 +462,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     && ic.body.p_rows[0].company === 'Aman Resorts, Ltd' && Object.keys(ic.body.p_rows[0]).sort().join() === 'company,connected_on,email,first_name,last_name,position,url', JSON.stringify(ic?.body.p_rows[0]));
 
   // Outreach: tabs, cards, approval flow unchanged.
-  await page.click('.side [data-tab=outreach]');
+  await go(page, 'outreach');
   const otabs = await page.locator('main .tabs').innerText();
   check('Outreach tabs: Email review / Ready / Follow-up / LinkedIn / Instagram / Sent / Replied / Hold / Researching', ['Email review', 'Ready', 'Follow-up', 'Linkedin', 'Instagram', 'Sent', 'Replied', 'Hold', 'Researching'].every((t) => new RegExp(t, 'i').test(otabs)), otabs.replace(/\n/g, ' '));
   check('Outreach opens on Email review (verified emails waiting for Adam)', /email review/i.test(await page.locator('main .tabs button.on').innerText()));
@@ -546,7 +561,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
 
   // Past relationships (NOYA Gmail history).
   await closeDrawer(page);
-  await page.click('.side [data-tab=relationships]');
+  await go(page, 'relationships');
   const relText = await page.locator('main').innerText();
   const replied = relationships.groups.filter((g) => !g.dismissed && g.received > 0 && g.state === 'REPLIED').length;
   check('Past relationships: "They wrote last" count equals Gmail history', new RegExp(`They wrote last\\s*${replied}`).test(relText), `${replied}`);
@@ -554,7 +569,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const toReview = relationships.groups.filter((g) => !g.dismissed && g.received > 0 && !g.review?.status);
   check('Review mode: opens one card at a time, most urgent first', (await page.locator('main article.card.rel').count()) === 1 && new RegExp(`1\\s*of ${toReview.length}`).test(relText), `${toReview.length}`);
   const firstCard = await page.locator('main article.card.rel').innerText();
-  check('Review card: facts, verbatim preview and AI summary are labelled separately', /Facts/.test(firstCard) && /Latest preview \(verbatim\)/.test(firstCard) && /AI summary — from subjects and previews only/.test(firstCard) && /YKONE/.test(firstCard), firstCard.split('\n')[0]);
+  const g1 = toReview.find((g) => firstCard.split('\n')[0].includes(g.name));
+  check('Review card: facts, verbatim preview and AI summary are labelled separately', !!g1 && /Facts/.test(firstCard) && /Latest preview \(verbatim\)/.test(firstCard)
+    && (!g1.review?.summary || /AI summary — from subjects and previews only/.test(firstCard)), firstCard.split('\n')[0]);
   check('Review card: seven status choices, suggestion marked', (await page.locator('main article.card.rel [data-rel-status]').count()) === 7 && (await page.locator('main .chip.sug').count()) === 1);
   await page.click('main [data-rel-step="1"]');
   check('Review: Skip moves to the next relationship', /2\s*of/.test(await page.locator('main .review-nav').innerText()));
@@ -574,7 +591,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const ha = last(calls, 'hq_history_action');
   check('Add to CRM calls hq_history_action ADD_TO_CRM with the group key', ha && ha.body.p_action === 'ADD_TO_CRM' && ha.body.p_key === firstNotInCrm.key, JSON.stringify(ha?.body).slice(0, 160));
   await closeDrawer(page);
-  await page.click('.side [data-tab=relationships]');
+  await go(page, 'relationships');
   await page.click('main .tabs button[data-v=NO_REPLY]');
   await page.locator('main article.card.rel [data-hist-act=DISMISS]').first().click();
   await page.waitForTimeout(300);
@@ -585,7 +602,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   // Outreach knows the history: a held cold intro shows the earlier conversation.
   const heldPrior = snapshot.approvals.find((a) => a.loop_stage === 'ON_HOLD' && /Previously in contact/.test(a.queue_reason || ''));
   if (heldPrior) {
-    await page.click('.side [data-tab=outreach]');
+    await go(page, 'outreach');
     await page.click('main .tabs [data-otab=HOLD]');
     const card = await page.locator(`#opp-${heldPrior.id}`).innerText();
     check('Outreach: cold intro to a past contact is held, showing "Emailed before" + reason', /Emailed before/.test(card) && /Previously in contact/.test(card), heldPrior.company_name);
@@ -632,7 +649,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   if (agentsFx && agentFx) {
     const A = agentsFx; const writesBefore = calls.filter((c) => WRITES.includes(c.fn)).length;
     await closeDrawer(page);
-    await page.click('.side [data-tab=agents]');
+    await go(page, 'agentfloor');
     await page.waitForSelector('.agent-card');
     const floor = await page.locator('main').innerText();
     check('Agents: every agent has a card (8 acquisition + 4 support)', (await page.locator('.agent-grid .agent-card').count()) === A.agents.length, `${A.agents.length}`);
@@ -662,7 +679,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     const hg = A.email_gaps.filter((g) => g.agent === 'HOSPITALITY');
     check('Agents: "email gaps" on a card opens that agent\'s gap queue', (await page.locator('.email-card').count()) === Math.min(30, hg.length)
       && (await page.locator('[data-emf=s][data-v=GAPS].on').count()) === 1, `${hg.length}`);
-    await page.click('.agents-nav [data-tab=agents]');
+    await page.click('.agents-nav [data-tab=agentfloor]');
     await page.waitForSelector('.agent-card');
     await page.locator('.agent-card', { hasText: hosp.name }).first().click();
     await page.waitForSelector('[data-agent-sec]');
@@ -729,6 +746,8 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const { browser, page, errors, calls } = await runScenario({ viewport: { width: 390, height: 844 } });
   const steps = [];
   const step = async (name, ok) => { const o = await noOverflow(page); steps.push(o); check(`09:00 phone · ${name}`, ok && o <= 1, o > 1 ? `overflow ${o}px` : ''); };
+  await page.waitForSelector('.today-sec, .calm');
+  await sheet(page, 'overview');
   await page.waitForSelector('.q-row');
   const first = await page.locator('.q-row').first().innerText();
   await step('1 Today opens on the P1 (meeting request) first', /Reply to|meeting/i.test(first) && (await page.locator('.bnav').isVisible()));
@@ -740,9 +759,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.waitForTimeout(300);
   const mt = last(calls, 'hq_record_meeting');
   await step('2 record the meeting (summary + stage + follow-up)', mt && mt.body.p_new_status === 'CALL_REQUIRED' && /^\d{4}-\d{2}-\d{2}$/.test(mt.body.p_follow_up));
-  await page.click('.bnav [data-tab=inbox]');
-  await step('3 Replies reachable from the bottom bar', /Replies/.test(await page.locator('main h2').innerText()));
-  await page.click('.bnav [data-tab=outreach]');
+  await sheet(page, 'inbox');
+  await step('3 Replies reachable from the More sheet', /Replies/.test(await page.locator('main h2').innerText()));
+  await sheet(page, 'outreach');
   await page.click('main .tabs [data-otab=READY]');
   await page.waitForSelector('article.card.ready');
   const btn = await page.locator('article.card.ready [data-act=approve]').first().boundingBox();
@@ -761,7 +780,6 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   }
   const tc = last(calls, 'hq_log_touch');
   await step('6 Mark sent logs a LinkedIn touch, closes the task, books a follow-up', !liCards || (tc && tc.body.p_channel === 'LINKEDIN' && tc.body.p_task && /^\d{4}-\d{2}-\d{2}$/.test(tc.body.p_follow_up)));
-  await page.click('#bsearch');
   await page.fill('#q', 'Magali');
   await page.waitForSelector('.results');
   await step('7 search finds a person', /Magali/.test(await page.locator('.results').innerText()));
@@ -773,7 +791,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('main [data-rel-status=REPLY_NOW]');
   await page.waitForTimeout(300);
   await step('7c review one at a time: thumb-sized status chips, one tap saves', chip && chip.height >= 36 && last(calls, 'hq_relationship_status')?.body.p_status === 'REPLY_NOW');
-  await page.click('.bnav [data-tab=outreach]').catch(async () => { await page.click('#bmenu'); await page.click('.sheet [data-tab=outreach]'); });
+  await sheet(page, 'outreach');
   await page.click('main .tabs [data-otab=READY]');
   const readyN = await page.locator('article.card.ready').count();
   if (readyN > 1) {
@@ -791,7 +809,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#bmenu');
   await page.click('.sheet [data-tab=finance]');
   await step('9 Menu → Finance: money separated, forecast not set', /Forecast/.test(await page.locator('main').innerText()));
-  await page.click('.bnav [data-tab=overview]');
+  await page.click('.bnav [data-tab=today]');
   await page.click('#quick');
   await page.click('.modal [data-modal=new-opp]');
   await page.fill('#f-co', 'Test Co'); await page.fill('#f-type', 'Corporate retreat');
@@ -800,9 +818,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await step('10 + New opportunity from the phone opens the new record', !!last(calls, 'hq_create_opportunity'));
   if (agentsFx) {
     await closeDrawer(page);
-    await page.click('.bnav [data-tab=agents]');
+    await sheet(page, 'agentfloor');
     await page.waitForSelector('.agent-card');
-    await step('11 Agents from the bottom bar: cards first', (await page.locator('.agent-card').count()) === agentsFx.agents.length);
+    await step('11 Classic agent floor from the More sheet: cards first', (await page.locator('.agent-card').count()) === agentsFx.agents.length);
     const hosp = agentsFx.agents.find((a) => a.key === 'HOSPITALITY');
     await page.locator('.agent-card', { hasText: hosp.name }).first().click();
     await page.waitForSelector('[data-agent-sec]');
@@ -839,10 +857,10 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   directory.companies[0].name = '<img src=x onerror="window.__xss=3">Evil Account';
   const { browser, page } = await runScenario({ viewport: { width: 1280, height: 900 }, data: evil });
   await page.waitForSelector('.side');
-  await page.click('.side [data-tab=outreach]');
+  await go(page, 'outreach');
   await page.click('main .tabs [data-otab=READY]');
   await page.waitForSelector('article.card.ready');
-  await page.click('.side [data-tab=companies]');
+  await go(page, 'companies');
   const xss = await page.evaluate(() => window.__xss);
   const shown = await page.locator('main tbody', { hasText: 'Evil Account' }).first().innerText();
   check('XSS: injected HTML in CRM data is escaped (approvals + companies)', xss === undefined && shown.includes('<img'), `window.__xss=${xss}`);

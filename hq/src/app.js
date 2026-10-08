@@ -11,19 +11,17 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
-// The permanent structure: eight numbered sections plus Agents (added at Adam's request, 7 Oct). New capability goes inside one of them.
-const NAV = [
-  ['01 · Command', [['overview', 'Today'], ['reports', 'Reports']]],
-  // Agents (Adam, 7 Oct): what the virtual commercial department is doing and producing. Today stays what Adam does now.
-  ['Agents', [['agents', 'Agent floor'], ['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed']]],
-  ['02 · Intelligence & Opportunities', [['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth'], ['library', 'Products & playbooks']]],
-  ['03 · Sales & Outreach', [['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach'], ['pipeline', 'Pipeline'], ['linkedin', 'LinkedIn'], ['website', 'Website leads']]],
-  ['04 · Partnerships', [['partners', 'Partnerships']]],
-  ['05 · Events & Experiences', [['events', 'Events']]],
-  ['06 · Clients & Relationships', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts']]],
-  ['07 · Operations', [['projects', 'Projects'], ['tasks', 'Tasks']]],
-  ['08 · Performance & System', [['finance', 'Finance'], ['costs', 'System costs'], ['system', 'System & team'], ['help', 'Help & playbook']]],
+// HQ V3 (Adam, 9 Oct): six destinations — one screen, one job. Everything that existed before stays reachable under More,
+// unchanged; nothing was deleted. Agents' old floor, email desk, radar and feed live under More → Agents & intelligence.
+const PRIMARY = [['today', 'Today'], ['agents', 'Agents'], ['desk', 'Outreach'], ['relations', 'Relationships'], ['club', 'Club'], ['ops', 'Operations']];
+const MORE = [
+  ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
+  ['Sales', [['overview', 'Command (classic)'], ['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach (classic)'], ['linkedin', 'LinkedIn'], ['website', 'Website leads'], ['partners', 'Partnerships'], ['events', 'Events']]],
+  ['Records', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts'], ['pipeline', 'Pipeline'], ['projects', 'Projects'], ['tasks', 'Tasks']]],
+  ['Admin', [['reports', 'Reports'], ['finance', 'Finance'], ['costs', 'System costs'], ['system', 'System & team'], ['help', 'Help & playbook']]],
 ];
+const NAV = [['HQ', PRIMARY], ...MORE];
+const MORE_KEYS = MORE.flatMap(([, items]) => items.map(([k]) => k));
 const STAGES = ['NEW', 'RESEARCHING', 'READY', 'CONTACTED', 'FOLLOW_UP', 'INTERESTED', 'CALL_REQUIRED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'LONG_TERM', 'ARCHIVED'];
 const STAGE_LABEL = { NEW: 'New', RESEARCHING: 'Researching', READY: 'Ready', CONTACTED: 'Contacted', FOLLOW_UP: 'Follow-up', INTERESTED: 'Interested', CALL_REQUIRED: 'Call required', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', LOST: 'Lost', LONG_TERM: 'Long term', ARCHIVED: 'Archived' };
 const VERTICAL_LABEL = { PRIVATE_UHNW: 'Private / UHNW', CORPORATE: 'Corporate', BRAND_PRODUCTION: 'Brand / Production', HOSPITALITY: 'Hospitality', TRAVEL_CONCIERGE: 'Travel / Concierge partners', WEDDINGS_EVENTS: 'Weddings / Events', SPORTS_TALENT: 'Sports / Talent', OTHER: 'Other' };
@@ -85,7 +83,9 @@ const ANGLE = {
 const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 
 const state = {
-  session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'overview', loading: false,
+  session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'today', loading: false,
+  desk: null, ops: null, directors: null, club: null, busy: {}, dirKey: null, dirDetail: {}, dirSec: {}, more: false, feedAll: false, feedDir: '',
+  deskTab: 'NEEDS_REVIEW', deskCh: '', deskDir: '', deskPage: 0, deskOpen: {}, deskSrc: {}, relTab: 'PEOPLE', clubTab: 'COMMUNITIES',
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
   com: null, account: {}, radarF: { h: 'ALL', region: '', cat: '', q: '' }, actF: { view: 'TODAY', seg: '', owner: '', track: '' }, parF: { tab: 'DEVELOP', cls: '' }, evF: { tab: 'UPCOMING' },
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
@@ -161,7 +161,7 @@ const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 // ---------------------------------------------------------------- data
 async function load(silent = false) {
   if (!silent) { state.loading = true; render(); }
-  const [dash, ov, dir, ins, rel, com, exe, er] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial'), sb.rpc('hq_execution'), sb.rpc('hq_email_review')]);
+  const [dash, ov, dir, ins, rel, com, exe, er, desk, ops] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial'), sb.rpc('hq_execution'), sb.rpc('hq_email_review'), sb.rpc('hq_outreach_desk'), sb.rpc('hq_operations')]);
   state.loading = false;
   state.errors = {};
   if (dash.error) {
@@ -174,9 +174,13 @@ async function load(silent = false) {
   if (com.error) state.errors.com = com.error.message; else state.com = com.data;
   if (exe.error) state.errors.exec = exe.error.message; else state.exec = exe.data;
   if (er.error) state.errors.er = er.error.message; else state.er = er.data;
+  if (desk.error) state.errors.desk = desk.error.message; else state.desk = desk.data;
+  if (ops.error) state.errors.ops = ops.error.message; else state.ops = ops.data;
   render();
   // The agent floor is heavier: refreshed only while one of its views is open.
   if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
+  if (state.directors && ['agents', 'director'].includes(state.tab)) { loadV3('directors', 'hq_directors', {}, true); if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true); }
+  if (state.club && state.tab === 'club') loadV3('club', 'hq_club', {}, true);
 }
 
 async function loadTimeline(kind, id) {
@@ -308,6 +312,9 @@ function renderPasswordChange(forced) {
 // ---------------------------------------------------------------- shell
 function navBadge(key) {
   const ov = state.ov; const d = state.data;
+  if (key === 'today' && d) { const n = todayItems(d).count; return n ? `<span class="badge hot">${n}</span>` : ''; }
+  if (key === 'desk' && state.desk) { const n = state.desk.counts.needs_review.total; return n ? `<span class="badge">${n}</span>` : ''; }
+  if (key === 'relations') key = 'relationships';
   if (key === 'overview' && ov) { const p1 = ov.actions.filter((a) => a.prio === 'P1').length; return p1 ? `<span class="badge hot">${p1}</span>` : ''; }
   if (key === 'outreach' && ov) { const n = ov.scorecard.approvals_ready.n; return n ? `<span class="badge">${n}</span>` : ''; }
   if (key === 'relationships' && state.rel) { const n = state.rel.groups.filter((g) => !g.dismissed && g.received > 0 && !g.review?.status && (relSuggested(g) === 'REPLY_NOW' || g.state === 'REPLIED')).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
@@ -331,7 +338,9 @@ function render() {
     <div class="shell">
       <div class="side-col"><aside class="side">
         <div class="brand">${__HAS_LOGO__ ? '<img src="/noya-mark.svg" alt="">' : ''}<span class="word">NOYA<small>HQ · Private office</small></span></div>
-        ${NAV.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('')}
+        <nav class="nav-primary">${PRIMARY.map(([k, l]) => `<button class="nav-item ${state.tab === k || (k === 'agents' && state.tab === 'director') ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</nav>
+        <button class="nav-more ${moreOpen() ? 'open' : ''}" id="nav-more">More</button>
+        ${moreOpen() ? MORE.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('') : ''}
       </aside></div>
       <div>
         <div class="topbar"><div class="mbrand">NOYA</div>
@@ -352,12 +361,12 @@ function render() {
       </div>
     </div>
     <nav class="bnav">
-      ${[['overview', 'Today'], ['agents', 'Agents'], ['inbox', 'Replies'], ['outreach', 'Outreach']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
-      <button id="bsearch">Search</button><button id="bmenu" class="${state.menu ? 'active' : ''}">Menu</button>
+      ${[['today', 'Today'], ['agents', 'Agents'], ['desk', 'Outreach'], ['relations', 'Relationships']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k || (k === 'agents' && state.tab === 'director') ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
+      <button id="bmenu" class="${state.menu || ['club', 'ops', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
     </nav>
-    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet">${NAV.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
+    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['club', 'Club'], ['ops', 'Operations']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? renderDrawer(state.drawer) : ''}
-    ${state.modal && typeof state.modal === 'object' ? renderAnyModal(state.modal) : ''}`;
+    ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : renderAnyModal(state.modal)) : ''}`;
   bind();
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
@@ -514,7 +523,7 @@ function viewOverview(d) {
 }
 // Warm opportunities: existing relationships that deserve action now. Real evidence only
 // (NOYA Gmail threads, CRM records, LinkedIn matches); your confirmed status outranks HQ's suggestion.
-function warmOpportunities() {
+function warmOpportunities(limit = 6) {
   const out = []; const byKey = {};
   const days = (t) => (t ? Math.floor((Date.now() - new Date(t)) / 86400000) : 999);
   (state.rel?.groups || []).filter((g) => !g.dismissed && g.received > 0).forEach((g) => {
@@ -533,7 +542,7 @@ function warmOpportunities() {
     out.push({ conn: c.id, name: `${c.name}${c.company ? ` · ${c.company}` : ''}`, st: 'LINKEDIN', mine: false, score: 40 + c.active_opps * 5,
       facts: (c.evidence || []).slice(0, 2), why: '' });
   });
-  return out.sort((a, b) => b.score - a.score).slice(0, 6);
+  return out.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 function warmPanel() {
   const w = warmOpportunities(); if (!state.rel) return '';
@@ -1942,7 +1951,7 @@ function renderAnyModal(m) {
   const who = modalTitle(m);
   switch (m.kind) {
     case 'task-done': case 'task-snooze': {
-      const t = findTask(m.id) || {};
+      const t = findTask(m.id) || { title: m.title };
       return m.kind === 'task-done'
         ? `<div class="modal-bg"><div class="modal"><h3>Mark done</h3><p>${esc(sentence(t.title || ''))}</p>${fld('Note (optional)', 'task-note', 'text', '', 'maxlength="300"')}
             <div class="btn-row"><button class="btn primary" data-confirm-task="COMPLETE">Mark done</button><button class="btn" data-close>Cancel</button></div></div></div>`
@@ -2334,9 +2343,11 @@ function bind() {
   document.querySelectorAll('[data-w]').forEach((el) => { el.style.width = `${el.dataset.w}%`; });
   const on = (sel2, ev, fn) => document.querySelectorAll(sel2).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
   bindAgents(on);
+  bindV3(on);
   on('[data-tab]', 'click', (b) => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; state.menu = false; state.drawer = null; render(); window.scrollTo(0, 0); });
   on('[data-go]', 'click', (b, e) => {
     e.stopPropagation(); state.tab = b.dataset.go; if (b.dataset.otab) state.outreachTab = b.dataset.otab;
+    if (b.dataset.deskTab) { state.deskTab = b.dataset.deskTab; state.deskPage = 0; }
     state.drawer = null; state.modal = null; state.q = ''; state.menu = false; render();
     const anchor = b.dataset.anchor && document.getElementById(b.dataset.anchor);
     if (anchor) anchor.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
@@ -2345,7 +2356,7 @@ function bind() {
   on('[data-open]', 'click', (b, e) => { e.stopPropagation(); openDrawer(b.dataset.open, b.dataset.id); });
   on('[data-close-drawer]', 'click', () => { state.drawer = null; render(); });
   on('[data-modal]', 'click', (b, e) => { e.stopPropagation(); const x = b.dataset; state.menu = false;
-    state.modal = { kind: x.modal, id: x.id || null, opp: x.opp || null, task: x.task || null, channel: x.channel || null, conn: x.conn || null, contact: x.contact || null, company: x.company || null, draft: x.draft || null, next: x.next || null, type: x.type || null }; render(); });
+    state.modal = { kind: x.modal, id: x.id || null, opp: x.opp || null, task: x.task || null, channel: x.channel || null, conn: x.conn || null, contact: x.contact || null, company: x.company || null, draft: x.draft || null, next: x.next || null, type: x.type || null, title: x.title || null }; render(); });
   on('[data-hist-act]', 'click', (b) => call('hq_history_action', { p_key: b.dataset.id, p_action: b.dataset.histAct }, b.dataset.histAct === 'DISMISS' ? 'Hidden from the list (kept in the history).' : 'Restored.'));
   on('[data-relq]', 'click', (b, e) => { e.stopPropagation(); state.relF = { tab: 'ALL', q: b.dataset.relq }; state.tab = 'relationships'; state.q = ''; render(); window.scrollTo(0, 0); });
   on('button[data-rf]', 'click', (b) => { state.relF.tab = b.dataset.v; state.relF.i = 0; render(); });
@@ -2438,7 +2449,7 @@ function bind() {
 // Today = what Adam does now. Agents = what the research team is doing and producing. Every figure comes from hq_agents()
 // (one admin-gated read over companies, contacts, opportunities, drafts, run logs and Gmail state); a click on an agent
 // loads hq_agent(key). Status is derived from real run records, never animated.
-const AGENT_TABS = ['agents', 'agent', 'emails', 'agentradar', 'feed'];
+const AGENT_TABS = ['agentfloor', 'agent', 'emails', 'agentradar', 'feed'];
 const AGENT_STATUS = { WORKING: ['Working', 'ok'], WAITING: ['Waiting', ''], BLOCKED: ['Blocked', 'warn'], ERROR: ['Error', 'bad'] };
 // Honest email state (Adam, 8 Oct): publicly listed, verified, risky, unverified and invalid are never merged.
 const TRUST = { SMTP_VERIFIED: ['SMTP verified', 'ok', 'A verification provider (Hunter) confirmed the mailbox accepts mail.'],
@@ -2479,7 +2490,7 @@ function needAgents() {
   return '';
 }
 function agentsTabs(active) {
-  return `<div class="chips agents-nav">${[['agents', 'Agent floor'], ['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed']]
+  return `<div class="chips agents-nav">${[['agentfloor', 'Agent floor'], ['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed']]
     .map(([k, l]) => `<button class="chip ${active === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>`;
 }
 function ceoStrip(a) {
@@ -2546,7 +2557,7 @@ function viewAgents() {
   const wait = needAgents(); if (wait) return `<h2>Agents</h2>${wait}`;
   const a = state.agents; const acq = a.agents.filter((x) => x.kind === 'ACQUISITION'); const sup = a.agents.filter((x) => x.kind === 'SUPPORT');
   return `<div class="ov-head"><h1>Agents</h1><span class="sub">Your commercial team · live from Supabase · ${esc(fmtDate(a.generated_at))} Cairo</span></div>
-    ${agentsTabs('agents')}${ceoStrip(a)}${bestPanel(a)}
+    ${agentsTabs('agentfloor')}${ceoStrip(a)}${bestPanel(a)}
     <h3 class="mt8">Acquisition agents</h3><div class="agent-grid">${acq.map(agentCard).join('')}</div>
     <h3 class="mt8">Support agents</h3><div class="agent-grid">${sup.map(agentCard).join('')}</div>
     <section class="panel mt8"><header><h3>Activity</h3><button class="btn small ghost" data-tab="feed">Full feed</button></header><div class="body">${feedList(a.feed, 15)}</div></section>`;
@@ -2583,14 +2594,14 @@ function sectionBody(s) {
 function viewAgent() {
   const wait = needAgents(); if (wait) return wait;
   const key = state.agentKey; const a = (state.agents.agents || []).find((x) => x.key === key);
-  if (!a) return `${agentsTabs('agents')}<p class="muted">Pick an agent on the floor.</p>`;
+  if (!a) return `${agentsTabs('agentfloor')}<p class="muted">Pick an agent on the floor.</p>`;
   const d = state.agentDetail[key];
   if (!d) loadAgent(key);
   const secs = d?.sections || [];
   const cur = state.agentSec[key] || secs[0]?.key;
   const s = secs.find((x) => x.key === cur) || secs[0];
   const count = (x) => (Array.isArray(x.items) ? x.items.length : Object.keys(x.items || {}).length);
-  return `${agentsTabs('agents')}<button class="btn small ghost" data-tab="agents">← All agents</button>
+  return `${agentsTabs('agentfloor')}<button class="btn small ghost" data-tab="agentfloor">← All agents</button>
     <div class="agent-detail mt8">${agentCard(a)}</div>
     <p class="small faint">${esc(a.scope)}</p>
     ${!d ? '<p class="muted">Loading this agent\'s work…</p>' : d.error ? `<div class="banner err">${esc(d.error)}</div>` : `
@@ -2700,11 +2711,427 @@ function bindAgents(on) {
   on('[data-feed-ag]', 'click', (b) => { state.feedAg = b.dataset.feedAg; render(); });
 }
 
-const VIEWS = { overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
+// ================================================================ HQ V3 (Adam, 9 Oct): consolidate, simplify, prove, freeze
+// Six destinations. Every number on these screens comes from one admin-gated read and reconciles with the others:
+// hq_outreach_desk (approval desk), hq_directors / hq_director (the workforce), hq_club, hq_operations, hq_growth.
+const moreOpen = () => state.more || MORE_KEYS.includes(state.tab);
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+async function loadV3(key, fn, args = {}, force = false) {
+  if (state.busy[key] || (state[key] && !force)) return;
+  state.busy[key] = true;
+  const { data, error } = await sb.rpc(fn, args);
+  state.busy[key] = false;
+  if (error) state.errors[key] = error.message; else { state[key] = data; delete state.errors[key]; }
+  render();
+}
+async function loadDirector(key, force = false) {
+  if (!force && state.dirDetail[key]) return;
+  const { data, error } = await sb.rpc('hq_director', { p_key: key });
+  state.dirDetail[key] = error ? { error: error.message } : data;
+  render();
+}
+const waitFor = (key, what) => `<p class="muted">${state.errors[key] ? `<span class="bad-text">${esc(what)} could not load: ${esc(state.errors[key])}</span>` : `Loading ${esc(what)}…`}</p>`;
+const head = (title, sub) => `<div class="ov-head"><h1>${esc(title)}</h1>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
+const memberName = (k) => (state.directors?.members || []).find((x) => x.key === k)?.name || ({ ENRICHMENT: 'Contact & Email Intelligence', DRAFTING: 'Outreach Writer' }[k]) || k || '—';
+const CH_LABEL = { EMAIL: 'Email', LINKEDIN: 'LinkedIn', INSTAGRAM: 'Instagram', WHATSAPP: 'WhatsApp', INSTAGRAM_DM: 'Instagram' };
+const ESTATE = { VALID_VERIFIED: ['Valid · verified', 'ok'], ACCEPT_ALL: ['Accept-all · not verifiable', 'warn'], PUBLIC_UNVERIFIED: ['Public · not verified', 'warn'],
+  UNKNOWN: ['Unknown', 'warn'], INVALID: ['Invalid', 'bad'], NOT_FOUND: ['No email', ''] };
+const estatePill = (s) => { const [l, c] = ESTATE[s] || [s || 'No email', '']; return pill(l, c); };
+
+// ---------------------------------------------------------------- TODAY: only what needs Adam
+function todayItems(d) {
+  const desk = state.desk || {}; const now = new Date(); const end = new Date(`${todayKey()}T23:59:59+03:00`);
+  const replies = repliesForAdam(d);
+  const meetings = [...(state.ov?.actions || []).filter((a) => a.kind === 'MEETING'),
+    ...d.opportunities.filter((o) => o.status === 'CALL_REQUIRED' && !(state.ov?.actions || []).some((a) => a.kind === 'MEETING' && a.opportunity_id === o.id))
+      .map((o) => ({ kind: 'CALL', company: o.company_name, person: o.contact_name, opportunity_id: o.id, next_action: o.next_action }))];
+  const gmail = (desk.approved || []).filter((x) => x.gmail_confirmed);
+  const failed = (desk.approved || []).filter((x) => x.status === 'FAILED');
+  const followups = (desk.followups || []).filter((f) => f.due_at && new Date(f.due_at) <= end);
+  const proposals = d.opportunities.filter((o) => ['PROPOSAL', 'NEGOTIATION'].includes(o.status));
+  const issues = state.ops?.issues || [];
+  const review = desk.counts?.needs_review?.total || 0;
+  const count = replies.length + meetings.length + gmail.length + failed.length + proposals.length + issues.length + (followups.filter((f) => new Date(f.due_at) < now).length ? 1 : 0) + (review ? 1 : 0);
+  return { replies, meetings, gmail, failed, followups, proposals, issues, review, count };
+}
+function viewToday(d) {
+  const t = todayItems(d); const desk = state.desk || { counts: { needs_review: {} } }; const nr = desk.counts.needs_review || {};
+  const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
+  const sec = (title, n, body, more = '') => (n ? `<section class="today-sec"><header><h3>${esc(title)} <span class="n">${n}</span></h3>${more}</header>${body}</section>` : '');
+  const row = (main, sub, btns) => `<div class="t-row"><div><div class="t-main">${main}</div>${sub ? `<div class="t-sub">${sub}</div>` : ''}</div><div class="t-btns">${btns}</div></div>`;
+  const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date());
+  const html = [
+    sec('Replies waiting for you', t.replies.length, t.replies.map((r) => row(`${esc(r.company_name || r.from)} ${pill(REPLY_GROUP[r.classification] || r.classification || 'Reply', r.classification === 'MEETING_REQUEST' ? 'bad' : 'info')}`,
+      esc(r.summary || r.subject || ''), `${r.thread_id ? `<a class="btn small primary" href="${GMAIL_THREAD_URL}${esc(r.thread_id)}" target="_blank" rel="noopener noreferrer">Open email</a>` : ''}${r.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${r.opportunity_id}">Record</button>` : ''}${r.task_id ? `<button class="btn small ghost" data-modal="task-done" data-id="${r.task_id}">Done</button>` : ''}`)).join('')),
+    sec('Meetings and calls', t.meetings.length, t.meetings.map((m) => row(`${esc(m.person || m.company || '')}${m.person && m.company ? ` · <span class="faint">${esc(m.company)}</span>` : ''}`,
+      esc(m.kind === 'CALL' ? `Call requested · ${m.next_action || 'book it'}` : 'Meeting requested in a reply'), m.opportunity_id ? `<button class="btn small primary" data-modal="meeting" data-opp="${m.opportunity_id}" data-task="${m.task_id || ''}">Record meeting</button><button class="btn small" data-open="opp" data-id="${m.opportunity_id}">Open</button>` : '')).join('')),
+    sec('Gmail drafts to send', t.gmail.length, t.gmail.map((x) => row(`${esc(x.person || x.to_email)} · <span class="faint">${esc(x.company || '')}</span>`, `${esc(x.subject || '')} · approved ${esc(shortDay(x.approved_at))}`,
+      `<a class="btn small primary" href="${esc(x.gmail_url)}" target="_blank" rel="noopener noreferrer">Open in Gmail</a>`)).join('')
+      + '<p class="src">Unsent drafts in noya@noyaconcierge.com. You press Send in Gmail; HQ detects the send and books the follow-up.</p>'),
+    sec('Gmail drafts that failed', t.failed.length, t.failed.map((x) => row(`${esc(x.person || x.to_email)} · <span class="faint">${esc(x.company || '')}</span>`, `<span class="bad-text">Gmail draft failed</span>${x.error ? ` · ${esc(String(x.error).slice(0, 120))}` : ''}`,
+      `<button class="btn small" data-desk-tab="APPROVED" data-go="desk">Retry on the desk</button>`)).join('')),
+    t.review ? `<section class="today-sec"><header><h3>Outreach waiting for your review <span class="n">${t.review}</span></h3><button class="btn small primary" data-go="desk" data-desk-tab="NEEDS_REVIEW">Review</button></header>
+      <div class="t-sub">${[nr.EMAIL ? plural(nr.EMAIL, 'email', 'emails') : '', nr.LINKEDIN ? `${nr.LINKEDIN} LinkedIn` : '', nr.INSTAGRAM ? `${nr.INSTAGRAM} Instagram` : '', nr.WHATSAPP ? `${nr.WHATSAPP} WhatsApp` : ''].filter(Boolean).join(' · ')}. Approving an email creates an unsent Gmail draft — nothing is ever sent for you.</div></section>` : '',
+    sec('Follow-ups due', t.followups.length, t.followups.slice(0, 5).map((f) => row(`${esc(f.person || f.company || '')}${f.person ? ` · <span class="faint">${esc(f.company || '')}</span>` : ''}`,
+      `${esc(CH_LABEL[f.channel] || f.channel)} · follow-up ${esc(f.step)} · ${f.overdue ? `<span class="bad-text">overdue since ${esc(shortDay(f.due_at))}</span>` : `due ${esc(shortDay(f.due_at))}`}`,
+      `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button><button class="btn small ghost" data-modal="task-snooze" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Snooze</button>`)).join(''),
+      t.followups.length > 5 ? `<button class="btn small ghost" data-go="desk" data-desk-tab="FOLLOWUPS">All ${t.followups.length}${overdue.length ? ` · ${overdue.length} overdue` : ''}</button>` : ''),
+    sec('Proposals', t.proposals.length, t.proposals.map((o) => row(`${esc(o.company_name)}`, `${esc(S(o.status))}${o.next_action ? ` · ${esc(o.next_action)}` : ''}`, `<button class="btn small" data-open="opp" data-id="${o.id}">Open</button>`)).join('')),
+    sec('Client issues', t.issues.length, t.issues.map((i) => row(esc(i.title), `due ${esc(shortDay(i.due_at))}`, '<button class="btn small" data-tab="ops">Operations</button>')).join('')),
+  ].join('');
+  return `${head('Today', esc(day))}
+    ${html || '<div class="calm"><div class="calm-t">Nothing needs you right now.</div><div class="t-sub">Replies, approvals, Gmail drafts, meetings, proposals and due follow-ups appear here the moment they exist.</div></div>'}`;
+}
+
+// ---------------------------------------------------------------- AGENTS: the workforce as a company
+const DSTATUS = { WORKING: ['Working', 'ok'], SCHEDULED: ['Scheduled', ''], BLOCKED: ['Blocked', 'warn'], ERROR: ['Error', 'bad'] };
+const DMETRIC = [['companies_found', 'Companies found'], ['people_confirmed', 'People confirmed'], ['verified_emails', 'Verified emails'], ['outreach_drafts', 'Outreach drafts'],
+  ['gmail_drafts', 'Gmail drafts'], ['replies', 'Replies'], ['opportunities', 'Opportunities']];
+const SMETRIC = { RESEARCH: [['companies_researched', 'Researched'], ['companies_qualified', 'Qualified'], ['signals', 'Signals']],
+  CONTACT: [['people_confirmed', 'People confirmed'], ['companies_enriched', 'Companies searched']],
+  EMAIL: [['valid_verified', 'Valid verified'], ['public_emails_found', 'Public emails found'], ['accept_all', 'Accept-all'], ['invalid', 'Invalid']],
+  WRITER: [['drafts_written', 'Drafts written'], ['passed_quality', 'Passed quality'], ['revalidated', 'Revalidated']],
+  MEMORY: [['gmail_messages', 'Gmail messages'], ['relationships_summarised', 'Summaries']],
+  REPLY: [['replies_detected', 'Replies detected'], ['sends_detected', 'Sends detected']],
+  DIRECTOR: [['touches_planned', 'Touches planned'], ['briefs', 'Briefs']],
+  GROWTH: [['posts_analysed', 'Posts analysed'], ['concepts', 'Concepts'], ['content_items', 'Content items'], ['attributed_leads', 'Attributed leads']] };
+const ROLE_LABEL = { DIRECTOR: 'Director', MANAGER: 'Strategic Partnerships Manager', SUPPORT: 'Shared specialist' };
+function directorCard(m) {
+  const [sl, sc] = DSTATUS[m.status] || [m.status, ''];
+  const rows = m.role === 'SUPPORT' || m.key === 'GROWTH' ? (SMETRIC[m.key] || []) : DMETRIC;
+  const hard = (m.blockers || []).filter((b) => b.hard); const soft = (m.blockers || []).filter((b) => !b.hard);
+  return `<article class="dcard" data-director="${m.key}">
+    <div class="dc-head"><div><div class="dc-name">${esc(m.name)}</div><div class="dc-role">${esc(ROLE_LABEL[m.role] || '')}</div></div>${pill(sl, sc)}</div>
+    <div class="dc-status">${esc(m.status_text || '')}</div>
+    ${m.working_on ? `<div class="dc-now">${esc(m.working_on)}</div>` : ''}
+    <div class="dc-last">${m.last_action ? `Last: ${esc(m.last_action.text)} · ${esc(rel(m.last_action.at))}` : '<span class="faint">No recorded activity in the last 7 days</span>'}</div>
+    <div class="dc-metrics"><div class="dc-m dc-mh"><span></span><span>Today</span><span>3 days</span></div>${rows.map(([k, l]) => `<div class="dc-m"><span>${l}</span><b>${n0(m.today?.[k])}</b><b>${n0(m.d3?.[k])}</b></div>`).join('')}</div>
+    ${hard.map((b) => `<div class="dc-block bad-text">Blocked: ${esc(b.text)}</div>`).join('')}${soft.map((b) => `<div class="dc-block warn-text">${esc(b.text)}</div>`).join('')}
+  </article>`;
+}
+function v3Feed(items, limit) {
+  return (items || []).slice(0, limit).map((f) => `<div class="feed-row ${f.company_id ? 'clickable' : ''}" ${f.company_id ? `data-open="company" data-id="${f.company_id}"` : ''}>
+    <span class="feed-t">${esc(new Date(f.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' }))}<small>${esc(shortDay(f.at))}</small></span>
+    <span><b>${esc(memberName(f.agent))}</b> ${esc(f.text)}</span></div>`).join('') || '<div class="empty">No recorded activity for this filter in the last 7 days.</div>';
+}
+function viewAgentsV3() {
+  const D = state.directors;
+  if (!D) { loadV3('directors', 'hq_directors'); return head('Agents') + waitFor('directors', 'the workforce'); }
+  const f = D.floor || {};
+  const tile = (n, l, go, extra = '') => `<div class="tile ${go ? 'link' : ''}" ${go ? `data-go="${go}" ${extra}` : ''}><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  const by = (r) => D.members.filter((m) => m.role === r);
+  const feed = (D.feed || []).filter((x) => !state.feedDir || x.agent === state.feedDir);
+  return `${head('Agents', `Your commercial company · live ${esc(fmtDate(D.generated_at))} Cairo`)}
+    <div class="tiles floor">
+      ${tile(`${n0(f.agents_healthy)} / ${n0(f.agents_total)}`, 'Agents healthy')}${tile(n0(f.qualified_24h), 'New qualified · 24h')}${tile(n0(f.decision_makers_24h), 'New decision makers · 24h')}
+      ${tile(n0(f.verified_emails_24h), 'New verified emails · 24h')}${tile(n0(f.needs_review), 'Needs review', 'desk', 'data-desk-tab="NEEDS_REVIEW"')}
+      ${tile(n0(f.gmail_drafts_ready), 'Gmail drafts ready', 'desk', 'data-desk-tab="APPROVED"')}${tile(n0(f.replies), 'Replies to handle', 'today')}${tile(n0(f.meetings), 'Meetings', 'today')}</div>
+    <h3>Directors</h3><div class="dgrid">${by('DIRECTOR').map(directorCard).join('')}</div>
+    <h3>Strategic partnerships</h3><div class="dgrid">${by('MANAGER').map(directorCard).join('')}</div>
+    <h3>Shared specialists</h3><div class="dgrid compact">${by('SUPPORT').map(directorCard).join('')}</div>
+    <section class="panel mt8"><header><h3>Activity</h3><select class="w-auto" data-feed-dir><option value="">Everyone</option>${D.members.map((m) => `<option value="${m.key}" ${state.feedDir === m.key ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></header>
+      <div class="body">${v3Feed(feed, state.feedAll ? 200 : 20)}${feed.length > 20 ? `<button class="linkish" data-feed-all>${state.feedAll ? 'Show less' : `Show all ${feed.length}`}</button>` : ''}</div></section>`;
+}
+
+// ---------------------------------------------------------------- Director drill-down
+function dPerson(p) {
+  const ig = p.instagram ? String(p.instagram).replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '') : '';
+  return `<div class="mini"><div class="t">${esc(p.name || 'Unnamed')}${p.role ? ` · <span class="faint">${esc(p.role)}</span>` : ''}</div>
+    <div class="m"><a class="clickable" data-open="company" data-id="${p.company_id}">${esc(p.company || '')}</a>${p.country ? ` · ${esc(p.country)}` : ''} · confidence ${esc(String(p.confidence || '').toLowerCase().replace('_', ' '))}</div>
+    <div class="m">${p.email ? `${esc(p.email)} ${estatePill(p.email_state)}` : estatePill('NOT_FOUND')}${p.linkedin ? ` · <a href="${esc(p.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ''}${ig ? ` · <a href="https://instagram.com/${esc(ig)}" target="_blank" rel="noopener noreferrer">@${esc(ig)}</a>` : ''}${p.phone ? ` · official phone ${esc(p.phone)}` : ''}</div>
+    <div class="m faint">Source: ${p.source ? `<a href="${esc(p.source)}" target="_blank" rel="noopener noreferrer">${esc((p.source_type || 'link').toLowerCase().replace(/_/g, ' '))}</a>` : 'not recorded'}${p.found_at ? ` · found ${esc(shortDay(p.found_at))}` : ''}</div></div>`;
+}
+function dSection(s) {
+  const it = Array.isArray(s.items) ? s.items : [];
+  switch (s.kind) {
+    case 'companies': return it.map((c) => `<div class="mini clickable" data-open="company" data-id="${c.company_id}"><div class="t">${esc(c.company)} ${c.status ? pill(sentence(c.status)) : ''}</div>
+      <div class="m">${esc([c.type, c.country].filter(Boolean).join(' · '))}${c.people != null ? ` · ${plural(c.people, 'decision maker', 'decision makers')} · ${esc(c.verified)} verified` : ''}${c.director ? ` · ${esc(memberName(c.director))}` : ''}${c.found_at ? ` · ${esc(shortDay(c.found_at))}` : ''}</div>
+      ${c.model ? `<div class="m">→ ${esc(c.model)}</div>` : ''}${c.attempts != null ? `<div class="m faint">${esc(c.attempts)} enrichment attempts${c.last_enriched ? ` · last ${esc(shortDay(c.last_enriched))}` : ''}</div>` : ''}</div>`).join('');
+    case 'people': return it.map(dPerson).join('');
+    case 'gaps': return it.map((g) => { const p = (g.people || [])[0]; return `<div class="mini clickable" data-open="company" data-id="${g.company_id}"><div class="t">${esc(g.company)} ${pill(`score ${g.score}`)}</div>
+      <div class="m">${p ? `${esc(`${p.first_name || ''} ${p.last_name || ''}`.trim())}${p.position ? ` · ${esc(p.position)}` : ''}` : 'No decision maker named yet'} · <span class="warn-text">no usable named or department email yet</span></div>
+      <div class="m faint">${g.checked_at ? `Searched ${esc(shortDay(g.checked_at))} · ${plural(g.attempts, 'attempt', 'attempts')}` : 'Not searched for email yet'}</div></div>`; }).join('');
+    case 'opportunities': return it.map((o) => `<div class="mini clickable" data-open="company" data-id="${o.company_id}"><div class="t">${esc(o.company)}${o.status ? ` ${pill(sentence(o.status))}` : ''}${o.relationship && o.relationship !== 'COLD' ? ` ${pill(sentence(o.relationship.replace(/_/g, ' ')), 'info')}` : ''}</div>
+      ${o.model ? `<div class="m"><b>${esc(String(o.model).split(':')[0])}</b></div>` : ''}
+      ${o.value ? `<div class="m">Value to NOYA: ${esc(o.value.to_noya)}</div><div class="m">Value to them: ${esc(o.value.to_partner)}</div>` : ''}
+      <div class="m">Right contact: ${o.contact ? `${esc(o.contact.name || '')}${o.contact.role ? `, ${esc(o.contact.role)}` : ''} ${estatePill(o.contact.email_state)}` : '<span class="warn-text">not identified yet</span>'}</div>
+      <div class="m"><b>Next step:</b> ${esc(o.next_step)}</div>${o.angle ? `<div class="m faint">${esc(o.angle)}</div>` : ''}</div>`).join('');
+    case 'desk': return it.map((x) => deskRow(x, true)).join('');
+    case 'verify': return it.map((v) => `<div class="mini clickable" data-open="company" data-id="${v.company_id}"><div class="t">${esc(v.name || v.email)}${v.position ? ` · <span class="faint">${esc(v.position)}</span>` : ''}</div>
+      <div class="m">${esc(v.email)} · ${esc(v.company)} · ${esc(memberName(v.agent))}${v.draft_waiting ? ` · ${pill('draft waiting', 'gold')}` : ''}</div></div>`).join('');
+    case 'verifications': return it.map((v) => `<div class="mini"><div class="t">${esc(v.name || v.email)} ${pill(v.result === 'valid' ? 'valid' : v.result.replace('_', '-'), v.result === 'valid' ? 'ok' : v.result === 'invalid' ? 'bad' : 'warn')}</div>
+      <div class="m">${esc(v.email)} · ${esc(v.company || '')} · ${esc(fmtDate(v.at))}</div></div>`).join('');
+    case 'drafts': return it.map((x) => `<div class="mini clickable" data-open="company" data-id="${x.company_id}"><div class="t">${esc(x.company)} ${pill(sentence(x.status))}${x.edited ? ` ${pill('edited by you', 'info')}` : ''}</div>
+      <div class="m">${esc([x.person, CH_LABEL[x.channel] || x.channel, x.subject].filter(Boolean).join(' · '))}${x.hold_reason ? ` · ${esc(x.hold_reason)}` : ''} · ${esc(shortDay(x.at))}</div></div>`).join('');
+    case 'plans': return it.map((p) => `<div class="mini"><div class="t">${esc(shortDay(p.run_date))} · ${esc(p.touches)} touches</div><div class="m">${esc(p.email)} email · ${esc(p.linkedin)} LinkedIn · ${esc(p.instagram)} Instagram · ${esc(p.ready)} ready · ${esc(p.held)} held</div></div>`).join('');
+    case 'actions': return it.map((x) => `<div class="mini"><div class="t">${esc(x.rank)}. ${esc(x.action)} · ${esc(x.company || '')}</div><div class="m">${esc(x.detail || '')}</div></div>`).join('');
+    case 'replies': return it.map((x) => `<div class="mini clickable" data-open="company" data-id="${x.company_id}"><div class="t">${esc(x.person || x.company)}${x.person ? ` · <span class="faint">${esc(x.company)}</span>` : ''} ${x.classification ? pill(REPLY_GROUP[x.classification] || x.classification, 'info') : ''}</div><div class="m">${esc(x.subject || '')} · ${esc(fmtDate(x.received_at))}</div>${x.summary ? `<div class="m faint">${esc(x.summary)}</div>` : ''}</div>`).join('');
+    case 'sent': return it.map((x) => `<div class="mini"><div class="t">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company)}</span>` : ''} ${pill(CH_LABEL[x.channel] || x.channel)}</div><div class="m">${esc(x.subject || x.summary || '')} · ${esc(fmtDate(x.sent_at))}</div></div>`).join('');
+    case 'followups': return it.map((f) => `<div class="mini"><div class="t">${esc(f.person || f.company || '')} · follow-up ${esc(f.step)}</div><div class="m">${esc(f.company || '')} · ${esc(CH_LABEL[f.channel] || f.channel)} · ${f.overdue ? `<span class="bad-text">overdue since ${esc(shortDay(f.due_at))}</span>` : `due ${esc(shortDay(f.due_at))}`}</div></div>`).join('');
+    case 'threads': return it.map((r) => `<div class="mini"><div class="t">${esc(r.key.replace(/^[a-z]:/, ''))}${r.suggested ? ` ${pill(sentence(r.suggested.replace(/_/g, ' ')), 'info')}` : ''}</div><div class="m">${esc(r.summary || '')}</div>${r.their_position ? `<div class="m faint">Their position: ${esc(r.their_position)}</div>` : ''}<div class="m faint">${r.last_at ? `last email ${esc(shortDay(r.last_at))} · ` : ''}${esc(r.basis || '')}</div></div>`).join('');
+    case 'runs': return it.map((r) => `<div class="mini"><div class="t">${esc(fmtDate(r.at))} · ${esc(String(r.workflow || '').replace(/ v\d+$/, ''))}</div><div class="m">${n0(r.searches)} searches · ${n0(r.candidates)} candidates · ${n0(r.researched)} researched · ${n0(r.qualified)} qualified · ${n0(r.known_skipped)} already known</div></div>`).join('');
+    default: return '';
+  }
+}
+function viewDirector() {
+  const D = state.directors; if (!D) { loadV3('directors', 'hq_directors'); return head('Agents') + waitFor('directors', 'the workforce'); }
+  const m = D.members.find((x) => x.key === state.dirKey);
+  if (!m) return `${head('Agents')}<p class="muted">Pick a Director on the Agents screen.</p>`;
+  const det = state.dirDetail[m.key]; if (!det) loadDirector(m.key);
+  const back = '<button class="btn small ghost" data-tab="agents">← All agents</button>';
+  const top = `${back}<div class="director-top mt8">${directorCard(m)}<div class="dt-side"><div class="kv"><div class="k">Mission</div><div class="v">${esc(m.mission || '')}</div></div>
+    <div class="kv mt8"><div class="k">Scope</div><div class="v small">${esc(m.scope || '')}</div></div><div class="kv mt8"><div class="k">Last run · next run</div><div class="v small">${esc(rel(m.last_run))} · ${esc(m.next_run ? fmtDate(m.next_run) : 'on demand')}</div></div>
+    <details class="tech"><summary>Technical details</summary><div class="small faint">workflows ${esc((m.workflows || []).map((w) => w.replace(/ -$/, '')).join(', ') || 'none of its own: derived from every Director\'s records')}</div></details></div></div>`;
+  if (!det) return `${top}<p class="muted">Loading ${esc(m.name)}…</p>`;
+  if (det.error) return `${top}<div class="banner err">${esc(det.error)}</div>`;
+  if (det.growth) return top + growthBody(det.growth);
+  const feed = (D.feed || []).filter((x) => x.agent === m.key);
+  const secs = [...(det.sections || []), { key: 'activity', title: 'Recent activity', kind: 'feed', total: feed.length, items: feed }];
+  const cur = secs.find((x) => x.key === state.dirSec[m.key]) || secs.find((x) => (x.total || 0) > 0) || secs[0];
+  const shown = Array.isArray(cur.items) ? cur.items.length : 0;
+  return `${top}
+    <div class="chips mt8">${secs.map((x) => `<button class="chip ${x.key === cur.key ? 'on' : ''}" data-dir-sec="${x.key}">${esc(x.title)} · ${esc(x.total ?? (Array.isArray(x.items) ? x.items.length : 0))}</button>`).join('')}</div>
+    <section class="panel mt8"><header><h3>${esc(cur.title)}</h3><span class="small faint">${cur.total != null && cur.total > shown ? `showing the latest ${shown} of ${cur.total}` : `${cur.total ?? shown} in total`}</span></header>
+      <div class="body">${cur.kind === 'feed' ? v3Feed(cur.items, 200) : (dSection(cur) || '<div class="empty">Nothing here yet.</div>')}</div></section>`;
+}
+function growthBody(g) {
+  const c = g.connections || {}; const p = g.pipeline || {}; const paid = g.paid || {};
+  const state2 = (s) => ({ PAUSED: ['Paused — plan limit', 'warn'], CONNECTED: ['Connected', 'ok'], NOT_CONNECTED_TO_HQ: ['Not connected to HQ', 'warn'], READ_PAUSED: ['Read-only · paused', 'warn'], READ_ONLY: ['Read-only', 'ok'] }[s] || [s, '']);
+  const conn = (name, x) => `<div class="mini"><div class="t">${esc(name)} ${pill(...state2(x.state))}</div><div class="m">${esc(x.detail || '')}</div>${x.last_data ? `<div class="m faint">Latest data ${esc(fmtDate(x.last_data))}${x.last_spend_date ? ` · last spend recorded ${esc(shortDay(x.last_spend_date))}` : ''}</div>` : ''}</div>`;
+  const steps = [['Idea', p.ideas], ['Draft', p.drafts], ['Review', null], ['Approved', p.approved], ['Metricool scheduled', p.scheduled], ['Published', p.published], ['Performance', (g.top_posts || []).length]];
+  return `<section class="panel mt8"><header><h3>Connections</h3></header><div class="body">
+      ${conn('Instagram @noyaconcierge (Windsor.ai)', c.instagram || {})}${conn('Metricool', c.metricool || {})}${conn('Meta Ads', c.meta_ads || {})}
+      <p class="src">Recommends and prepares only. Never launches spend, raises budgets, boosts or publishes brand-sensitive content without Adam.</p></div></section>
+    <section class="panel mt8"><header><h3>Content approval pipeline</h3></header><div class="body"><div class="loop">${steps.map(([l, n]) => `<span>${esc(l)}${n != null ? ` · ${esc(n)}` : ''}</span>`).join('')}</div>
+      ${(g.content || []).length ? '' : '<div class="empty">No content items yet. Ideas move Idea → Draft → Review → Approved → Metricool scheduled → Published → Performance, and nothing reaches Metricool without your approval.</div>'}</div></section>
+    <section class="panel mt8"><header><h3>Instagram performance · ${esc((g.top_posts || []).length)} posts analysed</h3></header><div class="body">
+      ${(g.top_posts || []).slice(0, 8).map((x) => `<div class="mini"><div class="t">${esc(x.caption || x.category || 'Post')}</div><div class="m">${esc(shortDay(x.date))} · ${esc(String(x.type || '').toLowerCase().replace('carousel_album', 'carousel').replace('_', ' '))} · reach ${n0(x.reach)} · saves ${n0(x.saved)} · shares ${n0(x.shares)}${x.destination ? ` · ${esc(x.destination)}` : ''}</div></div>`).join('') || '<div class="empty">No Instagram performance stored.</div>'}</div></section>
+    <section class="panel mt8"><header><h3>Paid media (read-only)</h3></header><div class="body">${paid.rows ? `<div class="m">${esc(paid.rows)} ad rows · ${esc(shortDay(paid.first_date))} – ${esc(shortDay(paid.last_date))} · spend ${esc(paid.spend)} · reach ${esc(paid.reach)} · clicks ${esc(paid.clicks)}</div>` : '<div class="empty">No paid-media data.</div>'}
+      ${c.meta_ads?.state !== 'READ_ONLY' ? '<p class="src">META ADS: read access paused by the Windsor plan limit. No campaign can be launched or changed from HQ.</p>' : ''}</div></section>
+    <section class="panel mt8"><header><h3>Media concepts · ${esc((g.concepts || []).length)}</h3></header><div class="body">${(g.concepts || []).map((x) => `<div class="mini"><div class="t">${esc(x.company || 'Concept')} ${pill(sentence(x.status || ''))}</div><div class="m">${esc(x.concept)}</div><div class="m faint">${esc(x.backdrop || '')}${x.noya_role ? ` · NOYA: ${esc(x.noya_role)}` : ''}</div></div>`).join('') || '<div class="empty">No concepts yet.</div>'}</div></section>
+    <section class="panel mt8"><header><h3>Competitor patterns</h3></header><div class="body">${(g.competitor_patterns || []).map((x) => `<div class="mini"><div class="t">${esc(x.competitor)}</div><div class="m">${esc(x.hook || '')}</div><div class="m faint">${esc(sentence(x.action || x.why || ''))}</div></div>`).join('') || '<div class="empty">No competitor patterns stored.</div>'}</div></section>
+    <section class="panel mt8"><header><h3>Leads attributed to content or ads · ${esc((g.attributed_leads || []).length)}</h3></header><div class="body">${(g.attributed_leads || []).map((x) => `<div class="mini"><div class="t">${esc(x.lead_type || 'Lead')} · ${esc(x.source || '')}</div><div class="m">${esc(x.campaign || '')} · confidence ${esc(x.confidence || '—')} · ${esc(shortDay(x.at))}</div></div>`).join('') || '<div class="empty">No lead has been attributed to content or ads yet.</div>'}
+      ${g.test_leads_excluded ? `<p class="src">${esc(plural(g.test_leads_excluded, 'website go-live test enquiry is', 'website go-live test enquiries are'))} kept on record but not counted.</p>` : ''}</div></section>`;
+}
+
+// ---------------------------------------------------------------- OUTREACH: the approval desk
+const DESK_TABS = [['NEEDS_REVIEW', 'Needs review'], ['APPROVED', 'Approved / Gmail drafts'], ['FOLLOWUPS', 'Follow-ups'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Held'], ['RESEARCHING', 'Researching']];
+const DESK_PAGE = 25;
+const deskItem = (ref) => { const D = state.desk || {}; return [...(D.needs_review || []), ...(D.held || []), ...(D.researching || [])].find((x) => x.ref === ref); };
+function deskRoute(x) {
+  const r = x.route || {};
+  if (x.channel === 'EMAIL') return r.email ? `${esc(r.email)}${r.via_inbox ? ` <span class="faint">(${esc(r.inbox_label || 'company inbox')}, for ${esc(x.person || 'the named person')})</span>` : ''}` : '<span class="warn-text">no email</span>';
+  if (x.channel === 'LINKEDIN') return r.linkedin ? `<a href="${esc(r.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn profile</a>` : 'LinkedIn';
+  if (x.channel === 'INSTAGRAM') { const ig = String(r.instagram || '').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, ''); return ig ? `<a href="https://instagram.com/${esc(ig)}" target="_blank" rel="noopener noreferrer">@${esc(ig)}</a>` : 'Instagram'; }
+  return r.phone ? `official ${esc(r.phone)}` : esc(CH_LABEL[x.channel] || x.channel);
+}
+function deskButtons(x, readOnly) {
+  if (readOnly) return `<button class="btn small" data-go="desk" data-desk-tab="${x.bucket === 'NEEDS_REVIEW' ? 'NEEDS_REVIEW' : x.bucket}">Open on the desk</button>`;
+  const ref = esc(x.ref); const b = [];
+  if (x.bucket === 'NEEDS_REVIEW') {
+    if (x.approve_via === 'EMAIL_CANDIDATE' || x.approve_via === 'OPPORTUNITY_DRAFT') b.push(`<button class="btn small primary" data-desk-approve="${ref}" title="Re-checks the address, then creates an unsent Gmail draft. Never sends.">Approve</button>`);
+    else if (x.approve_via === 'MANUAL_SEND') {
+      const url = x.channel === 'LINKEDIN' ? x.route?.linkedin : null;
+      if (x.draft) b.push(`<button class="btn small primary" data-copy="${esc(x.draft)}">Copy message</button>`);
+      if (url) b.push(`<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn</a>`);
+      if (x.task_id) b.push(`<button class="btn small" data-modal="task-done" data-id="${x.task_id}" data-title="${esc(`Sent to ${x.person || x.company || ''} on ${CH_LABEL[x.channel] || x.channel}`)}" title="You sent it yourself: logs the send and books follow-up 1 for 4 days later.">Mark sent</button>`);
+    }
+  }
+  if (x.task_id && ['NEEDS_REVIEW', 'HELD'].includes(x.bucket)) {
+    b.push(`<button class="btn small" data-desk-modal="edit" data-ref="${ref}">Edit</button>`);
+    if (x.bucket === 'HELD' && x.status === 'WAITING') b.push(`<button class="btn small" data-desk-release="${ref}">Release</button>`);
+    else if (x.bucket === 'NEEDS_REVIEW') b.push(`<button class="btn small" data-desk-modal="hold" data-ref="${ref}">Hold</button>`);
+    b.push(`<button class="btn small" data-desk-modal="research" data-ref="${ref}">Research more</button>`, `<button class="btn small ghost" data-desk-modal="reject" data-ref="${ref}">Reject</button>`);
+  }
+  b.push(`<button class="btn small ghost" data-desk-src="${ref}">Source</button>`);
+  return b.join('');
+}
+function deskRow(x, readOnly = false) {
+  const open = state.deskOpen[x.ref]; const src = state.deskSrc[x.ref]; const s = x.source || {}; const t = x.tech || {};
+  const ver = x.channel === 'EMAIL' ? estatePill(x.route?.email_state) : s.identity === 'CONFIRMED' ? pill('Person confirmed', 'ok') : x.person ? pill('Person not confirmed', 'warn') : '';
+  const draft = String(x.draft || ''); const preview = draft.replace(/\s+/g, ' ').slice(0, 150);
+  return `<article class="drow" id="desk-${esc(x.ref)}">
+    <div class="dr-top"><div class="dr-who"><b>${esc(x.person || x.company || '—')}</b>${x.role ? ` <span class="faint">· ${esc(x.role)}</span>` : ''}${x.person && x.company ? ` · <a class="clickable" data-open="company" data-id="${x.company_id}">${esc(x.company)}</a>` : ''}</div>
+      <span class="dr-age" title="Prepared ${esc(fmtDate(x.created_at))}">${x.age_days != null ? `${esc(x.age_days)} d` : ''}</span></div>
+    <div class="dr-pills">${pill(memberName(x.director))}${pill(CH_LABEL[x.channel] || x.channel, 'gold')}<span class="dr-route">${deskRoute(x)}</span>${ver}${x.qa === 'FLAGGED' ? pill('quality flag', 'warn') : ''}</div>
+    ${x.reason ? `<div class="dr-line warn-text">${esc(x.reason)}</div>` : ''}
+    ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(x.why_now)}</div>` : ''}
+    ${x.angle ? `<div class="dr-line"><span>Angle</span>${esc(x.angle)}</div>` : ''}
+    ${draft ? `<div class="dr-msg">${x.subject ? `<b>${esc(x.subject)}</b> — ` : ''}<span class="faint">${esc(preview)}${draft.length > 150 ? '…' : ''}</span> <button class="linkish" data-desk-open="${esc(x.ref)}">${open ? 'Hide' : 'Read'}</button></div>` : ''}
+    ${open ? `<div class="draft-box"><pre>${esc(draft)}</pre>${x.original_draft ? `<details><summary>Original draft (kept)</summary><pre>${esc(x.original_draft)}</pre></details>` : ''}</div>` : ''}
+    <div class="dr-act btn-row">${deskButtons(x, readOnly)}</div>
+    ${src ? `<div class="dr-src small">Person: ${s.person ? `<a href="${esc(s.person)}" target="_blank" rel="noopener noreferrer">${esc(s.person.replace(/^https?:\/\//, '').slice(0, 60))}</a>` : 'source not recorded'} · identity ${esc(String(s.identity || 'unknown').toLowerCase().replace('_', ' '))}${x.channel === 'EMAIL' ? ` · email ${s.email ? `<a href="${esc(s.email)}" target="_blank" rel="noopener noreferrer">${esc(s.email.replace(/^https?:\/\//, '').slice(0, 60))}</a>` : x.route?.email_state === 'VALID_VERIFIED' ? 'verified by the verification provider' : 'source not recorded'}` : ''}</div>` : ''}
+    <details class="tech"><summary>Technical details</summary><div class="small faint">${esc([t.title, t.task_type, t.created_by, t.candidate_status, t.hold_reason, x.approve_via].filter(Boolean).join(' · '))}</div></details>
+  </article>`;
+}
+function approvedRow(x) {
+  const st = x.gmail_confirmed ? `<a class="btn small primary" href="${esc(x.gmail_url)}" target="_blank" rel="noopener noreferrer">Open in Gmail</a>`
+    : x.status === 'FAILED' ? `<span class="bad-text small">Gmail draft failed</span> ${x.can_retry ? `<button class="btn small" data-act="redispatch" data-id="${x.outbound_id}">Retry</button>` : ''}`
+      : x.status === 'DISCARDED' ? '<span class="small faint">Draft discarded in Gmail</span>' : x.status === 'SENT' ? '<span class="small">Sent</span>'
+        : `<span class="small faint">Creating the Gmail draft…</span>${x.can_retry ? ` <button class="btn small" data-act="redispatch" data-id="${x.outbound_id}">Retry</button>` : ''}`;
+  return `<div class="t-row"><div><div class="t-main">${esc(x.person || x.to_email)} · <span class="faint">${esc(x.company || '')}</span> ${estatePill(x.email_state)}</div>
+    <div class="t-sub">${esc(x.to_email)} · ${esc(x.subject || '')} · approved ${esc(shortDay(x.approved_at))}${x.error && x.status === 'FAILED' ? ` · ${esc(String(x.error).slice(0, 100))}` : ''}</div></div><div class="t-btns">${st}</div></div>`;
+}
+function viewDesk() {
+  const D = state.desk; if (!D) return head('Outreach') + waitFor('desk', 'the outreach desk');
+  const c = D.counts; const t = state.deskTab;
+  const n = { NEEDS_REVIEW: c.needs_review.total, APPROVED: c.approved, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected, RESEARCHING: c.researching };
+  let body = '';
+  if (['NEEDS_REVIEW', 'HELD', 'RESEARCHING'].includes(t)) {
+    let list = t === 'NEEDS_REVIEW' ? D.needs_review : t === 'HELD' ? D.held : D.researching;
+    const dirs = [...new Set(list.map((x) => x.director).filter(Boolean))];
+    if (state.deskDir) list = list.filter((x) => x.director === state.deskDir);
+    const chCount = (ch) => list.filter((x) => x.channel === ch).length;
+    const chips = t === 'NEEDS_REVIEW' ? `<div class="chips">${[['', 'All', list.length], ['EMAIL', 'Email', chCount('EMAIL')], ['LINKEDIN', 'LinkedIn', chCount('LINKEDIN')], ['INSTAGRAM', 'Instagram', chCount('INSTAGRAM')], ...(chCount('WHATSAPP') ? [['WHATSAPP', 'WhatsApp', chCount('WHATSAPP')]] : [])]
+      .map(([k, l, m]) => `<button class="chip ${state.deskCh === k ? 'on' : ''}" data-desk-ch="${k}">${l} · ${m}</button>`).join('')}</div>` : '';
+    if (t === 'NEEDS_REVIEW' && state.deskCh) list = list.filter((x) => x.channel === state.deskCh);
+    const pages = Math.max(1, Math.ceil(list.length / DESK_PAGE)); const pg = Math.min(state.deskPage, pages - 1);
+    const shown = list.slice(pg * DESK_PAGE, pg * DESK_PAGE + DESK_PAGE);
+    const pager = list.length ? `<div class="pager"><span class="small">Showing ${pg * DESK_PAGE + 1}–${pg * DESK_PAGE + shown.length} of ${list.length}</span>${pages > 1 ? `<span><button class="btn small ghost" data-desk-page="-1" ${pg === 0 ? 'disabled' : ''}>Previous</button><button class="btn small ghost" data-desk-page="1" ${pg >= pages - 1 ? 'disabled' : ''}>Next</button></span>` : ''}</div>` : '';
+    body = `${chips}<div class="filters"><select class="w-auto" data-desk-dir><option value="">All Directors</option>${dirs.map((k) => `<option value="${k}" ${state.deskDir === k ? 'selected' : ''}>${esc(memberName(k))}</option>`).join('')}</select></div>
+      ${pager}<div class="dlist">${shown.map((x) => deskRow(x)).join('') || '<div class="empty">Nothing here.</div>'}</div>${shown.length > 4 ? pager : ''}
+      ${t === 'HELD' && D.rejected.length ? `<h3>Rejected · ${D.rejected.length}</h3><div class="dlist">${D.rejected.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company)}${x.person ? ` · <span class="faint">${esc(x.company)}</span>` : ''} ${pill(CH_LABEL[x.channel] || x.channel)}</div><div class="t-sub">${esc(x.reason || '')} · rejected ${esc(shortDay(x.rejected_at))}${x.held_until ? ` · not rediscovered until ${esc(shortDay(x.held_until))}` : ''}</div></div></div>`).join('')}</div>` : ''}`;
+  } else if (t === 'APPROVED') body = `<div class="dlist">${D.approved.map(approvedRow).join('') || '<div class="empty">Nothing approved yet. Approve an email under Needs review: HQ re-checks the address and creates one unsent Gmail draft.</div>'}</div>`;
+  else if (t === 'FOLLOWUPS') body = `<div class="dlist">${D.followups.map((f) => `<div class="t-row"><div><div class="t-main">${esc(f.person || f.company || '')}${f.person ? ` · <span class="faint">${esc(f.company || '')}</span>` : ''} ${pill(`Follow-up ${f.step}`)}</div>
+      <div class="t-sub">${esc(CH_LABEL[f.channel] || f.channel)} · ${f.overdue ? `<span class="bad-text">overdue since ${esc(shortDay(f.due_at))}</span>` : `due ${esc(shortDay(f.due_at))}`}${f.thread_id ? ` · ${gmailLink(f.thread_id, 'thread')}` : ''}</div></div>
+      <div class="t-btns"><button class="btn small primary" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${f.task_id}">Not needed</button></div></div>`).join('') || '<div class="empty">No follow-ups open.</div>'}</div>
+      <p class="src">Follow-up 1 is due 4 days after the real send; follow-up 2 six days after follow-up 1 is sent; never more than two. A reply, meeting, proposal, decline or do-not-contact cancels them automatically.</p>`;
+  else if (t === 'SENT') body = `<div class="dlist">${D.sent.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''} ${pill(CH_LABEL[x.channel] || x.channel)}</div><div class="t-sub">${esc(x.subject || x.summary || '')} · ${esc(fmtDate(x.sent_at))}</div></div></div>`).join('') || '<div class="empty">Nothing sent in the last 60 days.</div>'}</div>`;
+  else if (t === 'REPLIED') body = `<div class="dlist">${D.replied.map((x) => `<div class="t-row clickable" ${x.company_id ? `data-open="company" data-id="${x.company_id}"` : ''}><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''} ${x.classification ? pill(REPLY_GROUP[x.classification] || x.classification, x.classification === 'MEETING_REQUEST' ? 'bad' : 'info') : ''}</div><div class="t-sub">${esc(x.summary || x.subject || '')} · ${esc(fmtDate(x.received_at))}</div></div></div>`).join('') || '<div class="empty">No replies in the last 60 days.</div>'}</div>`;
+  const intro = { NEEDS_REVIEW: 'Approve re-checks the address and creates one unsent Gmail draft. LinkedIn and Instagram are sent by you, then marked sent. Nothing is ever sent automatically.',
+    HELD: 'Held by you, waiting on a warm route, or a draft that failed the quality check.', RESEARCHING: 'Not ready: the person, role or a verified route is still missing. The agents keep working on these.' }[t];
+  return `${head('Outreach', 'The approval desk')}
+    <div class="tabs">${DESK_TABS.map(([k, l]) => `<button data-desk-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k])}</span></button>`).join('')}</div>
+    ${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
+}
+function deskModal(m) {
+  const x = deskItem(m.ref) || {};
+  const who = `${esc(x.person || x.company || '')}${x.person ? ` · ${esc(x.company || '')}` : ''}`;
+  const today = todayKey();
+  const forms = {
+    edit: ['Edit the message', `${x.channel === 'EMAIL' ? `<label class="field"><span>Subject</span><input id="d-subject" maxlength="200" value="${esc(x.subject || '')}"></label>` : ''}
+      <label class="field"><span>Message</span><textarea id="d-body">${esc(x.draft || '')}</textarea></label><p class="src">The system's original draft is kept for the record.</p>`],
+    hold: ['Hold', `<label class="field"><span>Why</span><input id="d-reason" placeholder="e.g. wait for their launch"></label><label class="field"><span>Review on</span><input id="d-until" type="date" min="${today}" value="${isoPlus(7)}"></label>`],
+    research: ['Research more', `<label class="field"><span>What is wrong</span><select id="d-code"><option value="WRONG_PERSON">Wrong person</option><option value="OUTDATED_ROLE">Role out of date</option><option value="NEED_VERIFIED_EMAIL">Needs a verified email</option><option value="WEAK_REASON">Reason to contact is weak</option><option value="OTHER">Other</option></select></label>
+      <label class="field"><span>Note</span><input id="d-reason" placeholder="optional"></label><p class="src">The company goes back to the research agents. No duplicate is created.</p>`],
+    reject: ['Reject', `<label class="field"><span>Reason (required)</span><input id="d-reason" placeholder="e.g. not a fit, mass-market"></label><p class="src">The company is held from outreach for 180 days so the agents do not rediscover it.</p>`],
+  }[m.form];
+  return `<div class="modal-bg"><div class="modal"><h3>${esc(forms[0])}</h3><p class="small">${who}</p>${forms[1]}
+    <div class="btn-row mt8"><button class="btn primary" id="dm-ok">${esc(forms[0] === 'Edit the message' ? 'Save' : forms[0])}</button><button class="btn ghost" data-close>Cancel</button></div></div></div>`;
+}
+async function submitDeskModal() {
+  const m = state.modal; const x = deskItem(m.ref); if (!x) { state.modal = null; render(); return; }
+  const v = (id) => ($(`#${id}`)?.value || '').trim();
+  const err = (msg) => { const el = $('.modal'); let p = el.querySelector('.m-err'); if (!p) { p = document.createElement('p'); p.className = 'm-err banner err small'; el.insertBefore(p, el.querySelector('.btn-row')); } p.textContent = msg; };
+  if (m.form === 'edit') {
+    const body = $('#d-body').value; if (!body.trim()) return err('The message is empty.');
+    state.modal = null;
+    if (x.approve_via === 'OPPORTUNITY_DRAFT') return call('hq_save_draft', { p_opportunity_id: x.opportunity_id, p_subject: v('d-subject') || x.subject, p_body: body, p_note: 'Edited on the outreach desk' }, 'Saved. The original draft is kept.');
+    return call('hq_outreach_edit', { p_task: x.task_id, p_subject: v('d-subject') || null, p_body: body }, 'Saved. The original draft is kept.');
+  }
+  if (m.form === 'hold') { state.modal = null; return call('hq_outreach_action', { p_task: x.task_id, p_action: 'HOLD', p_reason: v('d-reason') || null, p_until: v('d-until') || null }, 'Held. It returns to review on the date you chose.'); }
+  if (m.form === 'research') { const note = v('d-reason'); state.modal = null; return call('hq_outreach_action', { p_task: x.task_id, p_action: 'RESEARCH', p_reason: `${v('d-code')}${note ? `: ${note}` : ''}`, p_until: null }, 'Sent back to the research agents.'); }
+  if (m.form === 'reject') { const r = v('d-reason'); if (!r) return err('A reason is required.'); state.modal = null; return call('hq_outreach_action', { p_task: x.task_id, p_action: 'REJECT', p_reason: r, p_until: null }, 'Rejected. The company will not be rediscovered for 180 days.'); }
+  return null;
+}
+
+// ---------------------------------------------------------------- RELATIONSHIPS workspace
+const REL_TABS = [['PEOPLE', 'People'], ['COMPANIES', 'Companies'], ['WARM', 'Warm'], ['OPPORTUNITIES', 'Opportunities'], ['PIPELINE', 'Pipeline'], ['HISTORY', 'History']];
+const stripH2 = (html) => String(html).replace(/^\s*<h2>[\s\S]*?<\/h2>/, '');
+function viewRelations(d) {
+  const t = state.relTab; let body = '';
+  if (t === 'PEOPLE') body = stripH2(viewContacts());
+  else if (t === 'COMPANIES') body = stripH2(viewCompanies());
+  else if (t === 'WARM') {
+    const w = warmOpportunities(100);
+    body = `<p class="muted small">Existing relationships with real evidence — NOYA Gmail threads, CRM records, matched LinkedIn connections. Use the relationship, never a cold introduction.</p>
+      <div class="dlist">${w.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.name)} ${x.st === 'LINKEDIN' ? pill('LinkedIn', 'info') : x.mine ? pill(`You: ${REL_STATUS[x.st][0]}`, REL_STATUS[x.st][1]) : pill(`Suggested: ${REL_STATUS[x.st][0]}`)}</div>
+        <div class="t-sub">${esc(x.facts.join(' · '))}</div>${x.why ? `<div class="t-sub faint">${esc(x.why)}</div>` : ''}</div>
+        <div class="t-btns">${x.thread ? gmailLink(x.thread, 'Open in Gmail').replace('<a ', '<a class="btn small" ') : ''}${x.conn ? `<button class="btn small" data-open="connection" data-id="${x.conn}">Open</button>` : `<button class="btn small" data-relq="${esc(x.name)}">Review</button>`}</div></div>`).join('') || '<div class="empty">No warm relationship needs action right now.</div>'}</div>`;
+  } else if (t === 'OPPORTUNITIES') {
+    const list = d.opportunities.filter((o) => ACTIVE(o.status)).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+    body = `<p class="muted small">${list.length} open opportunities. Values are research estimates, never revenue.</p><div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Stage</th><th>Next action</th><th class="num">Priority</th></tr></thead><tbody>
+      ${list.map((o) => `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}</td><td>${esc(o.contact_name || '—')}</td><td>${esc(S(o.status))}</td><td class="small">${esc(o.next_action || '')}</td><td class="num">${esc(o.priority ?? '—')}</td></tr>`).join('')}</tbody></table></div>`;
+  } else if (t === 'PIPELINE') body = stripH2(viewPipeline(d));
+  else body = stripH2(viewRelationships());
+  return `${head('Relationships', 'People, companies and history — one record per person and company')}
+    <div class="tabs">${REL_TABS.map(([k, l]) => `<button data-rel-tab="${k}" class="${t === k ? 'on' : ''}">${l}</button>`).join('')}</div>${body}`;
+}
+
+// ---------------------------------------------------------------- CLUB foundation
+const CLUB_TABS = [['MEMBERS', 'Members', 'members'], ['POTENTIAL', 'Potential members', 'potential_members'], ['PRIVATE', 'Private clients', 'private_clients'], ['INTRODUCERS', 'Introducers', 'introducers'],
+  ['APPLICATIONS', 'Applications', 'applications'], ['BENEFITS', 'Member benefits', 'benefits'], ['PRIVILEGES', 'Partner privileges', 'partner_privileges'], ['INTRODUCTIONS', 'Introductions', 'introductions'],
+  ['EVENTS', 'Private events', 'events'], ['COMMUNITIES', 'Communities', 'communities']];
+const CLUB_EMPTY = { members: 'No members yet. Members are added by you — never automatically, never invented.', potential_members: 'Nobody marked as a potential member yet. Mark people from Introducers → routes in the CRM.',
+  private_clients: 'No private clients recorded yet.', introducers: 'No introducers confirmed yet.', applications: 'No applications yet.', benefits: 'No member benefits agreed yet. Benefits come from real partner agreements only.',
+  partner_privileges: 'No partner privileges yet: a privilege needs a warm, real partner relationship first.', introductions: 'No introductions recorded yet.', events: 'No private events planned yet.', communities: 'No communities found yet.' };
+function viewClub() {
+  const C = state.club; if (!C) { loadV3('club', 'hq_club'); return head('Club') + waitFor('club', 'the club'); }
+  const tab = CLUB_TABS.find(([k]) => k === state.clubTab) || CLUB_TABS[9]; const [, title, key] = tab; const items = C[key] || [];
+  const personRow = (p) => `<div class="t-row"><div><div class="t-main">${esc(p.person)}${p.position ? ` · <span class="faint">${esc(p.position)}</span>` : ''}</div><div class="t-sub">${esc(p.company || '')} · ${esc(sentence(p.status))} · added by ${esc(p.source)} ${esc(shortDay(p.since))}</div>${p.notes ? `<div class="t-sub faint">${esc(p.notes)}</div>` : ''}</div></div>`;
+  let body = '';
+  if (['members', 'potential_members', 'private_clients', 'introducers', 'applications'].includes(key)) body = items.map(personRow).join('');
+  else if (key === 'benefits') body = items.map((b) => `<div class="t-row"><div><div class="t-main">${esc(b.title)} ${pill(sentence(b.status))}</div><div class="t-sub">${esc(b.partner || '')} · ${esc(b.terms || '')}</div></div></div>`).join('');
+  else if (key === 'partner_privileges') body = items.map((p) => `<div class="t-row clickable" data-open="company" data-id="${p.company_id}"><div><div class="t-main">${esc(p.name)} ${pill(sentence(String(p.model).replace(/_/g, ' ')))}</div>${p.value ? `<div class="t-sub">For members: ${esc(p.value.to_noya)}</div>` : ''}</div></div>`).join('');
+  else if (key === 'introductions') body = items.map((i) => `<div class="t-row"><div><div class="t-main">${esc(i.from || '')} → ${esc(i.to || '')} ${pill(sentence(i.status))}</div><div class="t-sub">${esc(i.purpose)}</div></div></div>`).join('');
+  else if (key === 'events') body = items.map((e) => `<div class="t-row"><div><div class="t-main">${esc(e.title)} ${pill(sentence(e.status))}</div><div class="t-sub">${esc([e.date ? shortDay(e.date) : '', e.city, e.venue].filter(Boolean).join(' · '))}</div></div></div>`).join('');
+  else if (key === 'communities') body = items.map((c) => `<div class="t-row clickable" data-open="company" data-id="${c.company_id}"><div><div class="t-main">${esc(c.name)} ${c.relationship !== 'COLD' ? pill(sentence(c.relationship.replace(/_/g, ' ')), 'info') : ''}</div><div class="t-sub">${esc([c.type, c.city, c.country].filter(Boolean).join(' · '))}</div></div></div>`).join('');
+  const routes = key === 'introducers' || key === 'potential_members' ? `<h3>Routes in the CRM · ${C.introducer_routes.length}</h3><p class="muted small">Confirmed decision makers at private offices, family offices, clubs and communities already in NOYA's records. Add someone only when you know them or have a reason.</p>
+    <div class="dlist">${C.introducer_routes.map((r) => `<div class="t-row"><div><div class="t-main">${esc(r.person)}${r.position ? ` · <span class="faint">${esc(r.position)}</span>` : ''}</div><div class="t-sub">${esc(r.company)} ${estatePill(r.email_state)}${r.linkedin ? ` · <a href="${esc(r.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ''}</div></div>
+      <div class="t-btns"><button class="btn small" data-club-add="INTRODUCER" data-contact="${r.contact_id}">Introducer</button><button class="btn small ghost" data-club-add="POTENTIAL_MEMBER" data-contact="${r.contact_id}">Potential member</button></div></div>`).join('')}</div>` : '';
+  return `${head('Club', 'NOYA Private · the foundation. Real people only, added by you.')}
+    <div class="tabs">${CLUB_TABS.map(([k, l, ck]) => `<button data-club-tab="${k}" class="${k === tab[0] ? 'on' : ''}">${l} <span class="n">${(C[ck] || []).length}</span></button>`).join('')}</div>
+    <section class="panel"><header><h3>${esc(title)}</h3></header><div class="body">${body || `<div class="empty">${esc(CLUB_EMPTY[key])}</div>`}</div></section>${routes}`;
+}
+
+// ---------------------------------------------------------------- OPERATIONS: confirmed client delivery only
+function viewOps() {
+  const O = state.ops; if (!O) return head('Operations') + waitFor('ops', 'operations');
+  const has = O.clients.length + O.won.length + O.projects.length + O.revenue.records;
+  const sec = (title, n, body) => `<section class="panel mt8"><header><h3>${esc(title)} · ${esc(n)}</h3></header><div class="body">${body}</div></section>`;
+  return `${head('Operations', 'Confirmed client delivery only — never leads')}
+    ${has ? '' : '<div class="calm"><div class="calm-t">No confirmed client work yet.</div><div class="t-sub">A project appears here when an opportunity is won and the work is confirmed. Leads and prospects stay in Outreach and Relationships.</div></div>'}
+    ${O.projects.length ? sec('Projects', O.projects.length, O.projects.map((p) => `<div class="t-row"><div><div class="t-main">${esc(p.name)} ${pill(sentence(p.status))}</div><div class="t-sub">${esc(p.company || '')}${p.starts_on ? ` · starts ${esc(shortDay(p.starts_on))}` : ''} · ${esc(p.items)} items · ${esc(p.open_tasks)} open tasks</div></div><div class="t-btns"><button class="btn small" data-tab="projects">Open</button></div></div>`).join('')) : ''}
+    ${O.won.length ? sec('Won', O.won.length, O.won.map((w) => `<div class="t-row clickable" data-open="opp" data-id="${w.opportunity_id}"><div><div class="t-main">${esc(w.company)}</div><div class="t-sub">${esc(w.type || '')} · ${esc(money(w.value, w.currency))} · ${esc(shortDay(w.won_at))}</div></div></div>`).join('')) : ''}
+    ${O.clients.length ? sec('Clients', O.clients.length, O.clients.map((c) => `<div class="t-row clickable" data-open="company" data-id="${c.company_id}"><div><div class="t-main">${esc(c.name)}</div><div class="t-sub">${esc(c.country || '')}</div></div></div>`).join('')) : ''}
+    ${O.issues.length ? sec('Client issues', O.issues.length, O.issues.map((i) => `<div class="t-row"><div><div class="t-main">${esc(i.title)}</div><div class="t-sub">due ${esc(shortDay(i.due_at))}</div></div></div>`).join('')) : ''}
+    <p class="src mt8">Revenue records: ${esc(O.revenue.records)} · pending payments: ${esc(O.revenue.pending)}. <button class="linkish" data-tab="finance">Finance</button> · <button class="linkish" data-tab="projects">Projects (classic)</button></p>`;
+}
+
+function bindV3(on) {
+  $('#nav-more')?.addEventListener('click', () => { state.more = !moreOpen(); if (!state.more && MORE_KEYS.includes(state.tab)) state.more = true; render(); });
+  on('[data-director]', 'click', (b) => { state.dirKey = b.dataset.director; state.tab = 'director'; render(); loadDirector(b.dataset.director); window.scrollTo(0, 0); });
+  on('[data-dir-sec]', 'click', (b) => { state.dirSec[state.dirKey] = b.dataset.dirSec; render(); });
+  on('select[data-feed-dir]', 'change', (el) => { state.feedDir = el.value; render(); });
+  on('[data-feed-all]', 'click', () => { state.feedAll = !state.feedAll; render(); });
+  on('[data-desk-tab]', 'click', (b) => { state.deskTab = b.dataset.deskTab; state.deskPage = 0; if (!b.dataset.go) render(); });
+  on('[data-desk-ch]', 'click', (b) => { state.deskCh = b.dataset.deskCh; state.deskPage = 0; render(); });
+  on('select[data-desk-dir]', 'change', (el) => { state.deskDir = el.value; state.deskPage = 0; render(); });
+  on('[data-desk-page]', 'click', (b) => { state.deskPage = Math.max(0, state.deskPage + Number(b.dataset.deskPage)); render(); window.scrollTo(0, 0); });
+  on('[data-desk-open]', 'click', (b) => { state.deskOpen[b.dataset.deskOpen] = !state.deskOpen[b.dataset.deskOpen]; render(); });
+  on('[data-desk-src]', 'click', (b) => { state.deskSrc[b.dataset.deskSrc] = !state.deskSrc[b.dataset.deskSrc]; render(); });
+  on('[data-desk-modal]', 'click', (b) => { state.modal = { kind: 'desk', form: b.dataset.deskModal, ref: b.dataset.ref }; render(); });
+  on('[data-desk-release]', 'click', (b) => { const x = deskItem(b.dataset.deskRelease); if (x) call('hq_outreach_action', { p_task: x.task_id, p_action: 'RELEASE', p_reason: null, p_until: null }, 'Released back to review.'); });
+  on('[data-desk-approve]', 'click', async (b) => {
+    const x = deskItem(b.dataset.deskApprove); if (!x) return; b.disabled = true;
+    const text = `Approved. HQ re-checked the address and is creating one unsent Gmail draft to ${x.route?.email || 'the verified address'}. Nothing was sent.`;
+    const r = x.approve_via === 'EMAIL_CANDIDATE'
+      ? await call('hq_approve_email', { p_candidate: x.candidate_id, p_subject: null, p_body: null }, text)
+      : await call('hq_approve_draft', { p_opportunity_id: x.opportunity_id, p_version: Number(x.draft_version || 1) }, text);
+    if (r && r.ok) { state.pollUntil = Date.now() + 120000; state.deskTab = 'APPROVED'; render(); }
+  });
+  $('#dm-ok')?.addEventListener('click', submitDeskModal);
+  on('[data-rel-tab]', 'click', (b) => { state.relTab = b.dataset.relTab; render(); });
+  on('[data-club-tab]', 'click', (b) => { state.clubTab = b.dataset.clubTab; render(); });
+  on('[data-club-add]', 'click', async (b) => { await call('hq_club_person', { p_contact: b.dataset.contact, p_role: b.dataset.clubAdd, p_status: 'PROSPECT', p_note: null }, 'Added to the club structure. Nothing was sent.'); loadV3('club', 'hq_club', {}, true); });
+}
+
+const VIEWS = { today: viewToday, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
+  overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: () => viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
   intelligence: viewIntelligence, reports: viewReports, system: (d) => viewSystem(d) + teamPanel(), help: viewHelp,
   radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects,
-  agents: viewAgents, agent: viewAgent, emails: viewEmails, agentradar: viewAgentRadar, feed: viewFeed };
+  agent: viewAgent, emails: viewEmails, agentradar: viewAgentRadar, feed: viewFeed };
 
 // Refresh: every 60s normally, every 5s for two minutes after an approval. Paused while typing,
 // or while a modal / record / menu is open.

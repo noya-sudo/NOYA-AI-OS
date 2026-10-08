@@ -18,6 +18,7 @@ for (const f of files) {
     } catch { /* not a JWT */ }
   }
   for (const m of s.matchAll(/(?:\.rpc|\bcall|\bdone)\(\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
+  for (const m of s.matchAll(/\bloadV3\(\s*['"][a-z]+['"]\s*,\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
   if (/\.from\(\s*['"](opportunities|contacts|tasks|outbound_emails|companies|approval_audit|hq_admins)['"]\s*\)/.test(s)) problems.push(`${f}: direct table access`);
 }
 const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_history_action', 'hq_add_contact',
@@ -25,7 +26,9 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_import_connections',
   'hq_connection_update', 'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_create_opportunity', 'hq_company_update', 'hq_relationship_status', 'hq_service_update',
   'hq_commercial', 'hq_execution', 'hq_account', 'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial',
-  'hq_partner_upsert', 'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email'];
+  'hq_partner_upsert', 'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email',
+  // HQ V3 (9 Oct): admin-gated reads and audited desk / club writes
+  'hq_outreach_desk', 'hq_operations', 'hq_directors', 'hq_director', 'hq_club', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));
