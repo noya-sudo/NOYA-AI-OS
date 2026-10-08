@@ -2719,7 +2719,7 @@ function bindAgents(on) {
 // Six destinations. Every number on these screens comes from one admin-gated read and reconciles with the others:
 // hq_outreach_desk (approval desk), hq_directors / hq_director (the workforce), hq_club, hq_operations, hq_growth.
 const moreOpen = () => state.more || MORE_KEYS.includes(state.tab);
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const plural = (n, one, many) => `${n} ${Number(n) === 1 ? one : many}`;
 async function loadV3(key, fn, args = {}, force = false) {
   if (state.busy[key] || (state[key] && !force)) return;
   state.busy[key] = true;
@@ -2779,7 +2779,7 @@ function weeklyModal() {
     const t = W.this_week || {}; const p = W.previous_week || {};
     const tl = (n, l) => `<div class="tile"><div class="n">${n}</div><div class="l">${l}</div></div>`;
     body = `<p class="adv-summary">This week: ${esc(plural(n0(t.sent), 'message sent', 'messages sent'))} (${n0(t.sent_email)} email, ${n0(t.sent_linkedin)} LinkedIn; ${n0(p.sent)} the week before),
-        ${esc(plural(n0(t.replies), 'reply', 'replies'))}${W.reply_rate_pct != null ? ` (${W.reply_rate_pct}%)` : ''}, ${esc(plural(n0(W.meetings), 'meeting', 'meetings'))}, ${esc(plural(n0(W.wins), 'win', 'wins'))}.</p>
+        ${esc(plural(n0(t.replies), 'reply', 'replies'))}${W.reply_rate_pct != null ? ` (${W.reply_rate_pct}%${t.unclassified ? `; ${n0(t.unclassified)} not classified yet, positive counted from your own triage` : ''})` : ''}, ${esc(plural(n0(W.meetings), 'meeting', 'meetings'))}, ${esc(plural(n0(W.wins), 'win', 'wins'))}.</p>
       <div class="tiles">${tl(n0(t.sent), 'Outreach sent')}${tl(W.reply_rate_pct != null ? `${W.reply_rate_pct}%` : '—', 'Reply rate')}${tl(W.positive_reply_rate_pct != null ? `${W.positive_reply_rate_pct}%` : '—', 'Positive reply rate')}
         ${tl(n0(W.meetings), 'Meetings')}${tl(n0(W.proposals), 'Proposals')}${tl(n0(W.wins), 'Wins')}${tl(n0(W.verified_emails), 'Verified emails')}${tl(`${n0(W.email_drafts)} / ${n0(W.linkedin_drafts)}`, 'Email / LinkedIn drafts')}</div>
       <div class="tbl-wrap mt8"><table class="stack"><thead><tr><th>Director</th><th class="num">Email coverage</th><th class="num">Verified / with decision maker</th><th class="num">LinkedIn fallback</th><th class="num">Sent</th><th class="num">Replies</th></tr></thead><tbody>

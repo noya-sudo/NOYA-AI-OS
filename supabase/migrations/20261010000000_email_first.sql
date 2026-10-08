@@ -226,10 +226,14 @@ begin
     if not p_dry_run then
       with s as (
         update tasks t set status = 'CANCELLED', updated_at = now(),
-               description = 'Superseded ' || to_char(now() at time zone 'Africa/Cairo', 'DD Mon') || ': a verified email now exists for this person, so email replaces this message (email-first rule).'
+               description = 'Superseded ' || to_char(now() at time zone 'Africa/Cairo', 'DD Mon') || ': a verified email now exists for '
+                             || case when t.contact_id is not null and contact_email_route(t.contact_id)->>'state' in ('VERIFIED', 'VERIFIED_INBOX') then 'this person'
+                                     else 'a decision maker at this company' end
+                             || ', so email replaces this message (email-first rule, one cold touch per company).'
                              || chr(10) || coalesce(t.description, '')
-         where t.status in ('OPEN', 'IN_PROGRESS') and t.title ~ '^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY)' and t.contact_id is not null
-           and contact_email_route(t.contact_id)->>'state' in ('VERIFIED', 'VERIFIED_INBOX')
+         where t.status in ('OPEN', 'IN_PROGRESS') and t.title ~ '^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY)'
+           and ((t.contact_id is not null and contact_email_route(t.contact_id)->>'state' in ('VERIFIED', 'VERIFIED_INBOX'))
+                or (t.company_id is not null and company_email_state(t.company_id)->>'state' = 'VERIFIED'))
         returning t.id)
       update outreach_candidates oc set status = 'SKIPPED', hold_reason = 'SUPERSEDED_BY_VERIFIED_EMAIL', updated_at = now()
         from s where oc.task_id = s.id;
@@ -615,7 +619,7 @@ begin
     v_obs := v_obs || jsonb_build_object('rank', 15, 'kind', 'ATTENTION',
       'situation', v_gmail || ' approved Gmail ' || case when v_gmail = 1 then 'draft has' else 'drafts have' end || ' not been sent yet.',
       'meaning', 'The work is done; nothing happens until you press send in Gmail.',
-      'action', 'Send them from Gmail.', 'tab', 'desk');
+      'action', case when v_gmail = 1 then 'Send it from Gmail.' else 'Send them from Gmail.' end, 'tab', 'desk');
   end if;
   -- contact enrichment bottleneck: good discovery, poor email coverage
   for r in select key, (value->>'with_dm')::int dm, (value->>'verified')::int ver, coalesce((value->>'coverage_pct')::int, 0) cov,
@@ -743,7 +747,11 @@ begin
           count(*) filter (where i.direction = 'OUTBOUND' and i.channel = 'EMAIL' and i.occurred_at >= w.s and i.occurred_at < w.e) sent_email,
           count(*) filter (where i.direction = 'OUTBOUND' and i.channel = 'LINKEDIN' and i.occurred_at >= w.s and i.occurred_at < w.e) sent_linkedin,
           count(*) filter (where i.direction = 'INBOUND' and i.occurred_at >= w.s and i.occurred_at < w.e) replies,
-          count(*) filter (where i.direction = 'INBOUND' and i.cls in ('MEETING_REQUEST', 'INTERESTED', 'POSITIVE', 'REFERRAL') and i.occurred_at >= w.s and i.occurred_at < w.e) positive
+          count(*) filter (where i.direction = 'INBOUND' and i.occurred_at >= w.s and i.occurred_at < w.e
+            and (i.cls in ('MEETING_REQUEST', 'INTERESTED', 'POSITIVE', 'REFERRAL')
+                 or exists (select 1 from opportunities o where o.company_id = i.company_id and o.updated_at >= i.occurred_at
+                             and o.status in ('CALL_REQUIRED', 'MEETING', 'PROPOSAL', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON')))) positive,
+          count(*) filter (where i.direction = 'INBOUND' and coalesce(i.cls, 'UNKNOWN') = 'UNKNOWN' and i.occurred_at >= w.s and i.occurred_at < w.e) unclassified
           from w left join i on true group by w.k)
   select jsonb_build_object(
     'period', jsonb_build_object('from', now() - interval '7 days', 'to', now()),
@@ -766,14 +774,18 @@ begin
                                          order by case status when 'NEGOTIATION' then 0 when 'PROPOSAL' then 1 when 'MEETING' then 2 when 'CALL_REQUIRED' then 3 else 4 end, priority desc nulls last limit 3) o
                                   join companies c on c.id = o.company_id))
   into v;
-  select key, (value->>'coverage_pct')::int cov, (value->>'with_dm')::int dm into v_weak from jsonb_each(v_health)
-   where key <> 'PARTNERSHIPS' and (value->>'with_dm')::int >= 8 order by coalesce((value->>'coverage_pct')::int, 0), (value->>'with_dm')::int desc limit 1;
+  select key, (value->>'coverage_pct')::int cov, (value->>'with_dm')::int dm, (value->>'linkedin_fallback')::int li, (value->>'email_gap')::int gap,
+         (value->>'needs_verification')::int nv into v_weak from jsonb_each(v_health)
+   where key <> 'PARTNERSHIPS' and (value->>'with_dm')::int >= 8 and coalesce((value->>'coverage_pct')::int, 0) < 30
+   order by array_position(array['BRANDS', 'WEDDINGS', 'TRAVEL', 'HOSPITALITY', 'CORPORATE'], key) nulls last, coalesce((value->>'coverage_pct')::int, 0), (value->>'with_dm')::int desc limit 1;
   select h.key into v_best from jsonb_each(v_health) h
    where h.key <> 'PARTNERSHIPS' order by coalesce((h.value->>'coverage_pct')::int, 0) desc, (h.value->>'verified')::int desc limit 1;
   return v || jsonb_build_object(
     'weakest_bottleneck', case when v_weak.key is not null then advisor_agent_label(v_weak.key) || ': ' || coalesce(v_weak.cov, 0) || '% email coverage across ' || v_weak.dm || ' companies with a decision maker' end,
     'recommended_allocation', case when v_weak.key is not null then
-      'Next week: give Email Intelligence and verification capacity to ' || advisor_agent_label(v_weak.key) || ' first; keep discovery steady where coverage is already highest ('
+      'Next week: ' || case when v_weak.li > v_weak.gap + v_weak.nv then 'point the Email Finder and verification capacity at ' || advisor_agent_label(v_weak.key) || ' first ('
+          || v_weak.li || ' with public email research exhausted)' else 'give Email Intelligence and verification capacity to ' || advisor_agent_label(v_weak.key) || ' first' end
+      || '; keep discovery steady where coverage is already highest ('
       || advisor_agent_label(v_best.key) || ').' end);
 end $$;
 revoke all on function public.hq_weekly_review() from public, anon;
