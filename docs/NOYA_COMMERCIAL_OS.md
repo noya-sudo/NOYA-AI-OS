@@ -935,3 +935,7 @@ Every line is a count or a record from the database.
     corrected to thegamma.com per Wikipedia, still unconfirmed, and its LinkedIn draft is on hold to verify first.
 - **Re-drafting a failed draft.** Cancelling a draft's review task marks its candidate SKIPPED through the task sync. To re-draft,
   cancel the task first, then set the candidate back to PLANNED; the next W18 run drafts it and opens a fresh review task.
+- **Discovery cap, corrected (9 Oct 2026).** The 8 Oct research-cap raise had no effect because an earlier step, "Split
+  Candidates By Lane", passed only 4 direct candidates a run. It now passes 14 in 02, 04 and 06, and 8 in 03. That step no
+  longer scores "agency" down in 02 and 06, or "consulting" in 06, so NOYA Private's agency queries are no longer always
+  cut. See `n8n/live_code_2026_10_09/`. The first measured runs are the 12:00 and 14:00 Cairo runs on 9 Oct.
