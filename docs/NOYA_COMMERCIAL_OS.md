@@ -939,3 +939,9 @@ Every line is a count or a record from the database.
   Candidates By Lane", passed only 4 direct candidates a run. It now passes 14 in 02, 04 and 06, and 8 in 03. That step no
   longer scores "agency" down in 02 and 06, or "consulting" in 06, so NOYA Private's agency queries are no longer always
   cut. See `n8n/live_code_2026_10_09/`. The first measured runs are the 12:00 and 14:00 Cairo runs on 9 Oct.
+  - **Measured on 9 Oct.** The 12:00–14:00 Cairo runs of 02, 03, 04 and 06 each researched up to their cap (10, 6, 10
+    and 10 companies). They added 24 new companies; the six morning runs before the fix had added 10.
+  - The extra volume also brought more article-sourced records whose saved "website" is a news site or an unrelated
+    company. `company_research_domain` already keeps a domain that does not spell the company name out of email research,
+    so those records are not emailable. The one exception was KOA (koa.com, which belongs to Kampgrounds of America).
+  - Six such records were parked or cleared and flagged for review, with history kept.
