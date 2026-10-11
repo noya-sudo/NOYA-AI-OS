@@ -129,7 +129,11 @@ var SIG = '\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nGlobal concierge &
 var settings = $('Run Settings').first().json;
 return $input.all().map(function (x) {
   var it = x.json;
-  var draft = it.message + (it.channel === 'EMAIL' && it.message ? SIG : '');
+  // Inbox routes (a department inbox, or a small firm's verified general inbox) open for the attention of the named
+  // decision maker (Adam, 11 Oct 2026). outreach_quality accepts this line before the greeting.
+  var fao = it.channel === 'EMAIL' && it.via_inbox && it.first_name && it.message
+    ? 'For the attention of ' + [it.first_name, it.last_name].filter(Boolean).join(' ') + (it.position ? ', ' + it.position : '') + '\n\n' : '';
+  var draft = fao + it.message + (it.channel === 'EMAIL' && it.message ? SIG : '');
   return { json: { p: { candidate_id: it.candidate_id, subject: it.channel === 'EMAIL' ? it.subject : '', draft: draft,
     qa_status: it.passed ? 'PASS' : 'DRAFT_REVIEW_REQUIRED',
     qa_issues: { final: it.issues, first_pass: it.first_issues || null, unsupported: it.unsupported || [], evidence_terms: it.evidence_terms || [] },

@@ -12,13 +12,14 @@ const fx = (f) => (existsSync(`tests/fixtures/${f}.json`) ? JSON.parse(readFileS
 const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'director_hospitality', 'director_partnerships', 'director_growth', 'director_email', 'advisor', 'weekly'];
 if (need.some((f) => !fx(f))) { console.log(`SKIP ui_v3: live fixtures missing (${need.filter((f) => !fx(f)).join(', ')})`); process.exit(0); }
 const F = Object.fromEntries(need.map((f) => [f, fx(f)]));
+F.execution = fx('execution'); // live hq_execution capture (queue health + acquisition split); optional
 const DET = { HOSPITALITY: F.director_hospitality, PARTNERSHIPS: F.director_partnerships, GROWTH: F.director_growth, EMAIL: F.director_email };
 mkdirSync('tests/out/v3', { recursive: true });
 
 const READS = {
   hq_dashboard: () => F.snapshot, hq_overview: () => F.overview, hq_directory: () => F.directory, hq_insight: () => F.insight, hq_relationships: () => F.relationships,
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
-  hq_execution: () => null, hq_email_review: () => ({ counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] }),
+  hq_execution: () => F.execution, hq_email_review: () => ({ counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] }),
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_directors: () => F.directors, hq_club: () => F.club,
   hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly,
   hq_director: (b) => DET[b?.p_key] || { key: b?.p_key, sections: [] }, hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
@@ -99,6 +100,8 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   const replies = DIR.floor.replies; const meets = DIR.floor.meetings;
   check('Today: replies waiting equals the Agents strip (open reply and review tasks, incl. personal follow-ups)', replies ? new RegExp(`Replies waiting for you\\s*${replies}`, 'i').test(today) : !/Replies waiting/i.test(today), `${replies}`);
   check('Today: meetings and calls equal the Agents strip (no double count)', meets ? new RegExp(`Meetings and calls\\s*${meets}`, 'i').test(today) : !/Meetings and calls/i.test(today), `${meets}`);
+  check('Today: no acquisition panel, no research or API noise; LinkedIn appears only as a count', (await page.locator('main .acq-strip, main .dc-channel').count()) === 0
+    && !/(Serper|Hunter|email research|discovery|verification queue)/i.test((await page.locator('main .today-sec').allInnerTexts()).join('\n')));
   check('Today: calm — no engineering words, no metrics walls', !/workflow|supabase|n8n|rpc|pipeline value|P1|P2|P3/i.test(today) && (await page.locator('main .tile').count()) === 0);
   // HQ ADVISOR on Today: greeting, the brief, 3-5 observations (situation -> meaning -> action), what changed.
   const A = F.advisor;
@@ -117,7 +120,7 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   const wk = await page.locator('.modal.wide').innerText();
   check('Weekly review: sent, reply rate, positive reply rate, meetings, proposals, wins, coverage by Director, weakest bottleneck, allocation',
     /Reply rate/i.test(wk) && /Positive reply rate/i.test(wk) && /Meetings/i.test(wk) && /Proposals/i.test(wk) && /Wins/i.test(wk)
-      && (await page.locator('.modal.wide tbody tr').count()) === F.weekly.by_director.length && (!F.weekly.weakest_bottleneck || wk.includes(F.weekly.weakest_bottleneck)), wk.slice(0, 120));
+      && (await page.locator('.modal.wide .wk-dir tbody tr').count()) === F.weekly.by_director.length && (!F.weekly.weakest_bottleneck || wk.includes(F.weekly.weakest_bottleneck)), wk.slice(0, 120));
   await page.click('.modal.wide [data-close]');
   await shot(page, 'today-1440');
 
@@ -132,7 +135,8 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
   check('Agents: 10 Directors, 1 Partnerships Manager, 7 shared specialists', roles('DIRECTOR') === 10 && roles('MANAGER') === 1 && roles('SUPPORT') === 7
     && (await page.locator('.dcard').count()) === DIR.members.length, `${roles('DIRECTOR')}/${roles('MANAGER')}/${roles('SUPPORT')}`);
   const cards = await page.locator('.dcard').allInnerTexts();
-  check('Agents: every card shows a real status (Working / Scheduled / Blocked / Error) and its status line', DIR.members.every((m, i) => /Working|Scheduled|Blocked|Error/.test(cards[i]) && cards[i].includes(m.status_text)));
+  check('Agents: every card shows a real status (Working / Scheduled / Blocked / Error) and its status line', DIR.members.every((m, i) => /Working|Scheduled|Blocked|Error/i.test(cards[i]) && cards[i].includes(m.status_text)),
+    DIR.members.filter((m, i) => !(/Working|Scheduled|Blocked|Error/i.test(cards[i]) && cards[i].includes(m.status_text))).map((m) => `${m.key}: ${m.status_text}`).join(' | '));
   check('Agents: no pretend thinking', !cards.some((c) => /thinking|analysing\.\.\.|typing/i.test(c)));
   const growth = DIR.members.find((m) => m.key === 'GROWTH');
   check('Agents: Growth is honestly blocked by the Windsor plan limit', growth.status === 'BLOCKED' && cards.some((c) => /Growth, Social & Paid Media/.test(c) && /Windsor free plan/.test(c)));
@@ -143,6 +147,18 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
     withCh.every((m) => m.channel) && withCh.length === (await page.locator('.dcard .dc-channel').count())
       && cards.some((c) => /Brands & Production/.test(c) && c.includes(`Email coverage ${brand.channel.coverage_pct}%`) && /LinkedIn fallback/i.test(c) && /needs verification/i.test(c) && /email gap/i.test(c)));
   check('Agents: email coverage = verified / with a decision maker for every Director', withCh.every((m) => m.channel.coverage_pct === (m.channel.with_dm ? Math.round(100 * m.channel.verified / m.channel.with_dm) : null)));
+  check('Agents: every Director shows the email funnel (decision makers -> emails found -> valid verified -> in review) and email-ready count',
+    cards.some((c) => /Brands & Production/.test(c) && c.includes(`${brand.channel.with_dm} decision makers → ${brand.channel.emails_found} emails found → ${brand.channel.verified} valid verified → ${brand.channel.needs_review_email} in review`)));
+  check('Agents: a Director below 30% coverage carries its CONTACT / VERIFICATION verdict, never LinkedIn praise',
+    withCh.filter((m) => m.channel.bottleneck).every((m) => cards.some((c) => c.includes(m.name) && (m.channel.bottleneck === 'VERIFICATION' ? /Verification bottleneck/i : /Contact bottleneck/i).test(c))),
+    withCh.filter((m) => m.channel.bottleneck && !cards.some((c) => c.includes(m.name) && (m.channel.bottleneck === 'VERIFICATION' ? /Verification bottleneck/i : /Contact bottleneck/i).test(c))).map((m) => m.key).join(', '));
+  const acq = F.execution?.queue?.acquisition;
+  if (acq) {
+    const at = await page.locator('main .acq-strip').innerText().catch(() => '');
+    check('Agents: acquisition health leads with email ready, LinkedIn / Instagram / warm / existing counted apart',
+      at.includes(`Email ready ${acq.email_ready}`) && /Valid verified email ready/i.test(at) && /Verified general inbox ready/i.test(at) && /LinkedIn fallback/i.test(at)
+        && /Instagram fallback/i.test(at) && /Existing relationship/i.test(at) && at.includes(`${acq.pipeline.needs_verification} waiting for verification`));
+  }
   const strip = await page.locator('main .advisor-strip').innerText().catch(() => '');
   check('Agents: HQ Advisor strip shows bottlenecks and where NOYA is winning or wasting time',
     A.observations.filter((o) => o.kind === 'BOTTLENECK').every((o) => strip.includes(o.situation)) && (A.winning || []).every((w) => strip.includes(w.text)));

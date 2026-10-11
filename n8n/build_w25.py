@@ -38,7 +38,7 @@ f"""const account = node({{ type: 'n8n-nodes-base.httpRequest', version: 4.2, co
     options: {{ timeout: 20000, response: {{ response: {{ neverError: true, fullResponse: true }} }} }} }},
   credentials: {HUNTER} }} }});""",
 code('planRun', 'Plan Run', read('w25/plan_run.js')),
-rpc('queue', 'Finder Queue', 'email_finder_queue', "{{ JSON.stringify({ p_limit: 5 }) }}"),
+rpc('queue', 'Finder Queue', 'email_finder_queue', "{{ JSON.stringify({ p_limit: 25 }) }}"),
 code('splitQueue', 'Split Queue', read('w25/split_queue.js')),
 f"""const finder = node({{ type: 'n8n-nodes-base.httpRequest', version: 4.2, config: {{ name: 'Hunter Email Finder',
   parameters: {{ method: 'GET', url: expr("{{{{ 'https://api.hunter.io/v2/email-finder?domain=' + encodeURIComponent($json.domain) + '&first_name=' + encodeURIComponent($json.first_name) + '&last_name=' + encodeURIComponent($json.last_name) }}}}"),

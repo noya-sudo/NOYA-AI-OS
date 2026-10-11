@@ -945,3 +945,71 @@ Every line is a count or a record from the database.
     company. `company_research_domain` already keeps a domain that does not spell the company name out of email research,
     so those records are not emailable. The one exception was KOA (koa.com, which belongs to Kampgrounds of America).
   - Six such records were parked or cleared and flagged for review, with history kept.
+
+## Final efficiency pass: email is the health metric (11 Oct 2026) — commercial architecture frozen
+
+Migration `supabase/migrations/20261012000000_efficiency_pass.sql`. No new agents, no HQ redesign.
+
+- **EMAIL READY is the KPI.** `acquisition_health()` splits qualified companies never contacted into: valid verified email
+  ready (person or department inbox), verified general inbox ready, LinkedIn fallback, Instagram fallback, warm, and existing
+  relationship. `queue_health()` leads with verified emails to approve or send; LinkedIn is a fallback line, never in the
+  headline. HQ shows the split on Agents (not on Today) and in the weekly review. Reserve target: 100–150 email-ready
+  prospects (`system_config.email_reserve`).
+- **Backlog first, no expiry.** An address on file is a verification job, never a reason to fall back to LinkedIn. The
+  10-day expiry in `contact_email_route` is gone. An unchecked address waits only when it sits on the company's confirmed
+  domain (the same `company_research_domain` guard email research uses).
+- **The verification queue works exactly what the route is waiting on.** `email_verification_queue` takes each cold,
+  qualified company's best pending route: the decision maker's own address, then a department inbox, then a small firm's
+  general inbox. Then come drafts held for verification, then department inboxes at companies with no decision maker yet.
+  Rules:
+  - one address per company;
+  - company domain only;
+  - no companies on hold, already verified, warm, or in Adam's own approach;
+  - order: Brands, Weddings, Travel, NOYA Private, Hospitality, Private, Corporate, then Media and Egypt.
+- **Hunter Starter (decided 11 Oct; Adam buys it, auto-recharge off).** `hunter_plan_caps()` reads the plan from workflow
+  24's account snapshot, so caps change on their own when the plan changes.
+  - Free: 8 verifications and 2 lookups a day.
+  - Starter: 40 verifications and 25 lookups a day (at most ≈1,350 credits a month). The caps stop at a 1,500-credit
+    monthly budget out of Starter's 2,000.
+  - On a paid plan, a decision maker with no address gets a provider lookup (FINDER_PENDING) before any LinkedIn fallback.
+  - Workflow 25 now asks for up to 25 lookups a run; the cap decides.
+  - `hunter_daily_funnel()` tracks finder attempts and finds, then verifications, then VALID / RISKY / INVALID, credits,
+    drafts, sends, replies and meetings.
+- **Small founder-led firms (D4).** `general_route_eligible()` covers wedding, travel, concierge, creative, production,
+  villa and lodge firms; brands, groups, hotels, banks, airlines and corporates are excluded.
+  - Once named-person research has failed, a verified official general inbox is a route: VERIFIED_GENERAL.
+  - Workflow 18 opens these emails "For the attention of <name>, <position>"; `outreach_quality` accepts that line before
+    the greeting.
+- **One company, one active cold route.** `cold_route_sweep()` runs in the nightly planner. It keeps a LinkedIn or
+  Instagram task only where the person's and the company's email routes are exhausted with research evidence. Otherwise it:
+  - supersedes the task with a verified email;
+  - cancels duplicate cold touches;
+  - or moves the company back to email research or verification.
+  It writes the reason on the task and the candidate; nothing is deleted.
+  Planner changes:
+  - LinkedIn / Instagram is planned only when the whole company is exhausted;
+  - Adam's own approaches block cold planning.
+- **Reserve discipline.** The planner keeps at most 30 unsent email drafts and 20 open LinkedIn / Instagram drafts. Forty to
+  fifty verified drafts a day is scaling capacity, not a quota.
+- **Attribution.** `outreach_attribution()` attributes each reply to the message it answers (same Gmail thread first, else the
+  latest earlier message to that company), then to the first message of that sequence. It reports email and LinkedIn
+  sends → replies → positive → meetings by Director and send week.
+- **Advisor.** The coverage observation is now the per-Director funnel: decision makers → emails found → valid verified → in
+  Needs Review, marked CONTACT or VERIFICATION BOTTLENECK. It never praises LinkedIn volume. The brief carries
+  "Email ready: n (target 100–150)".
+- **Speed.** `prospect_routes()` evaluated the route once per output column; `offset 0` makes it once per company
+  (5.4 s → 2.7 s with the richer route). This speeds up the desk, Advisor and planner.
+
+**Measured on 11 Oct, after the pass.**
+- **LinkedIn / Instagram cold tasks.** 116 tested.
+  - 71 survived true email-exhaustion testing.
+  - 42 moved back to email: 37 to verification, 5 to email research.
+  - 3 duplicate cold touches cancelled (El Gouna Film Festival ×2, The TriFactory ×1).
+- **Unverified addresses.** 305 unverified addresses sit at qualified companies.
+  - 82 are worth a credit: the right person or inbox, own domain, cold, one per company. By Director: Weddings 21,
+    Corporate 18, Hospitality 15, Travel 9, Brands 7, Media 6, Private 3, NOYA Private 2, Egypt 1.
+  - The rest are second contacts, non-decision makers, press inboxes, held websites, or contacted companies.
+- **Provider-lookup backlog.** 117 decision makers whose email research is exhausted, with no address.
+- **Email ready.** 13, against a reserve target of 100–150. Hunter Free has about 2.5 credits left until 27 Oct.
+- **The bottleneck is verification capacity, not discovery.** About 24 new qualified companies and 75 new decision makers
+  arrive a day.

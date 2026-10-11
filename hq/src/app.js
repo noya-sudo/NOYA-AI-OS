@@ -1843,9 +1843,10 @@ function scorecardLine() {
 function execPanel() {
   const q = state.exec?.queue; if (!q) return state.errors.exec ? `<div class="banner err">Queue health not loaded: ${esc(state.errors.exec)}</div>` : '';
   const go = { email: 'outreach', linkedin: 'linkedin', follow_up: 'tasks', warm: 'relationships' };
-  return `<section class="panel mt8 queue-health"><header><h3>Today's 15 · queue health</h3><span class="small faint">${esc(q.ready)} / ${esc(q.target)} quality actions ready for the next 3 days</span></header><div class="body">
+  const acq = q.acquisition || {};
+  return `<section class="panel mt8 queue-health"><header><h3>Email ready · queue health</h3><span class="small faint">${esc(q.ready)} verified email${q.ready === 1 ? '' : 's'} to approve or send (cap ${esc(q.target)}) · ${esc(acq.email_ready ?? '—')} email-ready prospects in reserve</span></header><div class="body">
     <div class="qh-grid">${q.lines.map((l) => `<div class="qh clickable ${l.shortfall ? 'short' : 'ok'}" data-go="${go[l.key]}"><div class="k">${esc(l.label)}</div>
-      <div class="v">${esc(l.ready)}<span class="faint"> / ${esc(l.target)}</span></div><div class="m">${l.shortfall ? `<span class="bad-text">short by ${esc(l.shortfall)}</span>` : `${esc(l.per_day)} a day · covered`}</div></div>`).join('')}</div>
+      <div class="v">${esc(l.ready)}<span class="faint"> / ${esc(l.target)}</span></div><div class="m">${l.fallback ? 'fallback only · not in the headline' : l.shortfall ? `<span class="bad-text">short by ${esc(l.shortfall)}</span>` : `${esc(l.per_day)} a day · covered`}</div></div>`).join('')}</div>
     <div class="small faint mt6">${esc(q.rule)}${q.verify_first ? ` ${esc(q.verify_first)} people need verifying before they count (VERIFY FIRST tasks).` : ''}</div>
     <div class="small mt6">Working universe: ${Object.entries(q.universe_by_status || { QUALIFIED: q.universe }).map(([k, v]) => `${esc(human(k))} ${esc(v)}`).join(' · ')} <span class="faint">(target ${esc(q.universe_target)})</span></div>
     ${hunterLine()}</div></section>`;
@@ -2782,23 +2783,59 @@ function weeklyModal() {
         ${esc(plural(n0(t.replies), 'reply', 'replies'))}${W.reply_rate_pct != null ? ` (${W.reply_rate_pct}%${t.unclassified ? `; ${n0(t.unclassified)} not classified yet, positive counted from your own triage` : ''})` : ''}, ${esc(plural(n0(W.meetings), 'meeting', 'meetings'))}, ${esc(plural(n0(W.wins), 'win', 'wins'))}.</p>
       <div class="tiles">${tl(n0(t.sent), 'Outreach sent')}${tl(W.reply_rate_pct != null ? `${W.reply_rate_pct}%` : '—', 'Reply rate')}${tl(W.positive_reply_rate_pct != null ? `${W.positive_reply_rate_pct}%` : '—', 'Positive reply rate')}
         ${tl(n0(W.meetings), 'Meetings')}${tl(n0(W.proposals), 'Proposals')}${tl(n0(W.wins), 'Wins')}${tl(n0(W.verified_emails), 'Verified emails')}${tl(`${n0(W.email_drafts)} / ${n0(W.linkedin_drafts)}`, 'Email / LinkedIn drafts')}</div>
-      <div class="tbl-wrap mt8"><table class="stack"><thead><tr><th>Director</th><th class="num">Email coverage</th><th class="num">Verified / with decision maker</th><th class="num">LinkedIn fallback</th><th class="num">Sent</th><th class="num">Replies</th></tr></thead><tbody>
+      <div class="tbl-wrap mt8"><table class="stack wk-dir"><thead><tr><th>Director</th><th class="num">Email coverage</th><th class="num">Verified / with decision maker</th><th class="num">LinkedIn fallback</th><th class="num">Sent</th><th class="num">Replies</th></tr></thead><tbody>
         ${(W.by_director || []).map((d) => `<tr><td>${esc(d.label)}</td><td class="num" data-l="Email coverage">${d.coverage_pct == null ? '—' : `${esc(d.coverage_pct)}%`}</td><td class="num" data-l="Verified / with decision maker">${n0(d.verified)} / ${n0(d.with_dm)}</td>
           <td class="num" data-l="LinkedIn fallback">${n0(d.linkedin_fallback)}</td><td class="num" data-l="Sent">${n0(d.sent)}</td><td class="num" data-l="Replies">${n0(d.replies)}</td></tr>`).join('')}</tbody></table></div>
       ${(W.strongest_opportunities || []).length ? `<h6 class="mt8">Strongest opportunities</h6>${W.strongest_opportunities.map((o) => `<div class="adv-row"><b>${esc(o.company)}</b> · ${esc(sentence(String(o.status || '').replace(/_/g, ' ')))}${o.next ? ` <span class="faint">→ ${esc(o.next)}</span>` : ''}</div>`).join('')}` : ''}
+      ${weeklyAttribution(W.attribution)}${weeklyHunter(W.hunter_funnel)}
+      ${W.acquisition ? `<h6 class="mt8">Acquisition health</h6><div class="adv-row">Email ready <b>${n0(W.acquisition.email_ready)}</b> (valid verified ${n0(W.acquisition.valid_verified_email_ready)}, verified general inbox ${n0(W.acquisition.verified_general_email_ready)}) · LinkedIn fallback ${n0(W.acquisition.linkedin_fallback)} · Instagram fallback ${n0(W.acquisition.instagram_fallback)} · warm ${n0(W.acquisition.warm)} · existing relationship ${n0(W.acquisition.existing_relationship)}</div>` : ''}
       ${W.weakest_bottleneck ? `<h6 class="mt8">Weakest bottleneck</h6><div class="adv-row">${esc(W.weakest_bottleneck)}</div>` : ''}
       ${W.recommended_allocation ? `<h6 class="mt8">Recommended allocation</h6><div class="adv-row">${esc(W.recommended_allocation)}</div>` : ''}`;
   }
   return `<div class="modal-bg"><div class="modal wide"><h3>Weekly review</h3><p class="small faint">The last 7 days, from NOYA's own records.</p>${body}
     <div class="btn-row mt8"><button class="btn ghost" data-close>Close</button></div></div></div>`;
 }
-// Channel health on every Director (email first): coverage = qualified with a verified email / qualified with a decision maker.
+const DIRECTOR_LABEL = { BRANDS: 'Brands & Production', WEDDINGS: 'Weddings & Events', TRAVEL: 'Travel & Concierge', HOSPITALITY: 'Hospitality', PRIVATE: 'Private Membership',
+  SPORTS: 'NOYA Private', CORPORATE: 'Corporate', MEDIA: 'Media & Culture', EGYPT: 'Egypt' };
+// Replies attributed to the message that started the sequence, by channel and by Director x send week (never same-period sends vs replies).
+function weeklyAttribution(a) {
+  if (!a) return '';
+  const ch = a.by_channel || {};
+  const line = (k, l) => ch[k] ? `${l}: ${n0(ch[k].sent)} sent → ${n0(ch[k].replied)} replied (${ch[k].reply_rate_pct ?? 0}%) → ${n0(ch[k].positive)} positive → ${n0(ch[k].meetings)} meetings` : '';
+  const rows = (a.rows || []).slice(0, 24);
+  return `<h6 class="mt8">Reply attribution · last ${esc(a.weeks)} weeks</h6><div class="adv-row">${[line('EMAIL', 'Email'), line('LINKEDIN', 'LinkedIn')].filter(Boolean).map(esc).join('<br>') || 'No first messages sent in this window.'}</div>
+    ${rows.length ? `<div class="tbl-wrap mt6"><table class="stack"><thead><tr><th>Send week</th><th>Director</th><th>Channel</th><th class="num">Sent</th><th class="num">Replied</th><th class="num">Positive</th><th class="num">Meetings</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr><td>${esc(shortDay(r.cohort))}</td><td data-l="Director">${esc(DIRECTOR_LABEL[r.director] || human(r.director))}</td><td data-l="Channel">${esc(human(r.channel))}</td><td class="num" data-l="Sent">${n0(r.sent)}</td><td class="num" data-l="Replied">${n0(r.replied)}</td><td class="num" data-l="Positive">${n0(r.positive)}</td><td class="num" data-l="Meetings">${n0(r.meetings)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    <p class="src">${esc(a.method || '')}</p>`;
+}
+// Hunter, day by day: finder -> verification -> VALID / RISKY / INVALID -> credits -> drafts -> sends -> replies -> meetings.
+function weeklyHunter(h) {
+  if (!h) return '';
+  const t = h.totals || {}; const m = h.monthly_projection || {};
+  return `<h6 class="mt8">Hunter · last 7 days (${esc(h.plan || 'Free')})</h6><div class="adv-row">Finder ${n0(t.finder_attempts)} attempts → ${n0(t.finder_found)} found · ${n0(t.verifications)} verifications → ${n0(t.valid)} valid, ${n0(t.risky)} risky, ${n0(t.invalid)} invalid · ${esc(t.credits ?? 0)} credits ·
+    valid → draft ${n0(t.valid_to_draft)} → sent ${n0(t.draft_to_send)} → replied ${n0(t.send_to_reply)} → meeting ${n0(t.reply_to_meeting)}</div>
+    <div class="small faint">Monthly at this pace ≈ ${n0(m.at_last_7_days)} credits; at Starter caps (40 checks + 25 lookups a day) ≈ ${n0(m.at_starter_caps)} of ${n0(m.starter_credits)} (budget ${n0(m.starter_budget)}).</div>`;
+}
+// Channel health on every Director (email first): coverage = qualified with a verified email route / qualified with a decision maker.
+// The funnel (decision makers -> emails found -> valid verified -> in review) names the bottleneck; LinkedIn volume is never progress.
 function channelRow(c) {
   if (!c) return '';
-  const low = c.coverage_pct != null && c.coverage_pct < 30 && c.with_dm >= 8;
+  const bn = c.bottleneck;
   const chip = (n, l, cls = '') => `<span class="ch-chip ${cls}"><b>${n0(n)}</b> ${l}</span>`;
-  return `<div class="dc-channel"><div class="dc-cov ${low ? 'warn-text' : ''}">Email coverage <b>${c.coverage_pct == null ? '—' : `${c.coverage_pct}%`}</b> <span class="faint">· ${n0(c.verified)} of ${n0(c.with_dm)} with a decision maker</span></div>
-    <div class="ch-chips">${chip(c.verified, 'verified email', 'ok')}${chip(c.needs_verification, 'needs verification')}${chip(c.email_gap, 'email gap')}${chip(c.linkedin_fallback, 'LinkedIn fallback')}${chip(c.instagram_fallback, 'Instagram fallback')}${chip(c.needs_review, 'needs review')}</div></div>`;
+  return `<div class="dc-channel"><div class="dc-cov ${bn ? 'warn-text' : ''}">Email coverage <b>${c.coverage_pct == null ? '—' : `${c.coverage_pct}%`}</b> <span class="faint">· ${n0(c.verified)} of ${n0(c.with_dm)} with a decision maker</span>${bn ? ` ${pill(bn === 'VERIFICATION' ? 'Verification bottleneck' : 'Contact bottleneck', 'warn')}` : ''}</div>
+    <div class="dc-funnel small faint">${n0(c.with_dm)} decision makers → ${n0(c.emails_found)} emails found → ${n0(c.verified)} valid verified → ${n0(c.needs_review_email)} in review · <b>${n0(c.email_ready)}</b> email-ready</div>
+    <div class="ch-chips">${chip(c.verified, 'verified email', 'ok')}${c.verified_general ? chip(c.verified_general, 'verified general inbox', 'ok') : ''}${chip(c.needs_verification, 'needs verification')}${c.finder_pending ? chip(c.finder_pending, 'provider lookup pending') : ''}${chip(c.email_gap, 'email gap')}${chip(c.linkedin_fallback, 'LinkedIn fallback')}${chip(c.instagram_fallback, 'Instagram fallback')}${chip(c.needs_review, 'needs review')}</div></div>`;
+}
+// Acquisition health (Adam, 11 Oct): EMAIL READY is the cold-acquisition KPI. LinkedIn and Instagram are fallbacks, counted apart;
+// warm and existing relationships are counted once, outside the cold routes. Agents page only, never Today.
+function acquisitionStrip() {
+  const a = state.exec?.queue?.acquisition; if (!a) return '';
+  const r = a.reserve || {}; const t = r.target || [100, 150]; const p = a.pipeline || {};
+  const tile = (n, l, cls = '') => `<div class="tile ${cls}"><div class="n">${n0(n)}</div><div class="l">${l}</div></div>`;
+  return `<section class="panel mt8 acq-strip"><header><h3>Acquisition health</h3><span class="small ${r.status === 'LOW' ? 'bad-text' : 'faint'}">Email ready ${n0(a.email_ready)} · reserve target ${esc(t[0])}–${esc(t[1])}${r.status === 'LOW' ? ' · reserve low' : ''}</span></header><div class="body">
+    <div class="tiles">${tile(a.valid_verified_email_ready, 'Valid verified email ready', 'primary')}${tile(a.verified_general_email_ready, 'Verified general inbox ready', 'primary')}
+      ${tile(a.linkedin_fallback, 'LinkedIn fallback')}${tile(a.instagram_fallback, 'Instagram fallback')}${tile(a.warm, 'Warm')}${tile(a.existing_relationship, 'Existing relationship')}</div>
+    <div class="small faint mt6">On the way to email: ${n0(p.needs_verification)} waiting for verification · ${n0(p.research_pending)} email research to finish · ${n0(p.finder_pending)} provider lookups · ${n0(p.no_person)} without a decision maker.</div></div></section>`;
 }
 
 // ---------------------------------------------------------------- TODAY: only what needs Adam
@@ -2899,7 +2936,7 @@ function viewAgentsV3() {
       ${tile(`${n0(f.agents_healthy)} / ${n0(f.agents_total)}`, 'Agents healthy')}${tile(n0(f.qualified_24h), 'New qualified · 24h')}${tile(n0(f.decision_makers_24h), 'New decision makers · 24h')}
       ${tile(n0(f.verified_emails_24h), 'New verified emails · 24h')}${tile(n0(f.needs_review), 'Needs review', 'desk', 'data-desk-tab="NEEDS_REVIEW"')}
       ${tile(n0(f.gmail_drafts_ready), 'Gmail drafts ready', 'desk', 'data-desk-tab="APPROVED"')}${tile(n0(f.replies), 'Replies to handle', 'today')}${tile(n0(f.meetings), 'Meetings', 'today')}</div>
-    ${advisorAgents()}
+    ${advisorAgents()}${acquisitionStrip()}
     <h3>Directors</h3><div class="dgrid">${by('DIRECTOR').map(directorCard).join('')}</div>
     <h3>Strategic partnerships</h3><div class="dgrid">${by('MANAGER').map(directorCard).join('')}</div>
     <h3>Shared specialists</h3><div class="dgrid compact">${by('SUPPORT').map(directorCard).join('')}</div>

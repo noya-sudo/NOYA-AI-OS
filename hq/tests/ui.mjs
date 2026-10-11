@@ -62,11 +62,16 @@ const execution = {
   ai_budget: { mtd_usd: 0.42, today_usd: 0.03, target_usd: 5, ceiling_usd: 10, status: 'OK' },
   engine: { drafted: 16, system_ready: 0, system_ready_pct: 0, final_ready_after_human_review: 13, avg_calls: 1.4, avg_cost_usd: 0.0021 },
   hunter: { credits: 48, usable_emails: 11, usable_rate: 34, credits_per_usable: 4.4, sent: 5, replies: 1, meetings: 0, gate: 'Hunter runs only for a confirmed, high-priority decision maker.' },
-  queue: { ready: 42, target: 45, universe: 64, universe_target: '300–500 named accounts, built progressively', verify_first: 4,
+  queue: { headline: 'EMAIL_READY', ready: 15, target: 30, universe: 64, universe_target: '300–500 named accounts, built progressively', verify_first: 4,
   universe_by_status: { QUALIFIED: 64, NEEDS_REVIEW: 21, RESEARCHING: 51 },
-  rule: 'Quality first: a shortfall is shown, never filled with weak prospects.',
-  lines: [{ key: 'email', label: 'New emails', per_day: 5, ready: 15, target: 15, shortfall: 0 }, { key: 'linkedin', label: 'LinkedIn / DM', per_day: 5, ready: 37, target: 15, shortfall: 0 },
-    { key: 'follow_up', label: 'Follow-ups due', per_day: 3, ready: 10, target: 9, shortfall: 0 }, { key: 'warm', label: 'Warm reconnects / replies', per_day: 2, ready: 3, target: 6, shortfall: 3 }] },
+  rule: 'Email first: LinkedIn and Instagram are fallbacks, counted apart and never part of the headline.',
+  lines: [{ key: 'email', label: 'Verified emails ready', per_day: 12, ready: 15, target: 30, shortfall: 15, primary: true },
+    { key: 'follow_up', label: 'Follow-ups due', per_day: 3, ready: 10, target: 9, shortfall: 0 }, { key: 'warm', label: 'Warm reconnects / replies', per_day: 2, ready: 3, target: 6, shortfall: 3 },
+    { key: 'linkedin', label: 'LinkedIn / DM fallback', per_day: 3, ready: 37, target: 20, shortfall: 0, fallback: true }],
+  acquisition: { primary_kpi: 'EMAIL_READY', email_ready: 13, valid_verified_email_ready: 13, of_which_department_inbox: 1, verified_general_email_ready: 0,
+    linkedin_fallback: 118, instagram_fallback: 5, warm: 0, existing_relationship: 23,
+    pipeline: { needs_verification: 85, finder_pending: 0, research_pending: 6, no_person: 4, no_route: 7 },
+    reserve: { email_ready: 13, target: [100, 150], status: 'LOW' } } },
   weekly: { weeks: ['28 Sep'], note: 'Allocation changes are recommendations only.', rows: [
     { week: '28 Sep', week_start: '2026-09-28', segment: 'BRAND_PR_PRODUCTION', qualified: 11, contacts: 5, verified: 4, linkedin_ready: 2, sends: 5, replies: 2, positive: 2, meetings: 0, proposals: 0, wins: 0, revenue: null },
     { week: '28 Sep', week_start: '2026-09-28', segment: 'TRAVEL_PARTNER', qualified: 8, contacts: 8, verified: 0, linkedin_ready: 3, sends: 0, replies: 0, positive: 0, meetings: 0, proposals: 0, wins: 0, revenue: null }] } };
@@ -420,7 +425,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('.drawer [data-close-drawer]');
   await go(page, 'overview');
   const cmd = await page.locator('main').innerText();
-  check('Command: queue health shows 15/day target and an honest shortfall (warm 3/6)', /Today's 15/i.test(cmd) && /short by 3/i.test(cmd) && /42 \/ 45/.test(cmd));
+  check('Command: queue health leads with verified email (15 to approve, cap 30, 13 in reserve); LinkedIn shown only as fallback', /Email ready · queue health/i.test(cmd) && /15 verified emails to approve or send \(cap 30\)/.test(cmd) && /13 email-ready prospects in reserve/.test(cmd) && /short by 3/i.test(cmd) && /fallback only · not in the headline/i.test(cmd));
   check('Command: working universe by status (Qualified / Needs review / Researching) and VERIFY FIRST count', /Qualified 64/i.test(cmd) && /Needs review 21/i.test(cmd) && /Researching 51/i.test(cmd) && /4 people need verifying/i.test(cmd));
   check('Command: 3-day cycle shows outreach-ready vs 60–75 and per-agent output', /3-day cycle: 41 outreach-ready of 60–75/.test(cmd) && /Hospitality & partnerships/.test(cmd) && /Travel \/ concierge \/ private/.test(cmd));
   check('Command: drafting quality keeps system vs human-reviewed separate, and AI cost vs budget', /system ready on its own 0\/16/.test(cmd) && /ready after human review 13/.test(cmd) && /\$0\.42 of \$5\.00 target/.test(cmd) && /\$10\.00 ceiling/.test(cmd));
