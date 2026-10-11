@@ -28,6 +28,14 @@ const save = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, config: { 
   parameters: { method: 'POST', url: 'https://gagbhykzmtstekpqujyl.supabase.co/rest/v1/rpc/creative_concept_save', authentication: 'predefinedCredentialType', nodeCredentialType: 'supabaseApi',
     sendBody: true, contentType: 'json', specifyBody: 'json', jsonBody: expr("{{ JSON.stringify({ p: $json.p }) }}"), options: { timeout: 60000 } },
   credentials: { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } } } });
+// Heartbeat (11 Oct 2026): every run upserts system_config 'heartbeat_w21', read by agent_last_run('MEDIA'), so a run with nothing
+// to process is not shown as a missed schedule. Kept out of department_run_metrics, which the Discovery health check reads.
+const logRun = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, config: { name: 'Log Run', onError: 'continueRegularOutput', retryOnFail: true, maxTries: 3, waitBetweenTries: 2000,
+  parameters: { method: 'POST', url: 'https://gagbhykzmtstekpqujyl.supabase.co/rest/v1/system_config?on_conflict=key', authentication: 'predefinedCredentialType', nodeCredentialType: 'supabaseApi',
+    sendHeaders: true, headerParameters: { parameters: [{ name: 'Prefer', value: 'resolution=merge-duplicates,return=minimal' }] },
+    sendBody: true, contentType: 'json', specifyBody: 'json',
+    jsonBody: expr("{{ JSON.stringify({ key: 'heartbeat_w21', value: { at: new Date().toISOString(), run_id: String($execution.id), queued: (($json.items) || []).length, note: 'Workflow 21 ran (a run with nothing to process is still a run). Read by agent_last_run(MEDIA).' } }) }}"), options: { timeout: 30000 } },
+  credentials: { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } } } });
 
 export default workflow('noya-21-creative-concepts', '21 - NOYA Creative Concepts v1')
   .add(manualRun)
@@ -35,4 +43,6 @@ export default workflow('noya-21-creative-concepts', '21 - NOYA Creative Concept
   .add(schedule)
   .to(budget)
   .add(budget)
-  .to(budgetOk.onTrue(queue.to(prompts.to(gemini.to(verify.to(save))))));
+  .to(budgetOk.onTrue(queue.to(prompts.to(gemini.to(verify.to(save))))))
+  .add(queue)
+  .to(logRun);

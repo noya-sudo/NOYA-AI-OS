@@ -1013,3 +1013,12 @@ Migration `supabase/migrations/20261012000000_efficiency_pass.sql`. No new agent
 - **Email ready.** 13, against a reserve target of 100–150. Hunter Free has about 2.5 credits left until 27 Oct.
 - **The bottleneck is verification capacity, not discovery.** About 24 new qualified companies and 75 new decision makers
   arrive a day.
+
+**Follow-up (11 Oct, evening).**
+- **Hunter Starter approved by Adam.** It is bought in Hunter (monthly, auto-recharge off); no session has Hunter billing
+  access. The plan is read at every workflow 24 run (08:40 and 20:40 Cairo), and the caps switch to Starter on their own.
+  The 20:40 and 21:20 checks on 11 Oct still read Free.
+- **Credit order.** Brands, Weddings, Travel, NOYA Private, Hospitality, Corporate, then Private Membership, Media and Egypt.
+- **Media Director false error, fixed.** Workflow 21 now records a heartbeat on every run in system_config 'heartbeat_w21',
+  which `agent_last_run('MEDIA')` reads. A stalled workflow still shows ERROR. See
+  `supabase/migrations/20261012000100_media_heartbeat_credit_order.sql` and `n8n/build_w20_22.py`.
