@@ -25,7 +25,7 @@ return $input.all().map(function (x, i) {
   var rl = /429|too many requests|resource[_ ]exhausted|quota|rate limit/i.test(err);
   return { json: { ok: ok, company: it.company, unsupported: bad, error: err.slice(0, 160), p: { company_id: it.company_id, contact_id: it.contact_id || '',
     concept: ok ? o.concept : '', backdrop: o.backdrop || '', noya_role: o.noya_role || '', commercial_value: o.commercial_value || '',
-    model: 'gemini-3.1-flash-lite',
-    usage: [{ model: 'models/gemini-3.1-flash-lite', input_tokens: u.promptTokenCount || 0, output_tokens: u.candidatesTokenCount || 0,
+    model: 'gemini-3.5-flash-lite',
+    usage: [{ model: 'models/gemini-3.5-flash-lite', input_tokens: u.promptTokenCount || 0, output_tokens: u.candidatesTokenCount || 0,
               thinking_tokens: u.thoughtsTokenCount || 0, status: err ? (rl ? 'RATE_LIMITED' : 'ERROR') : 'OK' }] } } };
 });

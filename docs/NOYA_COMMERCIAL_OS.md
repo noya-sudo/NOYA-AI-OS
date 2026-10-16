@@ -1022,3 +1022,62 @@ Migration `supabase/migrations/20261012000000_efficiency_pass.sql`. No new agent
 - **Media Director false error, fixed.** Workflow 21 now records a heartbeat on every run in system_config 'heartbeat_w21',
   which `agent_last_run('MEDIA')` reads. A stalled workflow still shows ERROR. See
   `supabase/migrations/20261012000100_media_heartbeat_credit_order.sql` and `n8n/build_w20_22.py`.
+
+## Freeze: NOYA HQ — frozen and operating (16 Oct 2026)
+
+Adam's final instruction: clean, verify, freeze, operate. From here HQ changes only for real bugs, security, data integrity,
+or a commercial improvement proven by results. No redesign, no new primary navigation, CRMs, dashboards or agents.
+The next major build is the NOYA Studio & Delivery Layer.
+
+**Hunter decision (Adam, 16 Oct).** Hunter stays on Free until the 27 Oct allowance reset; no paid upgrade is recommended
+before the post-reset numbers prove the case. It is stored in `system_config.hunter_decision`, and the Advisor reads its
+wording from there (no "upgrade to Starter" prompts). Until the reset:
+- research, qualification, public email discovery and correct-person research continue;
+- the verification queue builds in Adam's order (Brands, Weddings, Travel, NOYA Private, Hospitality, Corporate);
+- the final reserve (5 verifications, 3 Finder credits) is never spent.
+A scheduled task runs the controlled test on 27 Oct (07:00 UTC): the best verification and Finder candidates first, then
+a report with verification attempts, Finder attempts, credits, VALID / RISKY / INVALID, new EMAIL READY by Director,
+remaining backlog, days until credits run out, and a verdict, with evidence: "Free is enough" or "Starter is justified".
+Migration `20261016000000_freeze_hunter_hold.sql`.
+
+**Production defect 1: AI qualification outage (fixed).** From about 02:30 UTC on 16 Oct, gemini-3.1-flash-lite answered
+503 (high demand). Every discovery workflow's "backup" model was the same model, so qualification produced nothing.
+Candidates were kept as NOT_EVALUATED_PROVIDER_FAILURE, never as rejections. The fix:
+- discovery 02–08 now fall back to gemini-3.5-flash-lite;
+- 09, 19, 21, 23 and the 00b health probe use it outright;
+- drafting (18) is unchanged.
+A live Brand & Production run at 17:40 UTC completed with 0 provider failures, and the provider alert was closed.
+
+**Production defect 2: outage victims locked out for 60 days (fixed).** Merge & Cap in 02/03/04/06 marks each candidate
+"researched" before qualification, and the 60-day skip then hid every company whose qualification failed on a provider
+error. Merge & Cap now releases each recorded provider failure once, so the next discovery hit evaluates it. Live code is in
+`n8n/live_code_2026_10_16/`; 07 and 08 have no such skip.
+
+**Data-integrity defect 3: duplicate accounts from website corrections (fixed).** Workflow 23 corrected wrong websites (the
+news site a discovery run saved) to the official domain without checking whether the domain was already an account, which
+created second copies of Aman, Maybourne and Mandarin Oriental. Workflow 07 also saved Ten Lifestyle Group, although Ten
+Technologies Group (its new name) was already the account. Migration `20261016100000_account_duplicate_guard.sql`:
+- **Merged, the 29 Sep way; nothing deleted.**
+  - The older record stays the account, and people it lacked move across: Aman +7, Ten +6, Mandarin +1, Maybourne +1.
+  - The duplicate's opportunity is archived.
+  - The duplicate keeps its row, with MERGED_INTO and universe EXCLUDED.
+- **Marked SEPARATE_ACCOUNT.** Two Four Seasons hotels, and MCI Middle East vs MCI UK.
+- **`company_account_guard()`.** A website correction (`company_correct`) or an agent save (`company_intake`) that lands on
+  a live account's domain parks the newer record as POSSIBLE_DUPLICATE_OF, with the reason on the record. Parking means no
+  cold outreach and no verification spend. The daily operating check merges it or marks it SEPARATE_ACCOUNT; nothing
+  merges by itself.
+- **Result.** `company_account_duplicates` is empty, and live accounts share no contact email.
+
+**Sanity check (16 Oct, after the fixes).**
+- **Navigation.** Today, Agents, Outreach, Relationships, Club, Operations, and More / Admin; technical items only under Admin.
+- **Today.** Replies, emails to review, approved Gmail drafts, follow-ups, meetings, proposals, best opportunities and client
+  issues. System alerts stay on the classic Command page under More.
+- **Agents.** Agent labels say "Email Finder lookups", not "provider lookups".
+- **Approval.** It creates an unsent Gmail draft in noya@ and never sends: workflow 12's only Gmail step is "create draft".
+- **Security.** 0 SECURITY DEFINER functions are executable by anon. All 63 that authenticated users can call check
+  `hq_admin_email()`. RLS is on every public table. The HQ security scan passes.
+- **Tests.** `hq` `npm test`: 202/202 classic and 85/85 V3 UI checks, no horizontal overflow at 390 px. Fixtures were
+  refreshed from live data. One V3 assertion now picks the first named person, because the people list legitimately
+  includes team inboxes with no name.
+- **Daily operating check.** Weekdays at 09:20 Cairo it also resolves possible duplicates and confirms provider-failure
+  candidates are released.

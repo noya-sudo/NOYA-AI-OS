@@ -75,7 +75,7 @@ return $input.all().map(function (x, i) {
   });
   var rl = /429|too many requests|resource[_ ]exhausted|quota|rate limit/i.test(err);
   return { json: { p: { company_id: c.company_id, company_instagram: igCompany, people: people, inboxes: inboxes,
-    usage: [{ model: 'models/gemini-3.1-flash-lite', input_tokens: u.promptTokenCount || 0, output_tokens: u.candidatesTokenCount || 0,
+    usage: [{ model: 'models/gemini-3.5-flash-lite', input_tokens: u.promptTokenCount || 0, output_tokens: u.candidatesTokenCount || 0,
               thinking_tokens: u.thoughtsTokenCount || 0, status: err ? (rl ? 'RATE_LIMITED' : 'ERROR') : 'OK' }] },
     company: c.company, kept: people.length + inboxes.length, rejected: rejected, error: err.slice(0, 160) } };
 });

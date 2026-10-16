@@ -175,7 +175,7 @@ const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 
       && H.sections.every((s) => chips.some((c) => c === `${s.title} · ${s.total}`)), chips.join(' | '));
   check('Drill-down: waiting-for-Adam equals the desk for this Director', hs('needs_review').total === D.needs_review.filter((x) => x.director === 'HOSPITALITY').length);
   await page.click('[data-dir-sec=people]');
-  const ppl = await page.locator('main .panel').last().innerText(); const p0 = hs('people').items[0];
+  const ppl = await page.locator('main .panel').last().innerText(); const p0 = hs('people').items.find((p) => p.name) || hs('people').items[0];
   check('Drill-down people: name, role, company, verification state, source, confidence', ppl.includes(p0.name) && ppl.includes(p0.company) && /Source:/.test(ppl) && /confidence/.test(ppl)
     && /(Valid · verified|Public · not verified|Accept-all|No email|Unknown|Invalid)/i.test(ppl) && /in total|showing the latest/i.test(await page.locator('main .panel header').last().innerText()));
   await page.click('[data-dir-sec=verified]');

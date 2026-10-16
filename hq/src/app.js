@@ -2814,7 +2814,7 @@ function weeklyHunter(h) {
   const t = h.totals || {}; const m = h.monthly_projection || {};
   return `<h6 class="mt8">Hunter · last 7 days (${esc(h.plan || 'Free')})</h6><div class="adv-row">Finder ${n0(t.finder_attempts)} attempts → ${n0(t.finder_found)} found · ${n0(t.verifications)} verifications → ${n0(t.valid)} valid, ${n0(t.risky)} risky, ${n0(t.invalid)} invalid · ${esc(t.credits ?? 0)} credits ·
     valid → draft ${n0(t.valid_to_draft)} → sent ${n0(t.draft_to_send)} → replied ${n0(t.send_to_reply)} → meeting ${n0(t.reply_to_meeting)}</div>
-    <div class="small faint">Monthly at this pace ≈ ${n0(m.at_last_7_days)} credits; at Starter caps (40 checks + 25 lookups a day) ≈ ${n0(m.at_starter_caps)} of ${n0(m.starter_credits)} (budget ${n0(m.starter_budget)}).</div>`;
+    <div class="small faint">Monthly at this pace ≈ ${n0(m.at_last_7_days)} credits${h.reset_date ? ` · allowance resets ${esc(shortDay(h.reset_date))}` : ''}.</div>`;
 }
 // Channel health on every Director (email first): coverage = qualified with a verified email route / qualified with a decision maker.
 // The funnel (decision makers -> emails found -> valid verified -> in review) names the bottleneck; LinkedIn volume is never progress.
@@ -2824,7 +2824,7 @@ function channelRow(c) {
   const chip = (n, l, cls = '') => `<span class="ch-chip ${cls}"><b>${n0(n)}</b> ${l}</span>`;
   return `<div class="dc-channel"><div class="dc-cov ${bn ? 'warn-text' : ''}">Email coverage <b>${c.coverage_pct == null ? '—' : `${c.coverage_pct}%`}</b> <span class="faint">· ${n0(c.verified)} of ${n0(c.with_dm)} with a decision maker</span>${bn ? ` ${pill(bn === 'VERIFICATION' ? 'Verification bottleneck' : 'Contact bottleneck', 'warn')}` : ''}</div>
     <div class="dc-funnel small faint">${n0(c.with_dm)} decision makers → ${n0(c.emails_found)} emails found → ${n0(c.verified)} valid verified → ${n0(c.needs_review_email)} in review · <b>${n0(c.email_ready)}</b> email-ready</div>
-    <div class="ch-chips">${chip(c.verified, 'verified email', 'ok')}${c.verified_general ? chip(c.verified_general, 'verified general inbox', 'ok') : ''}${chip(c.needs_verification, 'needs verification')}${c.finder_pending ? chip(c.finder_pending, 'provider lookup pending') : ''}${chip(c.email_gap, 'email gap')}${chip(c.linkedin_fallback, 'LinkedIn fallback')}${chip(c.instagram_fallback, 'Instagram fallback')}${chip(c.needs_review, 'needs review')}</div></div>`;
+    <div class="ch-chips">${chip(c.verified, 'verified email', 'ok')}${c.verified_general ? chip(c.verified_general, 'verified general inbox', 'ok') : ''}${chip(c.needs_verification, 'needs verification')}${c.finder_pending ? chip(c.finder_pending, 'Email Finder lookup pending') : ''}${chip(c.email_gap, 'email gap')}${chip(c.linkedin_fallback, 'LinkedIn fallback')}${chip(c.instagram_fallback, 'Instagram fallback')}${chip(c.needs_review, 'needs review')}</div></div>`;
 }
 // Acquisition health (Adam, 11 Oct): EMAIL READY is the cold-acquisition KPI. LinkedIn and Instagram are fallbacks, counted apart;
 // warm and existing relationships are counted once, outside the cold routes. Agents page only, never Today.
@@ -2835,7 +2835,7 @@ function acquisitionStrip() {
   return `<section class="panel mt8 acq-strip"><header><h3>Acquisition health</h3><span class="small ${r.status === 'LOW' ? 'bad-text' : 'faint'}">Email ready ${n0(a.email_ready)} · reserve target ${esc(t[0])}–${esc(t[1])}${r.status === 'LOW' ? ' · reserve low' : ''}</span></header><div class="body">
     <div class="tiles">${tile(a.valid_verified_email_ready, 'Valid verified email ready', 'primary')}${tile(a.verified_general_email_ready, 'Verified general inbox ready', 'primary')}
       ${tile(a.linkedin_fallback, 'LinkedIn fallback')}${tile(a.instagram_fallback, 'Instagram fallback')}${tile(a.warm, 'Warm')}${tile(a.existing_relationship, 'Existing relationship')}</div>
-    <div class="small faint mt6">On the way to email: ${n0(p.needs_verification)} waiting for verification · ${n0(p.research_pending)} email research to finish · ${n0(p.finder_pending)} provider lookups · ${n0(p.no_person)} without a decision maker.</div></div></section>`;
+    <div class="small faint mt6">On the way to email: ${n0(p.needs_verification)} waiting for verification · ${n0(p.research_pending)} email research to finish · ${n0(p.finder_pending)} Email Finder lookups · ${n0(p.no_person)} without a decision maker.</div></div></section>`;
 }
 
 // ---------------------------------------------------------------- TODAY: only what needs Adam

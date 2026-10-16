@@ -63,7 +63,7 @@ SRC = "\n".join([
     code('extractEvidence', 'Extract Evidence', 'ee'),
     is_true('hasEvidence', 'Has Evidence?', '$json.has_evidence'),
     "const attribute = node({ type: 'n8n-nodes-base.httpRequest', version: 4.2, config: { name: 'Attribute (Flash-Lite)', onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 5000,",
-    "  parameters: { method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',",
+    "  parameters: { method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',",
     "    authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi', sendBody: true, contentType: 'json', specifyBody: 'json',",
     "    jsonBody: expr('{{ JSON.stringify($json.request) }}'), options: { timeout: 30000, batching: { batch: { batchSize: 1, batchInterval: 4000 } } } },",
     "  credentials: { googlePalmApi: { id: 'tqsVAbFrBUJsN3Y0', name: 'Google Gemini(PaLM) Api account' } } } });",
