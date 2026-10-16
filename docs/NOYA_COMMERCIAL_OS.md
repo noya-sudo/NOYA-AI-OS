@@ -1186,3 +1186,84 @@ draft held for a quality edit into Needs review, in memory only.
 
 From here HQ is frozen again. Changes are permitted only for real bugs, security, data integrity, or a commercial
 improvement proven by operating results. The next build is the NOYA STUDIO & DELIVERY LAYER.
+
+## Production fix: HQ statement timeouts (16–17 Oct 2026)
+
+**Symptom.** The Agents page, and under load every screen, showed raw "canceling statement due to statement timeout"
+errors.
+
+**Cause.** From pg_stat_statements, the mean of the calls that finished (timed-out calls are not even counted), against an
+8 s limit for the authenticated role:
+
+| Read | Mean |
+|---|---|
+| hq_ceo_dashboard | 7.1 s |
+| hq_advisor | 6.9 s |
+| hq_director | 5.9 s |
+| hq_directors | 4.1 s (18.7 s even with the database idle) |
+| hq_outreach_desk | 3.7 s |
+| hq_network | 3.5 s |
+
+Three things multiplied the load:
+- HQ fired about 14 of these reads in parallel on every load, every 60 s, and after every button press.
+- For two minutes after an approval it fired them every 5 s.
+- A failed section re-requested its read on every redraw.
+
+The reads also repeat each other's work: directors_snapshot, director_detail, hq_advisor and director_channel_health each
+re-run outreach_desk().
+
+**Fix (migration `20261017100000_hq_read_cache.sql` plus client changes).**
+- **Background snapshots.**
+  - pg_cron (now enabled) runs `hq_cache_refresh('core')` every 5 minutes: Agents, Dashboard model, Advisor, network,
+    execution.
+  - `hq_cache_refresh('directors')` refreshes the three oldest Director pages each run.
+  - Snapshots live in `hq_read_cache`: RLS on, no client access.
+  - The browser reads them through the admin-gated `hq_cached(key)`: 0–12 ms against the 8 s limit, measured live.
+  - The Agents snapshot drops the 665 KB email list that screen never shows (823 KB down to about 57 KB).
+  - The live functions are unchanged. The Outreach desk stays live (about 1 s alone), because approvals must show at once.
+- **Client loading.**
+  - Reads go out in waves of at most 6.
+  - Light refresh every 2 minutes (desk plus snapshots); full refresh every 10 minutes.
+  - After a write, only the reads it can change reload. After an approval, only the desk polls (every 15 s for 2 minutes).
+  - Nothing polls in a hidden tab, and a failed read waits for Retry.
+  - `version.json` plus no-cache headers: an idle open tab reloads itself onto a new build. On 16 Oct an old tab kept the
+    old 14-read polling alive after the deploy.
+- **Display.**
+  - CEO screens never show raw database text. A section without data shows "Some data is temporarily unavailable." with
+    Retry.
+  - Data on screen whose refresh failed shows "Some figures may be out of date".
+  - A failed action says nothing was sent or changed.
+  - Raw reasons, snapshot ages, build times and the pg_cron jobs appear only under More / Admin → System
+    (`hq_cache_status`).
+- **Agents.** Cards gain "Needs you" (emails to approve, email drafts to edit, LinkedIn / Instagram fallbacks to send by
+  hand). A LinkedIn fallback is one step: Copy & open LinkedIn.
+- **Tests.** Security scan pass, 202/202 classic checks, 108/108 acceptance checks. The new checks cover:
+  - at most 6 reads in flight;
+  - no heavy live reads;
+  - a scoped reload after Approve;
+  - a simulated database timeout: clean states, no loop, Retry recovers, a plain message for a failed action, raw reasons
+    only under Admin.
+- **Housekeeping.** `hq_perf_baseline` is a temporary 27-row monitoring table created during the diagnosis (RLS on, no
+  client access). Dropping it through the tools waited for a confirmation and timed out; the daily check removes it.
+
+**Email drought, measured 16 Oct (no Hunter upgrade).**
+- **Hunter Free.** 5 of 100 verifications and 2.5 of 50 credits left until 27 Oct.
+- **Routes.** Across 333 decision makers on qualified accounts:
+  - 29 verified;
+  - 118 with an email found but not verified;
+  - 174 where no email was found (these are the LinkedIn fallbacks);
+  - 12 with no person yet.
+- **The 13 "email ready".** All are already in Gmail drafts, held for a quality edit, or blocked on identity. No new email
+  was left to draft, so workflow 18 planned 0 that night.
+- **Composition of the 118 waiting.**
+  - 43 named personal addresses (30 published on the company's own website);
+  - 28 department inboxes (23 published there);
+  - 47 general inboxes addressed for a named person (39 published there; Weddings alone has 26).
+- **Public discovery is not stalled.** Workflow 23 runs six times a day and finds an empty gap queue: every decision maker
+  either has a candidate email or has been researched to exhaustion.
+
+**Revenue-cycle leaks, in order.**
+1. Verification: 118 found emails cannot pass the verified-only rule while Hunter is on Free.
+2. Email not findable for 52% of decision makers.
+3. Adam's Send and replies: 6 unsent Gmail drafts and 3 replies owed.
+4. Meeting → brief: 2 meetings, 0 briefs, 0 proposals. Studio closes this gap.
