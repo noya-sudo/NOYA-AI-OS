@@ -131,7 +131,7 @@ const V3FX = { desk: fx('desk'), ops: fx('operations'), directors: fx('directors
   HOSPITALITY: fx('director_hospitality'), PARTNERSHIPS: fx('director_partnerships'), GROWTH: fx('director_growth'), EMAIL: fx('director_email') };
 const V3 = { hq_outreach_desk: () => V3FX.desk, hq_operations: () => V3FX.ops, hq_directors: () => V3FX.directors, hq_club: () => V3FX.club,
   hq_director: (b) => V3FX[b?.p_key] || { key: b?.p_key, sections: [] }, hq_growth: () => V3FX.GROWTH?.growth,
-  hq_advisor: () => fx('advisor'), hq_weekly_review: () => fx('weekly') };
+  hq_advisor: () => fx('advisor'), hq_weekly_review: () => fx('weekly'), hq_ceo_dashboard: () => fx('ceo'), hq_network: () => fx('network') };
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
   'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update',
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
@@ -212,7 +212,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
 {
   const { browser, page, errors, calls } = await runScenario({ viewport: { width: 1280, height: 900 } });
   await page.waitForSelector('.side');
-  await page.waitForSelector('.today-sec, .calm');
+  await page.waitForSelector('.kpis');
   await go(page, 'overview');
   await page.waitForSelector('.q-row');
   check('login leads to Today; data via the four read RPCs with bearer token',
@@ -361,7 +361,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   // V3 navigation: six destinations, then More (every older view, grouped). Checked in detail in tests/ui_v3.mjs.
   const primary = await page.locator('.side .nav-primary .nav-item').allInnerTexts();
   const groups = await page.locator('.side .nav-group h6').allInnerTexts();
-  check('Navigation: six destinations plus More (older views kept, grouped)', primary.map((t) => t.replace(/\d+$/, '').trim()).join('|') === 'Today|Agents|Outreach|Relationships|Club|Operations'
+  check('Navigation: six destinations plus More / Admin (older views kept, grouped)', primary.map((t) => t.replace(/\d+$/, '').trim()).join('|') === 'Dashboard|Agents|Outreach|Relationships|Club|Operations'
     && groups.join('|').toLowerCase() === 'agents & intelligence|sales|records|admin', `${primary.join(' | ')} // ${groups.join(' | ')}`);
   await go(page, 'radar');
   const radar = await page.locator('main').innerText();
@@ -763,7 +763,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const { browser, page, errors, calls } = await runScenario({ viewport: { width: 390, height: 844 } });
   const steps = [];
   const step = async (name, ok) => { const o = await noOverflow(page); steps.push(o); check(`09:00 phone · ${name}`, ok && o <= 1, o > 1 ? `overflow ${o}px` : ''); };
-  await page.waitForSelector('.today-sec, .calm');
+  await page.waitForSelector('.kpis');
   await sheet(page, 'overview');
   await page.waitForSelector('.q-row');
   const first = await page.locator('.q-row').first().innerText();
@@ -826,7 +826,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#bmenu');
   await page.click('.sheet [data-tab=finance]');
   await step('9 Menu → Finance: money separated, forecast not set', /Forecast/.test(await page.locator('main').innerText()));
-  await page.click('.bnav [data-tab=today]');
+  await page.click('.bnav [data-tab=dashboard]');
   await page.click('#quick');
   await page.click('.modal [data-modal=new-opp]');
   await page.fill('#f-co', 'Test Co'); await page.fill('#f-type', 'Corporate retreat');

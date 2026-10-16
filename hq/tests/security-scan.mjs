@@ -30,7 +30,9 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   // HQ V3 (9 Oct): admin-gated reads and audited desk / club writes
   'hq_outreach_desk', 'hq_operations', 'hq_directors', 'hq_director', 'hq_club', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person',
   // Email-first amendment (8 Oct): the HQ Advisor, its visit marker and the weekly review (admin-gated)
-  'hq_advisor', 'hq_advisor_seen', 'hq_weekly_review'];
+  'hq_advisor', 'hq_advisor_seen', 'hq_weekly_review',
+  // CEO effectiveness pass (16 Oct): admin-gated, read-only Dashboard and network read models
+  'hq_ceo_dashboard', 'hq_network'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

@@ -1081,3 +1081,108 @@ Technologies Group (its new name) was already the account. Migration `2026101610
   includes team inboxes with no name.
 - **Daily operating check.** Weekdays at 09:20 Cairo it also resolves possible duplicates and confirms provider-failure
   candidates are released.
+
+## CEO effectiveness pass: Dashboard, visible workforce, revenue conversion (16 Oct 2026) — HQ frozen again
+
+Adam's brief: keep the frozen architecture, but make HQ understandable in 10 seconds, make the AI workforce visible, and turn
+outreach into projects. Nothing was rebuilt: no new Director, CRM or dashboard product. Migration
+`20261016200000_ceo_effectiveness.sql` holds every database change (applied live; file and live bodies match by md5).
+
+**Navigation.** Dashboard, Agents, Outreach, Relationships, Club, Operations, More / Admin. Dashboard replaces Today; the phone
+bar is Dashboard, Agents, Outreach, Relationships, More. Each screen has one job:
+- Dashboard: run the company.
+- Agents: see the workforce.
+- Outreach: approve communication.
+- Relationships: build the network.
+- Club: develop the private network.
+- Operations: deliver projects.
+- More / Admin: run the infrastructure.
+
+**Dashboard (`hq_ceo_dashboard()`, admin-gated read).**
+- **Strip.** Emails needing review, Gmail drafts ready to send, replies needing Adam, meetings and calls, active
+  opportunities, active projects, won revenue. Revenue shows £0 / No recorded revenue until a revenue record exists.
+  "Emails needing review" includes verified-email drafts that failed the quality check and wait under Held for Adam's edit.
+- **What needs you today.** Each row has the person or company, why it matters, the next action, the age or due date, the
+  Director, and one button. Stuck Gmail-draft approvals appear here with a Retry.
+- **HQ Advisor.** 3–5 observations, each Situation / Meaning / Recommended action.
+- **Top commercial opportunities.** Live conversations first, then the strongest verified-email prospects. Each has the
+  project type, why now, relationship, next move (aware of who wrote last in Gmail), evidence, strategic value and contact.
+  No deal value is estimated.
+- **From outreach to business.** This week and the last 30 days, from sent to revenue, plus the pipeline with stuck counts.
+  Briefs / concepts counts only concepts actually used with a counterpart and project briefs; internal AI concept ideas
+  (status PROPOSED) are not progress.
+- **AI workforce.** One row per Director: status, mission, today's output, blocker, top opportunity. Working is shown only
+  while a scheduled run is in progress (`agent_prev_run` within 15 minutes and no newer activity); otherwise
+  "Scheduled — HH:MM".
+- **Weekly CEO review.** Emails, LinkedIn fallbacks, replies, positive replies, meetings, briefs, proposals, wins and
+  revenue; then the top 5, biggest bottleneck, Director needing attention, the Advisor's recommendation, and money as
+  recorded ("Not recorded" otherwise).
+
+**Agents.** Each Director card shows:
+- status, what it is working on, last completed work, next run;
+- today: companies, people, verified emails, outreach ready, replies, opportunities;
+- 7 days: sent, replies, positive, meetings, proposals, wins;
+- the email funnel: decision makers → found → verified, plus waiting verification, email ready and LinkedIn fallback;
+- blockers and the top opportunity.
+
+Drill-down tabs: Overview, Opportunities, People, Emails, Outreach, Relationships, Projects. Opportunities are framed as
+projects: what they did, the concept (Media), why Egypt, who decides, what NOYA would handle, next step. `project_type()`
+derives the project from the opportunity type, company type and sector only, so boilerplate descriptions don't decide it.
+Missions were rewritten for Brands, Weddings, Media, NOYA Private and Hospitality. Travel is now "Travel & Concierge
+Partnerships". The Brands query bank gained activewear, swimwear, resortwear, womenswear, streetwear and premium clothing,
+plus the lookalike seeds and lookbook / creator-trip signal queries.
+
+**Outreach.** Tabs: Needs review, Gmail drafts, Follow-ups, Sent, Replied, Researching / held.
+- Email is the default channel.
+- Filters: Director, channel and project type.
+- Compact card: person, company, role, Director, project, verified email, why them, why now, subject and preview.
+- Primary actions are Approve, Edit and Hold; Research more, Source and Reject sit under •••.
+- Approve creates one unsent Gmail draft and never sends.
+
+**Relationships (`hq_network()`, admin-gated read).** Tabs: Important people, Companies, Warm relationships, Pipeline,
+Opportunities, Going cold. Each row shows who, company, why important, last interaction (and who wrote last), current
+opportunity, next action and owner. Multipliers (agencies, planners, private networks that repeatedly create work) are
+marked and ranked first.
+
+**Club and Operations.**
+- **Club tabs.** Private clients, Potential members, Introducers, Members, Benefits, Partner privileges, Events,
+  Introductions. Real people only, added by Adam.
+- **Operations.** Active projects, Upcoming, Awaiting client, Awaiting supplier, Payment required, Completed. Never
+  prospects; honest when empty.
+
+**Real defects found and fixed in this pass.**
+1. **Outreach Writer falsely in ERROR.** Workflow 18 ran on schedule but, with no verified email to draft, made no AI call;
+   the status only read AI calls. `commercial_director_plan` now writes `system_config.heartbeat_w18` on every live run,
+   and `director_last_run('WRITER')` reads it (the 11 Oct Media heartbeat pattern).
+2. **Approved email stuck before Gmail (second time; first on 8 Oct).** Workflow 12's claim call timed out on the n8n
+   side while the database committed the claim, leaving the row PROCESSING with no Gmail draft and no way back.
+   - `hq_redispatch` now recovers a PROCESSING claim older than 10 minutes with no Gmail draft id: it resets it to
+     APPROVED, audits RECOVER_CLAIM and dispatches workflow 12 again.
+   - The desk offers Retry, and the Dashboard lists it.
+   - Greycoat Lumleys (approved by Adam at 21:26 Cairo) was recovered this way, and its unsent Gmail draft exists.
+3. **Briefs / concepts inflated.** The funnel counted 7 internal AI concepts that were never sent. It now counts only
+   USED concepts and project briefs (0 today).
+4. **W13 reply classifier backup.** The backup pointed at a model with no credential; it is now gemini-3.5-flash-lite.
+
+**Security.**
+- `hq_ceo_dashboard`, `hq_network` and `hq_redispatch` are SECURITY DEFINER, check `hq_admin_email()` and are not
+  executable by anon.
+- A signed-in non-admin is refused by all three (tested).
+- 0 SECURITY DEFINER functions are executable by anon.
+- The HQ security scan allow-lists the two new reads.
+- No send path exists.
+
+**Tests.** `hq` `npm test`: security scan pass, 202/202 classic UI checks, 94/94 HQ acceptance checks (`tests/ui_v3.mjs`,
+rewritten for this pass). Screenshots at 1440 and 390 px cover Dashboard, Agents, Brands & Production, Weddings, Media &
+Culture, NOYA Private, Outreach email review, Relationships, Club and Operations, with no horizontal overflow at 390 px.
+The live desk had no email in Needs review that night, so to prove Approve on an email the test copies one verified-email
+draft held for a quality edit into Needs review, in memory only.
+
+**Known limits, reported rather than rebuilt.**
+- **Discovery is saturating.** Brands ran four times on 16 Oct with 0 new qualified companies: 42 candidates a run, most
+  already known. The daily check now reports two days at 0 with known accounts dominating as query-bank saturation.
+- **Hunter Free is used up until the 27 Oct reset test.** Email Intelligence is therefore Blocked, and no new verified
+  email reached Needs review that night.
+
+From here HQ is frozen again. Changes are permitted only for real bugs, security, data integrity, or a commercial
+improvement proven by operating results. The next build is the NOYA STUDIO & DELIVERY LAYER.

@@ -1,6 +1,7 @@
-// HQ V3 acceptance in headless Chromium: six destinations, Today, the workforce, drill-downs, the outreach approval desk,
-// Relationships, Club and Operations — at 1440 px and on a 390 px phone. Every read is a live capture (tests/fixtures,
-// git-ignored); every write is recorded to prove exactly what each button sends. Nothing here can send an email.
+// HQ acceptance (CEO effectiveness pass, 16 Oct) in headless Chromium: Dashboard, the AI workforce and Director drill-downs,
+// the outreach approval desk (email first), Relationships, Club and Operations — at 1440 px and on a 390 px phone. Every read
+// is a live capture (tests/fixtures, git-ignored); every write is recorded to prove exactly what each button sends.
+// Nothing here can send an email: Approve creates one unsent Gmail draft through the approval RPC.
 import http from 'node:http';
 import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -9,11 +10,20 @@ import { chromium } from 'playwright-core';
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const fx = (f) => (existsSync(`tests/fixtures/${f}.json`) ? JSON.parse(readFileSync(`tests/fixtures/${f}.json`, 'utf8')) : null);
-const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'director_hospitality', 'director_partnerships', 'director_growth', 'director_email', 'advisor', 'weekly'];
+const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'director_hospitality', 'director_partnerships', 'director_growth', 'director_email',
+  'director_brands', 'director_weddings', 'director_media', 'director_sports', 'advisor', 'weekly', 'ceo', 'network'];
 if (need.some((f) => !fx(f))) { console.log(`SKIP ui_v3: live fixtures missing (${need.filter((f) => !fx(f)).join(', ')})`); process.exit(0); }
 const F = Object.fromEntries(need.map((f) => [f, fx(f)]));
 F.execution = fx('execution'); // live hq_execution capture (queue health + acquisition split); optional
-const DET = { HOSPITALITY: F.director_hospitality, PARTNERSHIPS: F.director_partnerships, GROWTH: F.director_growth, EMAIL: F.director_email };
+const DET = { HOSPITALITY: F.director_hospitality, PARTNERSHIPS: F.director_partnerships, GROWTH: F.director_growth, EMAIL: F.director_email,
+  BRANDS: F.director_brands, WEDDINGS: F.director_weddings, MEDIA: F.director_media, SPORTS: F.director_sports };
+// The live desk has no email in Needs review tonight (Hunter Free is used up until 27 Oct). To prove Approve on an email, one
+// verified-email draft held for a quality edit is copied into Needs review in memory only, as an approvable candidate.
+const QA = F.desk.held.filter((x) => x.channel === 'EMAIL' && x.status === 'OPEN' && /quality check/i.test(x.reason || ''));
+if (!F.desk.needs_review.some((x) => x.channel === 'EMAIL' && x.approve_via) && QA[0]) {
+  F.desk.needs_review.unshift({ ...QA[0], ref: `${QA[0].ref}-t`, bucket: 'NEEDS_REVIEW', reason: null, approve_via: 'EMAIL_CANDIDATE', candidate_id: '00000000-0000-0000-0000-0000000000e1' });
+  F.desk.counts.needs_review.EMAIL += 1; F.desk.counts.needs_review.total += 1;
+}
 mkdirSync('tests/out/v3', { recursive: true });
 
 const READS = {
@@ -21,7 +31,7 @@ const READS = {
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
   hq_execution: () => F.execution, hq_email_review: () => ({ counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] }),
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_directors: () => F.directors, hq_club: () => F.club,
-  hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly,
+  hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly, hq_ceo_dashboard: () => F.ceo, hq_network: () => F.network,
   hq_director: (b) => DET[b?.p_key] || { key: b?.p_key, sections: [] }, hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
 };
 const WRITES = { hq_approve_draft: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a1' },
@@ -69,7 +79,7 @@ async function open(viewport) {
   await page.fill('input[name=email]', 'adam.elshazly1012@gmail.com');
   await page.fill('input[name=password]', 'test-password-not-real');
   await page.click('button[type=submit]');
-  await page.waitForSelector('.today-sec, .calm');
+  await page.waitForSelector('.kpis');
   return { browser, page, errors, calls };
 }
 const last = (calls, fn) => [...calls].reverse().find((c) => c.fn === fn);
@@ -79,277 +89,249 @@ const D = F.desk; const C = D.counts; const DIR = F.directors;
 const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })}T23:59:59+03:00`);
 
 // ================================================================ 1440 px
+const CEO = F.ceo; const NET = F.network; const A = F.advisor;
+const tc = async (page, sel) => (await page.locator(sel).allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim());
+const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS', 'Weddings & Private Events', 'weddings'], ['MEDIA', 'Media & Culture', 'media'], ['SPORTS', 'NOYA Private', 'noya-private']];
 {
   const { browser, page, errors, calls } = await open({ width: 1440, height: 900 });
-  // Navigation: six destinations, More holds every older view.
-  const primary = (await page.locator('.side .nav-primary .nav-item').allInnerTexts()).map((t) => t.replace(/\s*\d+$/, '').trim());
-  check('nav: exactly six destinations in order', primary.join('|') === 'Today|Agents|Outreach|Relationships|Club|Operations', primary.join(' | '));
-  check('nav: More is collapsed until asked', (await page.locator('.side .nav-group').count()) === 0);
+  // NAVIGATION: Dashboard, Agents, Outreach, Relationships, Club, Operations, More / Admin.
+  const primary = (await tc(page, '.side .nav-primary .nav-item')).map((t) => t.replace(/\s*\d+$/, ''));
+  check('nav: Dashboard · Agents · Outreach · Relationships · Club · Operations, then More / Admin', primary.join('|') === 'Dashboard|Agents|Outreach|Relationships|Club|Operations'
+    && (await page.locator('#nav-more').textContent()).trim() === 'More / Admin', primary.join(' | '));
+  check('nav: More / Admin is collapsed until asked', (await page.locator('.side .nav-group').count()) === 0);
   await page.click('#nav-more');
-  check('nav: More holds the older views, grouped (nothing deleted)', (await page.locator('.side .nav-group').count()) === 4 && (await page.locator('.side .nav-group .nav-item').count()) >= 28);
+  check('nav: More / Admin holds every older view, grouped (nothing deleted)', (await page.locator('.side .nav-group').count()) === 4 && (await page.locator('.side .nav-group .nav-item').count()) >= 28);
   await page.click('#nav-more');
 
-  // TODAY: only what needs Adam.
-  const today = await page.locator('main').innerText();
-  const nr = C.needs_review.total;
-  check('Today: approvals line equals the desk (Needs review)', !nr || new RegExp(`Outreach waiting for your review\\s*${nr}`, 'i').test(today), `${nr}`);
-  const due = D.followups.filter((f) => f.due_at && new Date(f.due_at) <= cairoEnd).length;
-  check('Today: follow-ups due equals the desk', !due || new RegExp(`Follow-ups due\\s*${due}`, 'i').test(today), `${due}`);
-  const gm = D.approved.filter((x) => x.gmail_confirmed).length;
-  check('Today: Gmail drafts to send equals confirmed Gmail drafts', gm ? new RegExp(`Gmail drafts to send\\s*${gm}`, 'i').test(today) : !/Gmail drafts to send/i.test(today), `${gm}`);
-  const replies = DIR.floor.replies; const meets = DIR.floor.meetings;
-  check('Today: replies waiting equals the Agents strip (open reply and review tasks, incl. personal follow-ups)', replies ? new RegExp(`Replies waiting for you\\s*${replies}`, 'i').test(today) : !/Replies waiting/i.test(today), `${replies}`);
-  check('Today: meetings and calls equal the Agents strip (no double count)', meets ? new RegExp(`Meetings and calls\\s*${meets}`, 'i').test(today) : !/Meetings and calls/i.test(today), `${meets}`);
-  check('Today: no acquisition panel, no research or API noise; LinkedIn appears only as a count', (await page.locator('main .acq-strip, main .dc-channel').count()) === 0
-    && !/(Serper|Hunter|email research|discovery|verification queue)/i.test((await page.locator('main .today-sec').allInnerTexts()).join('\n')));
-  check('Today: calm — no engineering words, no metrics walls', !/workflow|supabase|n8n|rpc|pipeline value|P1|P2|P3/i.test(today) && (await page.locator('main .tile').count()) === 0);
-  // HQ ADVISOR on Today: greeting, the brief, 3-5 observations (situation -> meaning -> action), what changed.
-  const A = F.advisor;
-  await page.waitForSelector('main .advisor .adv-head');
+  // DASHBOARD: what needs Adam, what the agents are doing, what could make money, who replied, what is developing, where it is stuck.
+  await page.waitForSelector('main .ocard');
+  const kl = await tc(page, 'main .kpi .kl'); const kn = await tc(page, 'main .kpi .kn');
+  const K = Object.fromEntries(kl.map((l, i) => [l, kn[i]]));
+  check('Dashboard strip: the seven numbers, in order', kl.join('|') === 'Emails needing review|Gmail drafts ready to send|Replies needing you|Meetings / calls|Active opportunities|Active projects|Won revenue', kl.join(' | '));
+  check('Dashboard strip: emails needing review = email drafts in Needs review + verified email drafts waiting for a quality edit',
+    Number(K['Emails needing review']) === C.needs_review.EMAIL + QA.length, `${K['Emails needing review']} vs ${C.needs_review.EMAIL}+${QA.length}`);
+  check('Dashboard strip: Gmail drafts ready = Gmail-confirmed drafts on the desk', Number(K['Gmail drafts ready to send']) === C.gmail_drafts_confirmed, `${K['Gmail drafts ready to send']}`);
+  check('Dashboard strip: active opportunities and projects are hq_ceo_dashboard()', Number(K['Active opportunities']) === CEO.active_opportunities && Number(K['Active projects']) === CEO.funnel.active_projects);
+  const rev = (CEO.money?.revenue || []).length;
+  check('Dashboard strip: revenue never invented — £0 / No recorded revenue when none is recorded', rev ? K['Won revenue'] !== '£0' : K['Won revenue'] === '£0' && /No recorded revenue/.test(await page.locator('main .kpi').last().textContent()));
+  const acts = await page.locator('main #needs .act').count(); const why = await tc(page, 'main #needs .act-why');
+  const nReplies = why.filter((w) => /reply waiting for you$|^Your own follow-up|^They asked for a meeting: the closest/.test(w)).length;
+  const nMeet = why.filter((w) => w === 'They asked for a call: a project can start here' || w === 'They asked for a meeting').length;
+  check('What needs you today: replies and meetings in the list equal the strip', Number(K['Replies needing you']) === nReplies && Number(K['Meetings / calls']) === nMeet, `${K['Replies needing you']}/${nReplies} · ${K['Meetings / calls']}/${nMeet}`);
+  check('What needs you today: every row has who, why it matters, the next action, and one button', acts > 0 && (await page.locator('main #needs .act .act-who').count()) === acts
+    && (await page.locator('main #needs .act .act-next').count()) === acts && (await page.locator('main #needs .act .act-cta .btn').count()) >= acts, `${acts} actions`);
+  check('What needs you today: the Gmail drafts waiting for Send are listed', (await page.locator('main #needs .act', { hasText: 'only your Send is missing' }).count()) === C.gmail_drafts_confirmed);
+  if (QA.length) check('What needs you today: verified email drafts that failed the quality check are listed for an edit', (await page.locator('main #needs .act', { hasText: 'failed the quality check' }).count()) === QA.length);
+  const dash = await page.locator('main').innerText();
+  check('Dashboard: no technical labels (no workflow, RPC, n8n, Supabase, task codes, P1/P2)', !/workflow \d|\brpc\b|supabase|n8n|EMAIL_CANDIDATE|NEEDS_REVIEW|SALES_OUTREACH|\bP[123]\b/i.test(dash));
+  // HQ Advisor: 3-5 observations, situation -> meaning -> recommended action, verbatim from the data.
+  const obs = await page.locator('main .advisor .adv-obs').count();
   const adv = await page.locator('main .advisor').innerText();
-  check('Today Advisor: greeting, the brief, and at most 5 observations, each with a recommended action',
-    new RegExp(A.greeting, 'i').test(await page.locator('main h1').first().innerText()) && A.brief.every((b) => adv.includes(b.text))
-      && (await page.locator('main .adv-obs').count()) === A.observations.length && A.observations.length <= 5
-      && (await page.locator('main .adv-obs .adv-a').count()) === A.observations.length, `${A.observations.length} observations`);
-  check('Today Advisor: every observation is NOYA data, situation and action shown verbatim (nothing invented in the page)', A.observations.every((o) => adv.includes(o.situation) && adv.includes(o.action)));
-  check('Today Advisor: the visit is marked before the read, so "since" is the previous visit',
-    calls.findIndex((c) => c.fn === 'hq_advisor_seen') >= 0 && calls.findIndex((c) => c.fn === 'hq_advisor_seen') < calls.findIndex((c) => c.fn === 'hq_advisor'));
-  check('Today Advisor: what changed is listed', !(A.changed || []).length || A.changed.every((c) => adv.includes(c.text)));
-  await page.click('main .advisor [data-weekly]');
-  await page.waitForSelector('.modal.wide table');
-  const wk = await page.locator('.modal.wide').innerText();
-  check('Weekly review: sent, reply rate, positive reply rate, meetings, proposals, wins, coverage by Director, weakest bottleneck, allocation',
-    /Reply rate/i.test(wk) && /Positive reply rate/i.test(wk) && /Meetings/i.test(wk) && /Proposals/i.test(wk) && /Wins/i.test(wk)
-      && (await page.locator('.modal.wide .wk-dir tbody tr').count()) === F.weekly.by_director.length && (!F.weekly.weakest_bottleneck || wk.includes(F.weekly.weakest_bottleneck)), wk.slice(0, 120));
-  await page.click('.modal.wide [data-close]');
-  await shot(page, 'today-1440');
+  check('HQ Advisor: 3–5 observations, each Situation / Meaning / Recommended action', obs === Math.min(5, A.observations.length) && obs >= 3 && obs <= 5
+    && (await page.locator('main .advisor .adv-obs .adv-l').count()) === obs * 3, `${obs}`);
+  check('HQ Advisor: situations and actions are the stored observations, nothing invented on the page', A.observations.slice(0, 5).every((o) => adv.includes(o.situation) && adv.includes(o.action)));
+  // Top commercial opportunities: potential projects, no invented values.
+  const cards = await page.locator('main .ocard').count(); const ocText = await tc(page, 'main .ocard');
+  check('Top commercial opportunities: 5–10 potential projects from hq_ceo_dashboard()', cards === Math.min(10, CEO.top_opportunities.length) && cards >= 5, `${cards}`);
+  check('Top commercial opportunities: company, project, Director, stage, why now, relationship, next move, evidence, strategic value',
+    CEO.top_opportunities.slice(0, cards).every((o, i) => ocText[i].includes(o.company)) && ocText.every((t) => ['Why now', 'Relationship', 'Next move', 'Evidence', 'Strategic value'].every((w) => new RegExp(w, 'i').test(t))));
+  check('Top commercial opportunities: no money figure is estimated', ocText.every((t) => !/[£$€]\s?\d/.test(t)));
+  // Funnel: this week and the last 30 days, sent -> revenue.
+  const fr = await page.$$eval('main table.funnel tbody tr', (trs) => trs.map((tr) => [...tr.children].map((c) => c.textContent.trim()).join(' ')));
+  const sent30 = CEO.funnel.d30.sent_email + CEO.funnel.d30.sent_linkedin + (CEO.funnel.d30.sent_instagram || 0);
+  check('Funnel: this week and last 30 days, sent → replies → positive → meetings → briefs → proposals → projects → won → revenue',
+    (await tc(page, 'main table.funnel thead th')).slice(1).join('|') === 'Outreach sent|Replies|Positive|Meetings|Briefs / concepts|Proposals|Active projects|Won|Revenue'
+      && fr.length === 2 && fr[1].startsWith(`Last 30 days ${sent30} ${CEO.funnel.d30.replies} ${CEO.funnel.d30.positive} ${CEO.funnel.d30.meetings}`), fr.join(' / '));
+  const stuck = CEO.pipeline.filter((x) => x.stuck > 0);
+  check('Pipeline: where prospects are stuck is stated', !stuck.length || stuck.every((x) => dash.includes(`${x.stuck} stuck`)), stuck.map((x) => `${x.stage}:${x.stuck}`).join(','));
+  // AI workforce pulse: one row per Director; Working only while a scheduled run is actually in progress.
+  const rows = DIR.members.filter((m) => m.role !== 'SUPPORT');
+  const pst = await tc(page, 'main table.pulse tbody tr .st');
+  check('AI workforce: one row per Director and the Partnerships Manager', (await page.locator('main table.pulse tbody tr').count()) === rows.length, `${rows.length}`);
+  check('AI workforce: status is honest (Scheduled — HH:MM when not literally running; never Working unless a run is in progress)',
+    rows.every((m, i) => (m.status === 'WORKING' ? /^Working/ : m.status === 'SCHEDULED' ? (m.next_run ? /^Scheduled — \d\d:\d\d$/ : /^Scheduled$/) : new RegExp(`^${m.status}`, 'i')).test(pst[i])), pst.join(' | '));
+  check('AI workforce: no activity theatre', !/thinking|analysing\.\.\.|typing/i.test(dash));
+  // Weekly CEO review.
+  const wk = await tc(page, 'main .wk-t .l');
+  check('Weekly CEO review: emails, LinkedIn fallbacks, replies, positive, meetings, briefs, proposals, won, revenue',
+    wk.join('|') === 'Emails sent|LinkedIn fallbacks sent|Replies|Positive replies|Meetings|Briefs / concepts|Proposals|Projects won|Revenue', wk.join(' | '));
+  const wkd = await page.locator('main .wk-dl').innerText();
+  check('Weekly CEO review: top 5, biggest bottleneck, Director needing attention, Advisor recommendation, money as recorded',
+    /Top 5 opportunities/i.test(wkd) && /Biggest bottleneck/i.test(wkd) && /Director needing attention/i.test(wkd) && /HQ Advisor recommendation/i.test(wkd) && (rev || /Not recorded/.test(wkd)));
+  await shot(page, 'dashboard-1440');
 
   // AGENTS: the workforce.
   await page.click('.side [data-tab=agents]');
   await page.waitForSelector('.dcard');
-  const fl = DIR.floor; const floor = await page.locator('.floor').innerText();
-  check('Agents: floor strip equals hq_directors().floor', [`${fl.agents_healthy} / ${fl.agents_total}`, fl.qualified_24h, fl.decision_makers_24h, fl.verified_emails_24h, fl.needs_review, fl.gmail_drafts_ready, fl.replies, fl.meetings]
-    .every((v) => floor.includes(String(v))), floor.replace(/\n/g, ' '));
-  check('Agents: needs-review on the floor equals the desk', fl.needs_review === nr, `${fl.needs_review} vs ${nr}`);
   const roles = (r) => DIR.members.filter((m) => m.role === r).length;
-  check('Agents: 10 Directors, 1 Partnerships Manager, 7 shared specialists', roles('DIRECTOR') === 10 && roles('MANAGER') === 1 && roles('SUPPORT') === 7
+  check('Agents: 10 Directors, 1 Strategic Partnerships Manager, 7 shared specialists', roles('DIRECTOR') === 10 && roles('MANAGER') === 1 && roles('SUPPORT') === 7
     && (await page.locator('.dcard').count()) === DIR.members.length, `${roles('DIRECTOR')}/${roles('MANAGER')}/${roles('SUPPORT')}`);
-  const cards = await page.locator('.dcard').allInnerTexts();
-  check('Agents: every card shows a real status (Working / Scheduled / Blocked / Error) and its status line', DIR.members.every((m, i) => /Working|Scheduled|Blocked|Error/i.test(cards[i]) && cards[i].includes(m.status_text)),
-    DIR.members.filter((m, i) => !(/Working|Scheduled|Blocked|Error/i.test(cards[i]) && cards[i].includes(m.status_text))).map((m) => `${m.key}: ${m.status_text}`).join(' | '));
-  check('Agents: no pretend thinking', !cards.some((c) => /thinking|analysing\.\.\.|typing/i.test(c)));
+  const names = await tc(page, '.dcard .dc-name');
+  check('Agents: the Directors by name', ['Private Membership & Network', 'Hospitality & Stays', 'Travel & Concierge Partnerships', 'Brands & Production', 'Weddings & Private Events', 'Corporate & White-Label',
+    'Media & Culture', 'Egypt Growth', 'Strategic Partnerships Manager'].every((n) => names.some((x) => x.startsWith(n))) && names.some((x) => /^NOYA Private/.test(x)) && names.some((x) => /^Growth/.test(x)), names.join(' | '));
+  const dc = await tc(page, '.dcard');
+  check('Agents: every card shows status, current mission, last completed work and next run', DIR.members.every((m, i) => /Working on/i.test(dc[i]) && /Last completed/i.test(dc[i])
+    && (m.status !== 'SCHEDULED' || !m.next_run || /Scheduled — \d\d:\d\d/.test(dc[i]))), DIR.members.filter((m, i) => !/Working on/i.test(dc[i])).map((m) => m.key).join(','));
+  const commercial = DIR.members.filter((m) => m.role !== 'SUPPORT' && m.key !== 'GROWTH');
+  check('Agents: every commercial Director shows Today (companies, people, verified emails, outreach ready, replies, opportunities) and 7 days (sent → wins)',
+    commercial.every((m) => { const t = dc[DIR.members.indexOf(m)]; return ['qualified companies', 'correct people', 'verified emails', 'outreach ready', 'replies', 'opportunities'].every((w) => t.includes(w))
+      && /Last 7 days/i.test(t) && ['sent', 'positive', 'meetings', 'proposals', 'wins'].every((w) => t.includes(w)); }));
+  const brand = DIR.members.find((m) => m.key === 'BRANDS'); const bt = dc[DIR.members.indexOf(brand)];
+  check('Agents: email health per Director (decision makers → found → verified · waiting verification · email ready · LinkedIn fallback)',
+    bt.includes(`${brand.channel.with_dm} decision makers`) && bt.includes(`${brand.channel.verified} verified`) && bt.includes(`${brand.channel.needs_verification} waiting verification`)
+      && bt.includes(`${brand.channel.email_ready} email ready`) && bt.includes(`${brand.channel.linkedin_fallback} LinkedIn fallback`), bt.slice(0, 200));
+  check('Agents: every commercial Director names its top opportunity (or says none yet)', commercial.every((m) => /Top opportunity/i.test(dc[DIR.members.indexOf(m)])));
   const growth = DIR.members.find((m) => m.key === 'GROWTH');
-  check('Agents: Growth is honestly blocked by the Windsor plan limit', growth.status === 'BLOCKED' && cards.some((c) => /Growth, Social & Paid Media/.test(c) && /Windsor free plan/.test(c)));
-  check('Agents: activity feed is real stored events', (await page.locator('main .feed-row').count()) === Math.min(20, DIR.feed.length) && (await page.locator('main').innerText()).includes(DIR.feed[0].text));
-  const withCh = DIR.members.filter((m) => m.role !== 'SUPPORT' && m.key !== 'GROWTH');
-  const brand = DIR.members.find((m) => m.key === 'BRANDS');
-  check('Agents: every Director shows email coverage and channel health (verified, needs verification, email gap, LinkedIn and Instagram fallback, needs review)',
-    withCh.every((m) => m.channel) && withCh.length === (await page.locator('.dcard .dc-channel').count())
-      && cards.some((c) => /Brands & Production/.test(c) && c.includes(`Email coverage ${brand.channel.coverage_pct}%`) && /LinkedIn fallback/i.test(c) && /needs verification/i.test(c) && /email gap/i.test(c)));
-  check('Agents: email coverage = verified / with a decision maker for every Director', withCh.every((m) => m.channel.coverage_pct === (m.channel.with_dm ? Math.round(100 * m.channel.verified / m.channel.with_dm) : null)));
-  check('Agents: every Director shows the email funnel (decision makers -> emails found -> valid verified -> in review) and email-ready count',
-    cards.some((c) => /Brands & Production/.test(c) && c.includes(`${brand.channel.with_dm} decision makers → ${brand.channel.emails_found} emails found → ${brand.channel.verified} valid verified → ${brand.channel.needs_review_email} in review`)));
-  check('Agents: a Director below 30% coverage carries its CONTACT / VERIFICATION verdict, never LinkedIn praise',
-    withCh.filter((m) => m.channel.bottleneck).every((m) => cards.some((c) => c.includes(m.name) && (m.channel.bottleneck === 'VERIFICATION' ? /Verification bottleneck/i : /Contact bottleneck/i).test(c))),
-    withCh.filter((m) => m.channel.bottleneck && !cards.some((c) => c.includes(m.name) && (m.channel.bottleneck === 'VERIFICATION' ? /Verification bottleneck/i : /Contact bottleneck/i).test(c))).map((m) => m.key).join(', '));
-  const acq = F.execution?.queue?.acquisition;
-  if (acq) {
-    const at = await page.locator('main .acq-strip').innerText().catch(() => '');
-    check('Agents: acquisition health leads with email ready, LinkedIn / Instagram / warm / existing counted apart',
-      at.includes(`Email ready ${acq.email_ready}`) && /Valid verified email ready/i.test(at) && /Verified general inbox ready/i.test(at) && /LinkedIn fallback/i.test(at)
-        && /Instagram fallback/i.test(at) && /Existing relationship/i.test(at) && at.includes(`${acq.pipeline.needs_verification} waiting for verification`));
-  }
-  const strip = await page.locator('main .advisor-strip').innerText().catch(() => '');
-  check('Agents: HQ Advisor strip shows bottlenecks and where NOYA is winning or wasting time',
-    A.observations.filter((o) => o.kind === 'BOTTLENECK').every((o) => strip.includes(o.situation)) && (A.winning || []).every((w) => strip.includes(w.text)));
+  check('Agents: Growth is honestly blocked by the Windsor plan limit', growth.status === 'BLOCKED' && dc[DIR.members.indexOf(growth)].includes('Windsor free plan'));
+  check('Agents: no activity theatre', !dc.some((c) => /thinking|analysing\.\.\.|typing/i.test(c)));
   await shot(page, 'agents-1440');
 
-  // Director drill-down: Hospitality & Stays.
-  const H = F.director_hospitality; const hs = (k) => H.sections.find((s) => s.key === k);
-  await page.locator('.dcard', { hasText: 'Hospitality & Stays' }).click();
-  await page.waitForSelector('[data-dir-sec]');
-  check('Drill-down loads hq_director for that Director only', calls.some((c) => c.fn === 'hq_director' && c.body?.p_key === 'HOSPITALITY'));
-  const chips = await page.locator('[data-dir-sec]').allInnerTexts();
-  check('Drill-down: new finds, people, verified contacts, email gaps, opportunities, waiting, approved, researching, held, activity — each with its true total',
-    ['New finds', 'People', 'Verified contacts', 'Email gaps', 'Opportunities', 'Waiting for Adam', 'Approved / Gmail drafts', 'Researching', 'Held or rejected', 'Recent activity'].every((t) => chips.some((c) => c.startsWith(t)))
-      && H.sections.every((s) => chips.some((c) => c === `${s.title} · ${s.total}`)), chips.join(' | '));
-  check('Drill-down: waiting-for-Adam equals the desk for this Director', hs('needs_review').total === D.needs_review.filter((x) => x.director === 'HOSPITALITY').length);
-  await page.click('[data-dir-sec=people]');
-  const ppl = await page.locator('main .panel').last().innerText(); const p0 = hs('people').items.find((p) => p.name) || hs('people').items[0];
-  check('Drill-down people: name, role, company, verification state, source, confidence', ppl.includes(p0.name) && ppl.includes(p0.company) && /Source:/.test(ppl) && /confidence/.test(ppl)
-    && /(Valid · verified|Public · not verified|Accept-all|No email|Unknown|Invalid)/i.test(ppl) && /in total|showing the latest/i.test(await page.locator('main .panel header').last().innerText()));
-  await page.click('[data-dir-sec=verified]');
-  check('Drill-down: verified contacts are only VALID_VERIFIED', hs('verified').items.every((p) => p.email_state === 'VALID_VERIFIED') && /Valid · verified/i.test(await page.locator('main .panel').last().innerText()));
-  await shot(page, 'director-hospitality-1440');
-
-  // Strategic Partnerships Manager: value both ways, right contact, next step.
-  await page.click('[data-tab=agents] >> nth=0');
-  await page.locator('.dcard', { hasText: 'Strategic Partnerships Manager' }).click();
-  await page.waitForSelector('[data-dir-sec=opportunities]');
-  await page.click('[data-dir-sec=opportunities]');
-  const pm = await page.locator('main .panel').last().innerText(); const PT = F.director_partnerships.sections.find((s) => s.key === 'opportunities');
-  check('Partnerships: commercial model, value to NOYA, value to partner, right contact, next step', /Value to NOYA/.test(pm) && /Value to them/.test(pm) && /Right contact/.test(pm) && /Next step/.test(pm));
-  check('Partnerships: list says how many of the total it shows', (await page.locator('main .panel header').last().innerText()).includes(PT.total > PT.items.length ? `showing the latest ${PT.items.length} of ${PT.total}` : `${PT.total} in total`));
-  await shot(page, 'director-partnerships-1440');
-
-  // Growth, Social & Paid Media: honest connections, approval pipeline, no spend.
-  await page.click('[data-tab=agents] >> nth=0');
-  await page.locator('.dcard', { hasText: 'Growth, Social & Paid Media' }).click();
-  await page.waitForSelector('main .loop');
-  const gt = await page.locator('main').innerText();
-  check('Growth: Metricool shown as connected to Instagram but not to HQ', /Metricool/.test(gt) && /Not connected to HQ/i.test(gt));
-  check('Growth: Meta Ads read-only, paused, never launched from HQ', /META ADS: read access paused/.test(gt) && /never launches spend/i.test(gt));
-  check('Growth: content approval pipeline Idea → … → Metricool scheduled → Published → Performance', ['Idea', 'Draft', 'Review', 'Approved', 'Metricool scheduled', 'Published', 'Performance'].every((s) => gt.includes(s)));
-  check('Growth: Instagram performance is the stored posts', new RegExp(`${F.director_growth.growth.top_posts.length} posts analysed`, 'i').test(gt));
-  await shot(page, 'director-growth-1440');
-
-  // Email Intelligence & Verification: the verification queue equals workflow 24's queue.
-  await page.click('[data-tab=agents] >> nth=0');
-  await page.locator('.dcard', { hasText: 'Email Intelligence & Verification' }).click();
-  await page.waitForSelector('[data-dir-sec=verify_queue]');
-  const EQ = F.director_email.sections.find((s) => s.key === 'verify_queue');
-  check('Email agent: verification queue total equals the card and the per-Director sum', EQ.total === DIR.members.filter((m) => m.role === 'DIRECTOR').reduce((n, m) => n + (m.queues?.to_verify || 0), 0), `${EQ.total}`);
-
-  // OUTREACH: the approval desk.
-  await page.click('.side [data-tab=desk]');
-  await page.waitForSelector('.drow');
-  const tabs = await page.locator('main .tabs button').allInnerTexts();
-  const want = { 'Needs review': C.needs_review.total, 'Approved / Gmail drafts': C.approved, 'Follow-ups': C.followups, Sent: C.sent, Replied: C.replied, Held: C.held + C.rejected, Researching: C.researching };
-  check('Desk: tabs Needs review / Approved & Gmail drafts / Follow-ups / Sent / Replied / Held / Researching — counts equal hq_outreach_desk', Object.entries(want).every(([l, n]) => tabs.some((t) => t.replace(/\s+/g, ' ').trim() === `${l} ${n}`)) && !tabs.some((t) => /^Ready\b/.test(t)), tabs.join(' | '));
-  check('Desk: Needs review + Held + Researching reconcile with the open outreach tasks', C.needs_review.total + C.held + C.researching === D.needs_review.length + D.held.length + D.researching.length);
-  const chipT = await page.locator('main [data-desk-ch]').allInnerTexts();
-  const chN = (l) => Number((chipT.find((t) => t.startsWith(l)) || '0').split('·')[1] || 0);
-  check('Desk: channel filters add up (Email + LinkedIn + Instagram + WhatsApp = all)', chN('All') === C.needs_review.total && chN('Email') + chN('LinkedIn') + chN('Instagram') + chN('WhatsApp') === C.needs_review.total && chN('Email') === C.needs_review.EMAIL, chipT.join(' | '));
-  const pager = await page.locator('main .pager').first().innerText();
-  check('Desk: paging shows the true total, no hidden 20-record limit', pager.includes(`Showing 1–${Math.min(25, nr)} of ${nr}`) && (await page.locator('main .drow').count()) === Math.min(25, nr), pager);
-  if (nr > 25) { await page.locator('main [data-desk-page="1"]').first().click(); check('Desk: next page continues the count', (await page.locator('main .pager').first().innerText()).includes(`Showing 26–${Math.min(50, nr)} of ${nr}`)); await page.locator('main [data-desk-page="-1"]').first().click(); }
-  const vis = await page.locator('main').innerText();
-  check('Desk: technical labels hidden under Technical details', !/SALES_OUTREACH_APPROVAL|OUTREACH_FOLLOW_UP|Workflow \d|EMAIL_CANDIDATE|OPPORTUNITY_DRAFT/.test(vis) && (await page.locator('main details.tech').count()) === (await page.locator('main .drow').count()));
-  check('Desk: compact rows carry person, company, Director, channel, route, verification, why-now, angle, subject, preview, age',
-    (await page.locator('main .drow .dr-pills').count()) === (await page.locator('main .drow').count()) && /Why now/i.test(vis) && /Angle/i.test(vis) && /\d+ d\b/.test(vis));
-  // Email first: a LinkedIn / Instagram message reaches Needs review only as a documented fallback.
-  const cold = D.needs_review.filter((x) => ['LINKEDIN', 'INSTAGRAM'].includes(x.channel) && /^(LINKEDIN MESSAGE READY|INSTAGRAM DM READY)/.test(x.tech?.title || ''));
-  check('Desk: every LinkedIn / Instagram message in Needs review is a fallback with email-exhaustion evidence', cold.every((x) => x.fallback && x.fallback.evidence), `${cold.length} fallbacks`);
-  check('Desk: messages waiting on email research sit in Researching with the reason', D.researching.filter((x) => /^Email first/.test(x.reason || '')).every((x) => ['LINKEDIN', 'INSTAGRAM'].includes(x.channel)));
-  const fb = cold[0];
-  if (fb) {
-    await page.click('main [data-desk-ch=""]'); if (fb.channel === 'LINKEDIN') await page.click('main [data-desk-ch=LINKEDIN]');
-    const row = await page.locator(`#desk-${fb.ref}`).innerText().catch(() => '');
-    check('Desk: a fallback row says so and shows what email research was done', new RegExp(fb.fallback.label.split(' — ')[0], 'i').test(row) && /email checked/i.test(row) && row.includes(fb.fallback.evidence.slice(0, 40)), row.slice(0, 160));
-    await page.click('main [data-desk-ch=""]');
+  // DIRECTOR DRILL-DOWNS: Overview · Opportunities · People · Emails · Outreach · Relationships · Projects.
+  for (const [key, label, file] of DIRECTOR_SHOTS) {
+    await page.click('.side [data-tab=agents]'); await page.waitForSelector('.dcard');
+    await page.locator(`.dcard[data-director=${key}]`).click();
+    await page.waitForSelector('[data-dir-sec]');
+    check(`${label}: drill-down loads hq_director for that Director only`, calls.some((c) => c.fn === 'hq_director' && c.body?.p_key === key));
+    const tabs = (await tc(page, 'main .tabs [data-dir-sec]')).map((t) => t.replace(/\s*\d+$/, ''));
+    check(`${label}: tabs Overview · Opportunities · People · Emails · Outreach · Relationships · Projects`, tabs.join('|') === 'Overview|Opportunities|People|Emails|Outreach|Relationships|Projects', tabs.join(' | '));
+    await shot(page, `director-${file}-1440`);
+    await page.click('main [data-dir-sec=opportunities]');
+    const ofr = await tc(page, 'main .ofr'); const OS = DET[key].sections.find((x) => x.key === 'opportunities');
+    check(`${label}: every opportunity is framed as a project (what they did, who decides, what NOYA would handle, next step)`, ofr.length === (OS?.items || []).length
+      && ofr.every((t) => /What they did/.test(t) && /Who decides/.test(t) && /NOYA would handle/.test(t) && /Next step/.test(t)), `${ofr.length}`);
+    if (key === 'MEDIA') check('Media & Culture: concept-led opportunities carry the Egypt concept and why Egypt', OS.items.filter((o) => o.concept).every((o) => ofr.some((t) => t.includes(o.concept.concept)))
+      && ofr.some((t) => /Concept/.test(t)), `${OS.items.filter((o) => o.concept).length} with concepts`);
+    for (const s of ['people', 'emails', 'outreach', 'relationships', 'projects']) { await page.click(`main [data-dir-sec=${s}]`); await page.waitForTimeout(60); }
+    check(`${label}: every tab renders`, errors.length === 0, errors.join(' | '));
   }
-  // Approve an email: re-validated server-side, creates an unsent Gmail draft, never a send.
+
+  // OUTREACH: approve communication. Email first.
+  await page.click('.side [data-tab=desk]');
+  await page.waitForSelector('main [data-desk-tab]');
+  const dtabs = await tc(page, 'main .tabs button');
+  const want = { 'Needs review': C.needs_review.total, 'Gmail drafts': C.approved, 'Follow-ups': C.followups, Sent: C.sent, Replied: C.replied, 'Researching / held': C.held + C.rejected + C.researching };
+  check('Outreach: tabs Needs review · Gmail drafts · Follow-ups · Sent · Replied · Researching / held, counts from hq_outreach_desk', Object.entries(want).every(([l, n]) => dtabs.includes(`${l} ${n}`)) && dtabs.length === 6, dtabs.join(' | '));
+  check('Outreach: Email is the default channel', (await page.locator('main [data-desk-ch=EMAIL]').getAttribute('class')).includes('on'));
+  const projOpts = await tc(page, 'main select[data-desk-proj] option');
+  check('Outreach: filters by Director, channel and project type (Brand shoot, Wedding, Travel partner, NOYA Private, Media / podcast, Hospitality partnership)',
+    (await page.locator('main select[data-desk-dir]').count()) === 1 && ['Brand shoot / campaign', 'Wedding', 'Travel partner', 'NOYA Private', 'Media / podcast', 'Hospitality partnership'].every((o) => projOpts.includes(o)), projOpts.join(' | '));
   const em = D.needs_review.find((x) => x.channel === 'EMAIL' && x.approve_via);
-  if (em) {
-    await page.click('main [data-desk-ch=EMAIL]');
-    await page.locator(`#desk-${em.ref} [data-desk-approve]`).click();
-    await page.waitForTimeout(400);
-    const ap = em.approve_via === 'EMAIL_CANDIDATE' ? last(calls, 'hq_approve_email') : last(calls, 'hq_approve_draft');
-    check('Desk Approve (email): creates an unsent Gmail draft through the approval RPC, never a send', ap && (em.approve_via === 'EMAIL_CANDIDATE' ? ap.body.p_candidate === em.candidate_id : ap.body.p_opportunity_id === em.opportunity_id && ap.body.p_version === Number(em.draft_version || 1))
-      && !calls.some((c) => /send/i.test(c.fn)) && /unsent Gmail draft/.test(await page.locator('main .banner').first().innerText()), em.company);
-    check('Desk Approve: moves to Approved / Gmail drafts', (await page.locator('main .tabs button.on').innerText()).startsWith('Approved'));
-    await shot(page, 'desk-approved-1440');
-    await page.click('main [data-desk-tab=NEEDS_REVIEW]');
-    await page.click('main [data-desk-ch=""]');
-  } else check('Desk Approve (email): an approvable email exists in the live desk', false, 'none in fixture');
-  const liList = D.needs_review.filter((x) => x.channel === 'LINKEDIN');
-  const li = liList.slice(0, 25).find((x) => x.candidate_id && x.task_id);
+  const card = page.locator(`#desk-${em.ref}`); const ct = await card.innerText();
+  check('Email review card: person, company, role, Director, verified email, why them / why now, subject and a short preview', ct.includes(em.person) && ct.includes(em.company) && ct.includes(em.role)
+    && /Verified email/i.test(ct) && ct.includes(em.route.email) && /Why (them|now)/i.test(ct) && ct.includes(em.subject) && (await card.locator('.dr-msg').count()) === 1, ct.slice(0, 160));
+  const prim = (await card.locator('.dr-act > .btn').allTextContents()).map((t) => t.trim());
+  check('Email review card: primary actions Approve · Edit · Hold; Research more · Source · Reject sit under •••', prim.slice(0, 3).join('|') === 'Approve|Edit|Hold' && prim.includes('•••')
+    && (await card.locator('[data-desk-modal=research], [data-desk-modal=reject], [data-desk-src]').count()) === 0, prim.join(' | '));
+  await card.locator('[data-desk-more]').click();
+  const more = (await page.locator(`#desk-${em.ref} .more-menu .btn`).allTextContents()).map((t) => t.trim());
+  check('Email review card: ••• opens Research more · Source · Reject', more.join('|') === 'Research more|Source|Reject', more.join(' | '));
+  await shot(page, 'outreach-email-review-1440');
+  await page.locator(`#desk-${em.ref} [data-desk-approve]`).click();
+  await page.waitForTimeout(400);
+  const ap = last(calls, 'hq_approve_email');
+  check('Approve: creates an unsent Gmail draft through the approval RPC; nothing is ever sent', ap && ap.body.p_candidate === em.candidate_id && !calls.some((c) => /send/i.test(c.fn))
+    && /unsent Gmail draft/.test(await page.locator('main .banner').first().innerText()), em.company);
+  check('Approve: moves to Gmail drafts', (await page.locator('main .tabs button.on').innerText()).startsWith('Gmail drafts'));
+  check('Gmail drafts: one row per approved email, Open in Gmail when the draft exists', (await page.locator('main .dlist .t-row').count()) === D.approved.length
+    && (await page.locator('main .dlist a.btn', { hasText: 'Open in Gmail' }).count()) === D.approved.filter((x) => x.gmail_confirmed).length);
+  await page.click('main [data-desk-tab=NEEDS_REVIEW]');
+  // LinkedIn is a documented fallback; Adam sends it himself.
+  await page.click('main [data-desk-ch=LINKEDIN]');
+  const li = D.needs_review.filter((x) => x.channel === 'LINKEDIN').slice(0, 25).find((x) => x.candidate_id && x.task_id);
   if (li) {
-    await page.click('main [data-desk-ch=LINKEDIN]');
+    const lc = await page.locator(`#desk-${li.ref}`).innerText();
+    check('LinkedIn fallback: says it is a fallback and what email research was done', !li.fallback || (/email checked/i.test(lc) && lc.toLowerCase().includes(li.fallback.label.split(' — ')[0].toLowerCase())), lc.slice(0, 160));
     await page.locator(`#desk-${li.ref} [data-desk-modal=edit]`).click();
-    await page.fill('#d-body', 'Hi — edited on the desk.');
-    await page.click('#dm-ok'); await page.waitForTimeout(300);
+    await page.fill('#d-body', 'Hi — edited on the desk.'); await page.click('#dm-ok'); await page.waitForTimeout(300);
     const ed = last(calls, 'hq_outreach_edit');
-    check('Desk Edit: saves through hq_outreach_edit; the original stays on record', ed && ed.body.p_task === li.task_id && /edited on the desk/.test(ed.body.p_body));
+    check('Edit: saves through hq_outreach_edit; the original stays on record', ed && ed.body.p_task === li.task_id && /edited on the desk/.test(ed.body.p_body));
     await page.locator(`#desk-${li.ref} [data-desk-modal=hold]`).click();
-    await page.fill('#d-reason', 'After their launch');
-    await page.click('#dm-ok'); await page.waitForTimeout(300);
+    await page.fill('#d-reason', 'After their launch'); await page.click('#dm-ok'); await page.waitForTimeout(300);
     const ho = last(calls, 'hq_outreach_action');
-    check('Desk Hold: reason and review date', ho && ho.body.p_action === 'HOLD' && ho.body.p_task === li.task_id && /^\d{4}-\d{2}-\d{2}$/.test(ho.body.p_until));
+    check('Hold: reason and review date', ho && ho.body.p_action === 'HOLD' && ho.body.p_task === li.task_id && /^\d{4}-\d{2}-\d{2}$/.test(ho.body.p_until));
+    await page.locator(`#desk-${li.ref} [data-desk-more]`).click();
     await page.locator(`#desk-${li.ref} [data-desk-modal=research]`).click();
-    await page.selectOption('#d-code', 'WRONG_PERSON'); await page.fill('#d-reason', 'left in June');
-    await page.click('#dm-ok'); await page.waitForTimeout(300);
-    const rs = last(calls, 'hq_outreach_action');
-    check('Desk Research more: goes back to the agents with the reason (no duplicate created)', rs.body.p_action === 'RESEARCH' && /^WRONG_PERSON: left in June$/.test(rs.body.p_reason));
+    await page.selectOption('#d-code', 'WRONG_PERSON'); await page.fill('#d-reason', 'left in June'); await page.click('#dm-ok'); await page.waitForTimeout(300);
+    check('Research more (under •••): back to the agents with the reason', last(calls, 'hq_outreach_action').body.p_action === 'RESEARCH' && /^WRONG_PERSON: left in June$/.test(last(calls, 'hq_outreach_action').body.p_reason));
+    if (!(await page.locator(`#desk-${li.ref} [data-desk-modal=reject]`).count())) await page.locator(`#desk-${li.ref} [data-desk-more]`).click();
     const before = calls.filter((c) => c.fn === 'hq_outreach_action').length;
-    await page.locator(`#desk-${li.ref} [data-desk-modal=reject]`).click();
-    await page.click('#dm-ok'); await page.waitForTimeout(200);
-    check('Desk Reject: refused without a reason', calls.filter((c) => c.fn === 'hq_outreach_action').length === before && /reason is required/i.test(await page.locator('.modal').innerText()));
+    await page.locator(`#desk-${li.ref} [data-desk-modal=reject]`).click(); await page.click('#dm-ok'); await page.waitForTimeout(200);
+    check('Reject (under •••): refused without a reason', calls.filter((c) => c.fn === 'hq_outreach_action').length === before && /reason is required/i.test(await page.locator('.modal').innerText()));
     await page.fill('#d-reason', 'Mass-market, not a fit'); await page.click('#dm-ok'); await page.waitForTimeout(300);
-    check('Desk Reject: reason stored, company held from rediscovery', last(calls, 'hq_outreach_action').body.p_action === 'REJECT');
-    await page.locator(`#desk-${li.ref} [data-modal=task-done]`).click();
-    await page.click('[data-confirm-task=COMPLETE]'); await page.waitForTimeout(300);
-    check('Desk LinkedIn: Mark sent closes the task (send logged, follow-up booked server-side)', last(calls, 'hq_task_action')?.body.p_action === 'COMPLETE' && last(calls, 'hq_task_action').body.p_task_id === li.task_id);
-    await page.locator(`#desk-${li.ref} [data-desk-src]`).click();
-    check('Desk Source: shows where the person and route came from', /identity/.test(await page.locator(`#desk-${li.ref} .dr-src`).innerText()));
-  } else check('Desk: a LinkedIn candidate row exists on page 1', false);
-  await shot(page, 'desk-needs-review-1440');
+    check('Reject: reason stored', last(calls, 'hq_outreach_action').body.p_action === 'REJECT');
+    await page.locator(`#desk-${li.ref} [data-modal=task-done]`).click(); await page.click('[data-confirm-task=COMPLETE]'); await page.waitForTimeout(300);
+    check('LinkedIn: Mark sent closes the task (Adam sent it himself)', last(calls, 'hq_task_action')?.body.p_action === 'COMPLETE' && last(calls, 'hq_task_action').body.p_task_id === li.task_id);
+  } else check('Outreach: a LinkedIn fallback exists on page 1', false);
+  await page.click('main [data-desk-ch=EMAIL]');
   await page.click('main [data-desk-tab=FOLLOWUPS]');
-  check('Desk Follow-ups: one row per open follow-up, rule stated', (await page.locator('main .dlist .t-row').count()) === C.followups && /4 days after the real send/.test(await page.locator('main').innerText()));
-  await shot(page, 'desk-followups-1440');
-  await page.click('main [data-desk-tab=HELD]');
-  check('Desk Held: held rows', (await page.locator('main .drow').count()) === Math.min(25, D.held.length));
+  check('Follow-ups: one row per open follow-up, rule stated', (await page.locator('main .dlist .t-row').count()) === Math.min(C.followups, D.followups.filter((f) => (f.channel || 'EMAIL') === 'EMAIL').length) && /4 days after the real send/.test(await page.locator('main').innerText()));
 
-  // RELATIONSHIPS workspace.
+  // RELATIONSHIPS: build the network; multipliers first.
   await page.click('.side [data-tab=relations]');
-  const rt = await page.locator('main .tabs button').allInnerTexts();
-  check('Relationships: People, Companies, Warm, Opportunities, Pipeline, History', rt.join('|') === 'People|Companies|Warm|Opportunities|Pipeline|History', rt.join(' | '));
-  check('Relationships People: one row per contact', (await page.locator('main tbody tr').count()) === F.directory.contacts.length);
+  await page.waitForSelector('main .nrow');
+  const rt = (await tc(page, 'main .tabs button')).map((t) => t.replace(/\s*\d+$/, ''));
+  check('Relationships: Important people · Companies · Warm relationships · Pipeline · Opportunities · Going cold', rt.join('|') === 'Important people|Companies|Warm relationships|Pipeline|Opportunities|Going cold', rt.join(' | '));
+  check('Relationships: one row per important relationship from hq_network()', (await page.locator('main .nrow').count()) === NET.important.length);
+  check('Relationships: multipliers are marked', (await page.locator('main .nrow.mult').count()) === NET.important.filter((x) => x.multiplier).length);
+  const nr = await tc(page, 'main .nrow');
+  check('Relationships: each row says who, company, why important, last interaction and owner', nr.every((t) => /owner /.test(t)) && NET.important.every((x, i) => nr[i].includes(x.company) && (!x.last_at || /last interaction/.test(nr[i]))));
   await shot(page, 'relationships-1440');
-  for (const t of ['COMPANIES', 'WARM', 'OPPORTUNITIES', 'PIPELINE', 'HISTORY']) { await page.click(`main [data-rel-tab=${t}]`); await page.waitForTimeout(100); }
-  check('Relationships: every tab renders', errors.length === 0);
+  for (const t of ['COMPANIES', 'WARM', 'PIPELINE', 'OPPORTUNITIES', 'COLD']) { await page.click(`main [data-rel-tab=${t}]`); await page.waitForTimeout(80); }
+  check('Relationships: going cold lists hq_network().going_cold', (await page.locator('main .nrow').count()) === NET.going_cold.length);
+  check('Relationships: every tab renders', errors.length === 0, errors.join(' | '));
 
-  // CLUB foundation: real people only.
+  // CLUB: real people only.
   await page.click('.side [data-tab=club]');
   await page.waitForSelector('[data-club-tab]');
-  check('Club: ten parts (members … communities)', (await page.locator('main [data-club-tab]').count()) === 10);
-  check('Club: communities are the real qualified clubs and communities', (await page.locator('main .panel .t-row').count()) === F.club.communities.length);
+  const club = (await tc(page, 'main [data-club-tab]')).map((t) => t.replace(/\s*\d+$/, ''));
+  check('Club: Private clients · Potential members · Introducers · Members · Benefits · Partner privileges · Events · Introductions', club.join('|') === 'Private clients|Potential members|Introducers|Members|Benefits|Partner privileges|Events|Introductions', club.join(' | '));
   await page.click('main [data-club-tab=MEMBERS]');
   check('Club: no fabricated members', F.club.members.length > 0 || /never automatically, never invented/.test(await page.locator('main').innerText()));
-  await page.click('main [data-club-tab=INTRODUCERS]');
-  check('Club: introducer routes come from confirmed people in the CRM', (await page.locator('main [data-club-add=INTRODUCER]').count()) === F.club.introducer_routes.length);
   await shot(page, 'club-1440');
-  if (F.club.introducer_routes.length) { await page.locator('main [data-club-add=INTRODUCER]').first().click(); await page.waitForTimeout(300); check('Club: adding an introducer is Adam\'s audited action', last(calls, 'hq_club_person')?.body.p_role === 'INTRODUCER'); }
 
-  // OPERATIONS: confirmed delivery only.
+  // OPERATIONS: confirmed delivery only, never prospects.
   await page.click('.side [data-tab=ops]');
-  const ot = await page.locator('main').innerText(); const O = F.operations;
-  check('Operations: confirmed client delivery only (honest when empty)', (O.projects.length + O.won.length + O.clients.length) ? !/No confirmed client work yet/.test(ot) : /No confirmed client work yet/.test(ot));
+  const ot = await page.locator('main').innerText(); const ops = CEO.operations;
+  check('Operations: Active projects · Upcoming · Awaiting client · Awaiting supplier · Payment required · Completed',
+    ['Active projects', 'Upcoming', 'Awaiting client', 'Awaiting supplier', 'Payment required', 'Completed'].every((w) => ot.includes(w)));
+  check('Operations: confirmed client delivery only (honest when empty)', Object.values(ops).some((l) => l.length) ? !/No confirmed project yet/.test(ot) : /No confirmed project yet/.test(ot));
   await shot(page, 'operations-1440');
 
-  check('ui_v3 desktop: only allow-listed reads and audited writes were called', calls.every((c) => READS[c.fn] || WRITES[c.fn]), [...new Set(calls.map((c) => c.fn))].filter((f) => !READS[f] && !WRITES[f]).join(','));
-  check('ui_v3 desktop: no JavaScript errors', errors.length === 0, errors.join(' | '));
+  check('desktop: only allow-listed reads and audited writes were called', calls.every((c) => READS[c.fn] || WRITES[c.fn]), [...new Set(calls.map((c) => c.fn))].filter((f) => !READS[f] && !WRITES[f]).join(','));
+  check('desktop: no JavaScript errors', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
 
 // ================================================================ 390 px phone
 {
   const { browser, page, errors } = await open({ width: 390, height: 844 });
-  const bn = (await page.locator('.bnav button').allInnerTexts()).map((t) => t.replace(/\d+$/, '').trim());
-  check('phone: bottom bar Today / Agents / Outreach / Relationships / More', bn.join('|') === 'Today|Agents|Outreach|Relationships|More', bn.join(' | '));
+  const bn = (await page.locator('.bnav button').allTextContents()).map((t) => t.replace(/\d+$/, '').trim());
+  check('phone: bottom bar Dashboard · Agents · Outreach · Relationships · More', bn.join('|') === 'Dashboard|Agents|Outreach|Relationships|More', bn.join(' | '));
   const o = async (name) => { const x = await overflow(page); check(`phone 390: no horizontal overflow · ${name}`, x <= 1, `${x}px`); };
-  await o('Today'); await shot(page, 'today-390');
+  await page.waitForSelector('main .ocard');
+  const kb = await page.locator('main .kpi').first().boundingBox();
+  check('phone Dashboard: the strip is two columns of thumb-sized numbers', kb && kb.width >= 160 && kb.height >= 56, `${kb?.width}×${kb?.height}`);
+  await o('Dashboard'); await shot(page, 'dashboard-390');
   await page.click('.bnav [data-tab=agents]'); await page.waitForSelector('.dcard');
   const w = await page.locator('.dcard').first().boundingBox();
-  check('phone Agents: cards first, one column', w && w.width >= 330); await o('Agents'); await shot(page, 'agents-390');
-  await page.locator('.dcard', { hasText: 'Hospitality & Stays' }).click(); await page.waitForSelector('[data-dir-sec]');
-  await o('Director drill-down'); await shot(page, 'director-hospitality-390');
-  await page.click('.bnav [data-tab=agents]'); await page.waitForSelector('.dcard');
-  await page.locator('.dcard', { hasText: 'Growth, Social & Paid Media' }).click(); await page.waitForSelector('main .loop');
-  await o('Growth Director'); await shot(page, 'director-growth-390');
-  await page.click('.bnav [data-tab=desk]'); await page.waitForSelector('.drow');
+  check('phone Agents: one card per row', w && w.width >= 330); await o('Agents'); await shot(page, 'agents-390');
+  for (const [key, label, file] of DIRECTOR_SHOTS) {
+    await page.click('.bnav [data-tab=agents]'); await page.waitForSelector('.dcard');
+    await page.locator(`.dcard[data-director=${key}]`).click(); await page.waitForSelector('[data-dir-sec]');
+    await o(label); await shot(page, `director-${file}-390`);
+  }
+  await page.click('.bnav [data-tab=desk]'); await page.waitForSelector('main .drow');
   const ab = await page.locator('main .drow .dr-act .btn').first().boundingBox();
-  check('phone Needs review: action buttons are thumb-sized', ab && ab.height >= 30, `${ab?.height}`);
-  await o('Outreach · Needs review'); await shot(page, 'desk-needs-review-390', false);
-  await page.click('main [data-desk-tab=APPROVED]'); await o('Outreach · Approved'); await shot(page, 'desk-approved-390', false);
-  await page.click('.bnav [data-tab=relations]'); await o('Relationships'); await shot(page, 'relationships-390', false);
-  await page.click('#bmenu'); await page.click('.sheet [data-tab=club]'); await page.waitForSelector('[data-club-tab]'); await o('Club'); await shot(page, 'club-390', false);
-  await page.click('#bmenu'); await page.click('.sheet [data-tab=ops]'); await o('Operations'); await shot(page, 'operations-390', false);
-  check('ui_v3 phone: no JavaScript errors', errors.length === 0, errors.join(' | '));
+  check('phone Outreach: review buttons are thumb-sized', ab && ab.height >= 30, `${ab?.height}`);
+  await o('Outreach · Email review'); await shot(page, 'outreach-email-review-390');
+  await page.click('.bnav [data-tab=relations]'); await page.waitForSelector('main .nrow'); await o('Relationships'); await shot(page, 'relationships-390');
+  await page.click('#bmenu'); await page.click('.sheet [data-tab=club]'); await page.waitForSelector('[data-club-tab]'); await o('Club'); await shot(page, 'club-390');
+  await page.click('#bmenu'); await page.click('.sheet [data-tab=ops]'); await o('Operations'); await shot(page, 'operations-390');
+  check('phone: no JavaScript errors', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
 
 server.close();
 const failed = results.filter((r) => !r.ok);
-console.log(`\n${results.length - failed.length}/${results.length} V3 checks passed`);
+console.log(`\n${results.length - failed.length}/${results.length} HQ acceptance checks passed`);
 process.exit(failed.length ? 1 : 0);
