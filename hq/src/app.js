@@ -2797,7 +2797,8 @@ const head = (title, sub) => `<div class="ov-head"><h1>${esc(title)}</h1>${sub ?
 const memberName = (k) => (state.directors?.members || []).find((x) => x.key === k)?.name || ({ ENRICHMENT: 'Contact & Email Intelligence', DRAFTING: 'Outreach Writer' }[k]) || k || '—';
 const CH_LABEL = { EMAIL: 'Email', LINKEDIN: 'LinkedIn', INSTAGRAM: 'Instagram', WHATSAPP: 'WhatsApp', INSTAGRAM_DM: 'Instagram' };
 const ESTATE = { VALID_VERIFIED: ['Valid · verified', 'ok'], ACCEPT_ALL: ['Accept-all · not verifiable', 'warn'], PUBLIC_UNVERIFIED: ['Public · not verified', 'warn'],
-  UNKNOWN: ['Unknown', 'warn'], INVALID: ['Invalid', 'bad'], NOT_FOUND: ['No email', ''] };
+  UNKNOWN: ['Unknown', 'warn'], INVALID: ['Invalid', 'bad'], NOT_FOUND: ['No email', ''],
+  OFFICIAL_PUBLISHED_INBOX: ['Official inbox · company website · not verified', 'info'] };
 const estatePill = (s) => { const [l, c] = ESTATE[s] || [s || 'No email', '']; return pill(l, c); };
 
 // ---------------------------------------------------------------- HQ ADVISOR: Adam's Chief of Staff across every Director
@@ -3367,7 +3368,7 @@ function deskRow(x, readOnly = false) {
     <div class="dr-top"><div class="dr-who"><b>${esc(x.person || x.company || '—')}</b>${x.role ? ` <span class="faint">· ${esc(x.role)}</span>` : ''}${x.person && x.company ? ` · <a class="clickable" data-open="company" data-id="${x.company_id}">${esc(x.company)}</a>` : ''}</div>
       <span class="dr-age" title="Prepared ${esc(fmtDate(x.created_at))}">${x.age_days != null ? `${esc(x.age_days)} d` : ''}</span></div>
     <div class="dr-meta">${esc(dirName(x.director))}${proj ? ` · ${esc(projectName(proj))}` : ''}${x.qa === 'FLAGGED' ? ' · <span class="warn-text">quality flag</span>' : ''}</div>
-    <div class="dr-line"><span>${x.channel === 'EMAIL' ? 'Verified email' : 'Route'}</span>${route}</div>
+    <div class="dr-line"><span>${x.channel !== 'EMAIL' ? 'Route' : x.route?.email_state === 'OFFICIAL_PUBLISHED_INBOX' ? 'Official inbox' : 'Verified email'}</span>${route}</div>
     ${x.reason ? `<div class="dr-line warn-text">${esc(x.reason)}</div>` : ''}
     ${x.angle ? `<div class="dr-line"><span>Why them</span>${esc(plainText(x.angle).replace(/^Partnership model \(recorded\):\s*/i, ''))}</div>` : ''}
     ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(x.why_now))}</div>` : ''}

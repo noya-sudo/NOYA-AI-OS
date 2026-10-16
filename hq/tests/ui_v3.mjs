@@ -102,6 +102,11 @@ const last = (calls, fn) => [...calls].reverse().find((c) => c.fn === fn);
 const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 const shot = (page, name, full = true) => page.screenshot({ path: `tests/out/v3/${name}.png`, fullPage: full });
 const D = F.desk; const C = D.counts; const DIR = F.directors;
+// One email in review goes to a classified official published inbox (Adam, 17 Oct 2026): HQ must never call it verified.
+// A second copy of the held draft, in memory only (the tab counts are left as captured).
+const OFF = QA[0] ? { ...QA[0], ref: `${QA[0].ref}-o`, bucket: 'NEEDS_REVIEW', reason: null, approve_via: 'EMAIL_CANDIDATE', candidate_id: '00000000-0000-0000-0000-0000000000e2',
+  route: { ...(QA[0].route || {}), email_state: 'OFFICIAL_PUBLISHED_INBOX' } } : null;
+if (OFF) D.needs_review.splice(1, 0, OFF);
 const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })}T23:59:59+03:00`);
 
 // ================================================================ 1440 px
@@ -243,6 +248,10 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   const card = page.locator(`#desk-${em.ref}`); const ct = await card.innerText();
   check('Email review card: person, company, role, Director, verified email, why them / why now, subject and a short preview', ct.includes(em.person) && ct.includes(em.company) && ct.includes(em.role)
     && /Verified email/i.test(ct) && ct.includes(em.route.email) && /Why (them|now)/i.test(ct) && ct.includes(em.subject) && (await card.locator('.dr-msg').count()) === 1, ct.slice(0, 160));
+  if (OFF) {
+    const ot = await page.locator(`#desk-${OFF.ref}`).innerText();
+    check('Official published inbox: labelled "Official inbox · company website · not verified", never "Verified email"', /Official inbox/i.test(ot) && /company website/i.test(ot) && /not verified/i.test(ot) && !/Verified email/i.test(ot), ot.slice(0, 160));
+  } else check('Official published inbox: fixture has a second email in review to label', false);
   const prim = (await card.locator('.dr-act > .btn').allTextContents()).map((t) => t.trim());
   check('Email review card: primary actions Approve · Edit · Hold; Research more · Source · Reject sit under •••', prim.slice(0, 3).join('|') === 'Approve|Edit|Hold' && prim.includes('•••')
     && (await card.locator('[data-desk-modal=research], [data-desk-modal=reject], [data-desk-src]').count()) === 0, prim.join(' | '));
