@@ -1,0 +1,28 @@
+{
+  "slug": "proposal-skeleton",
+  "type": "proposal",
+  "date": "Date",
+  "reference": "Draft",
+  "eyebrow": "Egypt · Proposal",
+  "title": "Proposal *title.*",
+  "subtitle": "Template check only: structure of a NOYA proposal. Not a client document.",
+  "prepared_for": "Client name · Company",
+  "running": "Client × NOYA · Proposal",
+  "pages": [
+    { "blocks": [
+      { "t": "section", "n": "01", "label": "The brief", "title": "What we were asked." },
+      { "t": "lead", "text": "One paragraph restating the client's brief in their words." },
+      { "t": "section", "n": "02", "label": "Our proposal", "title": "What NOYA will deliver." },
+      { "t": "roles", "left": { "title": "Client leads", "items": ["Item"] }, "right": { "title": "NOYA delivers in Egypt", "items": ["Item"] } }
+    ] },
+    { "blocks": [
+      { "t": "section", "n": "03", "label": "Investment", "title": "Fees." },
+      { "t": "fees", "rows": [["Production management", null], ["Hospitality", null], ["Total", null]] },
+      { "t": "note", "text": "Fees appear only once Adam has approved them; until then each line reads Not recorded." }
+    ] },
+    { "kind": "closing", "blocks": [
+      { "t": "section", "n": "04", "label": "Next steps", "title": "To confirm." },
+      { "t": "steps", "items": [{ "title": "Approve the proposal", "text": "Step text." }] }
+    ], "contact": { "name": "Adam Elshazly", "role": "Founder, NOYA Concierge", "lines": ["noya@noyaconcierge.com", "+44 786 456 9006", "noyaconcierge.com"] } }
+  ]
+}

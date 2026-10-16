@@ -1267,3 +1267,49 @@ re-run outreach_desk().
 2. Email not findable for 52% of decision makers.
 3. Adam's Send and replies: 6 unsent Gmail drafts and 3 replies owed.
 4. Meeting → brief: 2 meetings, 0 briefs, 0 proposals. Studio closes this gap.
+
+## Email restart through official published inboxes, and NOYA Studio (17 Oct 2026)
+
+**Adam's decisions (17 Oct).** EMAIL A: an inbox the company publishes on its own official website may be outreach-ready
+without Hunter. STUDIO B: start Studio now with the logo from the latest approved brochure, replaced centrally when the master
+SVG exists. FIRECRAWL: no upgrade; flag only a genuinely blocked revenue-critical workflow. The temporary `hq_perf_baseline`
+table stays until a maintenance session can confirm the drop.
+
+**OFFICIAL_PUBLISHED_INBOX** (`20261017200000_official_published_inbox.sql`):
+- `email_official_inboxes` holds each classified inbox with its source URL, source and company domains, date found and the rule.
+  The class is never VERIFIED and `contacts.email_status` is untouched.
+- `official_inbox_classify()` picks inbox contacts (general or department local part) whose address and source page are both on
+  the company's own website domain, never checked by the provider. It revokes an inbox whose address changes, becomes
+  do-not-contact or is later checked and not found valid. The planner runs it before every live plan.
+- `contact_email_route` returns OFFICIAL_PUBLISHED_INBOX for a usable classified inbox. A company where a confirmed decision maker's
+  own address is still waiting for Hunter keeps waiting (named personal addresses wait until 27 Oct), so the company's one cold
+  route is not spent on an inbox.
+- `company_email_state` ranks it after a personal address waiting for verification and before an unclassified inbox.
+- The planner, `cold_route_sweep`, `outbound_recipient_block_reason` (the Gmail-draft gate), `outreach_candidate_save` (task text:
+  "OFFICIAL PUBLISHED INBOX: listed on the company's own website (url); not SMTP-verified"), `outreach_desk`,
+  `director_channel_health` and `acquisition_health` all treat it as an email route; "verified" counts stay strictly verified.
+- HQ labels it "Official inbox · company website · not verified" and never "Verified email" (`hq/src/app.js` ESTATE, deskRow).
+
+**Two routing defects found and fixed on the way.**
+- Press and media inboxes are used only for a recorded CONTENT_TALENT partnership model. An unknown model used to count as
+  content, which would have pitched J.P. Morgan, KKR, Apex, Manchester City and Pacaso through their press offices
+  (`20261017210000`).
+- The planner's 30-day "already planned" exclusion counted dry-run candidates, so a dry run silently blocked its companies from
+  the live plan for 30 days. Dry runs no longer count; dry-run rows are closed as SKIPPED / DRY_RUN (`20261017220000`).
+
+**Result (17 Oct, 01:00 Cairo).**
+- 183 inboxes classified at 148 companies; 55 qualified prospect companies now route to an official inbox (118 waiting → 61).
+- Email-ready across the Directors went from 5 to 57: Brands 0→5, Weddings 0→29, Media 0→2, Travel 2→8, NOYA Private 0→0,
+  Hospitality 3→10, Corporate 0→2, Sports 0→1, Egypt 0→0. Partnerships (cross-lane) 50.
+- That night W18 drafted 25 emails into Needs review (17 ready, 8 flagged for an edit): Weddings 14, Brands 5, Partnerships 3,
+  Travel 2, Corporate 1. All go to official inboxes, no company has a second open cold route, and nothing was sent or queued.
+- NOYA Private stays at 0: its inboxes are general addresses (office@, info@) at clubs and family-office firms, which the small-firm
+  rule for general inboxes (EP-3) keeps off email.
+
+**NOYA Studio** (`studio/`, `20261017230000_studio_documents.sql`): documents are data (`studio/documents/<slug>.json`). The
+templates turn them into A4 PDFs: navy and off-white, hairlines, Cormorant Garamond with Jost, fonts embedded. The renderer fails
+any page that overflows, and each output is recorded in `studio_documents` with its content, sources, review notes and status.
+Nothing sends. First outputs: the YKONE Egypt Brief and the CRUSH Egypt Concept, both FOR_REVIEW. See `studio/README.md`.
+Limitation: this cloud environment cannot reach Drive, Google image hosts or noyaconcierge.com, and the Drive connector cannot
+move multi-megabyte files. So the brochure logo and the approved photography are not in the renderer yet, and the typeset
+wordmark is used until `studio/brand/logo.svg` exists.
