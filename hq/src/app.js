@@ -3604,9 +3604,21 @@ const VIEWS = { dashboard: viewDashboard, today: viewDashboard, agents: viewAgen
 // or while a modal / record / menu is open.
 // Light refresh every 2 minutes (the desk and the background snapshots, which are cheap), a full refresh every 10 minutes,
 // and after an approval only the desk every 15 s for two minutes, to show the Gmail draft arriving. Paused in a hidden tab.
+// New deploy: the first fingerprint seen is this tab's build; a different one later means HQ was updated.
+async function checkVersion() {
+  try {
+    const r = await fetch('/version.json', { cache: 'no-store' }); if (!r.ok) return;
+    const { v } = await r.json(); if (!v) return;
+    if (!state.buildV) state.buildV = v; else if (v !== state.buildV) state.updateReady = true;
+  } catch { /* offline or local file: ignore */ }
+}
+checkVersion();
 setInterval(() => {
   if (!state.session || state.modal || state.drawer || state.menu || state.q || mustChangePassword() || document.hidden) return;
+  // Reload an idle tab onto the new build rather than keep running superseded code.
+  if (state.updateReady && !state.inflight && !document.querySelector('textarea:focus, input:focus')) { location.reload(); return; }
   const tick = Math.floor(Date.now() / 5000);
+  if (tick % 120 === 60) checkVersion();
   if (Date.now() < state.pollUntil) { if (tick % 3 === 0) load(true, 'desk'); return; }
   if (tick % 120 === 0) load(true, 'full'); else if (tick % 24 === 0) load(true, 'light');
 }, 5000);

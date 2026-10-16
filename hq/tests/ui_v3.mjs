@@ -375,8 +375,8 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   const bn = (await page.locator('.bnav button').allTextContents()).map((t) => t.replace(/\d+$/, '').trim());
   check('phone: bottom bar Dashboard · Agents · Outreach · Relationships · More', bn.join('|') === 'Dashboard|Agents|Outreach|Relationships|More', bn.join(' | '));
   const o = async (name) => { const x = await overflow(page); check(`phone 390: no horizontal overflow · ${name}`, x <= 1, `${x}px`); };
-  await page.waitForSelector('main .ocard');
-  const kb = await page.locator('main .kpi').first().boundingBox();
+  await page.waitForSelector('main .ocard'); await page.waitForTimeout(600); // let the loading waves settle (each wave redraws)
+  let kb = null; for (let i = 0; i < 3 && !kb; i += 1) { kb = await page.locator('main .kpi').first().boundingBox(); if (!kb) await page.waitForTimeout(200); }
   check('phone Dashboard: the strip is two columns of thumb-sized numbers', kb && kb.width >= 160 && kb.height >= 56, `${kb?.width}×${kb?.height}`);
   await o('Dashboard'); await shot(page, 'dashboard-390');
   await page.click('.bnav [data-tab=agents]'); await page.waitForSelector('.dcard');
