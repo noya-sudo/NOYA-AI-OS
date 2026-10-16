@@ -656,3 +656,10 @@ h3.grp { margin: 24px 0 10px; }
 a.btn { display: inline-flex; align-items: center; text-decoration: none; color: var(--text); }
 a.btn.primary { color: var(--on-accent); }
 a.btn:hover { text-decoration: none; }
+
+/* Temporarily unavailable: one calm line with a Retry, never raw database text (17 Oct). */
+.unavail { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--panel); box-shadow: 0 0 0 1px var(--line);
+  border-left: 3px solid var(--warn); border-radius: 0 var(--radius) var(--radius) 0; padding: 10px 14px; margin: 0 0 12px; font-size: 13px; color: var(--text); }
+.unavail.top { margin-bottom: 16px; }
+.dc-need { font-size: 13px; margin-top: 2px; }
+.dc-need.on { color: var(--navy); font-weight: 500; }

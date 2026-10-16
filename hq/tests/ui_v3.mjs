@@ -32,6 +32,15 @@ const READS = {
   hq_execution: () => F.execution, hq_email_review: () => ({ counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] }),
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_directors: () => F.directors, hq_club: () => F.club,
   hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly, hq_ceo_dashboard: () => F.ceo, hq_network: () => F.network,
+  // 17 Oct: the heavy CEO reads come from background snapshots (hq_cached); hq_cache_status feeds Admin diagnostics.
+  hq_cached: (b) => {
+    const k = b?.p_key || ''; const snap = { ceo: F.ceo, network: F.network, advisor: F.advisor, directors: F.directors, execution: F.execution }[k];
+    const v = snap || (k.startsWith('director:') ? DET[k.slice(9)] || { key: k.slice(9), sections: [] } : null);
+    return v ? { ...v, _cache: { built_at: new Date(Date.now() - 120000).toISOString(), age_s: 120 } } : { ok: false, reason: 'UNKNOWN_KEY' };
+  },
+  hq_cache_status: () => ({ generated_at: new Date().toISOString(), items: [{ key: 'ceo', built_at: new Date().toISOString(), age_s: 120, build_ms: 2177, last_error: null },
+    { key: 'directors', built_at: new Date().toISOString(), age_s: 120, build_ms: 18686, last_error: 'canceling statement due to statement timeout', last_error_at: new Date().toISOString() }],
+    jobs: [{ job: 'hq-cache-core', schedule: '*/5 * * * *', active: true, last_status: 'succeeded', last_run: new Date().toISOString() }] }),
   hq_director: (b) => DET[b?.p_key] || { key: b?.p_key, sections: [] }, hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
 };
 const WRITES = { hq_approve_draft: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a1' },
@@ -56,10 +65,11 @@ function session() {
   const exp = Math.floor(Date.now() / 1000) + 3600;
   return { access_token: `${b64url({ alg: 'HS256', typ: 'JWT' })}.${b64url({ sub: user.id, email: user.email, role: 'authenticated', exp })}.sig`, token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: 'r', user };
 }
-async function open(viewport) {
+const TIMEOUT_ERR = { code: '57014', details: null, hint: null, message: 'canceling statement due to statement timeout' };
+async function open(viewport, opts = {}) {
   const browser = await chromium.launch({ executablePath: CHROME });
   const ctx = await browser.newContext({ viewport, permissions: ['clipboard-read', 'clipboard-write'] });
-  const page = await ctx.newPage(); const errors = []; const calls = [];
+  const page = await ctx.newPage(); const errors = []; const calls = []; const load = { inflight: 0, max: 0 };
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.route(`${SUPA}/**`, async (route) => {
@@ -69,7 +79,13 @@ async function open(viewport) {
     const m = url.match(/\/rest\/v1\/rpc\/([a-z_]+)/);
     if (m) {
       const body = route.request().postDataJSON?.() ?? null; calls.push({ fn: m[1], body });
-      if (READS[m[1]]) return route.fulfill({ json: READS[m[1]](body) });
+      if (opts.fail?.(m[1], body)) return route.fulfill({ status: 500, json: TIMEOUT_ERR });
+      if (READS[m[1]]) {
+        // A small server delay so reads overlap the way they do live: measures how many HQ fires at once.
+        load.inflight += 1; load.max = Math.max(load.max, load.inflight);
+        await new Promise((r) => setTimeout(r, 40)); load.inflight -= 1;
+        return route.fulfill({ json: READS[m[1]](body) });
+      }
       if (WRITES[m[1]]) return route.fulfill({ json: WRITES[m[1]] });
       return route.fulfill({ status: 404, json: { message: 'not allowed in test' } });
     }
@@ -79,8 +95,8 @@ async function open(viewport) {
   await page.fill('input[name=email]', 'adam.elshazly1012@gmail.com');
   await page.fill('input[name=password]', 'test-password-not-real');
   await page.click('button[type=submit]');
-  await page.waitForSelector('.kpis');
-  return { browser, page, errors, calls };
+  await page.waitForSelector(opts.waitFor || '.kpis');
+  return { browser, page, errors, calls, load };
 }
 const last = (calls, fn) => [...calls].reverse().find((c) => c.fn === fn);
 const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -89,11 +105,19 @@ const D = F.desk; const C = D.counts; const DIR = F.directors;
 const cairoEnd = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })}T23:59:59+03:00`);
 
 // ================================================================ 1440 px
+const RAW = /canceling statement|statement timeout|SQLSTATE|PGRST|57014|syntax error|relation "/i;
 const CEO = F.ceo; const NET = F.network; const A = F.advisor;
 const tc = async (page, sel) => (await page.locator(sel).allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim());
 const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS', 'Weddings & Private Events', 'weddings'], ['MEDIA', 'Media & Culture', 'media'], ['SPORTS', 'NOYA Private', 'noya-private']];
 {
-  const { browser, page, errors, calls } = await open({ width: 1440, height: 900 });
+  const { browser, page, errors, calls, load } = await open({ width: 1440, height: 900 });
+  // PRODUCTION FIX (17 Oct): reads go out in waves from snapshots, never 14 heavy queries at once.
+  await page.waitForSelector('main .ocard'); await page.waitForTimeout(400);
+  check('Load: at most 6 HQ reads in flight at once (waves, not a 14-query burst)', load.max <= 6, `max ${load.max}`);
+  const heavy = ['hq_ceo_dashboard', 'hq_directors', 'hq_network', 'hq_advisor', 'hq_execution', 'hq_director'];
+  check('Load: the heavy CEO reads come from background snapshots (hq_cached), never computed live by the page', !calls.some((c) => heavy.includes(c.fn))
+    && ['ceo', 'network', 'directors', 'advisor', 'execution'].every((k) => calls.some((c) => c.fn === 'hq_cached' && c.body?.p_key === k)), [...new Set(calls.filter((c) => heavy.includes(c.fn)).map((c) => c.fn))].join(','));
+  check('Dashboard: shows how fresh the snapshot is', /updated \d\d:\d\d/.test(await page.locator('main .ov-head').innerText()));
   // NAVIGATION: Dashboard, Agents, Outreach, Relationships, Club, Operations, More / Admin.
   const primary = (await tc(page, '.side .nav-primary .nav-item')).map((t) => t.replace(/\s*\d+$/, ''));
   check('nav: Dashboard · Agents · Outreach · Relationships · Club · Operations, then More / Admin', primary.join('|') === 'Dashboard|Agents|Outreach|Relationships|Club|Operations'
@@ -191,7 +215,7 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
     await page.click('.side [data-tab=agents]'); await page.waitForSelector('.dcard');
     await page.locator(`.dcard[data-director=${key}]`).click();
     await page.waitForSelector('[data-dir-sec]');
-    check(`${label}: drill-down loads hq_director for that Director only`, calls.some((c) => c.fn === 'hq_director' && c.body?.p_key === key));
+    check(`${label}: drill-down reads that Director's snapshot only`, calls.some((c) => c.fn === 'hq_cached' && c.body?.p_key === `director:${key}`));
     const tabs = (await tc(page, 'main .tabs [data-dir-sec]')).map((t) => t.replace(/\s*\d+$/, ''));
     check(`${label}: tabs Overview · Opportunities · People · Emails · Outreach · Relationships · Projects`, tabs.join('|') === 'Overview|Opportunities|People|Emails|Outreach|Relationships|Projects', tabs.join(' | '));
     await shot(page, `director-${file}-1440`);
@@ -226,8 +250,11 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   const more = (await page.locator(`#desk-${em.ref} .more-menu .btn`).allTextContents()).map((t) => t.trim());
   check('Email review card: ••• opens Research more · Source · Reject', more.join('|') === 'Research more|Source|Reject', more.join(' | '));
   await shot(page, 'outreach-email-review-1440');
+  const beforeApprove = calls.length;
   await page.locator(`#desk-${em.ref} [data-desk-approve]`).click();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(600);
+  const after = [...new Set(calls.slice(beforeApprove).map((c) => c.fn))];
+  check('Approve: refreshes only what an approval changes (no 14-read reload, no snapshot rebuild)', after.every((f) => ['hq_approve_email', 'hq_dashboard', 'hq_outreach_desk', 'hq_overview', 'hq_directory', 'hq_relationships', 'hq_operations'].includes(f)), after.join(','));
   const ap = last(calls, 'hq_approve_email');
   check('Approve: creates an unsent Gmail draft through the approval RPC; nothing is ever sent', ap && ap.body.p_candidate === em.candidate_id && !calls.some((c) => /send/i.test(c.fn))
     && /unsent Gmail draft/.test(await page.locator('main .banner').first().innerText()), em.company);
@@ -298,7 +325,47 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await shot(page, 'operations-1440');
 
   check('desktop: only allow-listed reads and audited writes were called', calls.every((c) => READS[c.fn] || WRITES[c.fn]), [...new Set(calls.map((c) => c.fn))].filter((f) => !READS[f] && !WRITES[f]).join(','));
+  check('desktop: no raw database text on any CEO screen', !RAW.test(await page.locator('main').innerText()));
   check('desktop: no JavaScript errors', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
+
+// ================================================================ a slow database: sections degrade, never raw text
+{
+  const down = new Set(['directors', 'ceo']); let actionDown = true;
+  const { browser, page, errors, calls } = await open({ width: 1440, height: 900 }, {
+    fail: (fn, b) => (fn === 'hq_cached' && down.has(b?.p_key)) || (fn === 'hq_outreach_action' && actionDown) });
+  await page.waitForSelector('main .unavail');
+  const dash = await page.locator('main').innerText();
+  check('Slow database · Dashboard: the strip and "What needs you today" still work when the snapshots fail', (await page.locator('main .kpi').count()) === 7 && (await page.locator('main #needs .act').count()) > 0);
+  check('Slow database · Dashboard: failed sections say "Some data is temporarily unavailable." with a Retry', /Some data is temporarily unavailable\./.test(dash) && (await page.locator('main [data-retry]').count()) >= 2);
+  check('Slow database · Dashboard: no raw database text', !RAW.test(dash), (dash.match(RAW) || [])[0]);
+  await page.click('.side [data-tab=agents]');
+  await page.waitForSelector('main .unavail');
+  const ag = await page.locator('main').innerText();
+  check('Slow database · Agents: clean unavailable state with Retry, never "canceling statement due to statement timeout"', /Some data is temporarily unavailable\./.test(ag) && !RAW.test(ag) && (await page.locator('main [data-retry=directors]').count()) === 1);
+  const before = calls.filter((c) => c.fn === 'hq_cached' && c.body?.p_key === 'directors').length;
+  await page.waitForTimeout(500);
+  check('Slow database · Agents: a failed read is not re-requested on every redraw', calls.filter((c) => c.fn === 'hq_cached' && c.body?.p_key === 'directors').length === before);
+  down.delete('directors');
+  await page.click('main [data-retry=directors]');
+  await page.waitForSelector('.dcard');
+  check('Slow database · Agents: Retry loads the workforce once the database answers', (await page.locator('.dcard').count()) === DIR.members.length);
+  await page.click('.side [data-tab=desk]'); await page.waitForSelector('main [data-desk-ch=LINKEDIN]');
+  await page.click('main [data-desk-ch=LINKEDIN]');
+  const liRow = D.needs_review.find((x) => x.channel === 'LINKEDIN' && x.task_id);
+  await page.locator(`#desk-${liRow.ref} [data-desk-modal=hold]`).click();
+  await page.fill('#d-reason', 'After their launch'); await page.click('#dm-ok'); await page.waitForTimeout(400);
+  const notice = await page.locator('main .banner').first().innerText().catch(() => '');
+  check('Slow database · a failed action says so plainly (nothing sent or changed), no raw text', /Nothing was sent or changed/.test(notice) && !RAW.test(notice), notice.slice(0, 120));
+  actionDown = false;
+  await page.click('#nav-more'); await page.click('.side [data-tab=system]');
+  await page.waitForSelector('main >> text=hq-cache-core');
+  const sys = await page.locator('main').innerText();
+  check('Admin diagnostics (More / Admin → System): snapshot ages and the raw reason are visible to the admin', /HQ data health/i.test(sys) && /canceling statement due to statement timeout/.test(sys) && /hq-cache-core/.test(sys));
+  const jsErr = errors.filter((e) => !/Failed to load resource/.test(e)); // the simulated outage's 500s are network logs, not page errors
+  check('Slow database: no JavaScript errors', jsErr.length === 0, jsErr.join(' | '));
+  await shot(page, 'admin-diagnostics-1440', false);
   await browser.close();
 }
 

@@ -161,32 +161,45 @@ function prevRel(companyId, contactId) {
 const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 
 // ---------------------------------------------------------------- data
-async function load(silent = false) {
-  if (!silent) { state.loading = true; render(); }
-  const [dash, ov, dir, ins, rel, com, exe, er, desk, ops, ceo, net] = await Promise.all([sb.rpc('hq_dashboard'), sb.rpc('hq_overview'), sb.rpc('hq_directory'), sb.rpc('hq_insight'), sb.rpc('hq_relationships'), sb.rpc('hq_commercial'), sb.rpc('hq_execution'), sb.rpc('hq_email_review'), sb.rpc('hq_outreach_desk'), sb.rpc('hq_operations'), sb.rpc('hq_ceo_dashboard'), sb.rpc('hq_network')]);
-  state.loading = false;
-  state.errors = {};
-  if (dash.error) {
-    state.errors.main = /not authorised/i.test(dash.error.message) ? 'This account is not authorised for NOYA HQ.' : `Could not load live data: ${dash.error.message}`;
-  } else state.data = dash.data;
-  if (ov.error) state.errors.ov = ov.error.message; else state.ov = ov.data;
-  if (dir.error) state.errors.dir = dir.error.message; else state.dir = dir.data;
-  if (ins.error) state.errors.ins = ins.error.message; else state.ins = ins.data;
-  if (rel.error) state.errors.rel = rel.error.message; else state.rel = rel.data;
-  if (com.error) state.errors.com = com.error.message; else state.com = com.data;
-  if (exe.error) state.errors.exec = exe.error.message; else state.exec = exe.data;
-  if (er.error) state.errors.er = er.error.message; else state.er = er.data;
-  if (desk.error) state.errors.desk = desk.error.message; else state.desk = desk.data;
-  if (ops.error) state.errors.ops = ops.error.message; else state.ops = ops.data;
-  if (ceo.error) state.errors.ceo = ceo.error.message; else state.ceo = ceo.data;
-  if (net.error) state.errors.net = net.error.message; else state.net = net.data;
-  render();
-  // The agent floor is heavier: refreshed only while one of its views is open.
-  if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
-  if (state.directors && ['agents', 'director'].includes(state.tab)) { loadV3('directors', 'hq_directors', {}, true); if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true); }
-  if (state.club && state.tab === 'club') loadV3('club', 'hq_club', {}, true);
-  loadAdvisor();
+// ---------------------------------------------------------------- DATA LOADING (17 Oct production fix)
+// The heavy CEO reads (Dashboard model, network, Advisor, the workforce, execution) are served from background snapshots
+// (hq_cached, refreshed by pg_cron every 5 minutes); everything else is read live. Reads go out in small waves, never 14 at
+// once, and each section shows its own state, so one slow read never blanks a screen. Raw errors stay in state.errors for
+// More / Admin → System; CEO screens only ever say "Some data is temporarily unavailable" with a Retry.
+const READS = { data: 'hq_dashboard', ov: 'hq_overview', dir: 'hq_directory', ins: 'hq_insight', rel: 'hq_relationships', com: 'hq_commercial',
+  er: 'hq_email_review', desk: 'hq_outreach_desk', ops: 'hq_operations', club: 'hq_club' };
+const SNAPSHOTS = { ceo: 'ceo', net: 'network', advisor: 'advisor', directors: 'directors', exec: 'execution' };
+const COM_TABS = ['radar', 'library', 'actions', 'partners', 'events', 'projects', 'system'];
+const errKey = (k) => (k === 'data' ? 'main' : k);
+async function readKey(k) {
+  if (state.busy[k]) return false;
+  state.busy[k] = true;
+  const snap = SNAPSHOTS[k];
+  const { data, error } = snap ? await sb.rpc('hq_cached', { p_key: snap }) : await sb.rpc(READS[k]);
+  state.busy[k] = false;
+  const notReady = snap && data && data.ok === false && data.reason && Object.keys(data).length <= 2;
+  if (error || notReady) { state.errors[errKey(k)] = error ? error.message : `snapshot ${data.reason}`; return false; }
+  state[k] = data; delete state.errors[errKey(k)]; return true;
 }
+const WAVES = {
+  full: () => [['data', 'desk', 'ceo', 'net'], ['ov', 'dir', 'rel', 'ops', 'directors', 'exec'], ['ins', 'advisor', 'com', ...(state.tab === 'outreach' ? ['er'] : [])]],
+  light: () => [['desk', 'ceo', 'net', 'directors', 'advisor']],
+  write: () => [['data', 'desk'], ['ov', 'dir', 'rel', 'ops', ...(COM_TABS.includes(state.tab) ? ['com'] : []), ...(state.tab === 'outreach' ? ['er'] : [])]],
+  desk: () => [['desk']],
+};
+async function load(silent = false, scope = 'full') {
+  if (state.inflight) return;
+  state.inflight = true;
+  if (!silent) { state.loading = true; render(); }
+  if (scope === 'full' || scope === 'light') { if (!state.advisorSeen) { state.advisorSeen = true; sb.rpc('hq_advisor_seen'); } }
+  for (const wave of WAVES[scope]()) { await Promise.all(wave.map(readKey)); state.loading = false; render(); }
+  state.inflight = false;
+  if (state.tab === 'club' && state.club) readKey('club').then(render);
+  if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true);
+  if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
+}
+// Load one read on demand (a section that needs data no wave has fetched yet), then redraw.
+const ensure = (k) => { if (!state[k] && !state.busy[k] && !state.errors[errKey(k)]) readKey(k).then(render); };
 
 async function loadTimeline(kind, id) {
   const key = `${kind}:${id}`;
@@ -198,11 +211,11 @@ async function loadTimeline(kind, id) {
 async function call(fn, args, successText) {
   state.notice = null;
   const { data, error } = await sb.rpc(fn, args);
-  if (error) { state.notice = { err: true, text: error.message }; render(); return null; }
+  if (error) { state.notice = { err: true, text: friendly(error.message) }; state.errors.lastAction = `${fn}: ${error.message}`; render(); return null; }
   if (data && data.ok === false) state.notice = { err: true, text: explain(data) };
   else state.notice = { err: false, text: successText };
   state.timeline = {}; state.account = {};
-  await load(true);
+  await load(true, 'write');
   if (state.drawer) loadTimeline(state.drawer.kind, state.drawer.id);
   if (state.drawer?.kind === 'company') loadAccount(state.drawer.id);
   return data;
@@ -338,7 +351,8 @@ function render() {
   if (mustChangePassword()) return renderPasswordChange(true);
   if (state.modal === 'password') return renderPasswordChange(false);
   const d = state.data; const live = state.ov || d; const view = VIEWS[state.tab];
-  const errs = Object.entries(state.errors).filter(([k]) => k !== 'main').map(([k, v]) => `${k}: ${v}`);
+  // A failed refresh of data already on screen: say the figures may be out of date (sections without data show their own state).
+  const staleErr = Object.keys(state.errors).some((k) => k !== 'main' && k !== 'lastAction' && (k === 'data' ? state.data : state[k]) != null);
   $('#app').innerHTML = `
     <div class="shell">
       <div class="side-col"><aside class="side">
@@ -359,9 +373,9 @@ function render() {
         </div>
         <main>
           ${state.notice ? `<div class="banner ${state.notice.err ? 'err' : 'ok'}">${esc(state.notice.text)}</div>` : ''}
-          ${state.errors.main ? `<div class="banner err">${esc(state.errors.main)}</div>` : ''}
-          ${errs.length ? `<div class="banner err small">Some data could not load: ${esc(errs.join(' · '))}</div>` : ''}
-          ${d && view ? view(d) : `<p class="muted">${state.loading ? 'Loading live CRM…' : 'No data.'}</p>`}
+          ${state.errors.main && /not authorised/i.test(state.errors.main) ? '<div class="banner err">This account is not authorised for NOYA HQ.</div>' : ''}
+          ${staleErr && d ? `<div class="unavail top"><span>Some figures may be out of date: the last refresh did not complete.</span><button class="btn small" data-retry="all">Retry</button></div>` : ''}
+          ${d && view ? view(d) : state.loading || !state.errors.main ? '<p class="muted">Loading HQ…</p>' : /not authorised/i.test(state.errors.main) ? '' : unavailable('all')}
         </main>
       </div>
     </div>
@@ -457,7 +471,7 @@ function actionRow(a) {
 
 function viewOverview(d) {
   const ov = state.ov;
-  if (!ov) return `<div class="banner err">${esc(state.errors.ov || 'Today not loaded.')}</div>`;
+  if (!ov) return state.errors.ov ? unavailable('ov') : '<p class="muted">Loading…</p>';
   const P = (p) => ov.actions.filter((a) => a.prio === p);
   const p1 = P('P1'); const p2 = P('P2'); const p3 = P('P3');
   const p2shown = state.queueAll ? p2 : p2.slice(0, 8);
@@ -700,7 +714,8 @@ function emailReviewCard(x) {
   </article>`;
 }
 function emailReview(er) {
-  if (state.errors?.er) return `<div class="banner err">Email review could not load: ${esc(state.errors.er)}</div>`;
+  if (state.errors?.er) return unavailable('er');
+  if (!state.er) ensure('er');
   const row = (x, right) => `<div class="row"><div class="t">${esc(x.company)} · ${esc(x.person || x.to_email || '')}</div>
       <div class="meta">${esc(x.to_email || '')} · ${esc(x.subject || '')}</div><div class="btn-row mt6">${right}</div></div>`;
   const drafting = (er.drafting || []).map((x) => row(x, `${pill('Creating the Gmail draft…', 'info')}${x.outbound_id ? `<button class="btn small" data-act="redispatch" data-id="${esc(x.outbound_id)}">Retry draft creation</button>` : ''}`)).join('');
@@ -871,10 +886,29 @@ function viewReports(d) {
     <details><summary>Marketing performance</summary>${viewMarketing(d)}</details>`;
 }
 
+// Admin diagnostics: snapshot ages, build times, background jobs and the raw errors of this session. Admin only; never on CEO screens.
+async function loadDiag() {
+  if (state.busy.diag) return;
+  state.busy.diag = true;
+  const { data, error } = await sb.rpc('hq_cache_status');
+  state.busy.diag = false; state.diag = error ? { error: error.message } : data; render();
+}
+function diagPanel() {
+  const D = state.diag; if (!D) loadDiag();
+  const raw = Object.entries(state.errors);
+  const age = (sec) => (sec == null ? '—' : sec < 90 ? `${sec} s` : sec < 5400 ? `${Math.round(sec / 60)} min` : `${Math.round(sec / 3600)} h`);
+  return `<h3>HQ data health · diagnostics</h3>
+    <p class="small muted">Heavy CEO reads are served from background snapshots refreshed by the database every 5 minutes (Director pages: the three oldest each run). The Outreach desk is always live.</p>
+    ${!D ? '<p class="muted small">Loading…</p>' : D.error ? `<p class="small bad-text">${esc(D.error)}</p>` : `<div class="tbl-wrap"><table class="stack"><thead><tr><th>Snapshot</th><th>Age</th><th class="num">Build</th><th>Last error</th></tr></thead><tbody>
+      ${(D.items || []).map((x) => `<tr><td>${esc(x.key)}</td><td data-l="Age">${esc(age(x.age_s))}</td><td class="num" data-l="Build">${x.build_ms != null ? `${(x.build_ms / 1000).toFixed(1)} s` : '—'}</td><td data-l="Error" class="small">${x.last_error ? `${esc(x.last_error)} <span class="faint">(${esc(fmtDate(x.last_error_at))})</span>` : '<span class="faint">—</span>'}</td></tr>`).join('')}</tbody></table></div>
+      <p class="small">${(D.jobs || []).map((j) => `${esc(j.job)} · ${esc(j.schedule)} · ${j.active ? 'active' : 'paused'} · last ${esc(j.last_status || '—')} ${j.last_run ? esc(fmtDate(j.last_run)) : ''}`).join('<br>')}</p>`}
+    <p class="small"><b>This session:</b> ${raw.length ? raw.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>') : 'no errors.'} <button class="linkish" data-diag-refresh>Refresh diagnostics</button></p>`;
+}
 function viewSystem(d) {
   const ov = state.ov; const h = d.health; const alerts = healthAlerts(d);
   return `
     <h2>System health</h2>
+    ${diagPanel()}
     ${alerts.length ? `<div class="banner err">${alerts.map(esc).join('<br>')}</div>` : '<div class="banner ok">No production failures.</div>'}
     <h3>Workflow signals</h3>
     <div class="list">${(ov?.system.signals || []).map((x) => `<div class="row"><div class="t"><span class="dot ${x.ok ? '' : 'bad'}"></span>${esc(x.name)} ${x.ok ? pill('OK', 'ok') : pill('Check', 'bad')}</div><div class="meta">Last ${esc(x.last ? fmtDate(x.last) : 'never')} · rule: ${esc(x.rule)}${x.detail ? ` · ${esc(x.detail)}` : ''}</div></div>`).join('')}
@@ -1437,7 +1471,7 @@ const kv = (k, v) => `<div class="kv"><div class="k">${k}</div><div class="v">${
 function timelineBlock(kind, id) {
   const t = state.timeline[`${kind}:${id}`];
   if (!t) return '<p class="muted small">Loading history…</p>';
-  if (t.error) return `<p class="bad-text small">History unavailable: ${esc(t.error)}</p>`;
+  if (t.error) return '<p class="muted small">History is temporarily unavailable.</p>';
   const ev = t.events || [];
   return ev.length ? `<div class="timeline">${ev.slice(0, 60).map((e) => `<div class="tl"><div class="tl-when">${esc(fmtDate(e.at))}</div><div><span class="pill ${e.direction === 'INBOUND' ? 'info' : ''}">${esc(e.channel)}${e.direction === 'INBOUND' ? ' · in' : e.direction === 'OUTBOUND' ? ' · out' : ''}</span> ${esc(e.title)}${e.ref ? ` · ${gmailLink(e.ref)}` : ''}${e.detail ? `<div class="small muted">${esc(String(e.detail).slice(0, 400))}</div>` : ''}</div></div>`).join('')}</div>`
     : '<p class="muted small">No history yet.</p>';
@@ -1802,7 +1836,7 @@ function viewProjects() {
 function accountBlock(id) {
   const a = state.account[id];
   if (!a) return '<p class="muted small">Loading account intelligence…</p>';
-  if (a.error) return `<p class="bad-text small">Account intelligence unavailable: ${esc(a.error)}</p>`;
+  if (a.error) return '<p class="muted small">Account intelligence is temporarily unavailable.</p>';
   const s = a.strength || {};
   return `<h3>Account intelligence</h3>
     <div class="grid2 small">${kv('Relationship strength', `${pill(s.label || 'NONE', s.label === 'STRONG' ? 'ok' : s.label === 'WARM' ? 'info' : '')} ${esc(s.score ?? 0)}/100 <span class="faint">(behaviour only)</span>`)}
@@ -1843,7 +1877,7 @@ function scorecardLine() {
 }
 // Daily operating target (Adam, 3 Oct): 15 quality actions/day, 3 days (45) ready. Shortfalls are shown, never padded.
 function execPanel() {
-  const q = state.exec?.queue; if (!q) return state.errors.exec ? `<div class="banner err">Queue health not loaded: ${esc(state.errors.exec)}</div>` : '';
+  const q = state.exec?.queue; if (!q) return state.errors.exec ? unavailable('exec') : '';
   const go = { email: 'outreach', linkedin: 'linkedin', follow_up: 'tasks', warm: 'relationships' };
   const acq = q.acquisition || {};
   return `<section class="panel mt8 queue-health"><header><h3>Email ready · queue health</h3><span class="small faint">${esc(q.ready)} verified email${q.ready === 1 ? '' : 's'} to approve or send (cap ${esc(q.target)}) · ${esc(acq.email_ready ?? '—')} email-ready prospects in reserve</span></header><div class="body">
@@ -2396,7 +2430,7 @@ function bind() {
     const k = b.dataset.relStatus; const g = (state.rel?.groups || []).find((x) => x.key === b.dataset.id); if (!g) return;
     document.querySelectorAll(`[data-rel-status][data-id="${CSS.escape(g.key)}"]`).forEach((el) => { el.disabled = true; });
     const { data, error } = await sb.rpc('hq_relationship_status', { p_key: g.key, p_status: k });
-    if (error || data?.ok === false) { state.notice = { err: true, text: error ? error.message : explain(data) }; render(); return; }
+    if (error || data?.ok === false) { state.notice = { err: true, text: error ? friendly(error.message) : explain(data) }; if (error) state.errors.lastAction = error.message; render(); return; }
     g.review = { ...(g.review || {}), status: k, status_at: new Date().toISOString() };
     g.dismissed = k === 'NOT_RELEVANT' ? 'DISMISSED' : null;
     state.notice = { err: false, text: `${g.name}: ${REL_STATUS[k][0]}. ${REL_STATUS[k][2]}` };
@@ -2426,7 +2460,7 @@ function bind() {
   $('#queue-p3')?.addEventListener('click', () => { state.queueP3 = !state.queueP3; render(); });
   $('#q')?.addEventListener('input', (e) => { state.q = e.target.value; state.focusSearch = true; render(); });
   $('#q')?.addEventListener('keydown', (e) => { if (e.key === 'Escape') { state.q = ''; render(); } });
-  $('#refresh')?.addEventListener('click', () => load());
+  $('#refresh')?.addEventListener('click', () => { Object.keys(state.errors).forEach((k) => { if (k !== 'lastAction') delete state.errors[k]; }); load(false, 'full'); });
   $('#quick')?.addEventListener('click', () => { state.modal = { kind: 'quick' }; render(); });
   $('#menu')?.addEventListener('click', () => { state.modal = { kind: 'account' }; render(); });
   $('#acct-pw')?.addEventListener('click', () => { state.modal = 'password'; render(); });
@@ -2449,7 +2483,7 @@ function bind() {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > 20 * 1024 * 1024) { state.notice = { err: true, text: 'File is larger than 20 MB — choose Connections.csv only.' }; render(); return; }
     const res = parseConnections(await file.text());
-    if (res.error) { state.notice = { err: true, text: res.error }; render(); return; }
+    if (res.error) { state.notice = { err: true, text: friendly(res.error) }; render(); return; }
     state.modal = { kind: 'import', rows: res.rows, skipped: res.skipped, dups: res.dups }; render();
   });
 }
@@ -2495,7 +2529,7 @@ async function loadAgent(key, force = false) {
   render();
 }
 function needAgents() {
-  if (!state.agents) { loadAgents(); return `<p class="muted">${state.errors.agents ? `<span class="bad-text">Agents not loaded: ${esc(state.errors.agents)}</span>` : 'Loading the agent floor…'}</p>`; }
+  if (!state.agents) { if (!state.errors.agents) loadAgents(); return state.errors.agents ? unavailable('agents') : '<p class="muted">Loading the agent floor…</p>'; }
   return '';
 }
 function agentsTabs(active) {
@@ -2613,7 +2647,7 @@ function viewAgent() {
   return `${agentsTabs('agentfloor')}<button class="btn small ghost" data-tab="agentfloor">← All agents</button>
     <div class="agent-detail mt8">${agentCard(a)}</div>
     <p class="small faint">${esc(a.scope)}</p>
-    ${!d ? '<p class="muted">Loading this agent\'s work…</p>' : d.error ? `<div class="banner err">${esc(d.error)}</div>` : `
+    ${!d ? '<p class="muted">Loading this agent\'s work…</p>' : d.error ? unavailable(`agent:${state.agentKey}`) : `
     <div class="chips">${secs.map((x) => `<button class="chip ${s && x.key === s.key ? 'on' : ''}" data-agent-sec="${x.key}">${esc(x.title)} · ${count(x)}</button>`).join('')}</div>
     ${s ? `<section class="panel mt8"><header><h3>${esc(s.title)}</h3></header><div class="body">${sectionBody(s)}</div></section>` : '<p class="muted">Nothing recorded for this agent yet.</p>'}`}`;
 }
@@ -2726,7 +2760,9 @@ function bindAgents(on) {
 const moreOpen = () => state.more || MORE_KEYS.includes(state.tab);
 const plural = (n, one, many) => `${n} ${Number(n) === 1 ? one : many}`;
 async function loadV3(key, fn, args = {}, force = false) {
-  if (state.busy[key] || (state[key] && !force)) return;
+  // A read that failed waits for Retry or the next refresh: never re-requested on every redraw.
+  if (state.busy[key] || (!force && (state[key] || state.errors[errKey(key)]))) return;
+  if (SNAPSHOTS[key] || READS[key] === fn) { await readKey(key); render(); return; }
   state.busy[key] = true;
   const { data, error } = await sb.rpc(fn, args);
   state.busy[key] = false;
@@ -2734,12 +2770,29 @@ async function loadV3(key, fn, args = {}, force = false) {
   render();
 }
 async function loadDirector(key, force = false) {
-  if (!force && state.dirDetail[key]) return;
-  const { data, error } = await sb.rpc('hq_director', { p_key: key });
-  state.dirDetail[key] = error ? { error: error.message } : data;
+  if (!force && (state.dirDetail[key] || state.errors[`director:${key}`])) return;
+  if (state.busy[`dir:${key}`]) return;
+  state.busy[`dir:${key}`] = true;
+  const { data, error } = await sb.rpc('hq_cached', { p_key: `director:${key}` });
+  state.busy[`dir:${key}`] = false;
+  const bad = error || (data && data.ok === false && data.reason && Object.keys(data).length <= 2);
+  if (bad) { state.errors[`director:${key}`] = error ? error.message : `snapshot ${data.reason}`; if (!state.dirDetail[key] || state.dirDetail[key].error) state.dirDetail[key] = { error: true }; }
+  else { state.dirDetail[key] = data; delete state.errors[`director:${key}`]; }
   render();
 }
-const waitFor = (key, what) => `<p class="muted">${state.errors[key] ? `<span class="bad-text">${esc(what)} could not load: ${esc(state.errors[key])}</span>` : `Loading ${esc(what)}…`}</p>`;
+// One clean state for missing data on every CEO screen; the raw reason is kept for More / Admin → System.
+// "Updated 21:05": the age of a background snapshot, shown quietly next to the screen title.
+const asOf = (o) => (o?._cache?.built_at ? `updated ${new Date(o._cache.built_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' })}` : '');
+const unavailable = (key) => `<div class="unavail"><span>Some data is temporarily unavailable.</span><button class="btn small" data-retry="${esc(key)}">Retry</button></div>`;
+const waitFor = (key, what) => (state.errors[errKey(key)] ? unavailable(key) : `<p class="muted">Loading ${esc(what)}…</p>`);
+// Technical failures never reach a CEO screen as raw text: timeouts, SQL and network errors become a plain sentence.
+function friendly(msg) {
+  const m = String(msg || '');
+  if (/not authorised/i.test(m)) return 'This account is not authorised for NOYA HQ.';
+  if (/timeout|canceling statement|Failed to fetch|NetworkError|Load failed|ECONN|50[234]/i.test(m)) return 'That took too long to complete. Nothing was sent or changed. Please retry.';
+  if (/PGRST|SQLSTATE|syntax|relation "|function |column |permission denied|JWT|violates|duplicate key|null value|operator does not exist|42\d{3}|23\d{3}|22\d{3}/i.test(m)) return 'That action could not complete. Nothing was sent. Please retry; the detail is under More / Admin → System.';
+  return m;
+}
 const head = (title, sub) => `<div class="ov-head"><h1>${esc(title)}</h1>${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
 const memberName = (k) => (state.directors?.members || []).find((x) => x.key === k)?.name || ({ ENRICHMENT: 'Contact & Email Intelligence', DRAFTING: 'Outreach Writer' }[k]) || k || '—';
 const CH_LABEL = { EMAIL: 'Email', LINKEDIN: 'LinkedIn', INSTAGRAM: 'Instagram', WHATSAPP: 'WhatsApp', INSTAGRAM_DM: 'Instagram' };
@@ -2751,9 +2804,8 @@ const estatePill = (s) => { const [l, c] = ESTATE[s] || [s || 'No email', '']; r
 // hq_advisor(): the brief, 3-5 observations (situation -> meaning -> action), what changed since the last visit, where NOYA is
 // winning and wasting time. hq_advisor_seen() marks the visit first, so "since" is the previous visit. All from NOYA data.
 async function loadAdvisor() {
-  if (state.busy.advisor) return;
   if (!state.advisorSeen) { state.advisorSeen = true; await sb.rpc('hq_advisor_seen'); }
-  loadV3('advisor', 'hq_advisor', {}, true);
+  await readKey('advisor'); render();
 }
 function advisorToday() {
   const A = state.advisor;
@@ -2950,7 +3002,7 @@ function dashActions(d) {
 // HQ ADVISOR: 3-5 observations, each situation -> meaning -> recommended action. A Chief of Staff, not an analytics bot.
 function dashAdvisor() {
   const A = state.advisor;
-  if (!A) return state.errors.advisor ? '' : '<section class="dsec advisor"><p class="muted small">HQ Advisor is reading the Directors…</p></section>';
+  if (!A) return state.errors.advisor ? `<section class="dsec"><header><h2>HQ Advisor</h2></header>${unavailable('advisor')}</section>` : '<section class="dsec advisor"><p class="muted small">HQ Advisor is reading the Directors…</p></section>';
   const obs = (A.observations || []).slice(0, 5).map((o) => `<li class="adv-obs ${o.kind === 'BOTTLENECK' ? 'bottleneck' : o.kind === 'ATTENTION' ? 'attention' : ''}">
       ${o.title ? `<div class="adv-k">${esc(o.title)}</div>` : ''}
       <div class="adv-s"><span class="adv-l">Situation</span>${esc(o.situation)}</div><div class="adv-m"><span class="adv-l">Meaning</span>${esc(o.meaning)}</div>
@@ -3056,7 +3108,7 @@ function dashWeekly() {
 
 function viewDashboard(d) {
   const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
-  return `${head(state.advisor?.greeting || 'Dashboard', esc(day))}
+  return `${head(state.advisor?.greeting || 'Dashboard', esc([day, asOf(state.ceo)].filter(Boolean).join(' · ')))}
     ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashOpportunities()}${dashFunnel()}${dashPulse()}${dashWeekly()}`;
 }
 
@@ -3081,6 +3133,14 @@ function emailLine(c) {
     <span class="ef-a">·</span>${st(c.needs_verification, 'waiting verification')}<span class="ef-a">·</span>${st(c.email_ready, 'email ready', c.email_ready ? 'ok' : '')}<span class="ef-a">·</span>${st(c.linkedin_fallback, 'LinkedIn fallback', 'muted')}</div>
     ${c.bottleneck ? `<div class="small warn-text">${c.bottleneck === 'VERIFICATION' ? 'Bottleneck: verification' : 'Bottleneck: finding the right person'}</div>` : ''}</div>`;
 }
+// Does this Director need Adam? Emails to approve first; LinkedIn fallbacks are counted separately, never as progress.
+function deskNeedsLine(key) {
+  const D = state.desk; if (!D) return '';
+  const nr = (D.needs_review || []).filter((x) => x.director === key);
+  const em = nr.filter((x) => x.channel === 'EMAIL').length; const other = nr.length - em; const qa = qaHeld().filter((x) => x.director === key).length;
+  const parts = [em && plural(em, 'email to approve', 'emails to approve'), qa && plural(qa, 'email draft to edit', 'email drafts to edit'), other && `${plural(other, 'LinkedIn / Instagram fallback', 'LinkedIn / Instagram fallbacks')} to send by hand`].filter(Boolean);
+  return `<div class="dc-need ${em || qa ? 'on' : ''}"><span class="dc-sub">Needs you</span>${parts.length ? esc(parts.join(' · ')) : '<span class="faint">Nothing waiting for you</span>'}</div>`;
+}
 function directorCard(m) {
   const [sl, sc] = DSTATUS[m.status] || [m.status, ''];
   const support = m.role === 'SUPPORT' || m.key === 'GROWTH';
@@ -3097,6 +3157,7 @@ function directorCard(m) {
     <div class="dc-now"><span class="dc-sub">Working on</span>${esc(plainText(m.working_on || m.next_focus || m.mission || '—'))}</div>
     <div class="dc-last"><span class="dc-sub">Last completed</span>${m.last_action ? `${esc(m.last_action.text)} · ${esc(rel(m.last_action.at))}`
       : m.last_run ? `<span class="faint">Ran ${esc(rel(m.last_run))}: no new output</span>` : '<span class="faint">No recorded run yet</span>'}</div>
+    ${m.role === 'DIRECTOR' && m.key !== 'GROWTH' ? deskNeedsLine(m.key) : ''}
     <div class="dc-sub mt6">Today</div><div class="dc-cells">${today}</div>
     ${week ? `<div class="dc-sub">Last 7 days</div><div class="dc-cells">${week}</div>` : ''}
     ${support ? '' : emailLine(m.channel)}
@@ -3114,7 +3175,7 @@ function viewAgentsV3() {
   if (!D) { loadV3('directors', 'hq_directors'); return head('Agents') + waitFor('directors', 'the workforce'); }
   const by = (r) => D.members.filter((m) => m.role === r);
   const a = state.exec?.queue?.acquisition; const feed = (D.feed || []).filter((x) => !state.feedDir || x.agent === state.feedDir);
-  return `${head('Agents', 'The people running each department of NOYA')}
+  return `${head('Agents', esc(['The people running each department of NOYA', asOf(D)].filter(Boolean).join(' · ')))}
     ${a ? `<p class="lead-line">Email ready <b>${n0(a.email_ready)}</b> <span class="faint">(target ${esc((a.reserve?.target || [100, 150]).join('–'))})</span> · waiting for verification <b>${n0(a.pipeline?.needs_verification)}</b> · LinkedIn fallback ${n0(a.linkedin_fallback)}</p>` : ''}
     <h3 class="grp">Directors</h3><div class="dgrid">${by('DIRECTOR').map(directorCard).join('')}</div>
     <h3 class="grp">Strategic partnerships</h3><div class="dgrid">${by('MANAGER').map(directorCard).join('')}</div>
@@ -3192,7 +3253,7 @@ function viewDirector() {
     ${m.scope ? `<div class="kv mt8"><div class="k">Scope</div><div class="v small">${esc(m.scope)}</div></div>` : ''}
     <div class="kv mt8"><div class="k">Last run · next run</div><div class="v small">${esc(rel(m.last_run))} · ${esc(m.next_run ? fmtDate(m.next_run) : 'runs with the Directors')}</div></div></div></div>`;
   if (!det) return `${top}<p class="muted">Loading ${esc(m.name)}…</p>`;
-  if (det.error) return `${top}<div class="banner err">${esc(det.error)}</div>`;
+  if (det.error) return `${top}${unavailable(`director:${m.key}`)}`;
   if (det.growth) return top + growthBody(det.growth);
   const S = Object.fromEntries((det.sections || []).map((s) => [s.key, s]));
   const feed = (D.feed || []).filter((x) => x.agent === m.key);
@@ -3279,8 +3340,10 @@ function deskButtons(x, readOnly) {
     if (x.approve_via === 'EMAIL_CANDIDATE' || x.approve_via === 'OPPORTUNITY_DRAFT') b.push(`<button class="btn small primary" data-desk-approve="${ref}" title="Re-checks the address, then creates an unsent Gmail draft. Never sends.">Approve</button>`);
     else if (x.approve_via === 'MANUAL_SEND') {
       const url = x.channel === 'LINKEDIN' ? x.route?.linkedin : null;
-      if (x.draft) b.push(`<button class="btn small primary" data-copy="${esc(x.draft)}">Copy message</button>`);
-      if (url) b.push(`<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn</a>`);
+      // One step for a LinkedIn fallback: copy the message and open the profile; Adam sends it himself.
+      if (x.draft && url) b.push(`<a class="btn small primary" href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-copy="${esc(x.draft)}" title="Copies the message, then opens the profile">Copy & open LinkedIn</a>`);
+      else if (x.draft) b.push(`<button class="btn small primary" data-copy="${esc(x.draft)}">Copy message</button>`);
+      else if (url) b.push(`<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn</a>`);
       if (x.task_id) b.push(`<button class="btn small" data-modal="task-done" data-id="${x.task_id}" data-title="${esc(`Sent to ${x.person || x.company || ''} on ${CH_LABEL[x.channel] || x.channel}`)}" title="You sent it yourself: logs the send and books follow-up 1 for 4 days later.">Mark sent</button>`);
     }
   }
@@ -3487,7 +3550,18 @@ function viewOps() {
     <p class="src mt8">Revenue records: ${esc(O.revenue.records)} · pending payments: ${esc(O.revenue.pending)}. <button class="linkish" data-tab="finance">Finance</button> · <button class="linkish" data-tab="projects">Projects (classic)</button></p>`;
 }
 
+// Retry one section (or everything) after a temporary failure.
+async function retry(k) {
+  if (k === 'all') { Object.keys(state.errors).forEach((x) => { if (x !== 'lastAction') delete state.errors[x]; }); return load(false, 'full'); }
+  if (k.startsWith('director:')) { const key = k.slice(9); delete state.errors[k]; delete state.dirDetail[key]; render(); return loadDirector(key, true); }
+  if (k.startsWith('agent:')) { const key = k.slice(6); delete state.agentDetail[key]; render(); return loadAgent(key, true); }
+  if (k === 'agents') { delete state.errors.agents; render(); return loadAgents(true); }
+  if (k === 'weekly') { delete state.errors.weekly; render(); return loadV3('weekly', 'hq_weekly_review', {}, true); }
+  delete state.errors[errKey(k)]; render(); await readKey(k); render();
+}
 function bindV3(on) {
+  on('[data-retry]', 'click', (b, e) => { e.stopPropagation(); retry(b.dataset.retry); });
+  on('[data-diag-refresh]', 'click', () => { state.diag = null; loadDiag(); });
   $('#nav-more')?.addEventListener('click', () => { state.more = !moreOpen(); if (!state.more && MORE_KEYS.includes(state.tab)) state.more = true; render(); });
   on('[data-director]', 'click', (b) => { state.dirKey = b.dataset.director; state.tab = 'director'; render(); loadDirector(b.dataset.director); window.scrollTo(0, 0); });
   on('[data-dir-sec]', 'click', (b) => { state.dirSec[state.dirKey] = b.dataset.dirSec; render(); });
@@ -3528,11 +3602,13 @@ const VIEWS = { dashboard: viewDashboard, today: viewDashboard, agents: viewAgen
 
 // Refresh: every 60s normally, every 5s for two minutes after an approval. Paused while typing,
 // or while a modal / record / menu is open.
+// Light refresh every 2 minutes (the desk and the background snapshots, which are cheap), a full refresh every 10 minutes,
+// and after an approval only the desk every 15 s for two minutes, to show the Gmail draft arriving. Paused in a hidden tab.
 setInterval(() => {
-  if (!state.session || state.modal || state.drawer || state.menu || state.q || mustChangePassword()) return;
-  const fast = Date.now() < state.pollUntil;
+  if (!state.session || state.modal || state.drawer || state.menu || state.q || mustChangePassword() || document.hidden) return;
   const tick = Math.floor(Date.now() / 5000);
-  if (fast || tick % 12 === 0) load(true);
+  if (Date.now() < state.pollUntil) { if (tick % 3 === 0) load(true, 'desk'); return; }
+  if (tick % 120 === 0) load(true, 'full'); else if (tick % 24 === 0) load(true, 'light');
 }, 5000);
 
 initAuth();

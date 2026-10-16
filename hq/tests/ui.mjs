@@ -131,7 +131,9 @@ const V3FX = { desk: fx('desk'), ops: fx('operations'), directors: fx('directors
   HOSPITALITY: fx('director_hospitality'), PARTNERSHIPS: fx('director_partnerships'), GROWTH: fx('director_growth'), EMAIL: fx('director_email') };
 const V3 = { hq_outreach_desk: () => V3FX.desk, hq_operations: () => V3FX.ops, hq_directors: () => V3FX.directors, hq_club: () => V3FX.club,
   hq_director: (b) => V3FX[b?.p_key] || { key: b?.p_key, sections: [] }, hq_growth: () => V3FX.GROWTH?.growth,
-  hq_advisor: () => fx('advisor'), hq_weekly_review: () => fx('weekly'), hq_ceo_dashboard: () => fx('ceo'), hq_network: () => fx('network') };
+  hq_advisor: () => fx('advisor'), hq_weekly_review: () => fx('weekly'), hq_ceo_dashboard: () => fx('ceo'), hq_network: () => fx('network'),
+  hq_cached: (b) => { const k = b?.p_key || ''; return { ceo: fx('ceo'), network: fx('network'), advisor: fx('advisor'), directors: V3FX.directors, execution: fx('execution') }[k] || (k.startsWith('director:') ? V3FX[k.slice(9)] || { key: k.slice(9), sections: [] } : { ok: false, reason: 'UNKNOWN_KEY' }); },
+  hq_cache_status: () => ({ items: [], jobs: [] }) };
 const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_log_touch', 'hq_record_meeting', 'hq_change_channel', 'hq_connection_update',
   'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_company_update', 'hq_history_action', 'hq_add_contact', 'hq_relationship_status', 'hq_service_update',
   'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial', 'hq_partner_upsert',
@@ -175,7 +177,7 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_insight') return route.fulfill({ json: insight });
       if (m[1] === 'hq_relationships') return route.fulfill({ json: relationships });
       if (m[1] === 'hq_commercial') return route.fulfill({ json: commercial });
-      if (m[1] === 'hq_execution') return route.fulfill({ json: execution });
+      if (m[1] === 'hq_execution' || (m[1] === 'hq_cached' && body?.p_key === 'execution')) return route.fulfill({ json: execution });
       if (m[1] === 'hq_agents') return route.fulfill({ json: agentsFx });
       if (m[1] === 'hq_email_review') return route.fulfill({ json: erTest || { counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] } });
       if (m[1] === 'hq_approve_email') return route.fulfill({ json: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-000000000002' } });
