@@ -1,0 +1,328 @@
+{
+  "slug": "ykone-egypt-project",
+  "type": "project",
+  "stage": "project",
+  "vertical": "brand",
+  "master_label": "Brand · Campaign · Production",
+  "company": "YKONE Middle East",
+  "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
+  "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
+  "date": "17 October 2026",
+  "prepared_for": "Adam Elshazly and the NOYA team",
+  "cover": {
+    "style": "paper",
+    "position": "high",
+    "quiet": true
+  },
+  "running": "Project book",
+  "audience": "internal",
+  "eyebrow": "Brand · Campaign · Production · Project book",
+  "title": "YKONE brand dinner — *readiness book.*",
+  "subtitle": "What NOYA would run if YKONE approves. Internal; not a commitment.",
+  "for_label": "For",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Project",
+          "title": "Where the project stands."
+        },
+        {
+          "t": "kv",
+          "cols": 3,
+          "items": [
+            [
+              "Client",
+              "YKONE Middle East"
+            ],
+            [
+              "Status",
+              "Not won · readiness only"
+            ],
+            [
+              "NOYA lead",
+              "Adam Elshazly"
+            ],
+            [
+              "Client lead",
+              null
+            ],
+            [
+              "Dates",
+              null
+            ],
+            [
+              "Value",
+              null
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "Workstreams",
+          "title": "Who owns what."
+        },
+        {
+          "t": "table",
+          "cols": [
+            "Workstream",
+            "Scope",
+            "NOYA owner",
+            "Status"
+          ],
+          "widths": [
+            "22%",
+            "42%",
+            "18%",
+            "18%"
+          ],
+          "rows": [
+            [
+              "Venues and permits",
+              "Venue holds, permissions with local partners",
+              null,
+              "Not started"
+            ],
+            [
+              "Hospitality",
+              "Hotels and rooms for talent, guests and crew",
+              null,
+              "Not started"
+            ],
+            [
+              "Guest movement",
+              "Arrivals, chauffeurs, security",
+              null,
+              "Not started"
+            ],
+            [
+              "Dining and suppliers",
+              "Catering, staging and production partners",
+              null,
+              "Not started"
+            ],
+            [
+              "Content support",
+              "Location access and timings for the shoot",
+              null,
+              "Not started"
+            ],
+            [
+              "On-site management",
+              "Run of show, one NOYA lead on the ground",
+              null,
+              "Not started"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "Milestones",
+          "title": "From approval to the day."
+        },
+        {
+          "t": "table",
+          "cols": [
+            "When",
+            "Milestone",
+            "Owner",
+            "Status"
+          ],
+          "widths": [
+            "18%",
+            "48%",
+            "16%",
+            "18%"
+          ],
+          "rows": [
+            [
+              "On brief",
+              "Venue options and permit route identified",
+              "Adam",
+              "Not started"
+            ],
+            [
+              "On approval",
+              "Venue hold; permit applications through local partners",
+              "Adam",
+              "Not started"
+            ],
+            [
+              "Two weeks before",
+              "Rooming list, transport plan and run of show signed off by YKONE",
+              "Adam",
+              "Not started"
+            ],
+            [
+              "Day before",
+              "Walk-through with venue and suppliers",
+              "NOYA lead",
+              "Not started"
+            ],
+            [
+              "On the day",
+              "Run of show",
+              "NOYA lead",
+              "Not started"
+            ],
+            [
+              "After",
+              "Reconciliation and debrief with YKONE",
+              "Adam",
+              "Not started"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "Suppliers",
+          "title": "Named only once confirmed."
+        },
+        {
+          "t": "table",
+          "cols": [
+            "Category",
+            "Supplier",
+            "Status"
+          ],
+          "widths": [
+            "34%",
+            "40%",
+            "26%"
+          ],
+          "rows": [
+            [
+              "Venue",
+              null,
+              "To confirm"
+            ],
+            [
+              "Hotel",
+              null,
+              "To confirm"
+            ],
+            [
+              "Transport and chauffeurs",
+              null,
+              "To confirm"
+            ],
+            [
+              "Security",
+              null,
+              "To confirm"
+            ],
+            [
+              "Catering and staging",
+              null,
+              "To confirm"
+            ],
+            [
+              "Permits (local partner)",
+              null,
+              "To confirm"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Approvals",
+          "title": "Signed off before booking."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Scope and fees approved by YKONE",
+              "status": "Pending"
+            },
+            {
+              "text": "Guest list and rooming from YKONE",
+              "status": "Pending"
+            },
+            {
+              "text": "Venue and permit confirmations",
+              "status": "Pending"
+            },
+            {
+              "text": "Run of show signed off by YKONE",
+              "status": "Pending"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Risks and contingencies",
+          "title": "Known before the day."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Permit timing",
+              "Apply on approval; hold a second venue option."
+            ],
+            [
+              "Evening weather",
+              "A covered alternative held at the venue."
+            ],
+            [
+              "Late guest changes",
+              "Rooming flexibility agreed with the hotel."
+            ],
+            [
+              "Arrival delays",
+              "Flexible transfer windows; host on standby."
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "fact": "YKONE is looking at the Egypt market and asked for a call.",
+      "source": "Gmail: Magali Rady to noya@, 29 Sep 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Call held with Jad Chbeir (Commercial Director) and Amal on 8 Oct; NOYA Overview and Egypt Partner Guide sent the same day.",
+      "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026; CRM opportunity ea415161",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "\"YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.\"",
+      "source": "Adam's own email, 8 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Idea already offered in Adam's follow-up draft: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent hosting by NOYA.",
+      "source": "Gmail draft (unsent), recorded in the CRM 15 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "YKONE is part of ONE Group, formed in January 2026 with Mirror Mirror (creative production) and others; the group has since taken a stake in BYSELECT, a UAE experiential agency.",
+      "source": "Net Influencer and Entrepreneur coverage of ONE Group, 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct.",
+      "source": "CRM Gmail history, checked 15 Oct 2026",
+      "class": "VERIFIED"
+    }
+  ]
+}

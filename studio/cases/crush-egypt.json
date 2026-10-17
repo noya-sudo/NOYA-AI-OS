@@ -1,0 +1,90 @@
+{
+  "slug": "crush-egypt",
+  "vertical": "brand",
+  "company": "CRUSH Agency",
+  "company_id": "2e46b475-7f3b-4461-815f-6b97475df90e",
+  "opportunity_id": "1b438103-acb2-40ef-b5b3-661e4feb6fd2",
+  "party": "CRUSH",
+  "prepared_for": "Sophie Christophe · CRUSH Agency",
+  "date": "17 October 2026",
+  "status": { "stage": "CALL_REQUIRED", "last_contact": "8 Oct 2026 · NOYA wrote", "next_action": "Send the nudge in Gmail drafts (Mon 19 / Tue 20 Oct) with the concept attached", "value": null },
+  "people": [{ "name": "Sophie Christophe", "role": "Founder", "route": "verified email", "class": "VERIFIED" }],
+  "timeline": [
+    { "date": "4 Oct", "who": "NOYA", "text": "First email to Sophie Christophe: Egypt production support for CRUSH." },
+    { "date": "5 Oct", "who": "CRUSH", "text": "Sophie replied: would love to connect next week; asked for a portfolio of NOYA's productions." },
+    { "date": "8 Oct", "who": "NOYA", "text": "Adam replied with the Brands & Production brochure and offered Tuesday or Wednesday." },
+    { "date": "17 Oct", "who": "NOYA", "text": "Concept prepared; nudge in Gmail drafts (unsent)." }
+  ],
+  "facts": [
+    { "id": "reply", "text": "Sophie replied on 5 Oct: would love to connect, and asked for a portfolio of NOYA's productions.", "source": "CRM Gmail history, thread 'NOYA x CRUSH Agency — Egypt production support'", "class": "VERIFIED" },
+    { "id": "brochure", "text": "Adam replied on 8 Oct with the Brands & Production brochure; no answer since.", "source": "CRM Gmail history", "class": "VERIFIED" },
+    { "id": "crush", "text": "Paris and Dubai event agency founded in 2009 by Sophie Christophe, working across arts, music and fashion.", "source": "Entrepreneur Middle East; Campaign Middle East", "class": "PUBLIC" },
+    { "id": "collabs", "text": "CRUSH collaborations include Cartier with Gloria Gaynor, IWC with Jamiroquai and Kehlani with Huda Beauty.", "source": "Entrepreneur Middle East", "class": "PUBLIC" },
+    { "id": "icons", "text": "ICONS. by CRUSH is its talent and audience division; CRUSH has opened in Doha.", "source": "Campaign Middle East; Communicate Online", "class": "PUBLIC" },
+    { "id": "gem", "text": "The Grand Egyptian Museum has opened near the Pyramids of Giza, giving Cairo a cultural landmark of global scale.", "source": "NOYA Partner Guide; public record", "class": "PUBLIC" },
+    { "id": "dior", "text": "Dior presented its Men's Fall 2023 show at the Pyramids of Giza, a first for a luxury house at the site.", "source": "NOYA Brands Proposal (market reference, not NOYA work); widely reported", "class": "PUBLIC" },
+    { "id": "hospitality", "text": "Luxury hospitality continues to grow across Cairo, El Gouna and the North Coast.", "source": "NOYA Partner Guide", "class": "NOYA MATERIAL" }
+  ],
+  "need": "A trusted Egypt partner for CRUSH's brand-and-artist evenings, and proof NOYA can deliver: she asked for a portfolio.",
+  "next_doc": { "stage": "Concept, then Brief", "why": "Sophie asked for a portfolio. A concrete Egypt concept answers with an idea instead of claims; the brief, pre-filled from it, gives the call a shape.", "when": "Concept with the nudge (19 or 20 Oct); brief on the call." },
+  "questions": ["Which CRUSH client could take an Egypt evening first?", "Does ICONS. by CRUSH bring talent to the region already?", "Scale: dinner or gala?", "Who on Sophie's team runs production?"],
+  "risks": ["Do not send a portfolio of past work that is not real and approved.", "Do not name artists for NOYA: artists are CRUSH's choice."],
+  "concept": {
+    "title": "Egypt *as a stage.*",
+    "subtitle": "Three settings for a CRUSH evening where art, music and a luxury brand meet, with NOYA running every element on the ground.",
+    "idea_title": "CRUSH formats, an Egyptian setting.",
+    "lead": "CRUSH brings brands and artists together, Cartier with Gloria Gaynor, IWC with Jamiroquai, in moments people remember. Egypt offers settings few cities can match. NOYA makes them work on the day.",
+    "quote": "One evening, built for a brand's closest clients, in a place they have never been hosted before.",
+    "why_title": "A new chapter for luxury in Egypt.",
+    "why": [
+      { "label": "Culture", "fact": "gem" },
+      { "label": "Precedent", "fact": "dior" },
+      { "label": "Hospitality", "fact": "hospitality" },
+      { "label": "Talent", "fact": "icons", "text": "ICONS. by CRUSH brings the artists and cultural figures. NOYA brings the setting, the hospitality and the logistics." }
+    ],
+    "options_label": "Three settings",
+    "options_title": "Choose the stage.",
+    "options": [
+      { "n": "I", "title": "Dinner facing the Pyramids", "text": "A seated dinner for a brand's top clients, set so the Pyramids are the backdrop at sunset, followed by a live performance from an artist of CRUSH's choosing.", "meta": [["Setting", "Giza"], ["Format", "Gala dinner and performance"], ["NOYA handles", "Venue, permits, staging partners, catering, guest transport"]] },
+      { "n": "II", "title": "An evening among antiquities", "text": "A reception and dinner at Egypt's newest cultural landmark, with a contemporary artist collaboration in conversation with the collection.", "meta": [["Setting", "The Grand Egyptian Museum"], ["Format", "Reception, dinner, artist collaboration"], ["NOYA handles", "Venue liaison, permits, hospitality, guest journey"]] },
+      { "n": "III", "title": "A long table by the sea", "text": "Two days on the Red Sea: arrival by yacht, a long-table dinner on the beach and an intimate performance after dinner.", "meta": [["Setting", "El Gouna, Red Sea"], ["Format", "Two-day client retreat"], ["NOYA handles", "Hotels, yachts, beach venue, transfers, security"]] }
+    ],
+    "fits_label": "For the brands CRUSH serves",
+    "fits_title": "Where each setting fits.",
+    "fits": [["Jewellery & watches", "An evening among antiquities: craft in dialogue with the collection."], ["Fashion & beauty", "Dinner facing the Pyramids, or a long table by the sea for a creator-led retreat."], ["Automotive", "The Giza plateau or the Red Sea coast as the setting for a regional launch."]],
+    "leads": ["Brand relationship and creative concept", "Artists and talent, including ICONS. by CRUSH", "Show, staging design and content", "Guest list and invitations"],
+    "delivers": ["Venues, locations and permits, with our local production partners", "Hotels, villas and residences", "VIP arrivals, chauffeurs and security", "Catering, production crews and suppliers", "On-ground management, under {party}'s name"],
+    "journey": [
+      { "when": "Day one", "text": "VIP airport reception, private transfers and check-in. A welcome dinner for the brand's hosts." },
+      { "when": "Day two", "text": "The afternoon at leisure or a private guided visit. In the evening, the dinner and performance." },
+      { "when": "Day three", "text": "A late breakfast, an optional morning on the Nile or the Red Sea, then departures." }
+    ],
+    "journey_note": "Every element sits with one NOYA team: suppliers, permits, guest movements and the details guests never see. CRUSH's team stays focused on the brand, the artists and the show.",
+    "next_title": "Thirty minutes to choose a setting.",
+    "next": [
+      { "title": "Choose a setting and a brand", "text": "One call to agree where Egypt fits best in CRUSH's calendar." },
+      { "title": "NOYA returns a costed proposal", "text": "Venue, permits, hospitality and logistics, priced for CRUSH to present to its client." },
+      { "title": "Holds and permits", "text": "Once approved, NOYA holds the venue and begins permits with our local partners." }
+    ],
+    "review": ["Sophie asked for a portfolio of NOYA productions. This concept answers with a concrete idea; it claims no past NOYA work.", "No artist is named for NOYA; the Cartier and IWC collaborations are CRUSH's own published work."]
+  },
+  "brief": {
+    "title": "From concept *to brief.*",
+    "subtitle": "The direction from our concept, filled in for our call. Correct anything; the rest we shape together.",
+    "known_from": "concept",
+    "lead": "Our concept proposed three Egypt settings for a CRUSH evening. This brief carries that direction into the details we need to cost it, so our call can end with a decision.",
+    "leads": ["Brand relationship and creative concept", "Artists and talent, including ICONS. by CRUSH", "Show, staging design and content", "Guest list and invitations"],
+    "fit_label": "The settings",
+    "fit_title": "From the concept.",
+    "fit": [["I · Giza", "Dinner facing the Pyramids, followed by a live performance."], ["II · The museum", "A reception and dinner at the Grand Egyptian Museum with an artist collaboration."], ["III · Red Sea", "Two days in El Gouna: arrival by yacht, a long table on the beach."]],
+    "known": {
+      "Format": "Brand evening: dinner and performance",
+      "Cities in Egypt": "Giza and Cairo, or El Gouna",
+      "Talent and guests": "Artists of CRUSH's choosing; guest numbers to agree",
+      "Deliverables": "The evening, with content"
+    },
+    "review": ["Pre-filled from our own concept, not from anything CRUSH has told us; the form says so."]
+  },
+  "build": ["note", "concept", "brief"],
+  "review": []
+}

@@ -1,0 +1,16 @@
+{
+  "slug": "preview-retreat",
+  "vertical": "retreat",
+  "company": "Template preview",
+  "party": "The host",
+  "prepared_for": "Template preview · no client",
+  "date": "Template",
+  "facts": [],
+  "brief": {
+    "title": "A founder retreat, *in Egypt.*",
+    "subtitle": "Template preview of the Founder Retreats master.",
+    "lead": "The host shapes the room and the conversation. NOYA runs the place, the movement and the details: villas or private residences, sessions, dinners, wellness and private experiences.",
+    "roles_note": "Members arrive to a programme, not to logistics."
+  },
+  "build": ["brief"]
+}

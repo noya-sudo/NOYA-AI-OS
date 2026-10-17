@@ -1,0 +1,203 @@
+{
+  "slug": "preview-retreat-brief",
+  "type": "brief",
+  "stage": "brief",
+  "vertical": "retreat",
+  "master_label": "Founder Retreats",
+  "company": "Template preview",
+  "company_id": null,
+  "opportunity_id": null,
+  "date": "Template",
+  "prepared_for": "Template preview · no client",
+  "cover": {
+    "style": "paper",
+    "position": "low"
+  },
+  "running": "Egypt brief",
+  "audience": "client",
+  "eyebrow": "Egypt · Brief",
+  "title": "A founder retreat, *in Egypt.*",
+  "subtitle": "Template preview of the Founder Retreats master.",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Where we are",
+          "title": "A shared view of Egypt."
+        },
+        {
+          "t": "lead",
+          "text": "The host shapes the room and the conversation. NOYA runs the place, the movement and the details: villas or private residences, sessions, dinners, wellness and private experiences."
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "How we work together",
+          "title": "One brief, two clear roles."
+        },
+        {
+          "t": "roles",
+          "left": {
+            "title": "The host leads",
+            "items": [
+              "Members and invitations",
+              "Programme, speakers and sessions",
+              "Community and communication"
+            ]
+          },
+          "right": {
+            "title": "NOYA delivers in Egypt",
+            "items": [
+              "Destination and venue: villas, hotels or private residences",
+              "Arrivals, transfers and security",
+              "Session, dinner and experience logistics",
+              "Wellness and recovery",
+              "Private experiences: Giza, the Nile, the Red Sea",
+              "One NOYA lead on the ground"
+            ]
+          }
+        },
+        {
+          "t": "p",
+          "text": "Members arrive to a programme, not to logistics."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "Where Egypt fits",
+          "title": "Formats and places."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Formats",
+              "Founder retreats · leadership off-sites · member journeys · small-group trips."
+            ],
+            [
+              "Places",
+              "Pyramids of Giza · Grand Egyptian Museum · Cairo · El Gouna and the Red Sea · North Coast · Luxor and Aswan."
+            ],
+            [
+              "Why now",
+              "The opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a growing calendar of international events."
+            ]
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Indicative only. Timings, venues and access are confirmed with permits and availability once the programme is agreed."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "04",
+          "label": "The brief we need",
+          "title": "Everything we need to propose."
+        },
+        {
+          "t": "lead",
+          "text": "Share what you can. The client's name can stay confidential until there is a fit."
+        },
+        {
+          "t": "form",
+          "fields": [
+            {
+              "label": "Retreat",
+              "hint": "Purpose and format",
+              "value": null
+            },
+            {
+              "label": "Dates or window",
+              "value": null
+            },
+            {
+              "label": "Members",
+              "hint": "Numbers",
+              "value": null
+            },
+            {
+              "label": "Setting",
+              "value": null
+            },
+            {
+              "label": "Programme outline",
+              "wide": true,
+              "lines": 2,
+              "value": null
+            },
+            {
+              "label": "Accommodation",
+              "value": null
+            },
+            {
+              "label": "Wellness",
+              "value": null
+            },
+            {
+              "label": "Budget range",
+              "hint": "So we propose within it",
+              "value": null
+            },
+            {
+              "label": "Main contact",
+              "value": null
+            }
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Return to noya@noyaconcierge.com, or reply to our email with whatever is known today. We will come back with questions only where they change the proposal."
+        }
+      ]
+    },
+    {
+      "kind": "closing",
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next steps",
+          "title": "From brief to proposal."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "Share the brief",
+              "text": "Whatever is known today; the rest can follow."
+            },
+            {
+              "title": "NOYA returns a concept and a costed proposal",
+              "text": "Locations, hospitality and logistics with a clear budget, ready for The host to present."
+            },
+            {
+              "title": "Holds and permits",
+              "text": "Once approved, NOYA holds venues and begins permits with our local partners."
+            }
+          ]
+        }
+      ],
+      "contact": {
+        "name": "Adam Elshazly",
+        "role": "Founder, NOYA Concierge",
+        "lines": [
+          "noya@noyaconcierge.com",
+          "+44 786 456 9006",
+          "noyaconcierge.com"
+        ]
+      }
+    }
+  ],
+  "sources": [],
+  "review": []
+}

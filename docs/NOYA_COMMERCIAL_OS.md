@@ -1313,3 +1313,64 @@ Nothing sends. First outputs: the YKONE Egypt Brief and the CRUSH Egypt Concept,
 Limitation: this cloud environment cannot reach Drive, Google image hosts or noyaconcierge.com, and the Drive connector cannot
 move multi-megabyte files. So the brochure logo and the approved photography are not in the renderer yet, and the typeset
 wordmark is used until `studio/brand/logo.svg` exists.
+
+## NOYA Studio master systems (17 Oct 2026)
+
+Adam: "HQ is frozen. Continue Studio only… build the reusable premium master systems… Prioritise live commercial conversion:
+Reply / Meeting → Concept → Brief → Proposal → Project. Keep YKONE and CRUSH as the first live acceptance cases. Next test one real
+Brand opportunity, one Wedding opportunity, one Media opportunity and one NOYA Private opportunity. No generic Canva look, no
+invented past work, no automatic sending."
+
+**What exists** (`studio/`, see `studio/README.md`). Seven lane masters in `studio/masters/verticals.mjs` (Brand · Campaign ·
+Production, Weddings, Media / Podcast, NOYA Private Egypt Desk, Travel / Concierge, Corporate / White-label, Founder retreats).
+Each one is built on its CRM product desk (`commercial_products`), so the proposal shape and the objections match what the
+Directors already use. Client and internal itineraries are stages that every lane shares. A live opportunity is one case file
+(`studio/cases/<slug>.json`): the facts with their provenance, the people, the timeline, the status and the idea for each stage.
+Eight stage builders turn a case into documents:
+- internal: opportunity note, project book, operations itinerary;
+- client: concept, brief, proposal, itinerary, NOYA Private overview.
+
+Internal documents are flagged *Internal · not for client* on every page. A proposal stays *Draft · fees not approved* until Adam
+records the fees. Covers differ by lane, all in one house style:
+- navy: brand, media, private;
+- paper: weddings, travel, retreats, itineraries, internal;
+- split: corporate.
+
+**Guard rails.**
+- Builders refuse to invent: a concept without its own idea stops the build. So does a "why" row citing an INFERRED or
+  UNVERIFIED fact, a fee without Adam's approval, or a brief field the master doesn't ask.
+- `studio/tests/acceptance.mjs` builds and renders every case, then checks each output:
+  - no overflow, brand fonts present;
+  - no provenance labels in client documents;
+  - no past-work, portfolio, guarantee or cliché claims;
+  - no names from another case;
+  - permit / indicative notes present;
+  - the internal flag and the draft flag on every page;
+  - no "To confirm" in a final client document;
+  - no network or mail code in Studio.
+
+  A planted-fault run confirmed the checks catch a past-work claim, a cliché, a name from another case and a broken value.
+
+**Acceptance (17 Oct).** 9 cases, 22 outputs, all pass:
+- YKONE (brand, live): note 5 pp, brief 5, proposal 5 (draft), project book 4, client itinerary 4, operations itinerary 3,
+  internal pack 12.
+- CRUSH (brand, live): note 6, concept 5, brief pre-filled from the concept 5.
+- Brand test, Nado's Jewellery: note 5, and a guest-programme concept for the Meet Her launch at Forever Is Now (Giza, 4–28 Nov)
+  5. Follow-up to Raymond Ayac is due 20 Oct.
+- Wedding test, Sarah Haywood: note 5, concept with three Egypt settings 5. Held for the January revisit the CRM plans; earlier
+  only if they write first.
+- Media test, The Travel Diaries: note 5, Egypt destination-special concept 5. Video is not stated, because it isn't confirmed on
+  public record.
+- NOYA Private test, CAA Base: note 5, Egypt Desk overview 4. No client named; offered on request after a first discreet note.
+- Template previews (Travel, Corporate brief and draft proposal, Retreat): 5 pp each, labelled "Template preview · no client".
+
+**Records** (`20261017240000_studio_masters.sql`). `studio_documents` gains `vertical`, `stage`, `audience` and three document types:
+OPPORTUNITY_NOTE, PROJECT and DESK_BRIEF. `studio/record.mjs` records each document version with its hash, sources and review
+notes. All 17 live-case documents are recorded:
+- FOR_REVIEW, except the YKONE proposal, which is DRAFT;
+- the first YKONE brief and CRUSH concept are v1 SUPERSEDED, kept as evidence.
+
+**Open.**
+- Logo and photography: Drive and noyaconcierge.com can't be reached from this environment.
+- The contact email differs between the approved material (noya@) and the Egypt Desk draft (adam@).
+- No real past projects are on file for a portfolio, so concepts answer portfolio requests with a specific idea instead.

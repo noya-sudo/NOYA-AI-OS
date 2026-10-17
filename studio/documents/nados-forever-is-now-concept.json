@@ -1,0 +1,276 @@
+{
+  "slug": "nados-forever-is-now-concept",
+  "type": "concept",
+  "stage": "concept",
+  "vertical": "brand",
+  "master_label": "Brand · Campaign · Production",
+  "company": "Nado's Jewellery",
+  "company_id": "3740895f-0be5-4197-b931-0ff32572f4ce",
+  "opportunity_id": "c08149b7-d761-4b82-a6d5-5d4c621080aa",
+  "date": "17 October 2026",
+  "prepared_for": "Raymond Ayac and the Nado's Jewellery team",
+  "cover": {
+    "style": "navy"
+  },
+  "running": "Egypt concept",
+  "audience": "client",
+  "eyebrow": "Egypt · Concept",
+  "title": "A launch *worth the journey.*",
+  "subtitle": "A guest programme for Nado's Meet Her launch at Forever Is Now, Giza, November 2026: international press, clients and creators, hosted by NOYA.",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "The idea",
+          "title": "Bring the right people to Giza."
+        },
+        {
+          "t": "lead",
+          "text": "Nado's launches Meet Her at the sixth Forever Is Now, at the Pyramids of Giza from 4 to 28 November, the first edition led primarily by women artists. The launch will be seen by those in the room. NOYA hosts the people who carry it further: international press, top clients and creators."
+        },
+        {
+          "t": "quote",
+          "text": "A collection called Meet Her, launched where women artists lead the conversation."
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "Why this moment",
+          "title": "November, at the Pyramids."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "The exhibition",
+              "The sixth Forever Is Now runs from 4 to 28 November 2026 at the Pyramids of Giza."
+            ],
+            [
+              "Its theme",
+              "It is the first edition led primarily by women artists."
+            ],
+            [
+              "The launch",
+              "Meet Her is listed in Art D'Égypte's programme for this edition."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "Three guest programmes",
+          "title": "Choose who to host."
+        },
+        {
+          "t": "options",
+          "items": [
+            {
+              "n": "I",
+              "title": "The press days",
+              "text": "International and regional press hosted for the launch: arrivals, stays, a visit to the exhibition within Art D'Égypte's programme, and a private lunch.",
+              "meta": [
+                [
+                  "Guests",
+                  "Press and editors"
+                ],
+                [
+                  "Format",
+                  "Two days around the launch"
+                ],
+                [
+                  "NOYA handles",
+                  "Hotels, transfers, lunch, guest journey"
+                ]
+              ]
+            },
+            {
+              "n": "II",
+              "title": "The client evening",
+              "text": "Nado's closest clients hosted for an evening at the exhibition, followed by a private dinner nearby.",
+              "meta": [
+                [
+                  "Guests",
+                  "Top clients"
+                ],
+                [
+                  "Format",
+                  "One evening"
+                ],
+                [
+                  "NOYA handles",
+                  "Transfers, private dinner, hosting, security"
+                ]
+              ]
+            },
+            {
+              "n": "III",
+              "title": "The creator stay",
+              "text": "A small group of creators hosted over two days: the exhibition, the Grand Egyptian Museum and content timed to the launch.",
+              "meta": [
+                [
+                  "Guests",
+                  "Creators"
+                ],
+                [
+                  "Format",
+                  "Two-day stay"
+                ],
+                [
+                  "NOYA handles",
+                  "Stays, transport, timings for content"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Venues, access and dates are subject to permits, approvals and availability. NOYA confirms each before anything is presented to a client."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "04",
+          "label": "How it works",
+          "title": "Nado's leads. NOYA delivers."
+        },
+        {
+          "t": "roles",
+          "left": {
+            "title": "Nado's leads",
+            "items": [
+              "The collection and the brand story",
+              "The launch with Art D'Égypte",
+              "Guest list and invitations",
+              "Press and content"
+            ]
+          },
+          "right": {
+            "title": "NOYA delivers in Egypt",
+            "items": [
+              "VIP guest hosting: arrivals, hotels, chauffeurs",
+              "Press and creator trips",
+              "Private dinners and venues",
+              "Gifting logistics",
+              "Security",
+              "On-ground management, under Nado's's name"
+            ]
+          }
+        },
+        {
+          "t": "gap"
+        },
+        {
+          "t": "section",
+          "n": "05",
+          "label": "The guest journey",
+          "title": "An example programme."
+        },
+        {
+          "t": "journey",
+          "items": [
+            {
+              "when": "Day one",
+              "text": "VIP airport reception, private transfers and check-in. A welcome dinner."
+            },
+            {
+              "when": "Day two",
+              "text": "The launch at Forever Is Now, then the client evening."
+            },
+            {
+              "when": "Day three",
+              "text": "The Grand Egyptian Museum for content, then departures."
+            }
+          ]
+        },
+        {
+          "t": "p",
+          "text": "Every guest has one NOYA host, from the airport to the last transfer. Nado's team stays with the collection and the launch."
+        }
+      ]
+    },
+    {
+      "kind": "closing",
+      "blocks": [
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Next step",
+          "title": "November guests need booking now."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "Choose the guests",
+              "text": "One call this month to agree who to host, and for how many days."
+            },
+            {
+              "title": "NOYA returns a costed programme",
+              "text": "Hotels, transfers, dinners and hosting, with a clear budget."
+            },
+            {
+              "title": "Holds",
+              "text": "NOYA holds rooms and venues as soon as you approve."
+            }
+          ]
+        }
+      ],
+      "contact": {
+        "name": "Adam Elshazly",
+        "role": "Founder, NOYA Concierge",
+        "lines": [
+          "noya@noyaconcierge.com",
+          "+44 786 456 9006",
+          "noyaconcierge.com"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "fact": "The sixth Forever Is Now runs from 4 to 28 November 2026 at the Pyramids of Giza.",
+      "source": "Ahram Online, 'Art D'Egypte announces 6th edition of Forever Is Now at Giza Pyramids'",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "It is the first edition led primarily by women artists.",
+      "source": "Ahram Online",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Art D'Égypte's programme for this edition lists the launch of Nado's Jewellery's Meet Her collection.",
+      "source": "artdegypte.org event listing, Forever Is Now 06",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Nado's is an Egyptian jewellery brand; Maha El Sharafy is co-founder and creative director.",
+      "source": "nadosjewellery.com/pages/about",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "NOYA wrote to Raymond Ayac on 16 Oct; no reply yet; follow-up due 20 Oct.",
+      "source": "CRM Gmail history; opportunity c08149b7",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Collection details, launch date within the exhibition and guest plans are not on public record.",
+      "source": "Public search, 17 Oct 2026",
+      "class": "VERIFIED"
+    }
+  ],
+  "review": [
+    "The exhibition visit follows Art D'Égypte's programme; nothing implies NOYA controls access to it.",
+    "Collection details are not on public record, so the concept does not describe the pieces.",
+    "Send with the 20 Oct follow-up to Raymond Ayac (verified email)."
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "slug": "preview-corporate",
+  "vertical": "corporate",
+  "company": "Template preview",
+  "party": "Your company",
+  "prepared_for": "Template preview · no client",
+  "date": "Template",
+  "facts": [],
+  "brief": {
+    "title": "An executive programme, *run end to end.*",
+    "subtitle": "Template preview of the Corporate & White-label master.",
+    "lead": "Executive arrivals, transport, security, hotels, meetings and dinners, delivered to a luxury standard by one NOYA lead with a single invoice.",
+    "roles_note": "Executives see only the programme; NOYA runs everything around it."
+  },
+  "proposal": {
+    "title": "Executive programme, *Cairo.*",
+    "subtitle": "Template preview of a Corporate proposal. Fees read Not recorded until approved.",
+    "understanding_title": "The programme.",
+    "understanding": "Template preview: the organiser's objectives, attendees and agenda are restated here from their brief.",
+    "scope": [["Arrivals", "Executive airport handling"], ["Movement", "Chauffeurs and security"], ["Hotels", "Room blocks and rooming"], ["Venues", "Meeting venues and dinners"], ["Experiences", "Leisure and cultural visits"]],
+    "assumptions": ["Attendee numbers and dates come from the organiser's brief.", "Pass-through costs are approved before booking."]
+  },
+  "build": ["brief", "proposal"]
+}

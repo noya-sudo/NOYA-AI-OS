@@ -1,0 +1,290 @@
+{
+  "slug": "sarah-haywood-egypt-note",
+  "type": "note",
+  "stage": "note",
+  "vertical": "weddings",
+  "master_label": "Weddings & Private Celebrations",
+  "company": "Sarah Haywood Exceptional Celebrations",
+  "company_id": "9155d3ae-836a-467e-aaf8-1d582331bcba",
+  "opportunity_id": "c3ad0829-ef79-4f4d-84da-8bd2c81e6f40",
+  "date": "17 October 2026",
+  "prepared_for": "Adam Elshazly",
+  "cover": {
+    "style": "paper",
+    "position": "high",
+    "quiet": true
+  },
+  "running": "Opportunity note",
+  "audience": "internal",
+  "eyebrow": "Weddings & Private Celebrations · Opportunity note",
+  "title": "Sarah Haywood Exceptional Celebrations",
+  "subtitle": "A trusted Egypt partner on file for when a client asks for Egypt: venues, permits, room blocks and guest logistics, with Sarah Haywood keeping the client and the design.",
+  "for_label": "For",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Where it stands",
+          "title": "Long term."
+        },
+        {
+          "t": "kv",
+          "cols": 3,
+          "items": [
+            [
+              "Company",
+              "Sarah Haywood Exceptional Celebrations"
+            ],
+            [
+              "Lane",
+              "Weddings & Private Celebrations"
+            ],
+            [
+              "Stage",
+              "Long term"
+            ],
+            [
+              "Last contact",
+              "8 Oct 2026 · NOYA thanked them"
+            ],
+            [
+              "Next action",
+              "Revisit in January 2027 with a specific Egypt wedding angle (this concept)"
+            ],
+            [
+              "Value",
+              null
+            ]
+          ]
+        },
+        {
+          "t": "kv",
+          "cols": 2,
+          "items": [
+            [
+              "Founder Director",
+              "Sarah Haywood · verified email"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "Relationship",
+          "title": "What has happened so far."
+        },
+        {
+          "t": "timeline",
+          "items": [
+            {
+              "date": "4 Oct",
+              "who": "NOYA",
+              "text": "First email to Sarah Haywood: discreet Egypt execution for high-profile celebrations."
+            },
+            {
+              "date": "6 Oct",
+              "who": "Sarah Haywood",
+              "text": "Reply from the weddings inbox: thank you; passed to the events team; will be in touch if an opportunity arises."
+            },
+            {
+              "date": "8 Oct",
+              "who": "NOYA",
+              "text": "Thanked them; offered local production, venue sourcing and on-ground support for any Egypt event."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "What we know",
+          "title": "Facts, with their source."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "id": "reply",
+              "text": "On 6 Oct they thanked us and passed our note to the events team, to be in touch should an opportunity arise.",
+              "source": "CRM Gmail history: weddings@sarahhaywood.com",
+              "class": "VERIFIED"
+            },
+            {
+              "id": "studio",
+              "text": "International luxury event producer headquartered in London, with a European office in Milan.",
+              "source": "sarahhaywood.com/about",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "anniversary",
+              "text": "The practice is marking its 20th anniversary and continues international productions.",
+              "source": "sarahhaywood.com",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "gem",
+              "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+              "source": "NOYA Partner Guide",
+              "class": "NOYA MATERIAL"
+            },
+            {
+              "id": "gouna",
+              "text": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences, with destination weddings among its strengths.",
+              "source": "NOYA Partner Guide (El Gouna highlights)",
+              "class": "NOYA MATERIAL"
+            },
+            {
+              "id": "nile",
+              "text": "Luxor and Aswan pair historic riverside hotels with luxury Nile journeys and private guided experiences.",
+              "source": "NOYA Partner Guide (Luxor and Aswan)",
+              "class": "NOYA MATERIAL"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "What they need",
+          "title": "Our reading, to test on the call."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "text": "A trusted Egypt partner on file for when a client asks for Egypt: venues, permits, room blocks and guest logistics, with Sarah Haywood keeping the client and the design.",
+              "source": "NOYA reading of the facts above",
+              "class": "INFERRED"
+            }
+          ]
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Product desk",
+              "NOYA Wedding Guest Desk (with NOYA VIP Guest Desk)"
+            ],
+            [
+              "Proposal shape",
+              "Guest desk scope · Per-guest fee · Room block terms."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next document",
+          "title": "What moves this forward."
+        },
+        {
+          "t": "callout",
+          "label": "Recommended · Concept",
+          "big": "They asked to be contacted when there is an opportunity. A specific Egypt wedding angle gives the events team a reason to keep NOYA on file.",
+          "text": "January 2027, as planned in the CRM; earlier only if the events team writes first."
+        },
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Open questions",
+          "title": "To answer before the proposal."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Has a client asked them for Egypt, or the region?",
+              "status": "To ask"
+            },
+            {
+              "text": "Who on the events team owns destination logistics?",
+              "status": "To ask"
+            },
+            {
+              "text": "Do they keep a preferred-partner list per destination?",
+              "status": "To ask"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "07",
+          "label": "Expected objections",
+          "title": "And the answer."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "We manage guests ourselves.",
+              "NOYA can take just arrivals and transfers, the part that takes the most time."
+            ],
+            [
+              "Protocol handles it.",
+              "NOYA supports protocol teams with the lifestyle layer: cars, dinners, requests."
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "08",
+          "label": "Rules for this account",
+          "title": "Do not."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "No past NOYA weddings are claimed.",
+              "status": "Rule"
+            },
+            {
+              "text": "Do not send before January unless they write first: they asked us to wait for an opportunity.",
+              "status": "Rule"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "fact": "On 6 Oct they thanked us and passed our note to the events team, to be in touch should an opportunity arise.",
+      "source": "CRM Gmail history: weddings@sarahhaywood.com",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "International luxury event producer headquartered in London, with a European office in Milan.",
+      "source": "sarahhaywood.com/about",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The practice is marking its 20th anniversary and continues international productions.",
+      "source": "sarahhaywood.com",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "fact": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences, with destination weddings among its strengths.",
+      "source": "NOYA Partner Guide (El Gouna highlights)",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "fact": "Luxor and Aswan pair historic riverside hotels with luxury Nile journeys and private guided experiences.",
+      "source": "NOYA Partner Guide (Luxor and Aswan)",
+      "class": "NOYA MATERIAL"
+    }
+  ]
+}

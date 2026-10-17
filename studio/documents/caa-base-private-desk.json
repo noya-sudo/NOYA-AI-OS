@@ -1,0 +1,205 @@
+{
+  "slug": "caa-base-private-desk",
+  "type": "desk",
+  "stage": "desk",
+  "vertical": "private",
+  "master_label": "NOYA Private · Egypt Desk",
+  "company": "CAA Base",
+  "company_id": "bb07d830-4ee7-40c2-b52c-22ce97f63e9b",
+  "opportunity_id": "ce410db0-3135-4bb1-b9cd-39401555d9da",
+  "date": "17 October 2026",
+  "prepared_for": "CAA Base",
+  "cover": {
+    "style": "navy",
+    "quiet": true,
+    "position": "high"
+  },
+  "running": "NOYA Private · Egypt Desk",
+  "audience": "client",
+  "eyebrow": "NOYA Private · Egypt Desk",
+  "title": "Egypt, *privately.*",
+  "subtitle": "A discreet on-ground partner in Egypt for CAA Base clients and their families. You keep the client and the relationship; NOYA handles Egypt, under your name if you prefer.",
+  "type_label": "Private services",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "A discreet partner",
+          "title": "Egypt, handled privately."
+        },
+        {
+          "t": "lead",
+          "text": "A discreet on-ground partner in Egypt for your clients. You keep the client and the relationship. NOYA handles Egypt privately, under your name if you prefer."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "For CAA Base",
+              "An agency representing more than 300 international players, coaches and managers, with offices across four continents."
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "What we arrange",
+          "title": "For your clients and their families."
+        },
+        {
+          "t": "roles",
+          "left": {
+            "title": "CAA Base leads",
+            "items": [
+              "The client relationship",
+              "The client's diary and commitments",
+              "Consent for anything shared"
+            ]
+          },
+          "right": {
+            "title": "NOYA delivers in Egypt",
+            "items": [
+              "VIP airport meet and assist, private chauffeur and secure transport",
+              "Security liaison",
+              "Hotels, private villas and residences",
+              "Private aviation and yachts",
+              "Private dining and wellness",
+              "Cultural access: Giza, the Grand Egyptian Museum, Luxor, Aswan and the Nile",
+              "The Red Sea, El Gouna and the North Coast",
+              "Family logistics and privacy-sensitive itineraries",
+              "Event, appearance and brand-production support"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "How it works",
+          "title": "One relationship. Every request."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "Introduce",
+              "text": "Share the request privately with your NOYA lifestyle manager."
+            },
+            {
+              "title": "Tailor",
+              "text": "We research, coordinate and present the most suitable options around preferences, timing and requirements."
+            },
+            {
+              "title": "Approve",
+              "text": "You select and approve the preferred arrangement before confirmation."
+            },
+            {
+              "title": "Experience",
+              "text": "NOYA manages the details from confirmation through to completion, remaining available throughout."
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "Principles",
+          "title": "Discretion at every level."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Confidential",
+              "Personal details, travel plans and requests are handled with care and discretion."
+            ],
+            [
+              "Personal",
+              "Every relationship is managed individually, with service shaped around personal preferences and expectations."
+            ],
+            [
+              "Trusted",
+              "We work through a carefully selected network of hospitality, travel, lifestyle and sourcing partners."
+            ],
+            [
+              "Responsive",
+              "Requests are coordinated through direct communication with your lifestyle manager."
+            ],
+            [
+              "Global",
+              "Specialist support in Egypt, supported by an international network across key destinations."
+            ]
+          ]
+        },
+        {
+          "t": "note",
+          "text": "We never name clients, and nothing is shared without your consent. Properties are proposed on what each one can confirm about privacy, access and security."
+        }
+      ]
+    },
+    {
+      "kind": "closing",
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next step",
+          "title": "A short private call."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "A private call",
+              "text": "Fifteen minutes to understand how your team handles client requests today."
+            },
+            {
+              "title": "NOYA on file",
+              "text": "One contact and one line for any Egypt request, under your name if you prefer."
+            }
+          ]
+        }
+      ],
+      "contact": {
+        "name": "Adam Elshazly",
+        "role": "Founder, NOYA Concierge",
+        "lines": [
+          "noya@noyaconcierge.com",
+          "+44 786 456 9006",
+          "noyaconcierge.com"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "fact": "London-headquartered football agency founded in 1997 by Leon Angel, now part of CAA Sports.",
+      "source": "SportBusiness, 'Base Soccer chief backs CAA takeover'; sponsorship.org",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Represents more than 300 international players, coaches and managers, with consultant offices across Europe, South America, Australasia and North America.",
+      "source": "sponsorship.org coverage of the CAA acquisition",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.",
+      "source": "CRM opportunity ce410db0 (commercial trigger)",
+      "class": "INFERRED"
+    },
+    {
+      "fact": "Services, process and principles",
+      "source": "Noya Concierge Private (Drive 1nDdSsJNcs2h1QgucmojGhm2mZhkLA4Mg); docs/NOYA_PRIVATE_EGYPT_DESK.md (draft for Adam, 8 Oct 2026)",
+      "class": "NOYA MATERIAL"
+    }
+  ],
+  "review": [
+    "No client or player is named, and nothing refers to anyone's private travel.",
+    "Contact email is noya@noyaconcierge.com (NOYA Private material); the Egypt Desk draft in docs uses adam@. Confirm which.",
+    "Best reader: a client-care or player-services lead; Leon Angel via LinkedIn until one is identified."
+  ]
+}

@@ -1,16 +1,22 @@
 {
   "slug": "ykone-egypt-brief",
   "type": "brief",
+  "stage": "brief",
+  "vertical": "brand",
+  "master_label": "Brand · Campaign · Production",
   "company": "YKONE Middle East",
   "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
   "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
-  "file_title": "YKONE x NOYA — Egypt Brief",
   "date": "17 October 2026",
+  "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
+  "cover": {
+    "style": "navy"
+  },
+  "running": "Egypt brief",
+  "audience": "client",
   "eyebrow": "Egypt · Brief",
   "title": "Egypt, under your *creative lead.*",
   "subtitle": "How NOYA runs the Egypt side of a YKONE brief, and what we need from you to propose.",
-  "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
-  "running": "YKONE × NOYA · Egypt brief",
   "pages": [
     {
       "blocks": [
@@ -76,7 +82,7 @@
           "rows": [
             [
               "Formats",
-              "Creator trips · luxury campaign and editorial shoots · brand dinners and activations · product launches · press trips · brand retreats."
+              "Creator trips · campaign and editorial shoots · brand dinners and activations · product launches · press trips · brand retreats."
             ],
             [
               "Places",
@@ -126,7 +132,7 @@
         },
         {
           "t": "note",
-          "text": "Indicative only. Venues, access and dates are confirmed with permits and availability once a brief is agreed."
+          "text": "Indicative only. Timings, venues and access are confirmed with permits and availability once the programme is agreed."
         }
       ]
     },
@@ -147,45 +153,56 @@
           "fields": [
             {
               "label": "Brand or client",
-              "hint": "Confidential is fine"
+              "hint": "Confidential is fine",
+              "value": null
             },
             {
               "label": "Format",
-              "hint": "Shoot, creator trip, dinner, launch, press trip"
+              "hint": "Shoot, creator trip, dinner, launch, press trip",
+              "value": null
             },
             {
-              "label": "Dates or window"
+              "label": "Dates or window",
+              "value": null
             },
             {
-              "label": "Cities in Egypt"
+              "label": "Cities in Egypt",
+              "value": null
             },
             {
               "label": "Talent and guests",
-              "hint": "Numbers, and any names already attached"
+              "hint": "Numbers, and any names already attached",
+              "value": null
             },
             {
               "label": "Deliverables",
-              "hint": "Content, event, or both"
+              "hint": "Content, event, or both",
+              "value": null
             },
             {
               "label": "Creative references",
               "hint": "Mood, references, the feeling the brand wants",
               "wide": true,
-              "lines": 2
+              "lines": 2,
+              "value": null
             },
             {
               "label": "Hospitality level",
-              "hint": "Hotels, villas, private residences"
+              "hint": "Hotels, villas, private residences",
+              "value": null
             },
             {
               "label": "Budget range",
-              "hint": "So we propose within it"
+              "hint": "So we propose within it",
+              "value": null
             },
             {
-              "label": "Decision date"
+              "label": "Decision date",
+              "value": null
             },
             {
-              "label": "Main contact at YKONE"
+              "label": "Main contact",
+              "value": null
             }
           ]
         },
@@ -235,44 +252,38 @@
   ],
   "sources": [
     {
-      "fact": "YKONE is looking at the Egypt market; call requested",
-      "source": "Gmail: Magali Rady (SVP MENA) to noya@, 29 Sep 2026, thread 'Egypt production support for YKONE'",
+      "fact": "YKONE is looking at the Egypt market and asked for a call.",
+      "source": "Gmail: Magali Rady to noya@, 29 Sep 2026",
       "class": "VERIFIED"
     },
     {
-      "fact": "Call held with Jad Chbeir (Commercial Director) and Amal, 8 Oct 2026; NOYA Overview and Egypt Partner Guide sent the same day",
-      "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026, 'NOYA Concierge × YKONE | Egypt & Beyond'; CRM opportunity ea415161",
+      "fact": "Call held with Jad Chbeir (Commercial Director) and Amal on 8 Oct; NOYA Overview and Egypt Partner Guide sent the same day.",
+      "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026; CRM opportunity ea415161",
       "class": "VERIFIED"
     },
     {
-      "fact": "Quote 'YKONE leads the creative vision…'",
+      "fact": "\"YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.\"",
       "source": "Adam's own email, 8 Oct 2026",
       "class": "VERIFIED"
     },
     {
-      "fact": "Starting idea: private brand dinner at the Pyramids or the Grand Egyptian Museum, talent hosting by NOYA",
-      "source": "Adam's follow-up draft in Gmail (unsent), recorded in CRM 15 Oct 2026",
+      "fact": "Idea already offered in Adam's follow-up draft: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent hosting by NOYA.",
+      "source": "Gmail draft (unsent), recorded in the CRM 15 Oct 2026",
       "class": "VERIFIED"
     },
     {
-      "fact": "Formats, places, 'why now', NOYA services",
-      "source": "NOYA Concierge Egypt | Partner Guide (Drive 12l-hniwnC0Fme9rwT1FQjW_wLxCaD-0R); Brands Proposal (Drive 1HDcLxC0YXd12oPqS8TOdQc9pN0GILYlA)",
-      "class": "NOYA APPROVED MATERIAL"
+      "fact": "YKONE is part of ONE Group, formed in January 2026 with Mirror Mirror (creative production) and others; the group has since taken a stake in BYSELECT, a UAE experiential agency.",
+      "source": "Net Influencer and Entrepreneur coverage of ONE Group, 2026",
+      "class": "PUBLIC"
     },
     {
-      "fact": "YKONE is part of ONE Group (with Mirror Mirror), formed January 2026",
-      "source": "Net Influencer and Entrepreneur coverage of the ONE Group merger; YKONE signatures 'Part of ONE Group'",
-      "class": "VERIFIED (not printed)"
-    },
-    {
-      "fact": "Contact details",
-      "source": "Partner Guide back page",
-      "class": "NOYA APPROVED MATERIAL"
+      "fact": "No reply from YKONE since 8 Oct.",
+      "source": "CRM Gmail history, checked 15 Oct 2026",
+      "class": "VERIFIED"
     }
   ],
   "review": [
     "Amal's surname is not on file, so the cover names Magali Rady, Jad Chbeir and 'the YKONE Middle East team'.",
-    "No fee, budget, timeline or access is promised. Venues and access are marked as subject to permits.",
-    "Consistent with the unsent YKONE follow-up in Gmail drafts: send the follow-up with this brief attached."
+    "No fee, budget, timeline or access is promised. Venues and access are marked as subject to permits."
   ]
 }

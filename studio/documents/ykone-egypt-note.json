@@ -1,0 +1,316 @@
+{
+  "slug": "ykone-egypt-note",
+  "type": "note",
+  "stage": "note",
+  "vertical": "brand",
+  "master_label": "Brand · Campaign · Production",
+  "company": "YKONE Middle East",
+  "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
+  "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
+  "date": "17 October 2026",
+  "prepared_for": "Adam Elshazly",
+  "cover": {
+    "style": "paper",
+    "position": "high",
+    "quiet": true
+  },
+  "running": "Opportunity note",
+  "audience": "internal",
+  "eyebrow": "Brand · Campaign · Production · Opportunity note",
+  "title": "YKONE Middle East",
+  "subtitle": "An Egypt execution layer YKONE can sell to its clients under its own name: locations, permits, hospitality and talent hosting for creator trips, shoots and brand dinners.",
+  "for_label": "For",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Where it stands",
+          "title": "Follow-up."
+        },
+        {
+          "t": "kv",
+          "cols": 3,
+          "items": [
+            [
+              "Company",
+              "YKONE Middle East"
+            ],
+            [
+              "Lane",
+              "Brand · Campaign · Production"
+            ],
+            [
+              "Stage",
+              "Follow-up"
+            ],
+            [
+              "Last contact",
+              "8 Oct 2026 · NOYA wrote after the call"
+            ],
+            [
+              "Next action",
+              "Send the follow-up in Gmail drafts with the Egypt brief attached"
+            ],
+            [
+              "Value",
+              null
+            ]
+          ]
+        },
+        {
+          "t": "kv",
+          "cols": 2,
+          "items": [
+            [
+              "Senior Vice President, MENA",
+              "Magali Rady · verified email"
+            ],
+            [
+              "Commercial Director",
+              "Jad Chbeir · email from the thread"
+            ],
+            [
+              "Met 8 Oct (surname not on file)",
+              "Amal · email from the thread"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "Relationship",
+          "title": "What has happened so far."
+        },
+        {
+          "t": "timeline",
+          "items": [
+            {
+              "date": "29 Sep",
+              "who": "NOYA",
+              "text": "First email to Magali Rady: NOYA as YKONE's Egypt production and hospitality layer."
+            },
+            {
+              "date": "29 Sep",
+              "who": "YKONE",
+              "text": "Magali replied the same day: YKONE is looking at the Egypt market; asked for a call."
+            },
+            {
+              "date": "5 Oct",
+              "who": "YKONE",
+              "text": "Jad Chbeir confirmed Thursday 8 Oct, 3 pm London."
+            },
+            {
+              "date": "8 Oct",
+              "who": "Call",
+              "text": "Call with Jad and Amal. NOYA Overview and Egypt Partner Guide sent the same day."
+            },
+            {
+              "date": "15 Oct",
+              "who": "NOYA",
+              "text": "No reply since. Follow-up drafted in Gmail (unsent) with one Egypt idea."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "What we know",
+          "title": "Facts, with their source."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "id": "egypt_market",
+              "text": "YKONE is looking at the Egypt market and asked for a call.",
+              "source": "Gmail: Magali Rady to noya@, 29 Sep 2026",
+              "class": "VERIFIED"
+            },
+            {
+              "id": "meeting",
+              "text": "Call held with Jad Chbeir (Commercial Director) and Amal on 8 Oct; NOYA Overview and Egypt Partner Guide sent the same day.",
+              "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026; CRM opportunity ea415161",
+              "class": "VERIFIED"
+            },
+            {
+              "id": "quote",
+              "text": "\"YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.\"",
+              "source": "Adam's own email, 8 Oct 2026",
+              "class": "VERIFIED"
+            },
+            {
+              "id": "idea",
+              "text": "Idea already offered in Adam's follow-up draft: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent hosting by NOYA.",
+              "source": "Gmail draft (unsent), recorded in the CRM 15 Oct 2026",
+              "class": "VERIFIED"
+            },
+            {
+              "id": "one_group",
+              "text": "YKONE is part of ONE Group, formed in January 2026 with Mirror Mirror (creative production) and others; the group has since taken a stake in BYSELECT, a UAE experiential agency.",
+              "source": "Net Influencer and Entrepreneur coverage of ONE Group, 2026",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "silence",
+              "text": "No reply from YKONE since 8 Oct.",
+              "source": "CRM Gmail history, checked 15 Oct 2026",
+              "class": "VERIFIED"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "What they need",
+          "title": "Our reading, to test on the call."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "text": "An Egypt execution layer YKONE can sell to its clients under its own name: locations, permits, hospitality and talent hosting for creator trips, shoots and brand dinners.",
+              "source": "NOYA reading of the facts above",
+              "class": "INFERRED"
+            }
+          ]
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Product desk",
+              "NOYA Brand Experience Desk (with NOYA Production Desk)"
+            ],
+            [
+              "Proposal shape",
+              "Objectives · Guest profile · Hosting programme · Suppliers and venues · Timeline · Fees (fixed hosting fee + pass-through)."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next document",
+          "title": "What moves this forward."
+        },
+        {
+          "t": "callout",
+          "label": "Recommended · Brief",
+          "big": "YKONE met us but has not briefed us. The brief gives them a one-page way to hand over their next Egypt request.",
+          "text": "Attach to the follow-up already in Gmail drafts. The draft proposal and project book stay internal until YKONE shares a live brief."
+        },
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Open questions",
+          "title": "To answer before the proposal."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Which YKONE client brief points to Egypt first, and when?",
+              "status": "To ask"
+            },
+            {
+              "text": "Does BYSELECT run YKONE's experiential work in the region, or does YKONE?",
+              "status": "To ask"
+            },
+            {
+              "text": "Guest profile: creators, press or clients?",
+              "status": "To ask"
+            },
+            {
+              "text": "Who signs off budgets: Magali or Jad?",
+              "status": "To ask"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "07",
+          "label": "Expected objections",
+          "title": "And the answer."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Our agency runs everything.",
+              "Then NOYA becomes the agency's ground partner in Egypt."
+            ],
+            [
+              "We only work with global suppliers.",
+              "NOYA can operate under the global supplier's contract as the Egypt layer."
+            ],
+            [
+              "We have a fixer.",
+              "NOYA complements fixers with hospitality and talent care at a higher standard."
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "08",
+          "label": "Rules for this account",
+          "title": "Do not."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Do not chase Magali and Jad separately: one thread, one follow-up.",
+              "status": "Rule"
+            },
+            {
+              "text": "No proposal goes out before YKONE shares a brief; the draft stays internal.",
+              "status": "Rule"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "fact": "YKONE is looking at the Egypt market and asked for a call.",
+      "source": "Gmail: Magali Rady to noya@, 29 Sep 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Call held with Jad Chbeir (Commercial Director) and Amal on 8 Oct; NOYA Overview and Egypt Partner Guide sent the same day.",
+      "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026; CRM opportunity ea415161",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "\"YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.\"",
+      "source": "Adam's own email, 8 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Idea already offered in Adam's follow-up draft: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent hosting by NOYA.",
+      "source": "Gmail draft (unsent), recorded in the CRM 15 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "YKONE is part of ONE Group, formed in January 2026 with Mirror Mirror (creative production) and others; the group has since taken a stake in BYSELECT, a UAE experiential agency.",
+      "source": "Net Influencer and Entrepreneur coverage of ONE Group, 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct.",
+      "source": "CRM Gmail history, checked 15 Oct 2026",
+      "class": "VERIFIED"
+    }
+  ]
+}

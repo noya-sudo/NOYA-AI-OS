@@ -1,0 +1,251 @@
+{
+  "slug": "caa-base-private-note",
+  "type": "note",
+  "stage": "note",
+  "vertical": "private",
+  "master_label": "NOYA Private · Egypt Desk",
+  "company": "CAA Base",
+  "company_id": "bb07d830-4ee7-40c2-b52c-22ce97f63e9b",
+  "opportunity_id": "ce410db0-3135-4bb1-b9cd-39401555d9da",
+  "date": "17 October 2026",
+  "prepared_for": "Adam Elshazly",
+  "cover": {
+    "style": "paper",
+    "position": "high",
+    "quiet": true
+  },
+  "running": "Opportunity note",
+  "audience": "internal",
+  "eyebrow": "NOYA Private · Egypt Desk · Opportunity note",
+  "title": "CAA Base",
+  "subtitle": "A discreet Egypt partner on file for when a client or their family asks for Egypt, delivered under the agency's name.",
+  "for_label": "For",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Where it stands",
+          "title": "Researching."
+        },
+        {
+          "t": "kv",
+          "cols": 3,
+          "items": [
+            [
+              "Company",
+              "CAA Base"
+            ],
+            [
+              "Lane",
+              "NOYA Private · Egypt Desk"
+            ],
+            [
+              "Stage",
+              "Researching"
+            ],
+            [
+              "Last contact",
+              null
+            ],
+            [
+              "Next action",
+              "First approach: one discreet note offering this overview (Leon Angel, LinkedIn), or a player-care lead once identified"
+            ],
+            [
+              "Value",
+              null
+            ]
+          ]
+        },
+        {
+          "t": "kv",
+          "cols": 2,
+          "items": [
+            [
+              "Founder and Chairman",
+              "Leon Angel · LinkedIn (no verified email)"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "Relationship",
+          "title": "What has happened so far."
+        },
+        {
+          "t": "timeline",
+          "items": [
+            {
+              "date": "Oct 2026",
+              "who": "NOYA",
+              "text": "Researched for NOYA Private; no contact yet."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "What we know",
+          "title": "Facts, with their source."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "id": "agency",
+              "text": "London-headquartered football agency founded in 1997 by Leon Angel, now part of CAA Sports.",
+              "source": "SportBusiness, 'Base Soccer chief backs CAA takeover'; sponsorship.org",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "scale",
+              "text": "Represents more than 300 international players, coaches and managers, with consultant offices across Europe, South America, Australasia and North America.",
+              "source": "sponsorship.org coverage of the CAA acquisition",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "need",
+              "text": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.",
+              "source": "CRM opportunity ce410db0 (commercial trigger)",
+              "class": "INFERRED"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "What they need",
+          "title": "Our reading, to test on the call."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "text": "A discreet Egypt partner on file for when a client or their family asks for Egypt, delivered under the agency's name.",
+              "source": "NOYA reading of the facts above",
+              "class": "INFERRED"
+            }
+          ]
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Product desk",
+              "NOYA Private (with NOYA VIP Guest Desk)"
+            ],
+            [
+              "Proposal shape",
+              "Membership tiers or per-request · Service standards · Confidentiality."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next document",
+          "title": "What moves this forward."
+        },
+        {
+          "t": "callout",
+          "label": "Recommended · Private services overview",
+          "big": "The NOYA Private lane opens with one discreet note and offers a short overview. This is that overview, tailored to CAA Base.",
+          "text": "On request after the first note; never sent cold with names or references."
+        },
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Open questions",
+          "title": "To answer before the proposal."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Who owns client care and lifestyle requests at CAA Base?",
+              "status": "To ask"
+            },
+            {
+              "text": "Do they handle travel for clients and families, or refer it out?",
+              "status": "To ask"
+            },
+            {
+              "text": "White-label or co-branded?",
+              "status": "To ask"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "07",
+          "label": "Expected objections",
+          "title": "And the answer."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "We have a concierge.",
+              "NOYA is often the specialist for Egypt and complex trips."
+            ],
+            [
+              "Protocol handles it.",
+              "NOYA supports protocol teams with the lifestyle layer: cars, dinners, requests."
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "08",
+          "label": "Rules for this account",
+          "title": "Do not."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Never name clients or reference private travel.",
+              "status": "Rule"
+            },
+            {
+              "text": "Public, source-backed evidence only; no personal contact details.",
+              "status": "Rule"
+            },
+            {
+              "text": "No claims of guaranteed privacy: properties are proposed on what each can confirm.",
+              "status": "Rule"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "fact": "London-headquartered football agency founded in 1997 by Leon Angel, now part of CAA Sports.",
+      "source": "SportBusiness, 'Base Soccer chief backs CAA takeover'; sponsorship.org",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Represents more than 300 international players, coaches and managers, with consultant offices across Europe, South America, Australasia and North America.",
+      "source": "sponsorship.org coverage of the CAA acquisition",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.",
+      "source": "CRM opportunity ce410db0 (commercial trigger)",
+      "class": "INFERRED"
+    }
+  ]
+}

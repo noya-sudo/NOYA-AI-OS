@@ -1,15 +1,24 @@
 // NOYA Studio templates. A document is data (studio/documents/*.json); these functions turn it into A4 pages.
-// Brief, Concept and Proposal share one block library, so every document reads as the same house.
+// Every master (Brand, Weddings, Media, NOYA Private, Travel, Corporate, Retreats, Itineraries) shares one block library,
+// so every document reads as the same house. Internal documents carry a visible "Internal" flag on every page, and a
+// proposal whose fees are not all approved carries "Draft · not for client".
 
 const TYPE = {
+  note: { label: 'Opportunity note' },
   brief: { label: 'Brief' },
   concept: { label: 'Concept' },
   proposal: { label: 'Proposal' },
+  project: { label: 'Project book' },
+  itinerary: { label: 'Itinerary' },
+  ops: { label: 'Operations itinerary' },
+  desk: { label: 'Private services' },
 };
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // *italic* and **strong** only; everything else is escaped.
 export const fmt = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
+const slugCls = (s) => String(s || '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+const NONE = (v) => v == null || v === '';
 
 export function mark(logoSvg, small = false) {
   if (logoSvg) return `<span class="mark${small ? ' small' : ''}">${logoSvg}</span>`;
@@ -30,11 +39,22 @@ const BLOCKS = {
   options: (b) => `<div class="options">${b.items.map((o) => `<div class="opt"><span class="n">${esc(o.n)}</span><h3>${fmt(o.title)}</h3><p>${fmt(o.text)}</p>${o.meta?.length ? `<dl>${o.meta.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${fmt(v)}</dd>`).join('')}</dl>` : ''}</div>`).join('')}</div>`,
   feature: (b) => `<div class="feature"><div class="side"><span class="label">${esc(b.label)}</span><div class="big">${fmt(b.big)}</div></div><div>${(b.paras || []).map((t) => `<p>${fmt(t)}</p>`).join('')}</div></div>`,
   journey: (b) => `<div class="journey" style="--cols:${b.items.length}">${b.items.map((s) => `<div class="step"><span class="when">${fmt(s.when)}</span><p>${fmt(s.text)}</p></div>`).join('')}</div>`,
-  form: (b) => `<div class="form">${b.fields.map((f) => `<div class="field${f.wide ? ' wide' : ''}"><span class="label">${esc(f.label)}</span>${f.hint ? `<div class="hint">${fmt(f.hint)}</div>` : ''}${'<div class="line"></div>'.repeat(f.lines || 1)}</div>`).join('')}</div>`,
+  // A field with a value prints it (known from our conversation, for the client to correct); otherwise blank lines to fill.
+  form: (b) => `<div class="form">${b.fields.map((f) => `<div class="field${f.wide ? ' wide' : ''}"><span class="label">${esc(f.label)}</span>${f.hint && NONE(f.value) ? `<div class="hint">${fmt(f.hint)}</div>` : ''}${NONE(f.value) ? '<div class="line"></div>'.repeat(f.lines || 1) : `<div class="val">${fmt(f.value)}</div>`}</div>`).join('')}</div>`,
   steps: (b) => `<div class="steps">${b.items.map((s, i) => `<div class="st"><span class="i">${String(i + 1).padStart(2, '0')}</span><div><h3>${fmt(s.title)}</h3><p>${fmt(s.text)}</p></div></div>`).join('')}</div>`,
   // Proposal fees: a value is shown only when it is recorded; otherwise "Not recorded". Nothing is estimated here.
-  fees: (b) => `<div class="ledger">${b.rows.map(([k, v]) => `<div class="k"><span class="label">${esc(k)}</span></div><div class="v">${v == null || v === '' ? '<span style="opacity:.6">Not recorded</span>' : fmt(v)}</div>`).join('')}</div>`,
+  fees: (b) => `<div class="fees">${b.rows.map(([k, v]) => `<div class="fr${/^total$/i.test(k) ? ' total' : ''}"><span class="fl">${fmt(k)}</span><span class="fv${NONE(v) ? ' none' : ''}">${NONE(v) ? 'Not recorded' : fmt(v)}</span></div>`).join('')}</div>`,
+  kv: (b) => `<div class="kv" style="--kvcols:${b.cols || 3}">${b.items.map(([k, v]) => `<div><span class="label">${esc(k)}</span><div class="v${NONE(v) ? ' none' : ''}">${NONE(v) ? 'Not recorded' : fmt(v)}</div></div>`).join('')}</div>`,
+  // Facts carry their provenance class: VERIFIED / NOYA MATERIAL / PUBLIC / INFERRED / UNVERIFIED. Internal documents only.
+  facts: (b) => `<div class="facts">${b.items.map((f) => `<div class="f"><div><div class="t">${fmt(f.text)}</div>${f.source ? `<span class="s">${esc(f.source)}</span>` : ''}</div><span class="cls ${slugCls(f.class)}">${esc(f.class || 'UNVERIFIED')}</span></div>`).join('')}</div>`,
+  timeline: (b) => `<div class="timeline">${b.items.map((e) => `<div class="ev"><span class="d">${esc(e.date)}</span>${e.who ? `<span class="w">${esc(e.who)}</span>` : ''}<p>${fmt(e.text)}</p></div>`).join('')}</div>`,
+  callout: (b) => `<div class="callout"><span class="label">${esc(b.label || '')}</span><div class="big">${fmt(b.big)}</div>${b.text ? `<p>${fmt(b.text)}</p>` : ''}</div>`,
+  table: (b) => `<table class="tbl${b.compact ? ' compact' : ''}">${b.widths ? `<colgroup>${b.widths.map((w) => `<col style="width:${w}">`).join('')}</colgroup>` : ''}<thead><tr>${b.cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((r) => `<tr>${r.map((c) => `<td>${NONE(c) ? '<span class="muted">To confirm</span>' : fmt(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
+  itinerary: (b) => b.days.map((d, i) => `<div class="day"><div class="dl"><span class="n">${esc(d.n || String(i + 1).padStart(2, '0'))}</span><span class="label">${esc(d.label || '')}</span>${d.date ? `<span class="dt">${esc(d.date)}</span>` : ''}</div><div class="items">${d.items.map((it) => `<div class="it"><span class="tm">${esc(it.time || '')}</span><div><h4>${fmt(it.title)}</h4>${it.text ? `<p>${fmt(it.text)}</p>` : ''}</div></div>`).join('')}</div></div>`).join(''),
+  check: (b) => `<div class="check">${b.items.map((c) => `<div class="c"><div>${fmt(c.text)}${c.note ? `<span class="n">${fmt(c.note)}</span>` : ''}</div><span class="cls ${slugCls(c.status)}">${esc(c.status || 'To confirm')}</span></div>`).join('')}</div>`,
 };
+
+export const BLOCK_TYPES = Object.keys(BLOCKS);
 
 function blocks(list) {
   return (list || []).map((b) => {
@@ -44,36 +64,53 @@ function blocks(list) {
   }).join('\n');
 }
 
+const draftOf = (doc) => doc.draft || null;
+const flagOf = (doc) => (doc.audience === 'internal' ? 'Internal · not for client' : draftOf(doc));
+
 function cover(doc, logo) {
   const t = TYPE[doc.type];
-  return `<section class="page navy cover">
-  <div class="top">${mark(logo)}<div class="meta"><span class="label">${esc(t.label)}${doc.reference ? ` · ${esc(doc.reference)}` : ''}</span><span class="label">${esc(doc.date)}</span></div></div>
+  const c = doc.cover || {};
+  const style = c.style || 'navy';
+  const cls = ['page', 'cover', style === 'navy' ? 'navy' : style, c.position, c.quiet ? 'quiet' : ''].filter(Boolean).join(' ');
+  const flag = flagOf(doc);
+  const meta = `<div class="meta"><span class="label">${esc(doc.type_label || t.label)}${doc.reference ? ` · ${esc(doc.reference)}` : ''}</span><span class="label">${esc(doc.date)}</span>${flag ? `<span class="internal-flag">${esc(flag)}</span>` : ''}</div>`;
+  return `<section class="${cls}">
+  ${style === 'split' ? `<div class="panel">${mark(logo)}<span class="label">${esc(doc.master_label || '')}</span></div><div class="top">${meta}</div>` : `<div class="top">${mark(logo)}${meta}</div>`}
   <div class="centre">
     <div class="eyebrow label">${esc(doc.eyebrow || t.label)}</div>
     <h1>${fmt(doc.title)}</h1>
     ${doc.subtitle ? `<div class="sub">${fmt(doc.subtitle)}</div>` : ''}
   </div>
-  <div class="bottom"><div class="for"><span class="label">Prepared for</span>${fmt(doc.prepared_for)}</div><span class="label">Private &amp; confidential</span></div>
+  <div class="bottom"><div class="for"><span class="label">${esc(doc.for_label || 'Prepared for')}</span>${fmt(doc.prepared_for)}</div><span class="label">${doc.audience === 'internal' ? 'NOYA internal' : 'Private &amp; confidential'}</span></div>
 </section>`;
 }
 
 function contentPage(doc, page, n, logo) {
   const navy = page.kind === 'closing';
-  return `<section class="page${navy ? ' navy' : ''}">
-  <div class="head">${mark(logo, true)}<span class="label">${esc(page.running || doc.running || '')}</span></div>
+  const flag = flagOf(doc);
+  return `<section class="page${navy ? ' navy' : ''}${page.contact ? ' has-contact' : ''}" data-kind="${esc(page.kind || 'content')}">
+  <div class="head">${mark(logo, true)}<span class="label">${flag ? `<span class="internal-flag">${esc(flag)}</span>&nbsp;&nbsp;` : ''}${esc(page.running || doc.running || '')}</span></div>
   <div class="body">${blocks(page.blocks)}</div>
   ${page.contact ? `<div class="contact"><div class="who">${esc(page.contact.name)}<span class="role">${esc(page.contact.role)}</span></div><div class="ways">${page.contact.lines.map(esc).join('<br>')}</div></div>` : ''}
-  <div class="foot"><span class="pn">${String(n).padStart(2, '0')}</span><span class="label">NOYA Concierge · Private &amp; confidential</span></div>
+  <div class="foot"><span class="pn">${String(n).padStart(2, '0')}</span><span class="label">NOYA Concierge · ${doc.audience === 'internal' ? 'Internal' : 'Private &amp; confidential'}</span></div>
 </section>`;
 }
 
-export function renderDocument(doc, { css, logo }) {
+// The pages of one document, without the HTML shell (used to bind several documents into one pack).
+export function documentPages(doc, logo) {
   if (!TYPE[doc.type]) throw new Error(`Unknown document type: ${doc.type}`);
-  const pages = [cover(doc, logo), ...doc.pages.map((p, i) => contentPage(doc, p, i + 2, logo))];
+  return [cover(doc, logo), ...doc.pages.map((p, i) => contentPage(doc, p, i + 2, logo))].join('\n');
+}
+
+export function shell(title, css, body) {
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>${esc(doc.file_title || doc.title.replace(/\*/g, ''))}</title>
+<html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>${css}</style></head>
 <body>
-${pages.join('\n')}
+${body}
 </body></html>`;
+}
+
+export function renderDocument(doc, { css, logo }) {
+  return shell(doc.file_title || doc.title.replace(/\*/g, ''), css, `<div class="doc">${documentPages(doc, logo)}</div>`);
 }

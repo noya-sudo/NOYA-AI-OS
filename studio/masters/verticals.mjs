@@ -1,0 +1,153 @@
+// The eight master systems. Each lane's spine is its NOYA product desk in the CRM (commercial_products): what NOYA delivers,
+// how its proposal is structured, the objections it meets. Party-specific wording uses {party} (the client's short name).
+import { PLACES, WHY_NOW, PRODUCTION } from './library.mjs';
+
+const DESKS = {
+  BRAND_EXPERIENCE_DESK: { name: 'NOYA Brand Experience Desk', proposal: 'Objectives · Guest profile · Hosting programme · Suppliers and venues · Timeline · Fees (fixed hosting fee + pass-through).',
+    objections: [['Our agency runs everything.', 'Then NOYA becomes the agency\'s ground partner in Egypt.'], ['We only work with global suppliers.', 'NOYA can operate under the global supplier\'s contract as the Egypt layer.']] },
+  PRODUCTION_DESK: { name: 'NOYA Production Desk', proposal: 'Production support scope · Crew/talent per-day rates · Pass-through · Contacts.',
+    objections: [['We have a fixer.', 'NOYA complements fixers with hospitality and talent care at a higher standard.']] },
+  WEDDING_GUEST_DESK: { name: 'NOYA Wedding Guest Desk', proposal: 'Guest desk scope · Per-guest fee · Room block terms.',
+    objections: [['We manage guests ourselves.', 'NOYA can take just arrivals and transfers, the part that takes the most time.']] },
+  NOYA_PRIVATE: { name: 'NOYA Private', proposal: 'Membership tiers or per-request · Service standards · Confidentiality.',
+    objections: [['We have a concierge.', 'NOYA is often the specialist for Egypt and complex trips.']] },
+  VIP_GUEST_DESK: { name: 'NOYA VIP Guest Desk', proposal: 'VIP programme per guest · Security plan · Hosting team · Fees per VIP day + pass-through.',
+    objections: [['Protocol handles it.', 'NOYA supports protocol teams with the lifestyle layer: cars, dinners, requests.']] },
+  EGYPT_DESTINATION_DESK: { name: 'NOYA Egypt Destination Desk', proposal: 'Partnership terms · Service standards · Rate model · Escalation · Branding (white-label / co-brand).',
+    objections: [['We already have a DMC in Egypt.', 'NOYA is often the second partner, for the high-end requests. Compare on one trip.'], ['Low Egypt volume.', 'A partner on file costs nothing until a client asks.']] },
+  CORPORATE_DESK: { name: 'NOYA Corporate Desk', proposal: 'Delegation plan · Per-person or fixed fee · Pass-through costs · Security.',
+    objections: [['Our travel management company handles it.', 'TMCs book flights and hotels; NOYA handles everything on the ground. They work well together.']] },
+};
+
+export const VERTICALS = {
+  brand: {
+    label: 'Brand · Campaign · Production', director: 'Brands & Production', desks: ['BRAND_EXPERIENCE_DESK', 'PRODUCTION_DESK'],
+    cover: { style: 'navy' },
+    leads: ['Brand relationship and creative direction', 'Talent and creator strategy', 'Content and deliverables', 'Guest list and invitations'],
+    delivers: ['Locations, venues and permits, with our local production partners', 'Hotels, villas and residences for talent, guests and crew', 'VIP arrivals, chauffeurs and security', 'Dining, catering and production teams', 'On-ground management, under {party}\'s name'],
+    fit: [['Formats', 'Creator trips · campaign and editorial shoots · brand dinners and activations · product launches · press trips · brand retreats.'], ['Places', PLACES], ['Why now', WHY_NOW], ['Production', PRODUCTION]],
+    briefFields: [
+      { label: 'Brand or client', hint: 'Confidential is fine' }, { label: 'Format', hint: 'Shoot, creator trip, dinner, launch, press trip' },
+      { label: 'Dates or window' }, { label: 'Cities in Egypt' },
+      { label: 'Talent and guests', hint: 'Numbers, and any names already attached' }, { label: 'Deliverables', hint: 'Content, event, or both' },
+      { label: 'Creative references', hint: 'Mood, references, the feeling the brand wants', wide: true, lines: 2 },
+      { label: 'Hospitality level', hint: 'Hotels, villas, private residences' }, { label: 'Budget range', hint: 'So we propose within it' },
+      { label: 'Decision date' }, { label: 'Main contact' }],
+    feeModel: 'A fixed NOYA hosting and production-management fee, plus pass-through costs at the rates NOYA secures.',
+    feeRows: ['NOYA hosting and production management', 'Venues, hotels and transport (pass-through)', 'Catering, production suppliers and permits (pass-through)', 'Total'],
+    workstreams: [['Venues and permits', 'Venue holds, permissions with local partners'], ['Hospitality', 'Hotels and rooms for talent, guests and crew'], ['Guest movement', 'Arrivals, chauffeurs, security'], ['Dining and suppliers', 'Catering, staging and production partners'], ['Content support', 'Location access and timings for the shoot'], ['On-site management', 'Run of show, one NOYA lead on the ground']],
+    questions: ['Which agency runs it, and who owns the guest side?', 'Guest profile and numbers?', 'Dates and venue?', 'Talent attached?', 'Deliverables, and who pays?'],
+    journeyNote: 'Every element sits with one NOYA team: suppliers, permits, guest movements and the details guests never see.',
+  },
+  weddings: {
+    label: 'Weddings & Private Celebrations', director: 'Weddings & Private Events', desks: ['WEDDING_GUEST_DESK', 'VIP_GUEST_DESK'],
+    cover: { style: 'paper', position: 'low' },
+    leads: ['The couple and the family relationship', 'Design, styling and creative direction', 'The programme and production', 'Guest list and invitations'],
+    delivers: ['Venues, locations and permits, with our local partners', 'Hotel room blocks, villas and residences', 'Guest arrivals, transfers and a guest help line', 'Welcome experiences and excursions', 'Security, suppliers and on-ground management, under {party}\'s name'],
+    fit: [['Celebrations', 'Weddings · welcome evenings · celebrations and anniversaries · rehearsal dinners · guest weekends.'], ['Places', PLACES], ['Why now', WHY_NOW]],
+    briefFields: [
+      { label: 'The celebration', hint: 'Wedding, anniversary, milestone' }, { label: 'Hosts', hint: 'Confidential is fine' },
+      { label: 'Dates or season' }, { label: 'Guest numbers' },
+      { label: 'Where guests travel from' }, { label: 'Setting', hint: 'Giza, the Nile, the Red Sea, the North Coast' },
+      { label: 'Events across the stay', hint: 'Welcome, ceremony, celebration, farewell', wide: true, lines: 2 },
+      { label: 'Accommodation level', hint: 'Hotels, villas, private residences' }, { label: 'Budget range', hint: 'So we propose within it' },
+      { label: 'Decision date' }, { label: 'Planner contact' }],
+    feeModel: 'A NOYA guest-desk fee per guest and an Egypt execution fee, plus room blocks and venues as pass-through costs.',
+    feeRows: ['Guest desk (per guest)', 'Egypt execution management', 'Room blocks and venues (pass-through)', 'Total'],
+    workstreams: [['Venues and permits', 'Holds and permissions with local partners'], ['Room blocks', 'Hotel and villa allocations, terms'], ['Guest desk', 'Arrivals, transfers, help line'], ['Events logistics', 'Welcome, ceremony, celebration, farewell'], ['Suppliers', 'Catering and production partners, coordinated with the planner'], ['Security and on-site', 'One NOYA lead with the planner']],
+    questions: ['Who is the planner, and who owns guest logistics?', 'Guest count and origins?', 'Dates or season?', 'Preferred setting?'],
+    journeyNote: 'The planner keeps the couple and the design. NOYA runs the guests, the stays and the ground in Egypt.',
+  },
+  media: {
+    label: 'Media · Podcast · Culture', director: 'Media & Culture', desks: ['PRODUCTION_DESK', 'BRAND_EXPERIENCE_DESK'],
+    cover: { style: 'navy', position: 'high' },
+    leads: ['Editorial direction and the conversation', 'Guests and talent', 'Recording, filming and the edit', 'Distribution and audience'],
+    delivers: ['Locations and filming permissions, through our local production partners', 'Hotels and hosting for the host, guests and crew', 'Arrivals, transport and security', 'Local crew and equipment, coordinated with partners', 'On-ground management on recording days'],
+    fit: [['Formats', 'Destination specials · on-location episodes · filmed series · panel recordings · editorial shoots.'], ['Places', PLACES], ['Why now', WHY_NOW], ['Production', PRODUCTION]],
+    briefFields: [
+      { label: 'Format', hint: 'Episode, special, series, shoot' }, { label: 'Recording window' },
+      { label: 'Locations wished' }, { label: 'Host and guests' },
+      { label: 'Crew and equipment' }, { label: 'Deliverables', hint: 'Audio, video, social cut-downs' },
+      { label: 'Permissions needed', hint: 'Sites, interiors, drones', wide: true, lines: 2 },
+      { label: 'Hospitality' }, { label: 'Commercial model', hint: 'Production fee, hosted stay or partner' },
+      { label: 'Release plan' }, { label: 'Main contact' }],
+    feeModel: 'Production support at a per-day rate, with hospitality, accommodation and permits as pass-through costs. The commercial model is agreed before anything is booked.',
+    feeRows: ['Production support (per day)', 'Hospitality and accommodation (pass-through)', 'Permits through partners (pass-through)', 'Total'],
+    workstreams: [['Locations and permissions', 'Site permissions through local partners'], ['Hospitality', 'Rooms for host, guests and crew'], ['Transport', 'Arrivals, recording-day movement'], ['Crew and equipment', 'Local crew via partners'], ['Recording days', 'Schedules, access windows, contingencies'], ['Talent care', 'One NOYA host for guests']],
+    questions: ['Which production company or team?', 'Recording window and locations?', 'Guests attached?', 'Commercial model?'],
+    journeyNote: 'NOYA runs locations, permissions, hosting and movement, so the team arrives to record, not to organise.',
+  },
+  private: {
+    label: 'NOYA Private · Egypt Desk', director: 'NOYA Private — Athlete & Talent Relations', desks: ['NOYA_PRIVATE', 'VIP_GUEST_DESK'],
+    cover: { style: 'navy', quiet: true, position: 'high' },
+    leads: ['The client relationship', 'The client\'s diary and commitments', 'Consent for anything shared'],
+    delivers: ['VIP airport meet and assist, private chauffeur and secure transport', 'Security liaison', 'Hotels, private villas and residences', 'Private aviation and yachts', 'Private dining and wellness', 'Cultural access: Giza, the Grand Egyptian Museum, Luxor, Aswan and the Nile', 'The Red Sea, El Gouna and the North Coast', 'Family logistics and privacy-sensitive itineraries', 'Event, appearance and brand-production support'],
+    fit: [['Places', PLACES]],
+    briefFields: [
+      { label: 'Request', hint: 'Stay, journey, appearance, family trip' }, { label: 'Dates or window' },
+      { label: 'Party size', hint: 'No names needed at this stage' }, { label: 'Places' },
+      { label: 'Privacy requirements', wide: true, lines: 2 }, { label: 'Accommodation', hint: 'Villa, residence, hotel' },
+      { label: 'Security' }, { label: 'Representative contact' }],
+    feeModel: 'Per request or by membership, with VIP hosting days and pass-through costs agreed in advance.',
+    feeRows: ['Per-request service fee or membership', 'VIP hosting (per day)', 'Pass-through costs', 'Total'],
+    workstreams: [['Arrival and departure', 'Meet and assist, transfers'], ['Residence', 'Villa or hotel confirmed on privacy, access and security'], ['Security liaison', 'Plan agreed with the representative'], ['Movement', 'Chauffeurs, routes, timings'], ['Dining and wellness', 'Private reservations and appointments'], ['Confidentiality', 'Nothing shared without consent']],
+    questions: ['Which requests does the agency handle for clients today?', 'Who on the team owns client lifestyle and travel?', 'White-label or co-branded?'],
+    journeyNote: 'One contact for the representative, before and during the visit. Nothing is shared without consent.',
+    rules: ['Never name clients or reference private travel.', 'Public, source-backed evidence only; no personal contact details.', 'No claims of guaranteed privacy: properties are proposed on what each can confirm.'],
+  },
+  travel: {
+    label: 'Travel · Concierge Partners', director: 'Travel & Concierge Partnerships', desks: ['EGYPT_DESTINATION_DESK'],
+    cover: { style: 'paper', position: 'high' },
+    leads: ['The client relationship and booking', 'Itinerary sign-off and client pricing', 'All communication with the client'],
+    delivers: ['Itinerary design', 'Private guiding', 'Hotels and Nile cruises', 'Transfers and security', 'VIP access, subject to availability', 'Private aviation and yachts', 'Delivery under {party}\'s name, or co-branded'],
+    fit: [['Places', PLACES], ['Why now', WHY_NOW]],
+    briefFields: [
+      { label: 'Client profile', hint: 'No names needed' }, { label: 'Travel dates' }, { label: 'Party size' }, { label: 'Places' },
+      { label: 'Interests', wide: true, lines: 2 }, { label: 'Accommodation level' }, { label: 'Branding', hint: 'White-label or co-branded' },
+      { label: 'Rate model', hint: 'Net rates or commission' }, { label: 'Main contact' }],
+    feeModel: 'Net rates or an agreed commission, set out in a partnership agreement with service standards and escalation.',
+    feeRows: ['Rate model (net or commission)', 'Service standards', 'Escalation', 'Branding'],
+    workstreams: [['Itinerary', 'Design and client sign-off via the partner'], ['Stays', 'Hotels, cruises, villas'], ['Guiding and access', 'Private guides, site access'], ['Movement', 'Transfers, security'], ['Escalation', 'One NOYA lead, 24-hour line']],
+    questions: ['How much Egypt demand do they see?', 'Who is their current ground partner?', 'White-label or co-branded?'],
+    journeyNote: 'The partner keeps the client. NOYA delivers Egypt to their standard, under their name if they prefer.',
+  },
+  corporate: {
+    label: 'Corporate · White-label', director: 'Corporate & White-Label', desks: ['CORPORATE_DESK', 'VIP_GUEST_DESK'],
+    cover: { style: 'split' },
+    leads: ['Programme objectives and attendees', 'Agenda and content', 'Internal communication', 'Budget approval'],
+    delivers: ['Executive airport handling', 'Chauffeurs and security', 'Hotel blocks', 'Meeting venues', 'Dinners', 'Leisure and cultural experiences', 'White-label under {party}\'s name where preferred'],
+    fit: [['Programmes', 'Executive visits · delegations · leadership off-sites · incentive programmes · client hospitality.'], ['Places', PLACES], ['Why now', WHY_NOW]],
+    briefFields: [
+      { label: 'Programme', hint: 'Delegation, off-site, incentive' }, { label: 'Dates' }, { label: 'Attendees', hint: 'Numbers and profile' },
+      { label: 'Cities' }, { label: 'Agenda outline', wide: true, lines: 2 }, { label: 'Hotels', hint: 'Preferred or official' },
+      { label: 'Security' }, { label: 'Budget range', hint: 'So we propose within it' }, { label: 'Main contact' }],
+    feeModel: 'Per person or a fixed programme fee, with pass-through costs and security priced separately.',
+    feeRows: ['Programme management (per person or fixed)', 'Pass-through costs', 'Security', 'Total'],
+    workstreams: [['Arrivals', 'Executive handling'], ['Hotels', 'Blocks and rooming'], ['Movement and security', 'Chauffeurs, plan'], ['Venues', 'Meetings and dinners'], ['Experiences', 'Leisure and culture'], ['Reporting', 'One invoice, one NOYA lead']],
+    questions: ['Who organises, and who owns delegate services?', 'Attendee profile?', 'Official hotels?'],
+    journeyNote: 'One NOYA lead and a single invoice; executives see only the programme.',
+  },
+  retreat: {
+    label: 'Founder Retreats', director: 'Private Membership & Network', desks: ['CORPORATE_DESK', 'NOYA_PRIVATE'],
+    cover: { style: 'paper', position: 'low' },
+    leads: ['Members and invitations', 'Programme, speakers and sessions', 'Community and communication'],
+    delivers: ['Destination and venue: villas, hotels or private residences', 'Arrivals, transfers and security', 'Session, dinner and experience logistics', 'Wellness and recovery', 'Private experiences: Giza, the Nile, the Red Sea', 'One NOYA lead on the ground'],
+    fit: [['Formats', 'Founder retreats · leadership off-sites · member journeys · small-group trips.'], ['Places', PLACES], ['Why now', WHY_NOW]],
+    briefFields: [
+      { label: 'Retreat', hint: 'Purpose and format' }, { label: 'Dates or window' }, { label: 'Members', hint: 'Numbers' }, { label: 'Setting' },
+      { label: 'Programme outline', wide: true, lines: 2 }, { label: 'Accommodation' }, { label: 'Wellness' },
+      { label: 'Budget range', hint: 'So we propose within it' }, { label: 'Main contact' }],
+    feeModel: 'A retreat management fee per person or fixed, with accommodation, venues and experiences as pass-through costs.',
+    feeRows: ['Retreat management (per person or fixed)', 'Accommodation and venues (pass-through)', 'Experiences (pass-through)', 'Total'],
+    workstreams: [['Venue', 'Villa, hotel or residence'], ['Arrivals', 'Transfers, security'], ['Programme logistics', 'Sessions, dinners'], ['Experiences', 'Private visits and outings'], ['Wellness', 'Recovery and appointments'], ['On-site', 'One NOYA lead']],
+    questions: ['Who hosts, and for which members?', 'Dates and setting?', 'Programme shape?'],
+    journeyNote: 'The host shapes the room and the conversation; NOYA runs the place, the people\'s movement and the details.',
+  },
+};
+
+export const vertical = (key) => {
+  const v = VERTICALS[key];
+  if (!v) throw new Error(`Unknown vertical: ${key}. Use one of ${Object.keys(VERTICALS).join(', ')}`);
+  return { key, ...v, deskInfo: v.desks.map((d) => ({ code: d, ...DESKS[d] })) };
+};
+export const withParty = (s, party) => String(s).replaceAll('{party}', party);

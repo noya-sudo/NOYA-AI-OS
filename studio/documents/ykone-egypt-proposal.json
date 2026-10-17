@@ -1,0 +1,286 @@
+{
+  "slug": "ykone-egypt-proposal",
+  "type": "proposal",
+  "stage": "proposal",
+  "vertical": "brand",
+  "master_label": "Brand · Campaign · Production",
+  "company": "YKONE Middle East",
+  "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
+  "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
+  "date": "17 October 2026",
+  "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
+  "cover": {
+    "style": "navy"
+  },
+  "running": "Proposal",
+  "audience": "client",
+  "eyebrow": "Egypt · Proposal",
+  "title": "A brand dinner *at the Pyramids.*",
+  "subtitle": "Draft structure for YKONE's first Egypt brief, built on the dinner idea from our follow-up. It becomes a proposal once YKONE shares a live brief.",
+  "draft": "Draft · fees not approved · not for client",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Our understanding",
+          "title": "The brief we expect."
+        },
+        {
+          "t": "lead",
+          "text": "YKONE leads the client, the creative and the talent. NOYA runs the Egypt side: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent and guests hosted from arrival to departure."
+        },
+        {
+          "t": "kv",
+          "cols": 3,
+          "items": [
+            [
+              "Client",
+              "Not recorded (YKONE's client)"
+            ],
+            [
+              "Guests",
+              "Not recorded"
+            ],
+            [
+              "Dates",
+              "Not recorded"
+            ],
+            [
+              "Setting",
+              "Pyramids or Grand Egyptian Museum"
+            ],
+            [
+              "Format",
+              "Three days: arrivals, dinner, content morning"
+            ],
+            [
+              "Lead",
+              "YKONE (creative), NOYA (Egypt)"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "What NOYA delivers",
+          "title": "Scope."
+        },
+        {
+          "t": "table",
+          "cols": [
+            "Element",
+            "What it includes"
+          ],
+          "widths": [
+            "34%",
+            "66%"
+          ],
+          "rows": [
+            [
+              "Venue and permits",
+              "Venue options at Giza or the Grand Egyptian Museum; permits through our local partners"
+            ],
+            [
+              "Talent and guest hosting",
+              "VIP airport reception, chauffeurs, hotel stays, a NOYA host throughout"
+            ],
+            [
+              "The dinner",
+              "Catering, staging partners and service, to YKONE's creative direction"
+            ],
+            [
+              "Content morning",
+              "A private guided visit with access windows planned for content"
+            ],
+            [
+              "Security",
+              "Security plan for talent and guests"
+            ],
+            [
+              "On-ground management",
+              "One NOYA lead, under YKONE's name"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "Programme",
+          "title": "How it runs."
+        },
+        {
+          "t": "table",
+          "cols": [
+            "When",
+            "What happens"
+          ],
+          "widths": [
+            "24%",
+            "76%"
+          ],
+          "rows": [
+            [
+              "Day one",
+              "Arrivals, transfers and check-in; welcome dinner for talent"
+            ],
+            [
+              "Day two",
+              "The brand dinner"
+            ],
+            [
+              "Day three",
+              "Private guided visit for content; departures"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "Investment",
+          "title": "Fees."
+        },
+        {
+          "t": "fees",
+          "rows": [
+            [
+              "NOYA hosting and production management",
+              null
+            ],
+            [
+              "Venues, hotels and transport (pass-through)",
+              null
+            ],
+            [
+              "Catering, production suppliers and permits (pass-through)",
+              null
+            ],
+            [
+              "Total",
+              null
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "text": "A fixed NOYA hosting and production-management fee, plus pass-through costs at the rates NOYA secures."
+        },
+        {
+          "t": "note",
+          "text": "Every arrangement is presented for approval before it is confirmed."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Assumptions",
+          "title": "What this proposal assumes."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "YKONE leads creative, talent and the client relationship.",
+              "status": "Assumed"
+            },
+            {
+              "text": "Guest numbers, dates and venue come from YKONE's brief.",
+              "status": "Assumed"
+            },
+            {
+              "text": "Pass-through costs are quoted at the rates NOYA secures and approved before booking.",
+              "status": "Assumed"
+            }
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Venues, access and dates are subject to permits, approvals and availability. NOYA confirms each before anything is presented to a client."
+        }
+      ]
+    },
+    {
+      "kind": "closing",
+      "blocks": [
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Next steps",
+          "title": "To confirm."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "Review and questions",
+              "text": "One call to adjust scope and programme."
+            },
+            {
+              "title": "Approval",
+              "text": "A signed approval of scope and fees."
+            },
+            {
+              "title": "Holds and permits",
+              "text": "NOYA holds venues and begins permits with our local partners."
+            }
+          ]
+        }
+      ],
+      "contact": {
+        "name": "Adam Elshazly",
+        "role": "Founder, NOYA Concierge",
+        "lines": [
+          "noya@noyaconcierge.com",
+          "+44 786 456 9006",
+          "noyaconcierge.com"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "fact": "YKONE is looking at the Egypt market and asked for a call.",
+      "source": "Gmail: Magali Rady to noya@, 29 Sep 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Call held with Jad Chbeir (Commercial Director) and Amal on 8 Oct; NOYA Overview and Egypt Partner Guide sent the same day.",
+      "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026; CRM opportunity ea415161",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "\"YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.\"",
+      "source": "Adam's own email, 8 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Idea already offered in Adam's follow-up draft: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent hosting by NOYA.",
+      "source": "Gmail draft (unsent), recorded in the CRM 15 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "YKONE is part of ONE Group, formed in January 2026 with Mirror Mirror (creative production) and others; the group has since taken a stake in BYSELECT, a UAE experiential agency.",
+      "source": "Net Influencer and Entrepreneur coverage of ONE Group, 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct.",
+      "source": "CRM Gmail history, checked 15 Oct 2026",
+      "class": "VERIFIED"
+    }
+  ],
+  "review": [
+    "Amal's surname is not on file, so the cover names Magali Rady, Jad Chbeir and 'the YKONE Middle East team'.",
+    "No fee, budget, timeline or access is promised. Venues and access are marked as subject to permits.",
+    "Internal readiness only: no proposal goes to YKONE before a brief.",
+    "Fees are Not recorded until Adam approves them; the document is marked Draft until then."
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "slug": "preview-corporate-proposal",
+  "type": "proposal",
+  "stage": "proposal",
+  "vertical": "corporate",
+  "master_label": "Corporate · White-label",
+  "company": "Template preview",
+  "company_id": null,
+  "opportunity_id": null,
+  "date": "Template",
+  "prepared_for": "Template preview · no client",
+  "cover": {
+    "style": "split"
+  },
+  "running": "Proposal",
+  "audience": "client",
+  "eyebrow": "Egypt · Proposal",
+  "title": "Executive programme, *Cairo.*",
+  "subtitle": "Template preview of a Corporate proposal. Fees read Not recorded until approved.",
+  "draft": "Draft · fees not approved · not for client",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Our understanding",
+          "title": "The programme."
+        },
+        {
+          "t": "lead",
+          "text": "Template preview: the organiser's objectives, attendees and agenda are restated here from their brief."
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "What NOYA delivers",
+          "title": "Scope."
+        },
+        {
+          "t": "table",
+          "cols": [
+            "Element",
+            "What it includes"
+          ],
+          "widths": [
+            "34%",
+            "66%"
+          ],
+          "rows": [
+            [
+              "Arrivals",
+              "Executive airport handling"
+            ],
+            [
+              "Movement",
+              "Chauffeurs and security"
+            ],
+            [
+              "Hotels",
+              "Room blocks and rooming"
+            ],
+            [
+              "Venues",
+              "Meeting venues and dinners"
+            ],
+            [
+              "Experiences",
+              "Leisure and cultural visits"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "Investment",
+          "title": "Fees."
+        },
+        {
+          "t": "fees",
+          "rows": [
+            [
+              "Programme management (per person or fixed)",
+              null
+            ],
+            [
+              "Pass-through costs",
+              null
+            ],
+            [
+              "Security",
+              null
+            ],
+            [
+              "Total",
+              null
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "text": "Per person or a fixed programme fee, with pass-through costs and security priced separately."
+        },
+        {
+          "t": "note",
+          "text": "Every arrangement is presented for approval before it is confirmed."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "04",
+          "label": "Assumptions",
+          "title": "What this proposal assumes."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Attendee numbers and dates come from the organiser's brief.",
+              "status": "Assumed"
+            },
+            {
+              "text": "Pass-through costs are approved before booking.",
+              "status": "Assumed"
+            }
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Venues, access and dates are subject to permits, approvals and availability. NOYA confirms each before anything is presented to a client."
+        }
+      ]
+    },
+    {
+      "kind": "closing",
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next steps",
+          "title": "To confirm."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "Review and questions",
+              "text": "One call to adjust scope and programme."
+            },
+            {
+              "title": "Approval",
+              "text": "A signed approval of scope and fees."
+            },
+            {
+              "title": "Holds and permits",
+              "text": "NOYA holds venues and begins permits with our local partners."
+            }
+          ]
+        }
+      ],
+      "contact": {
+        "name": "Adam Elshazly",
+        "role": "Founder, NOYA Concierge",
+        "lines": [
+          "noya@noyaconcierge.com",
+          "+44 786 456 9006",
+          "noyaconcierge.com"
+        ]
+      }
+    }
+  ],
+  "sources": [],
+  "review": [
+    "Fees are Not recorded until Adam approves them; the document is marked Draft until then."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "slug": "preview-travel",
+  "vertical": "travel",
+  "company": "Template preview",
+  "party": "Your company",
+  "prepared_for": "Template preview · no client",
+  "date": "Template",
+  "facts": [],
+  "brief": {
+    "title": "Egypt, *under your name.*",
+    "subtitle": "Template preview of the Travel & Concierge master: how NOYA delivers Egypt for a partner's clients.",
+    "lead": "When a client asks for Egypt, you keep the client, the booking and the relationship. NOYA designs and delivers the Egypt side to your standard, under your name or co-branded.",
+    "roles_note": "Your client deals with you. NOYA works behind you, with one lead and a 24-hour line during travel."
+  },
+  "build": ["brief"]
+}

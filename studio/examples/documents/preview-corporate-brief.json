@@ -1,0 +1,205 @@
+{
+  "slug": "preview-corporate-brief",
+  "type": "brief",
+  "stage": "brief",
+  "vertical": "corporate",
+  "master_label": "Corporate · White-label",
+  "company": "Template preview",
+  "company_id": null,
+  "opportunity_id": null,
+  "date": "Template",
+  "prepared_for": "Template preview · no client",
+  "cover": {
+    "style": "split"
+  },
+  "running": "Egypt brief",
+  "audience": "client",
+  "eyebrow": "Egypt · Brief",
+  "title": "An executive programme, *run end to end.*",
+  "subtitle": "Template preview of the Corporate & White-label master.",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Where we are",
+          "title": "A shared view of Egypt."
+        },
+        {
+          "t": "lead",
+          "text": "Executive arrivals, transport, security, hotels, meetings and dinners, delivered to a luxury standard by one NOYA lead with a single invoice."
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "How we work together",
+          "title": "One brief, two clear roles."
+        },
+        {
+          "t": "roles",
+          "left": {
+            "title": "Your company leads",
+            "items": [
+              "Programme objectives and attendees",
+              "Agenda and content",
+              "Internal communication",
+              "Budget approval"
+            ]
+          },
+          "right": {
+            "title": "NOYA delivers in Egypt",
+            "items": [
+              "Executive airport handling",
+              "Chauffeurs and security",
+              "Hotel blocks",
+              "Meeting venues",
+              "Dinners",
+              "Leisure and cultural experiences",
+              "White-label under Your company's name where preferred"
+            ]
+          }
+        },
+        {
+          "t": "p",
+          "text": "Executives see only the programme; NOYA runs everything around it."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "Where Egypt fits",
+          "title": "Formats and places."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Programmes",
+              "Executive visits · delegations · leadership off-sites · incentive programmes · client hospitality."
+            ],
+            [
+              "Places",
+              "Pyramids of Giza · Grand Egyptian Museum · Cairo · El Gouna and the Red Sea · North Coast · Luxor and Aswan."
+            ],
+            [
+              "Why now",
+              "The opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a growing calendar of international events."
+            ]
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Indicative only. Timings, venues and access are confirmed with permits and availability once the programme is agreed."
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "04",
+          "label": "The brief we need",
+          "title": "Everything we need to propose."
+        },
+        {
+          "t": "lead",
+          "text": "Share what you can. The client's name can stay confidential until there is a fit."
+        },
+        {
+          "t": "form",
+          "fields": [
+            {
+              "label": "Programme",
+              "hint": "Delegation, off-site, incentive",
+              "value": null
+            },
+            {
+              "label": "Dates",
+              "value": null
+            },
+            {
+              "label": "Attendees",
+              "hint": "Numbers and profile",
+              "value": null
+            },
+            {
+              "label": "Cities",
+              "value": null
+            },
+            {
+              "label": "Agenda outline",
+              "wide": true,
+              "lines": 2,
+              "value": null
+            },
+            {
+              "label": "Hotels",
+              "hint": "Preferred or official",
+              "value": null
+            },
+            {
+              "label": "Security",
+              "value": null
+            },
+            {
+              "label": "Budget range",
+              "hint": "So we propose within it",
+              "value": null
+            },
+            {
+              "label": "Main contact",
+              "value": null
+            }
+          ]
+        },
+        {
+          "t": "note",
+          "text": "Return to noya@noyaconcierge.com, or reply to our email with whatever is known today. We will come back with questions only where they change the proposal."
+        }
+      ]
+    },
+    {
+      "kind": "closing",
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next steps",
+          "title": "From brief to proposal."
+        },
+        {
+          "t": "steps",
+          "items": [
+            {
+              "title": "Share the brief",
+              "text": "Whatever is known today; the rest can follow."
+            },
+            {
+              "title": "NOYA returns a concept and a costed proposal",
+              "text": "Locations, hospitality and logistics with a clear budget, ready for Your company to present."
+            },
+            {
+              "title": "Holds and permits",
+              "text": "Once approved, NOYA holds venues and begins permits with our local partners."
+            }
+          ]
+        }
+      ],
+      "contact": {
+        "name": "Adam Elshazly",
+        "role": "Founder, NOYA Concierge",
+        "lines": [
+          "noya@noyaconcierge.com",
+          "+44 786 456 9006",
+          "noyaconcierge.com"
+        ]
+      }
+    }
+  ],
+  "sources": [],
+  "review": []
+}

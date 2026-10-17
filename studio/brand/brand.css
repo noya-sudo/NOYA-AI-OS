@@ -160,3 +160,103 @@ strong { font-weight: 480; color: var(--ink); }
 .contact .who { font-family: var(--serif); font-size: 15pt; line-height: 1.3; color: var(--on-navy); }
 .contact .who .role { display: block; font-family: var(--sans); font-size: 7.8pt; letter-spacing: .06em; color: var(--on-navy-2); margin-top: 1.5mm; }
 .contact .ways { font-size: 8.8pt; line-height: 1.85; color: var(--on-navy-2); text-align: right; }
+
+/* ---------- Master systems (17 Oct 2026): cover variants, internal and draft marking, working blocks ---------- */
+
+/* Cover variants. One house: navy (brand, media, private), paper (weddings, travel, retreats, itineraries), split (corporate). */
+.cover.paper { background: var(--paper); color: var(--ink); }
+.cover.paper .label { color: var(--ink-3); }
+.cover.paper .eyebrow::before { background: var(--ink-3); }
+.cover.paper .sub { color: var(--ink-2); }
+.cover.paper .bottom { border-color: var(--rule); }
+.cover.paper .bottom .for { color: var(--ink); }
+.cover.split { background: var(--paper); color: var(--ink); }
+.cover.split .panel { position: absolute; top: 0; bottom: 0; left: 0; width: 64mm; background: var(--navy); color: var(--on-navy); }
+.cover.split .panel .mark { position: absolute; top: 20mm; left: 14mm; }
+.cover.split .panel .label { position: absolute; bottom: 20mm; left: 14mm; color: var(--on-navy-2); writing-mode: vertical-rl; transform: rotate(180deg); }
+.cover.split .top { left: 80mm; justify-content: flex-end; }
+.cover.split .top .label, .cover.split .bottom .label { color: var(--ink-3); }
+.cover.split .centre { left: 80mm; right: 22mm; }
+.cover.split .eyebrow::before { background: var(--ink-3); }
+.cover.split .sub { color: var(--ink-2); }
+.cover.split .bottom { left: 80mm; border-color: var(--rule); }
+.cover.split .bottom .for { color: var(--ink); }
+.cover.low .centre { top: auto; bottom: 52mm; }
+.cover.high .centre { top: 62mm; }
+.cover.quiet h1 { font-size: 38pt; }
+.cover .tag { display: inline-block; font-family: var(--sans); font-weight: 460; font-size: 6.4pt; letter-spacing: .28em; text-transform: uppercase; padding: 1.6mm 2.6mm; border: .25mm solid currentColor; margin-top: 2mm; }
+.cover.paper .tag, .cover.split .tag { color: var(--ink); }
+
+/* Internal documents: never mistaken for client material */
+.internal-flag { font-family: var(--sans); font-weight: 480; font-size: 6.4pt; letter-spacing: .28em; text-transform: uppercase; color: var(--ink); border: .25mm solid var(--ink); padding: 1.2mm 2.2mm; }
+.navy .internal-flag { color: var(--on-navy); border-color: var(--on-navy-3); }
+
+/* Key facts panel */
+.kv { display: grid; grid-template-columns: repeat(var(--kvcols, 3), 1fr); border-top: .25mm solid var(--ink); margin: 1mm 0 6mm; }
+.kv > div { padding: 3mm 4mm 3mm 0; border-bottom: .25mm solid var(--rule); }
+.kv .label { display: block; margin-bottom: 1.4mm; }
+.kv .v { font-size: 9.2pt; line-height: 1.45; color: var(--ink); }
+.kv .v.none { color: var(--ink-3); }
+
+/* Facts with provenance (internal) */
+.facts { border-top: .25mm solid var(--rule); margin: 1mm 0 6mm; }
+.facts .f { display: grid; grid-template-columns: 1fr 26mm; gap: 6mm; padding: 2.6mm 0; border-bottom: .25mm solid var(--rule); }
+.facts .f .t { font-size: 9pt; line-height: 1.5; color: var(--ink); }
+.facts .f .s { display: block; font-size: 7.2pt; line-height: 1.45; color: var(--ink-3); margin-top: .8mm; }
+.cls { justify-self: end; align-self: start; font-family: var(--sans); font-weight: 480; font-size: 5.8pt; letter-spacing: .2em; text-transform: uppercase; padding: 1mm 1.8mm; border: .25mm solid var(--ink-3); color: var(--ink-2); white-space: nowrap; }
+.cls.verified, .cls.confirmed { border-color: var(--ink); color: var(--ink); }
+.cls.inferred, .cls.to-confirm, .cls.pending { border-style: dashed; }
+.cls.unverified { border-color: var(--rule); color: var(--ink-3); }
+
+/* Relationship timeline */
+.timeline { border-left: .25mm solid var(--ink); margin: 1mm 0 6mm 1mm; padding-left: 6mm; }
+.timeline .ev { position: relative; padding: 0 0 4mm; }
+.timeline .ev::before { content: ''; position: absolute; left: -7.3mm; top: 1.6mm; width: 2.2mm; height: 2.2mm; border-radius: 50%; background: var(--paper); border: .3mm solid var(--ink); }
+.timeline .ev .d { font-family: var(--serif); font-style: italic; font-size: 11pt; color: var(--ink); }
+.timeline .ev .w { font-family: var(--sans); font-weight: 420; font-size: 6.4pt; letter-spacing: .26em; text-transform: uppercase; color: var(--ink-3); margin-left: 3mm; }
+.timeline .ev p { margin: .8mm 0 0; font-size: 8.8pt; }
+
+/* Callout */
+.callout { background: var(--navy); color: var(--on-navy); padding: 6mm 7mm; margin: 2mm 0 6mm; }
+.callout .label { color: var(--on-navy-2) !important; display: block; margin-bottom: 2.4mm; }
+.callout .big { font-family: var(--serif); font-weight: 300; font-size: 16pt; line-height: 1.3; }
+.callout p { color: var(--on-navy-2); margin: 2.4mm 0 0; font-size: 8.8pt; }
+
+/* Tables (scope, timeline, workstreams, ops) */
+.tbl { width: 100%; border-collapse: collapse; margin: 1mm 0 6mm; }
+.tbl th { font-family: var(--sans); font-weight: 460; font-size: 6.2pt; letter-spacing: .26em; text-transform: uppercase; color: var(--ink); text-align: left; padding: 0 4mm 2.4mm 0; border-bottom: .25mm solid var(--ink); vertical-align: bottom; }
+.tbl td { font-size: 8.7pt; line-height: 1.5; color: var(--ink-2); padding: 2.6mm 4mm 2.6mm 0; border-bottom: .25mm solid var(--rule); vertical-align: top; }
+.tbl td:first-child { color: var(--ink); }
+.tbl td .muted { color: var(--ink-3); }
+.tbl.compact td { font-size: 8pt; padding: 1.8mm 3mm 1.8mm 0; }
+.navy .tbl th { color: var(--on-navy); border-color: var(--on-navy-3); }
+.navy .tbl td { color: var(--on-navy-2); border-color: var(--rule-navy); }
+
+/* Client itinerary */
+.day { display: grid; grid-template-columns: 40mm 1fr; gap: 6mm; border-top: .25mm solid var(--ink); padding: 4.5mm 0 2mm; margin-bottom: 3mm; break-inside: avoid; }
+.day .dl .n { font-family: var(--serif); font-style: italic; font-size: 22pt; line-height: 1; color: var(--ink); display: block; }
+.day .dl .label { display: block; margin-top: 2.4mm; }
+.day .dl .dt { font-size: 8pt; color: var(--ink-3); margin-top: 1.4mm; display: block; }
+.day .items .it { display: grid; grid-template-columns: 17mm 1fr; padding: 0 0 3mm; }
+.day .items .tm { font-family: var(--serif); font-style: italic; font-size: 11pt; color: var(--ink-3); }
+.day .items h4 { font-family: var(--serif); font-weight: 500; font-size: 12.5pt; line-height: 1.2; color: var(--ink); }
+.day .items p { font-size: 8.6pt; margin: .8mm 0 0; }
+
+/* Brief form: values already known print in place, marked as ours to confirm */
+.form .field .val { font-family: var(--serif); font-size: 12pt; line-height: 1.35; color: var(--ink); padding: 1.6mm 0 1.4mm; border-bottom: .25mm solid var(--rule); }
+.form .field .val em { font-size: 1em; }
+
+/* Checklist */
+.check { border-top: .25mm solid var(--rule); margin: 1mm 0 6mm; }
+.check .c { display: grid; grid-template-columns: 1fr auto; gap: 6mm; padding: 2.4mm 0; border-bottom: .25mm solid var(--rule); font-size: 8.8pt; line-height: 1.5; color: var(--ink); }
+.check .c span.n { display: block; font-size: 7.4pt; color: var(--ink-3); margin-top: .6mm; }
+.page.has-contact .body { bottom: 74mm; }
+
+/* Fees: plain rows, value right-aligned; "Not recorded" until Adam approves a figure */
+.fees { border-top: .25mm solid var(--ink); margin: 1mm 0 5mm; }
+.fees .fr { display: grid; grid-template-columns: 1fr 52mm; gap: 6mm; padding: 3mm 0; border-bottom: .25mm solid var(--rule); align-items: baseline; }
+.fees .fl { font-size: 9.4pt; line-height: 1.45; color: var(--ink); }
+.fees .fv { font-family: var(--serif); font-size: 13pt; text-align: right; color: var(--ink); }
+.fees .fv.none { font-family: var(--sans); font-size: 8.6pt; color: var(--ink-3); }
+.fees .fr.total { border-top: .25mm solid var(--ink); border-bottom: .35mm solid var(--ink); }
+.fees .fr.total .fl { font-weight: 480; }
