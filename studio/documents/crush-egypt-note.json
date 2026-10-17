@@ -51,11 +51,23 @@
             ],
             [
               "Next action",
-              "Send the nudge in Gmail drafts (Mon 19 / Tue 20 Oct) with the concept attached"
+              "Send the concept (Gmail draft ready, reply in the thread); brief on the call"
             ],
             [
               "Value",
               null
+            ],
+            [
+              "Relationship",
+              "Engaged"
+            ],
+            [
+              "Earned level",
+              "Level 3 · full brief / proposal"
+            ],
+            [
+              "Held",
+              "Nothing held"
             ]
           ]
         },
@@ -321,5 +333,7 @@
       "source": "NOYA Partner Guide",
       "class": "NOYA MATERIAL"
     }
-  ]
+  ],
+  "level": 0,
+  "hold": null
 }

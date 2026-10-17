@@ -179,5 +179,7 @@
   "sources": [],
   "review": [
     "Fees are Not recorded until Adam approves them; the document is marked Draft until then."
-  ]
+  ],
+  "level": 3,
+  "hold": null
 }

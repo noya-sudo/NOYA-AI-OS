@@ -54,7 +54,9 @@ export function note(c, v) {
   doc.pages = [
     { blocks: [
       s('Where it stands', c.note?.headline || `${STAGE_LABEL[st.stage] || st.stage || 'Status not recorded'}.`),
-      { t: 'kv', cols: 3, items: [['Company', c.company], ['Lane', v.label], ['Stage', STAGE_LABEL[st.stage] || st.stage], ['Last contact', st.last_contact], ['Next action', st.next_action], ['Value', st.value]] },
+      { t: 'kv', cols: 3, items: [['Company', c.company], ['Lane', v.label], ['Stage', STAGE_LABEL[st.stage] || st.stage], ['Last contact', st.last_contact], ['Next action', st.next_action], ['Value', st.value],
+        ['Relationship', c.relationship?.state ? c.relationship.state[0].toUpperCase() + c.relationship.state.slice(1) : null], ['Earned level', LEVEL_NAME[allowedLevel(c)]],
+        ['Held', gate(c).filter((g) => g.hold).map((g) => g.stage).join(', ') || 'Nothing held']] },
       { t: 'kv', cols: 2, items: (c.people || []).map((p) => [p.role, `${p.name} · ${p.route || 'route not recorded'}`]) },
       ...(c.timeline?.length ? [s('Relationship', 'What has happened so far.'), { t: 'timeline', items: c.timeline }] : []),
     ] },
@@ -288,5 +290,73 @@ export function desk(c, v) {
   return doc;
 }
 
-export const STAGES = { note, concept, brief, proposal, project, itinerary, ops, desk };
-export const CLIENT_STAGES = ['concept', 'brief', 'proposal', 'itinerary', 'desk'];
+// ---------------------------------------------------------------- Level 1: the idea, inside the email (text, no attachment)
+const words = (s) => String(s).trim().split(/\s+/).filter(Boolean).length;
+export function email(c, v) {
+  const e = c.email;
+  need(e?.to_name && e?.subject && e?.paragraphs?.length, `${c.slug}: an email idea needs to_name, subject and paragraphs`);
+  const n = words(e.paragraphs.join(' '));
+  need(n <= 150, `${c.slug}: the email idea is ${n} words; Level 1 stays under 150`);
+  const body = [`Hi ${e.to_name},`, ...e.paragraphs, `Best,\n${CONTACT.name}\n${CONTACT.role}\n${CONTACT.lines[2]}`].join('\n\n');
+  return { slug: `${c.slug}-email`, type: 'email', stage: 'email', vertical: v.key, company: c.company, company_id: c.company_id || null,
+    opportunity_id: c.opportunity_id || null, date: c.date, prepared_for: c.prepared_for, audience: 'client', title: e.subject,
+    to: e.to || [], reply_to_message_id: e.reply_to_message_id || null, attach: e.attach || null, subject: e.subject, body, words: n,
+    sources: sourcesOf(c), review: [...(e.review || [])] };
+}
+
+// ---------------------------------------------------------------- Level 2: the concept on one page (strong or warm opportunities)
+export function onepage(c, v) {
+  const k = c.concept;
+  need(k?.idea_title && k?.lead && k?.options?.length, `${c.slug}: a one-page concept needs the case's own idea (idea_title, lead, options)`);
+  const doc = base(c, v, 'onepage', { running: 'Egypt concept', eyebrow: k.eyebrow || 'Egypt · Concept', title: k.title, subtitle: k.one_subtitle || k.subtitle });
+  const meta = (o) => (o.meta?.length ? [o.meta[0], o.meta[o.meta.length - 1]] : []);
+  const nxt = (k.next || defaultNext(c))[0];
+  doc.pages = [{ kind: 'one', blocks: [
+    { t: 'section', label: 'The idea', title: k.idea_title }, { t: 'lead', text: k.one_lead || k.lead },
+    { t: 'options', items: k.options.map((o) => ({ n: o.n, title: o.title, text: o.one_text || o.text, meta: meta(o) })) },
+    ...(k.why?.length ? [{ t: 'ledger', rows: whyRows(c, k.why).slice(0, k.one_why || 2) }] : []),
+    { t: 'strip', label: 'Next step', title: k.next_title || 'Thirty minutes to choose.', text: nxt.text, contact: CONTACT },
+    { t: 'note', text: PERMITS },
+  ] }];
+  doc.sources = sourcesOf(c);
+  doc.review = [...(c.review || []), ...(k.review || [])];
+  return doc;
+}
+
+export const STAGES = { note, email, onepage, concept, brief, proposal, project, itinerary, ops, desk };
+export const CLIENT_STAGES = ['email', 'onepage', 'concept', 'brief', 'proposal', 'itinerary', 'desk'];
+
+// ---------------------------------------------------------------- Output levels: produce only what the relationship has earned
+// Level 1 email idea (any prospect) · Level 2 one-page concept (strong or warm) · Level 3 full concept, brief, proposal and
+// delivery documents (after demonstrated interest, a meeting or an actual brief). Internal notes are level 0.
+export const LEVEL = { note: 0, email: 1, onepage: 2, concept: 3, brief: 3, proposal: 3, itinerary: 3, desk: 3, project: 3, ops: 3 };
+const STATE_LEVEL = { declined: 0, cold: 1, warm: 2, engaged: 3 };
+export const LEVEL_NAME = { 0: 'Internal', 1: 'Level 1 · email idea', 2: 'Level 2 · one-page concept', 3: 'Level 3 · full brief / proposal' };
+
+// The highest level a case has earned. warm, engaged and declined must cite a VERIFIED fact (the reply, the meeting, the
+// decline); a cold opportunity reaches Level 2 only when it is strong, citing a dated public or verified trigger.
+export function allowedLevel(c) {
+  if (c.slug.startsWith('preview-')) return 3;  // template previews show every level; they are never sent
+  const r = c.relationship;
+  need(r && r.state in STATE_LEVEL, `${c.slug}: relationship.state must be one of ${Object.keys(STATE_LEVEL).join(', ')}`);
+  const cite = (id, classes) => {
+    const f = (c.facts || []).find((x) => x.id === id);
+    need(f && classes.includes(f.class), `${c.slug}: relationship evidence "${id}" must be a ${classes.join(' or ')} fact`);
+  };
+  if (r.state !== 'cold') cite(r.fact, ['VERIFIED']);
+  if (r.state === 'cold' && c.strong) { cite(c.strong.fact, ['VERIFIED', 'PUBLIC']); return 2; }
+  return STATE_LEVEL[r.state];
+}
+
+// Each document a case asks for, with its level and hold. A client document above the earned level is built only when the
+// case holds it ("hold": prepared ahead, not to be sent until the relationship reaches that level); otherwise the build stops.
+export function gate(c) {
+  const max = allowedLevel(c);
+  return c.build.map((stage) => {
+    const level = LEVEL[stage];
+    need(level != null, `${c.slug}: unknown stage "${stage}"`);
+    if (level <= max) return { stage, level, hold: null };
+    need((c.hold || []).includes(stage), `${c.slug}: ${stage} is ${LEVEL_NAME[level]}, but ${c.company} has earned ${LEVEL_NAME[max]} (${c.relationship.state}). Build a lower level, or list "${stage}" in "hold".`);
+    return { stage, level, hold: max === 0 ? `Held: ${c.company} declined; send only if they reopen.` : `Held until ${LEVEL_NAME[level]}: ${c.relationship.state} today.` };
+  });
+}

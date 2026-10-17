@@ -1,0 +1,57 @@
+{
+  "slug": "sporting-founders-egypt",
+  "vertical": "retreat",
+  "company": "Sporting Founders",
+  "company_id": "7c9f5e0c-2d5f-48c8-bad7-8e504510a01e",
+  "opportunity_id": "6b4e82bb-8008-49bd-b141-a0619def25c6",
+  "party": "Sporting Founders",
+  "prepared_for": "Alex Laird · Sporting Founders",
+  "date": "17 October 2026",
+  "status": { "stage": "LOST", "last_contact": "7 Oct 2026 · NOYA thanked Alex", "next_action": "No chasing (declined 5 Oct). Concept held; use only if Alex writes back", "value": null },
+  "relationship": { "state": "declined", "fact": "decline", "why": "Alex replied on 5 Oct: not for us at our stage." },
+  "people": [
+    { "name": "Alex Laird", "role": "Founder", "route": "verified email (he replied)", "class": "VERIFIED" }
+  ],
+  "timeline": [
+    { "date": "4 Oct", "who": "NOYA", "text": "First email to Alex: a private Egypt sports-founder retreat, 2–3 day pilot." },
+    { "date": "5 Oct", "who": "Alex Laird", "text": "A great idea, but not for us at our stage; will message if or when it is appropriate." },
+    { "date": "7 Oct", "who": "NOYA", "text": "Thanked him; glad to help if the timing changes. Alex reacted with an emoji." }
+  ],
+  "facts": [
+    { "id": "decline", "text": "On 5 Oct Alex wrote that it sounds like a great idea but is not for Sporting Founders at its stage, and that he will be in touch if or when it is appropriate.", "source": "Gmail thread 1a10326728afca52 (alex@sportingfounders.com)", "class": "VERIFIED" },
+    { "id": "community", "text": "A sports entrepreneurship community that runs in cohorts, with a newsletter on opportunities and trends in sports entrepreneurship.", "source": "Sporting Founders interest form (tally.so/r/xXGXkd), web search 17 Oct 2026", "class": "PUBLIC" },
+    { "id": "cohort", "text": "Its first cohort brought together 128 'Players' and 22 'Prospects' across 43 countries.", "source": "LinkedIn post by Colin Bowden (web search, 17 Oct 2026)", "class": "PUBLIC" },
+    { "id": "gem", "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.", "source": "NOYA Partner Guide", "class": "NOYA MATERIAL" },
+    { "id": "gouna", "text": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences.", "source": "NOYA Partner Guide (El Gouna highlights)", "class": "NOYA MATERIAL" }
+  ],
+  "need": "If the community grows into in-person cohort meet-ups, a destination and a ground team that keep the programme with Sporting Founders.",
+  "next_doc": { "stage": "One-page concept (held)", "why": "They declined on timing, politely. The concept is ready for the day Alex writes back; it is not sent before.", "when": "Only if Alex reopens the conversation." },
+  "questions": ["Does the community plan in-person cohort meet-ups?", "Who would host: the founders, or a partner?"],
+  "risks": ["Declined 5 Oct: no chasing, no follow-up sequence.", "Alex's role and the cohort numbers come from public sources; confirm before use."],
+  "concept": {
+    "eyebrow": "Egypt · Retreat concept",
+    "title": "Egypt, *for sports founders.*",
+    "subtitle": "A Sporting Founders cohort meet-up in Egypt: three settings, with NOYA running the ground and the community keeping the programme.",
+    "idea_title": "The cohort, in one place.",
+    "lead": "Sporting Founders brings sports entrepreneurs together across more than forty countries. One in-person meet-up gives a cohort what a call cannot. NOYA runs the place, the stays and the movement; Sporting Founders keeps the programme and the people.",
+    "why_label": "Why Egypt",
+    "why": [
+      { "label": "The community", "fact": "cohort", "text": "A first cohort spread across 43 countries: Egypt sits within easy reach of Europe, Africa and the Gulf." },
+      { "label": "Egypt now", "fact": "gem" }
+    ],
+    "options": [
+      { "n": "I", "title": "The Cairo meet-up", "text": "Two days in Cairo: sessions and pitches by day, an evening facing the Pyramids, the Grand Egyptian Museum before flights.", "meta": [["Setting", "Cairo and Giza"], ["Format", "Two-day cohort meet-up"], ["NOYA handles", "Hotel, venues, permits, transfers"]] },
+      { "n": "II", "title": "The Red Sea performance retreat", "text": "Three days in El Gouna: training and recovery by the sea in the morning, sessions in the afternoon.", "meta": [["Setting", "El Gouna"], ["Format", "Three-day retreat"], ["NOYA handles", "Resort, training spaces, boats, recovery"]] },
+      { "n": "III", "title": "The founders' Nile journey", "text": "A small group of founders between Luxor and Aswan: a private Nile journey and time to think.", "meta": [["Setting", "Luxor and Aswan"], ["Format", "Small-group journey"], ["NOYA handles", "Hotels, river journey, guiding"]] }
+    ],
+    "next_title": "When the timing is right.",
+    "next": [
+      { "title": "Choose a format", "text": "When an in-person meet-up is on the table, one call to choose the setting and the size." },
+      { "title": "NOYA returns a costed outline", "text": "Venues, stays and movement, priced per founder." }
+    ],
+    "review": ["Held: Sporting Founders declined on 5 Oct. Send only if Alex writes back.", "No sports partnerships or venues are claimed; training spaces are subject to the resort."]
+  },
+  "build": ["note", "onepage"],
+  "hold": ["onepage"],
+  "review": []
+}

@@ -7,25 +7,96 @@
   "party": "CAA Base",
   "prepared_for": "CAA Base",
   "date": "17 October 2026",
-  "status": { "stage": "RESEARCHING", "last_contact": null, "next_action": "First approach: one discreet note offering this overview (Leon Angel, LinkedIn), or a player-care lead once identified", "value": null },
+  "status": {
+    "stage": "RESEARCHING",
+    "last_contact": null,
+    "next_action": "Identify the player-care / client-services lead before any approach (Adam, 17 Oct): LinkedIn search of CAA Base football consultants and client-care staff",
+    "value": null
+  },
+  "relationship": {
+    "state": "cold",
+    "why": "Researched; no contact yet."
+  },
   "people": [
-    { "name": "Leon Angel", "role": "Founder and Chairman", "route": "LinkedIn (no verified email)", "class": "PUBLIC" }
+    {
+      "name": "Leon Angel",
+      "role": "Founder and Chairman",
+      "route": "LinkedIn (no verified email)",
+      "class": "PUBLIC"
+    }
   ],
-  "timeline": [{ "date": "Oct 2026", "who": "NOYA", "text": "Researched for NOYA Private; no contact yet." }],
+  "timeline": [
+    {
+      "date": "Oct 2026",
+      "who": "NOYA",
+      "text": "Researched for NOYA Private; no contact yet."
+    }
+  ],
   "facts": [
-    { "id": "agency", "text": "London-headquartered football agency founded in 1997 by Leon Angel, now part of CAA Sports.", "source": "SportBusiness, 'Base Soccer chief backs CAA takeover'; sponsorship.org", "class": "PUBLIC" },
-    { "id": "scale", "text": "Represents more than 300 international players, coaches and managers, with consultant offices across Europe, South America, Australasia and North America.", "source": "sponsorship.org coverage of the CAA acquisition", "class": "PUBLIC" },
-    { "id": "need", "text": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.", "source": "CRM opportunity ce410db0 (commercial trigger)", "class": "INFERRED" }
+    {
+      "id": "agency",
+      "text": "London-headquartered football agency founded in 1997 by Leon Angel, now part of CAA Sports.",
+      "source": "SportBusiness, 'Base Soccer chief backs CAA takeover'; sponsorship.org",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "scale",
+      "text": "Represents more than 300 international players, coaches and managers, with consultant offices across Europe, South America, Australasia and North America.",
+      "source": "sponsorship.org coverage of the CAA acquisition",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "need",
+      "text": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.",
+      "source": "CRM opportunity ce410db0 (commercial trigger)",
+      "class": "INFERRED"
+    },
+    {
+      "id": "client_care",
+      "text": "Client care at CAA Base sits with its football consultants: a CAA job listing describes the role as at the heart of client care, supporting players on and off the pitch.",
+      "source": "CAA 'Football Consultant' listing (jobsinfootball.com; entertainmentcareers.net), seen 17 Oct 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "no_lead",
+      "text": "No named player-care or client-services lead found in public sources; senior figures on record are Leon Angel and player agent Frank Trimboli (at the 2019 acquisition).",
+      "source": "Web search, 17 Oct 2026; sponsorship.org",
+      "class": "VERIFIED"
+    }
   ],
   "need": "A discreet Egypt partner on file for when a client or their family asks for Egypt, delivered under the agency's name.",
-  "next_doc": { "stage": "Private services overview", "why": "The NOYA Private lane opens with one discreet note and offers a short overview. This is that overview, tailored to CAA Base.", "when": "On request after the first note; never sent cold with names or references." },
-  "questions": ["Who owns client care and lifestyle requests at CAA Base?", "Do they handle travel for clients and families, or refer it out?", "White-label or co-branded?"],
+  "next_doc": {
+    "stage": "Private services overview",
+    "why": "The NOYA Private lane opens with one discreet note and offers a short overview. This is that overview, tailored to CAA Base.",
+    "when": "On request after the first note; never sent cold with names or references."
+  },
+  "questions": [
+    "Which football consultant or client-care lead handles players' off-pitch requests?",
+    "Do they handle travel for clients and families, or refer it out?",
+    "White-label or co-branded?"
+  ],
   "desk": {
     "title": "Egypt, *privately.*",
     "subtitle": "A discreet on-ground partner in Egypt for CAA Base clients and their families. You keep the client and the relationship; NOYA handles Egypt, under your name if you prefer.",
-    "why": [{ "label": "For CAA Base", "fact": "scale", "text": "An agency representing more than 300 international players, coaches and managers, with offices across four continents." }],
-    "review": ["No client or player is named, and nothing refers to anyone's private travel.", "Contact email is noya@noyaconcierge.com (NOYA Private material); the Egypt Desk draft in docs uses adam@. Confirm which.", "Best reader: a client-care or player-services lead; Leon Angel via LinkedIn until one is identified."]
+    "why": [
+      {
+        "label": "For CAA Base",
+        "fact": "scale",
+        "text": "An agency representing more than 300 international players, coaches and managers, with offices across four continents."
+      }
+    ],
+    "review": [
+      "No client or player is named, and nothing refers to anyone's private travel.",
+      "Contact email is noya@noyaconcierge.com, the standard document contact (Adam, 17 Oct).",
+      "Held until a player-care or client-services lead is identified and engaged (Adam, 17 Oct)."
+    ]
   },
-  "build": ["note", "desk"],
-  "review": []
+  "build": [
+    "note",
+    "desk"
+  ],
+  "review": [],
+  "hold": [
+    "desk"
+  ]
 }

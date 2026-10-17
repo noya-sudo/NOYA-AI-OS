@@ -51,11 +51,23 @@
             ],
             [
               "Next action",
-              "Send the follow-up in Gmail drafts with the Egypt brief attached"
+              "Send the Egypt brief (Gmail draft ready, reply to the 8 Oct follow-up)"
             ],
             [
               "Value",
               null
+            ],
+            [
+              "Relationship",
+              "Engaged"
+            ],
+            [
+              "Earned level",
+              "Level 3 · full brief / proposal"
+            ],
+            [
+              "Held",
+              "Nothing held"
             ]
           ]
         },
@@ -312,5 +324,7 @@
       "source": "CRM Gmail history, checked 15 Oct 2026",
       "class": "VERIFIED"
     }
-  ]
+  ],
+  "level": 0,
+  "hold": null
 }

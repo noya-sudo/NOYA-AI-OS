@@ -1,0 +1,68 @@
+{
+  "slug": "crush-egypt-email",
+  "type": "email",
+  "stage": "email",
+  "vertical": "brand",
+  "company": "CRUSH Agency",
+  "company_id": "2e46b475-7f3b-4461-815f-6b97475df90e",
+  "opportunity_id": "1b438103-acb2-40ef-b5b3-661e4feb6fd2",
+  "date": "17 October 2026",
+  "prepared_for": "Sophie Christophe · CRUSH Agency",
+  "audience": "client",
+  "title": "Re: NOYA x CRUSH Agency — Egypt production support",
+  "to": [
+    "sophie@crush-agency.com"
+  ],
+  "reply_to_message_id": "1a11c8265f3f5a58",
+  "attach": "concept",
+  "subject": "Re: NOYA x CRUSH Agency — Egypt production support",
+  "body": "Hi Sophie,\n\nOn your earlier question: the clearest way to show how we work is a concrete idea for CRUSH, so I have put one together. It is attached.\n\nEgypt as a stage: three settings for a CRUSH evening where art, music and a luxury brand meet. A dinner facing the Pyramids at sunset, an evening at the Grand Egyptian Museum, or a long table by the sea in El Gouna. CRUSH leads the artists and the creative; NOYA runs the venues, permits, hospitality and logistics on the ground.\n\nWould twenty minutes next week work to talk it through?\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
+  "words": 97,
+  "sources": [
+    {
+      "fact": "Sophie replied on 5 Oct: would love to connect, and asked for a portfolio of NOYA's productions.",
+      "source": "CRM Gmail history, thread 'NOYA x CRUSH Agency — Egypt production support'",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Adam replied on 8 Oct with the Brands & Production brochure; no answer since.",
+      "source": "CRM Gmail history",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Paris and Dubai event agency founded in 2009 by Sophie Christophe, working across arts, music and fashion.",
+      "source": "Entrepreneur Middle East; Campaign Middle East",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "CRUSH collaborations include Cartier with Gloria Gaynor, IWC with Jamiroquai and Kehlani with Huda Beauty.",
+      "source": "Entrepreneur Middle East",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "ICONS. by CRUSH is its talent and audience division; CRUSH has opened in Doha.",
+      "source": "Campaign Middle East; Communicate Online",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The Grand Egyptian Museum has opened near the Pyramids of Giza, giving Cairo a cultural landmark of global scale.",
+      "source": "NOYA Partner Guide; public record",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Dior presented its Men's Fall 2023 show at the Pyramids of Giza, a first for a luxury house at the site.",
+      "source": "NOYA Brands Proposal (market reference, not NOYA work); widely reported",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Luxury hospitality continues to grow across Cairo, El Gouna and the North Coast.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    }
+  ],
+  "review": [
+    "Answers Sophie's 5 Oct request for material with an idea; claims no past NOYA productions. Attach the Egypt Concept PDF before sending."
+  ],
+  "level": 1,
+  "hold": null
+}

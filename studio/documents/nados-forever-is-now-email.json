@@ -1,0 +1,58 @@
+{
+  "slug": "nados-forever-is-now-email",
+  "type": "email",
+  "stage": "email",
+  "vertical": "brand",
+  "company": "Nado's Jewellery",
+  "company_id": "3740895f-0be5-4197-b931-0ff32572f4ce",
+  "opportunity_id": "c08149b7-d761-4b82-a6d5-5d4c621080aa",
+  "date": "17 October 2026",
+  "prepared_for": "Raymond Ayac and the Nado's Jewellery team",
+  "audience": "client",
+  "title": "Re: Nado's Jewellery at Forever Is Now",
+  "to": [
+    "raymond.ayac@nadosjewellery.com"
+  ],
+  "reply_to_message_id": "1a145b6860d8184c",
+  "attach": "onepage",
+  "subject": "Re: Nado's Jewellery at Forever Is Now",
+  "body": "Hi Raymond,\n\nFollowing up on my note of 16 October, here are three options for hosting guests around the Meet Her launch, on one page.\n\nTwo press days around the launch, an evening at the exhibition for your closest clients, or a two-day creator stay that includes the Grand Egyptian Museum. Nado's keeps the collection and the launch; NOYA handles arrivals, stays, transfers and dinners.\n\nWith the exhibition opening on 4 November, a short call this week would leave time to book. Would that work?\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
+  "words": 83,
+  "sources": [
+    {
+      "fact": "The sixth Forever Is Now runs from 4 to 28 November 2026 at the Pyramids of Giza.",
+      "source": "Ahram Online, 'Art D'Egypte announces 6th edition of Forever Is Now at Giza Pyramids'",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "It is the first edition led primarily by women artists.",
+      "source": "Ahram Online",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Art D'Égypte's programme for this edition lists the launch of Nado's Jewellery's Meet Her collection.",
+      "source": "artdegypte.org event listing, Forever Is Now 06",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Nado's is an Egyptian jewellery brand; Maha El Sharafy is co-founder and creative director.",
+      "source": "nadosjewellery.com/pages/about",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "NOYA wrote to Raymond Ayac on 16 Oct; no reply yet; follow-up due 20 Oct.",
+      "source": "CRM Gmail history; opportunity c08149b7",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Collection details, launch date within the exhibition and guest plans are not on public record.",
+      "source": "Public search, 17 Oct 2026",
+      "class": "VERIFIED"
+    }
+  ],
+  "review": [
+    "Adam approved attaching the concept (17 Oct). Under the new levels a cold contact gets the one-page version; the full concept is held until Raymond replies. Attach the one-page PDF before sending on 20 Oct."
+  ],
+  "level": 1,
+  "hold": null
+}

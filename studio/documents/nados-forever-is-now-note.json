@@ -51,11 +51,23 @@
             ],
             [
               "Next action",
-              "Follow up on 20 Oct with this concept attached"
+              "20 Oct: send the follow-up with the one-page concept (Gmail draft ready; Adam approved 17 Oct)"
             ],
             [
               "Value",
               null
+            ],
+            [
+              "Relationship",
+              "Cold"
+            ],
+            [
+              "Earned level",
+              "Level 2 · one-page concept"
+            ],
+            [
+              "Held",
+              "concept"
             ]
           ]
         },
@@ -298,5 +310,7 @@
       "source": "Public search, 17 Oct 2026",
       "class": "VERIFIED"
     }
-  ]
+  ],
+  "level": 0,
+  "hold": null
 }

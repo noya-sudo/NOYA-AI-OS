@@ -282,5 +282,7 @@
     "No fee, budget, timeline or access is promised. Venues and access are marked as subject to permits.",
     "Internal readiness only: no proposal goes to YKONE before a brief.",
     "Fees are Not recorded until Adam approves them; the document is marked Draft until then."
-  ]
+  ],
+  "level": 3,
+  "hold": null
 }

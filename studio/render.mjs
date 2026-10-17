@@ -32,6 +32,7 @@ function paginate() {
       const pages = [...docEl.querySelectorAll(':scope > .page')];
       if (i >= pages.length) break;
       const p = pages[i];
+      if (p.classList.contains('one')) { i++; continue; }  // a one-page concept never spills onto a second page
       const body = p.querySelector('.body');
       let guard = 0;
       while (body && body.scrollHeight > body.clientHeight + 1 && guard++ < 200) {

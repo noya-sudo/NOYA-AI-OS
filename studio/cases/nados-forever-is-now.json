@@ -7,28 +7,105 @@
   "party": "Nado's",
   "prepared_for": "Raymond Ayac and the Nado's Jewellery team",
   "date": "17 October 2026",
-  "status": { "stage": "CONTACTED", "last_contact": "16 Oct 2026 · NOYA wrote", "next_action": "Follow up on 20 Oct with this concept attached", "value": null },
+  "status": {
+    "stage": "CONTACTED",
+    "last_contact": "16 Oct 2026 · NOYA wrote",
+    "next_action": "20 Oct: send the follow-up with the one-page concept (Gmail draft ready; Adam approved 17 Oct)",
+    "value": null
+  },
+  "relationship": {
+    "state": "cold",
+    "why": "First note 16 Oct; no reply yet."
+  },
+  "strong": {
+    "fact": "launch",
+    "why": "Meet Her launch is listed in Art D'Égypte's programme for Forever Is Now, 4–28 Nov 2026."
+  },
   "people": [
-    { "name": "Raymond Ayac", "role": "Marketing Director", "route": "verified email (Hunter, 8 Oct)", "class": "VERIFIED" },
-    { "name": "Maha El Sharafy", "role": "Co-founder & Creative Director", "route": "no email; named on the brand's About page", "class": "PUBLIC" }
+    {
+      "name": "Raymond Ayac",
+      "role": "Marketing Director",
+      "route": "verified email (Hunter, 8 Oct)",
+      "class": "VERIFIED"
+    },
+    {
+      "name": "Maha El Sharafy",
+      "role": "Co-founder & Creative Director",
+      "route": "no email; named on the brand's About page",
+      "class": "PUBLIC"
+    }
   ],
   "timeline": [
-    { "date": "8 Oct", "who": "NOYA", "text": "Raymond Ayac's email verified." },
-    { "date": "16 Oct", "who": "NOYA", "text": "First email to Raymond: hosting guests for the Meet Her launch at Forever Is Now." },
-    { "date": "20 Oct", "who": "Next", "text": "Follow-up due, with a concrete guest programme." }
+    {
+      "date": "8 Oct",
+      "who": "NOYA",
+      "text": "Raymond Ayac's email verified."
+    },
+    {
+      "date": "16 Oct",
+      "who": "NOYA",
+      "text": "First email to Raymond: hosting guests for the Meet Her launch at Forever Is Now."
+    },
+    {
+      "date": "20 Oct",
+      "who": "Next",
+      "text": "Follow-up due, with a concrete guest programme."
+    }
   ],
   "facts": [
-    { "id": "fin_dates", "text": "The sixth Forever Is Now runs from 4 to 28 November 2026 at the Pyramids of Giza.", "source": "Ahram Online, 'Art D'Egypte announces 6th edition of Forever Is Now at Giza Pyramids'", "class": "PUBLIC" },
-    { "id": "fin_women", "text": "It is the first edition led primarily by women artists.", "source": "Ahram Online", "class": "PUBLIC" },
-    { "id": "launch", "text": "Art D'Égypte's programme for this edition lists the launch of Nado's Jewellery's Meet Her collection.", "source": "artdegypte.org event listing, Forever Is Now 06", "class": "PUBLIC" },
-    { "id": "brand", "text": "Nado's is an Egyptian jewellery brand; Maha El Sharafy is co-founder and creative director.", "source": "nadosjewellery.com/pages/about", "class": "PUBLIC" },
-    { "id": "sent", "text": "NOYA wrote to Raymond Ayac on 16 Oct; no reply yet; follow-up due 20 Oct.", "source": "CRM Gmail history; opportunity c08149b7", "class": "VERIFIED" },
-    { "id": "unknown", "text": "Collection details, launch date within the exhibition and guest plans are not on public record.", "source": "Public search, 17 Oct 2026", "class": "VERIFIED" }
+    {
+      "id": "fin_dates",
+      "text": "The sixth Forever Is Now runs from 4 to 28 November 2026 at the Pyramids of Giza.",
+      "source": "Ahram Online, 'Art D'Egypte announces 6th edition of Forever Is Now at Giza Pyramids'",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "fin_women",
+      "text": "It is the first edition led primarily by women artists.",
+      "source": "Ahram Online",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "launch",
+      "text": "Art D'Égypte's programme for this edition lists the launch of Nado's Jewellery's Meet Her collection.",
+      "source": "artdegypte.org event listing, Forever Is Now 06",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "brand",
+      "text": "Nado's is an Egyptian jewellery brand; Maha El Sharafy is co-founder and creative director.",
+      "source": "nadosjewellery.com/pages/about",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "sent",
+      "text": "NOYA wrote to Raymond Ayac on 16 Oct; no reply yet; follow-up due 20 Oct.",
+      "source": "CRM Gmail history; opportunity c08149b7",
+      "class": "VERIFIED"
+    },
+    {
+      "id": "unknown",
+      "text": "Collection details, launch date within the exhibition and guest plans are not on public record.",
+      "source": "Public search, 17 Oct 2026",
+      "class": "VERIFIED"
+    }
   ],
   "need": "Hosting for the people who carry the launch beyond Giza: international press, top clients and creators, during a month-long exhibition at the Pyramids.",
-  "next_doc": { "stage": "Concept", "why": "Raymond has our first note. A concrete guest programme gives him something to forward internally while there is still time to book November.", "when": "Attach to the 20 Oct follow-up." },
-  "questions": ["Who runs the launch: Nado's in-house or an agency?", "Which audience matters most: press, clients or creators?", "Which dates within 4 to 28 November?", "Are international guests expected, and from where?"],
-  "risks": ["Do not imply access to, or a role in, Art D'Égypte's exhibition.", "Collection details are not public: do not describe the pieces."],
+  "next_doc": {
+    "stage": "Concept",
+    "why": "Raymond has our first note. A concrete guest programme gives him something to forward internally while there is still time to book November.",
+    "when": "Attach to the 20 Oct follow-up."
+  },
+  "questions": [
+    "Who runs the launch: Nado's in-house or an agency?",
+    "Which audience matters most: press, clients or creators?",
+    "Which dates within 4 to 28 November?",
+    "Are international guests expected, and from where?"
+  ],
+  "risks": [
+    "Do not imply access to, or a role in, Art D'Égypte's exhibition.",
+    "Collection details are not public: do not describe the pieces."
+  ],
   "concept": {
     "title": "A launch *worth the journey.*",
     "subtitle": "A guest programme for Nado's Meet Her launch at Forever Is Now, Giza, November 2026: international press, clients and creators, hosted by NOYA.",
@@ -38,33 +115,157 @@
     "why_label": "Why this moment",
     "why_title": "November, at the Pyramids.",
     "why": [
-      { "label": "The exhibition", "fact": "fin_dates" },
-      { "label": "Its theme", "fact": "fin_women" },
-      { "label": "The launch", "fact": "launch", "text": "Meet Her is listed in Art D'Égypte's programme for this edition." }
+      {
+        "label": "The exhibition",
+        "fact": "fin_dates"
+      },
+      {
+        "label": "Its theme",
+        "fact": "fin_women"
+      },
+      {
+        "label": "The launch",
+        "fact": "launch",
+        "text": "Meet Her is listed in Art D'Égypte's programme for this edition."
+      }
     ],
     "options_label": "Three guest programmes",
     "options_title": "Choose who to host.",
     "options": [
-      { "n": "I", "title": "The press days", "text": "International and regional press hosted for the launch: arrivals, stays, a visit to the exhibition within Art D'Égypte's programme, and a private lunch.", "meta": [["Guests", "Press and editors"], ["Format", "Two days around the launch"], ["NOYA handles", "Hotels, transfers, lunch, guest journey"]] },
-      { "n": "II", "title": "The client evening", "text": "Nado's closest clients hosted for an evening at the exhibition, followed by a private dinner nearby.", "meta": [["Guests", "Top clients"], ["Format", "One evening"], ["NOYA handles", "Transfers, private dinner, hosting, security"]] },
-      { "n": "III", "title": "The creator stay", "text": "A small group of creators hosted over two days: the exhibition, the Grand Egyptian Museum and content timed to the launch.", "meta": [["Guests", "Creators"], ["Format", "Two-day stay"], ["NOYA handles", "Stays, transport, timings for content"]] }
+      {
+        "n": "I",
+        "title": "The press days",
+        "text": "International and regional press hosted for the launch: arrivals, stays, a visit to the exhibition within Art D'Égypte's programme, and a private lunch.",
+        "meta": [
+          [
+            "Guests",
+            "Press and editors"
+          ],
+          [
+            "Format",
+            "Two days around the launch"
+          ],
+          [
+            "NOYA handles",
+            "Hotels, transfers, lunch, guest journey"
+          ]
+        ]
+      },
+      {
+        "n": "II",
+        "title": "The client evening",
+        "text": "Nado's closest clients hosted for an evening at the exhibition, followed by a private dinner nearby.",
+        "meta": [
+          [
+            "Guests",
+            "Top clients"
+          ],
+          [
+            "Format",
+            "One evening"
+          ],
+          [
+            "NOYA handles",
+            "Transfers, private dinner, hosting, security"
+          ]
+        ]
+      },
+      {
+        "n": "III",
+        "title": "The creator stay",
+        "text": "A small group of creators hosted over two days: the exhibition, the Grand Egyptian Museum and content timed to the launch.",
+        "meta": [
+          [
+            "Guests",
+            "Creators"
+          ],
+          [
+            "Format",
+            "Two-day stay"
+          ],
+          [
+            "NOYA handles",
+            "Stays, transport, timings for content"
+          ]
+        ]
+      }
     ],
-    "leads": ["The collection and the brand story", "The launch with Art D'Égypte", "Guest list and invitations", "Press and content"],
-    "delivers": ["VIP guest hosting: arrivals, hotels, chauffeurs", "Press and creator trips", "Private dinners and venues", "Gifting logistics", "Security", "On-ground management, under {party}'s name"],
+    "leads": [
+      "The collection and the brand story",
+      "The launch with Art D'Égypte",
+      "Guest list and invitations",
+      "Press and content"
+    ],
+    "delivers": [
+      "VIP guest hosting: arrivals, hotels, chauffeurs",
+      "Press and creator trips",
+      "Private dinners and venues",
+      "Gifting logistics",
+      "Security",
+      "On-ground management, under {party}'s name"
+    ],
     "journey": [
-      { "when": "Day one", "text": "VIP airport reception, private transfers and check-in. A welcome dinner." },
-      { "when": "Day two", "text": "The launch at Forever Is Now, then the client evening." },
-      { "when": "Day three", "text": "The Grand Egyptian Museum for content, then departures." }
+      {
+        "when": "Day one",
+        "text": "VIP airport reception, private transfers and check-in. A welcome dinner."
+      },
+      {
+        "when": "Day two",
+        "text": "The launch at Forever Is Now, then the client evening."
+      },
+      {
+        "when": "Day three",
+        "text": "The Grand Egyptian Museum for content, then departures."
+      }
     ],
     "journey_note": "Every guest has one NOYA host, from the airport to the last transfer. Nado's team stays with the collection and the launch.",
     "next_title": "November guests need booking now.",
     "next": [
-      { "title": "Choose the guests", "text": "One call this month to agree who to host, and for how many days." },
-      { "title": "NOYA returns a costed programme", "text": "Hotels, transfers, dinners and hosting, with a clear budget." },
-      { "title": "Holds", "text": "NOYA holds rooms and venues as soon as you approve." }
+      {
+        "title": "Choose the guests",
+        "text": "One call this month to agree who to host, and for how many days."
+      },
+      {
+        "title": "NOYA returns a costed programme",
+        "text": "Hotels, transfers, dinners and hosting, with a clear budget."
+      },
+      {
+        "title": "Holds",
+        "text": "NOYA holds rooms and venues as soon as you approve."
+      }
     ],
-    "review": ["The exhibition visit follows Art D'Égypte's programme; nothing implies NOYA controls access to it.", "Collection details are not on public record, so the concept does not describe the pieces.", "Send with the 20 Oct follow-up to Raymond Ayac (verified email)."]
+    "review": [
+      "The exhibition visit follows Art D'Égypte's programme; nothing implies NOYA controls access to it.",
+      "Collection details are not on public record, so the concept does not describe the pieces.",
+      "Send with the 20 Oct follow-up to Raymond Ayac (verified email)."
+    ],
+    "one_lead": "Nado's launches Meet Her at the sixth Forever Is Now, at the Pyramids of Giza from 4 to 28 November. NOYA hosts the people who carry the launch beyond the room: international press, top clients and creators."
   },
-  "build": ["note", "concept"],
-  "review": []
+  "build": [
+    "note",
+    "email",
+    "onepage",
+    "concept"
+  ],
+  "review": [],
+  "email": {
+    "to_name": "Raymond",
+    "to": [
+      "raymond.ayac@nadosjewellery.com"
+    ],
+    "reply_to_message_id": "1a145b6860d8184c",
+    "attach": "onepage",
+    "subject": "Re: Nado's Jewellery at Forever Is Now",
+    "paragraphs": [
+      "Following up on my note of 16 October, here are three options for hosting guests around the Meet Her launch, on one page.",
+      "Two press days around the launch, an evening at the exhibition for your closest clients, or a two-day creator stay that includes the Grand Egyptian Museum. Nado's keeps the collection and the launch; NOYA handles arrivals, stays, transfers and dinners.",
+      "With the exhibition opening on 4 November, a short call this week would leave time to book. Would that work?"
+    ],
+    "review": [
+      "Adam approved attaching the concept (17 Oct). Under the new levels a cold contact gets the one-page version; the full concept is held until Raymond replies. Attach the one-page PDF before sending on 20 Oct."
+    ]
+  },
+  "hold": [
+    "concept"
+  ]
 }

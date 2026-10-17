@@ -30,7 +30,7 @@ You keep the client and the relationship. NOYA handles Egypt privately, under yo
 **Contact**
 
 Adam Elshazly, Founder, NOYA Concierge
-adam@noyaconcierge.com · noyaconcierge.com
+noya@noyaconcierge.com · noyaconcierge.com
 
 ---
 

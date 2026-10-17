@@ -1374,3 +1374,51 @@ notes. All 17 live-case documents are recorded:
 - Logo and photography: Drive and noyaconcierge.com can't be reached from this environment.
 - The contact email differs between the approved material (noya@) and the Egypt Desk draft (adam@).
 - No real past projects are on file for a portfolio, so concepts answer portfolio requests with a specific idea instead.
+
+## Studio operating mode (17 Oct 2026)
+
+Adam's decisions:
+- Nado's: A, attach the concept to the 20 Oct follow-up.
+- Client documents: A, `noya@noyaconcierge.com` is the standard document contact. The Egypt Desk draft was updated; the cold-email
+  signature standard is unchanged.
+- Sarah Haywood: A, hold until January unless a genuine relevant opportunity appears sooner.
+- CAA Base: B, identify the right player-care / client-services lead before approaching.
+
+Then: "Do not add more Studio modules now. Move Studio into OPERATING MODE… The purpose of Studio is not document volume. The
+purpose is conversion into real projects and revenue."
+
+**Three output levels**, enforced by the build (`studio/masters/stages.mjs`, `gate`):
+- Level 1, email idea: a concept in the email itself, under 150 words. Allowed for any prospect.
+- Level 2, one-page concept: for warm opportunities, or cold ones that are strong (they cite a dated public trigger).
+- Level 3, full concept, brief or proposal: only after demonstrated interest, a meeting or an actual brief.
+
+Each case records its relationship state with a verified fact as evidence. Anything above the earned level is built only as
+*held*, and a declined company gets nothing sendable.
+
+**Tracking** (`20261017250000_studio_operating_mode.sql`):
+- `studio_outputs` is the ledger.
+- `studio_outputs_refresh()` runs every 30 minutes. It fills sent → reply → meeting → proposal → won from the mailbox import, CRM
+  meetings and tasks, Studio proposals, recorded proposal values and won dates. Nothing is estimated.
+- `studio_output_status` shows each output's next step.
+- `studio_conversion` shows the funnel by level.
+- `studio_queue` lists companies that warmed in the last 30 days with no Studio output yet, and the level each has earned.
+- `studio_documents` gains `level` and `hold_reason`, plus two document types: EMAIL_IDEA and ONE_PAGE_CONCEPT.
+
+**Live conversion, 17 Oct.** Unsent Gmail drafts sit in each existing thread. Adam attaches the PDF and sends; the connector cannot
+attach files from here.
+- CRUSH: full concept (Level 3, engaged: Sophie asked for material and a call). Send now; the brief follows on the call.
+- YKONE: Egypt brief (Level 3, a meeting was held). Send now; the draft proposal stays internal until YKONE briefs.
+- Nado's: one-page concept with the 20 Oct follow-up (Level 2, cold but strong). The full concept is held until Raymond replies.
+- Founders Club: one-page retreat concept for the 2027 calendar (Level 2, warm). Timing is Adam's call; first week of November is
+  recommended.
+- Sporting Founders: retreat concept held (declined 5 Oct; no chasing).
+- Sarah Haywood: one-page concept held until January.
+- The Travel Diaries: Level 1 email idea held until the route is confirmed; the full concept is held.
+- CAA Base: no public player-care or client-services lead found (client care sits with their football consultants). The overview
+  is held; next step is a LinkedIn search.
+
+CRM next actions and due dates are set on each opportunity, so they surface in HQ without changing it.
+
+**Acceptance.** 11 cases and 33 outputs pass the gate, including the level checks. A planted-fault run showed that past-work
+claims, clichés, names from other cases and broken values are caught. Firecrawl ran out of credits during research; per Adam's rule
+it was not upgraded, and web search covered the facts.

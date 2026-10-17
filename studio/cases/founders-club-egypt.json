@@ -1,0 +1,215 @@
+{
+  "slug": "founders-club-egypt",
+  "vertical": "retreat",
+  "company": "Founders Club",
+  "company_id": "dd91b892-2119-47ff-83d3-8186f6275b92",
+  "opportunity_id": "63bb844f-4679-4fef-bc9a-0c516724230d",
+  "party": "Founders Club",
+  "prepared_for": "Paula Landron · Founders Club",
+  "date": "17 October 2026",
+  "status": {
+    "stage": "LONG_TERM",
+    "last_contact": "7 Oct 2026 · NOYA thanked Paula",
+    "next_action": "Send the one-page retreat concept as an idea for the 2027 calendar (Gmail draft ready; timing is Adam's call)",
+    "value": null
+  },
+  "relationship": {
+    "state": "warm",
+    "fact": "reply",
+    "why": "Paula replied on 6 Oct and invited us to stay in touch."
+  },
+  "people": [
+    {
+      "name": "Paula Landron",
+      "role": "Head of Events & Partnerships",
+      "route": "verified email (she replied)",
+      "class": "VERIFIED"
+    }
+  ],
+  "timeline": [
+    {
+      "date": "4 Oct",
+      "who": "NOYA",
+      "text": "First email to Paula: Egypt support for Founders Club retreats."
+    },
+    {
+      "date": "6 Oct",
+      "who": "Paula Landron",
+      "text": "Will reach out if an opportunity arises; looking forward to hearing from us."
+    },
+    {
+      "date": "7 Oct",
+      "who": "NOYA",
+      "text": "Thanked her; glad to help whenever a retreat in Egypt is on the table."
+    }
+  ],
+  "facts": [
+    {
+      "id": "reply",
+      "text": "On 6 Oct Paula wrote that she will reach out if an opportunity arises, and that she looks forward to hearing from us.",
+      "source": "Gmail thread 1a10326981072d1c (paula@foundersclubofficial.com)",
+      "class": "VERIFIED"
+    },
+    {
+      "id": "community",
+      "text": "A vetted membership community for founders, with chapters across North America including New York, Miami, Los Angeles and Toronto.",
+      "source": "foundersclubofficial.com (CRM research, 30 Sep 2026); Founders Club app listing",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "experiences",
+      "text": "Runs a large calendar of in-person experiences each year, including international retreats, summits and founder getaways.",
+      "source": "foundersclubofficial.com (CRM research, 30 Sep 2026); asora.com network profile",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "mexico",
+      "text": "Third-party coverage describes an annual retreat in Mexico; not confirmed on the club's own site.",
+      "source": "asora.com network profile (web search, 17 Oct 2026)",
+      "class": "UNVERIFIED"
+    },
+    {
+      "id": "gem",
+      "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "id": "gouna",
+      "text": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences.",
+      "source": "NOYA Partner Guide (El Gouna highlights)",
+      "class": "NOYA MATERIAL"
+    }
+  ],
+  "need": "A destination and a ground team for an international edition of the retreat calendar, with the club keeping its members, programme and speakers.",
+  "next_doc": {
+    "stage": "One-page concept",
+    "why": "Paula left the door open. A specific, dated idea for the 2027 calendar gives her something concrete to take to her team; it answers 'if an opportunity arises' with one.",
+    "when": "Adam's call: first week of November recommended; Q1 2027 was the CRM plan."
+  },
+  "questions": [
+    "When is the 2027 retreat calendar set, and by whom?",
+    "Group size for an international retreat?",
+    "Do members pay per retreat, or is it included?"
+  ],
+  "risks": [
+    "Do not reference the Mexico retreat: it is not confirmed on their own site.",
+    "One idea, one page: no full proposal until Paula shows interest."
+  ],
+  "concept": {
+    "eyebrow": "Egypt · Retreat concept",
+    "title": "Egypt, *an international edition.*",
+    "subtitle": "A Founders Club retreat in Egypt between February and April 2027: three settings, with NOYA running the ground and the club keeping the room.",
+    "idea_title": "Your members. Our ground.",
+    "lead": "Egypt offers an international edition few destinations can match: Giza, the Red Sea and the Nile, within one country. The club keeps the members, the programme and the speakers; NOYA runs the venues, stays, movement and every detail on the ground.",
+    "why_label": "Why Egypt",
+    "why": [
+      {
+        "label": "Your calendar",
+        "fact": "experiences",
+        "text": "International retreats and founder getaways are already part of the Founders Club year."
+      },
+      {
+        "label": "Egypt now",
+        "fact": "gem"
+      }
+    ],
+    "options": [
+      {
+        "n": "I",
+        "title": "The Giza summit",
+        "text": "Three days in Cairo: sessions by day, a private evening facing the Pyramids, and the Grand Egyptian Museum before departure.",
+        "meta": [
+          [
+            "Setting",
+            "Cairo and Giza"
+          ],
+          [
+            "Format",
+            "Three-day summit"
+          ],
+          [
+            "NOYA handles",
+            "Hotel, venues, permits, transfers, security"
+          ]
+        ]
+      },
+      {
+        "n": "II",
+        "title": "The Red Sea retreat",
+        "text": "El Gouna for four days: sessions in the morning, the sea in the afternoon, members together in villas or one resort.",
+        "meta": [
+          [
+            "Setting",
+            "El Gouna"
+          ],
+          [
+            "Format",
+            "Four-day retreat"
+          ],
+          [
+            "NOYA handles",
+            "Villas or resort, boats, dinners, wellness"
+          ]
+        ]
+      },
+      {
+        "n": "III",
+        "title": "The Nile mastermind",
+        "text": "A small group between Luxor and Aswan: riverside hotels, a private Nile journey and conversations among the temples.",
+        "meta": [
+          [
+            "Setting",
+            "Luxor and Aswan"
+          ],
+          [
+            "Format",
+            "Small-group mastermind"
+          ],
+          [
+            "NOYA handles",
+            "Hotels, river journey, guiding, movement"
+          ]
+        ]
+      }
+    ],
+    "next_title": "One call to choose the setting.",
+    "next": [
+      {
+        "title": "Choose a setting and a window",
+        "text": "Agree the setting, the group size and dates between February and April 2027."
+      },
+      {
+        "title": "NOYA returns a costed outline",
+        "text": "Venues, stays and movement, priced per member, for the club to present."
+      }
+    ],
+    "review": [
+      "Proposes a window (February to April 2027); no date is claimed as theirs.",
+      "The Mexico retreat is not mentioned: it is not confirmed on the club's site."
+    ]
+  },
+  "email": {
+    "to_name": "Paula",
+    "to": [
+      "paula@foundersclubofficial.com"
+    ],
+    "reply_to_message_id": "1a1177f95a0b5ab0",
+    "attach": "onepage",
+    "subject": "Re: Egypt support for Founders Club retreats",
+    "paragraphs": [
+      "As the 2027 calendar takes shape, one idea for an international edition: a Founders Club retreat in Egypt, between February and April.",
+      "Three ways it could work: a Giza summit with a private evening facing the Pyramids, a Red Sea retreat in El Gouna, or a small mastermind on the Nile between Luxor and Aswan. Your team keeps the members, the programme and the speakers; NOYA runs the venues, stays, movement and everything on the ground.",
+      "I have put it on one page, attached. Happy to talk it through whenever suits."
+    ],
+    "review": [
+      "Replies in the existing thread. Timing is Adam's call. Attach the one-page PDF before sending."
+    ]
+  },
+  "build": [
+    "note",
+    "email",
+    "onepage"
+  ],
+  "review": []
+}

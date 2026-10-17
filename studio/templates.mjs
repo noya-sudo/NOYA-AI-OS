@@ -12,6 +12,7 @@ const TYPE = {
   itinerary: { label: 'Itinerary' },
   ops: { label: 'Operations itinerary' },
   desk: { label: 'Private services' },
+  onepage: { label: 'One-page concept' },
 };
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -51,6 +52,8 @@ const BLOCKS = {
   callout: (b) => `<div class="callout"><span class="label">${esc(b.label || '')}</span><div class="big">${fmt(b.big)}</div>${b.text ? `<p>${fmt(b.text)}</p>` : ''}</div>`,
   table: (b) => `<table class="tbl${b.compact ? ' compact' : ''}">${b.widths ? `<colgroup>${b.widths.map((w) => `<col style="width:${w}">`).join('')}</colgroup>` : ''}<thead><tr>${b.cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.map((r) => `<tr>${r.map((c) => `<td>${NONE(c) ? '<span class="muted">To confirm</span>' : fmt(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
   itinerary: (b) => b.days.map((d, i) => `<div class="day"><div class="dl"><span class="n">${esc(d.n || String(i + 1).padStart(2, '0'))}</span><span class="label">${esc(d.label || '')}</span>${d.date ? `<span class="dt">${esc(d.date)}</span>` : ''}</div><div class="items">${d.items.map((it) => `<div class="it"><span class="tm">${esc(it.time || '')}</span><div><h4>${fmt(it.title)}</h4>${it.text ? `<p>${fmt(it.text)}</p>` : ''}</div></div>`).join('')}</div></div>`).join(''),
+  // One-page concept: the next step and the contact on one line at the foot of the page.
+  strip: (b) => `<div class="strip"><div><span class="label">${esc(b.label)}</span><h3>${fmt(b.title)}</h3><p>${fmt(b.text)}</p></div><div class="who">${esc(b.contact.name)}<span class="role">${esc(b.contact.role)}</span><span class="ways">${b.contact.lines.map(esc).join('<br>')}</span></div></div>`,
   check: (b) => `<div class="check">${b.items.map((c) => `<div class="c"><div>${fmt(c.text)}${c.note ? `<span class="n">${fmt(c.note)}</span>` : ''}</div><span class="cls ${slugCls(c.status)}">${esc(c.status || 'To confirm')}</span></div>`).join('')}</div>`,
 };
 
@@ -96,9 +99,22 @@ function contentPage(doc, page, n, logo) {
 </section>`;
 }
 
+// Level 2: the whole concept on one A4 page. A navy band carries the title; the page never paginates, so anything that does not
+// fit fails the render instead of spilling onto a second page.
+function onePage(doc, logo) {
+  const flag = flagOf(doc);
+  return `<section class="page one" data-kind="one">
+  <div class="band"><div class="top">${mark(logo)}<div class="meta"><span class="label">${esc(TYPE.onepage.label)}</span><span class="label">${esc(doc.date)}</span>${flag ? `<span class="internal-flag">${esc(flag)}</span>` : ''}</div></div>
+    <div class="eyebrow label">${esc(doc.eyebrow)}</div><h1>${fmt(doc.title)}</h1>${doc.subtitle ? `<div class="sub">${fmt(doc.subtitle)}</div>` : ''}</div>
+  <div class="body">${blocks(doc.pages[0].blocks)}</div>
+  <div class="foot"><span class="label">Prepared for ${esc(doc.prepared_for)}</span><span class="label">NOYA Concierge · Private &amp; confidential</span></div>
+</section>`;
+}
+
 // The pages of one document, without the HTML shell (used to bind several documents into one pack).
 export function documentPages(doc, logo) {
   if (!TYPE[doc.type]) throw new Error(`Unknown document type: ${doc.type}`);
+  if (doc.type === 'onepage') return onePage(doc, logo);
   return [cover(doc, logo), ...doc.pages.map((p, i) => contentPage(doc, p, i + 2, logo))].join('\n');
 }
 

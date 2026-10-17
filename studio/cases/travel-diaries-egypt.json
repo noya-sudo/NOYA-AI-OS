@@ -7,20 +7,79 @@
   "party": "The Travel Diaries",
   "prepared_for": "Holly Rubenstein · The Travel Diaries",
   "date": "17 October 2026",
-  "status": { "stage": "RESEARCHED", "last_contact": null, "next_action": "First approach with this concept: the podcast's published email, or LinkedIn", "value": null },
-  "people": [{ "name": "Holly Rubenstein", "role": "Host, Producer & Editor", "route": "podcast email published in the show notes (not verified)", "class": "PUBLIC" }],
-  "timeline": [{ "date": "Sep 2026", "who": "NOYA", "text": "Media Director recorded the idea: an Egypt destination special (no contact yet)." }],
+  "status": {
+    "stage": "RESEARCHED",
+    "last_contact": null,
+    "next_action": "First approach with the Level 1 email idea once the route is confirmed (podcast email from the show notes, not verified)",
+    "value": null
+  },
+  "relationship": {
+    "state": "cold",
+    "why": "No contact yet."
+  },
+  "people": [
+    {
+      "name": "Holly Rubenstein",
+      "role": "Host, Producer & Editor",
+      "route": "podcast email published in the show notes (not verified)",
+      "class": "PUBLIC"
+    }
+  ],
+  "timeline": [
+    {
+      "date": "Sep 2026",
+      "who": "NOYA",
+      "text": "Media Director recorded the idea: an Egypt destination special (no contact yet)."
+    }
+  ],
   "facts": [
-    { "id": "show", "text": "A weekly interview series in which journalist Holly Rubenstein talks to a guest about their travels; hosted on Acast.", "source": "Acast show page; podcast directories", "class": "PUBLIC" },
-    { "id": "specials", "text": "The show makes destination specials, including Queensland with Matt Tebbutt (May 2026) and Saudi Arabia.", "source": "Episode listings (Acast, podcast directories)", "class": "PUBLIC" },
-    { "id": "video", "text": "CRM note says the show is now filmed for video; not confirmed on public record.", "source": "CRM company note (Acast feed check)", "class": "UNVERIFIED" },
-    { "id": "gem", "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.", "source": "NOYA Partner Guide", "class": "NOYA MATERIAL" },
-    { "id": "places", "text": "Pyramids of Giza · Grand Egyptian Museum · Cairo · El Gouna and the Red Sea · North Coast · Luxor and Aswan.", "source": "NOYA Partner Guide", "class": "NOYA MATERIAL" }
+    {
+      "id": "show",
+      "text": "A weekly interview series in which journalist Holly Rubenstein talks to a guest about their travels; hosted on Acast.",
+      "source": "Acast show page; podcast directories",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "specials",
+      "text": "The show makes destination specials, including Queensland with Matt Tebbutt (May 2026) and Saudi Arabia.",
+      "source": "Episode listings (Acast, podcast directories)",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "video",
+      "text": "CRM note says the show is now filmed for video; not confirmed on public record.",
+      "source": "CRM company note (Acast feed check)",
+      "class": "UNVERIFIED"
+    },
+    {
+      "id": "gem",
+      "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "id": "places",
+      "text": "Pyramids of Giza · Grand Egyptian Museum · Cairo · El Gouna and the Red Sea · North Coast · Luxor and Aswan.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    }
   ],
   "need": "A destination special with a strong backdrop and an easy production: locations, permissions, stays and movement handled locally.",
-  "next_doc": { "stage": "Concept", "why": "No contact yet. A specific Egypt special is the opening: it is about their show, not about NOYA.", "when": "With the first approach." },
-  "questions": ["Is the show filmed now, or audio only?", "How are destination specials funded today: partner, production fee or hosted?", "Lead time between recording and release?"],
-  "risks": ["Never pitch an appearance by Adam; the idea is their episode.", "Agree the commercial model before anything is booked.", "Do not state the show is filmed until confirmed."],
+  "next_doc": {
+    "stage": "Concept",
+    "why": "No contact yet. A specific Egypt special is the opening: it is about their show, not about NOYA.",
+    "when": "With the first approach."
+  },
+  "questions": [
+    "Is the show filmed now, or audio only?",
+    "How are destination specials funded today: partner, production fee or hosted?",
+    "Lead time between recording and release?"
+  ],
+  "risks": [
+    "Never pitch an appearance by Adam; the idea is their episode.",
+    "Agree the commercial model before anything is booked.",
+    "Do not state the show is filmed until confirmed."
+  ],
   "concept": {
     "title": "Egypt, *a destination special.*",
     "subtitle": "An Egypt episode for The Travel Diaries, recorded on location, with NOYA handling locations, permissions, hosting and movement.",
@@ -30,32 +89,140 @@
     "why_label": "Why Egypt",
     "why_title": "A special the format already supports.",
     "why": [
-      { "label": "The format", "fact": "specials", "text": "Destination specials are already part of the show, from Queensland to Saudi Arabia." },
-      { "label": "Culture", "fact": "gem" },
-      { "label": "Settings", "fact": "places" }
+      {
+        "label": "The format",
+        "fact": "specials",
+        "text": "Destination specials are already part of the show, from Queensland to Saudi Arabia."
+      },
+      {
+        "label": "Culture",
+        "fact": "gem"
+      },
+      {
+        "label": "Settings",
+        "fact": "places"
+      }
     ],
     "options_label": "Three recording settings",
     "options_title": "Choose the setting.",
     "options": [
-      { "n": "I", "title": "The Giza conversation", "text": "Recorded with the Pyramids as the backdrop, early in the day, when the light is best.", "meta": [["Setting", "Giza"], ["Format", "Episode recorded on location"], ["NOYA handles", "Location permissions, transport, hosting"]] },
-      { "n": "II", "title": "The museum episode", "text": "A conversation at the Grand Egyptian Museum, among the collection, subject to filming permission.", "meta": [["Setting", "Grand Egyptian Museum"], ["Format", "Episode, with stills or video"], ["NOYA handles", "Permission requests, timings, access on the day"]] },
-      { "n": "III", "title": "The river special", "text": "Two days between Luxor and Aswan: recording on the Nile and among the temples.", "meta": [["Setting", "Luxor and Aswan"], ["Format", "Two-part special"], ["NOYA handles", "Hotels, river travel, permissions, guides"]] }
+      {
+        "n": "I",
+        "title": "The Giza conversation",
+        "text": "Recorded with the Pyramids as the backdrop, early in the day, when the light is best.",
+        "meta": [
+          [
+            "Setting",
+            "Giza"
+          ],
+          [
+            "Format",
+            "Episode recorded on location"
+          ],
+          [
+            "NOYA handles",
+            "Location permissions, transport, hosting"
+          ]
+        ]
+      },
+      {
+        "n": "II",
+        "title": "The museum episode",
+        "text": "A conversation at the Grand Egyptian Museum, among the collection, subject to filming permission.",
+        "meta": [
+          [
+            "Setting",
+            "Grand Egyptian Museum"
+          ],
+          [
+            "Format",
+            "Episode, with stills or video"
+          ],
+          [
+            "NOYA handles",
+            "Permission requests, timings, access on the day"
+          ]
+        ]
+      },
+      {
+        "n": "III",
+        "title": "The river special",
+        "text": "Two days between Luxor and Aswan: recording on the Nile and among the temples.",
+        "meta": [
+          [
+            "Setting",
+            "Luxor and Aswan"
+          ],
+          [
+            "Format",
+            "Two-part special"
+          ],
+          [
+            "NOYA handles",
+            "Hotels, river travel, permissions, guides"
+          ]
+        ]
+      }
     ],
     "journey_label": "The recording trip",
     "journey_title": "An example trip.",
     "journey": [
-      { "when": "Day one", "text": "Arrivals, transfers and a look at the first location." },
-      { "when": "Day two", "text": "Recording day, with access windows planned around light and crowds." },
-      { "when": "Day three", "text": "The second setting, then departures." }
+      {
+        "when": "Day one",
+        "text": "Arrivals, transfers and a look at the first location."
+      },
+      {
+        "when": "Day two",
+        "text": "Recording day, with access windows planned around light and crowds."
+      },
+      {
+        "when": "Day three",
+        "text": "The second setting, then departures."
+      }
     ],
     "next_title": "One call to choose the setting.",
     "next": [
-      { "title": "Choose the setting and the guest", "text": "Your call; NOYA shapes the logistics around it." },
-      { "title": "NOYA returns a production outline", "text": "Permissions, stays and movement, and the commercial model, agreed before anything is booked." },
-      { "title": "Permissions", "text": "NOYA starts permission requests through our local partners." }
+      {
+        "title": "Choose the setting and the guest",
+        "text": "Your call; NOYA shapes the logistics around it."
+      },
+      {
+        "title": "NOYA returns a production outline",
+        "text": "Permissions, stays and movement, and the commercial model, agreed before anything is booked."
+      },
+      {
+        "title": "Permissions",
+        "text": "NOYA starts permission requests through our local partners."
+      }
     ],
-    "review": ["No guest is named; the guest is Holly's choice.", "Video is not confirmed on public record, so the concept says 'recorded' and offers stills or video as an option.", "The commercial model (production fee, hosted stay or partner) is open: agree it before anything is booked."]
+    "review": [
+      "No guest is named; the guest is Holly's choice.",
+      "Video is not confirmed on public record, so the concept says 'recorded' and offers stills or video as an option.",
+      "The commercial model (production fee, hosted stay or partner) is open: agree it before anything is booked."
+    ]
   },
-  "build": ["note", "concept"],
-  "review": []
+  "build": [
+    "note",
+    "email",
+    "concept"
+  ],
+  "review": [],
+  "email": {
+    "to_name": "Holly",
+    "to": [],
+    "attach": null,
+    "subject": "An Egypt special for The Travel Diaries",
+    "paragraphs": [
+      "The Travel Diaries already makes destination specials, from Queensland to Saudi Arabia. Egypt could be a natural next one.",
+      "One idea: an episode recorded on location, with the guest of your choosing, at Giza at first light, at the Grand Egyptian Museum, or on the Nile between Luxor and Aswan. NOYA, a UK-based concierge and destination management company specialising in Egypt, would handle locations, permissions, stays and movement on the ground.",
+      "Would it be worth a short call to see if it fits your plans for next year?"
+    ],
+    "review": [
+      "Route not verified: the podcast email in the show notes. Confirm before drafting in Gmail.",
+      "Says \"recorded\", not \"filmed\": video is not confirmed on public record."
+    ]
+  },
+  "hold": [
+    "concept"
+  ]
 }

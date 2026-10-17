@@ -51,11 +51,23 @@
             ],
             [
               "Next action",
-              "Revisit in January 2027 with a specific Egypt wedding angle (this concept)"
+              "Hold until January 2027 unless a genuine relevant opportunity appears sooner (Adam, 17 Oct); then send the one-page concept"
             ],
             [
               "Value",
               null
+            ],
+            [
+              "Relationship",
+              "Warm"
+            ],
+            [
+              "Earned level",
+              "Level 2 · one-page concept"
+            ],
+            [
+              "Held",
+              "concept"
             ]
           ]
         },
@@ -286,5 +298,7 @@
       "source": "NOYA Partner Guide (Luxor and Aswan)",
       "class": "NOYA MATERIAL"
     }
-  ]
+  ],
+  "level": 0,
+  "hold": null
 }

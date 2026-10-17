@@ -1,0 +1,60 @@
+{
+  "slug": "ykone-egypt-email",
+  "type": "email",
+  "stage": "email",
+  "vertical": "brand",
+  "company": "YKONE Middle East",
+  "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
+  "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
+  "date": "17 October 2026",
+  "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
+  "audience": "client",
+  "title": "Re: NOYA Concierge × YKONE | Egypt & Beyond",
+  "to": [
+    "jad@ykone.com",
+    "amalj@ykone.com",
+    "magali@ykone.com"
+  ],
+  "reply_to_message_id": "1a11c3b78af9793b",
+  "attach": "brief",
+  "subject": "Re: NOYA Concierge × YKONE | Egypt & Beyond",
+  "body": "Hi Jad and Amal,\n\nFollowing our call on 8 October, I have put our conversation into a short Egypt brief for YKONE. It is attached.\n\nIt sets out how we would work together: YKONE leads the creative vision and the brand relationship, and NOYA handles everything on the ground in Egypt, under your name. It includes one idea to start, a private brand dinner at the Pyramids or the Grand Egyptian Museum, and a single page for your next brief that points to Egypt.\n\nIf anything is live this quarter or next, share whatever is known and we will come back with a concept and a costed proposal.\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
+  "words": 104,
+  "sources": [
+    {
+      "fact": "YKONE is looking at the Egypt market and asked for a call.",
+      "source": "Gmail: Magali Rady to noya@, 29 Sep 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Call held with Jad Chbeir (Commercial Director) and Amal on 8 Oct; NOYA Overview and Egypt Partner Guide sent the same day.",
+      "source": "Gmail: noya@ to Jad and Amal, 8 Oct 2026; CRM opportunity ea415161",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "\"YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.\"",
+      "source": "Adam's own email, 8 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "Idea already offered in Adam's follow-up draft: a private brand dinner beside the Pyramids or at the Grand Egyptian Museum, with talent hosting by NOYA.",
+      "source": "Gmail draft (unsent), recorded in the CRM 15 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "YKONE is part of ONE Group, formed in January 2026 with Mirror Mirror (creative production) and others; the group has since taken a stake in BYSELECT, a UAE experiential agency.",
+      "source": "Net Influencer and Entrepreneur coverage of ONE Group, 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct.",
+      "source": "CRM Gmail history, checked 15 Oct 2026",
+      "class": "VERIFIED"
+    }
+  ],
+  "review": [
+    "Replies in the thread of Adam's 8 Oct follow-up to Jad, Amal and Magali. Attach the Egypt Brief PDF before sending."
+  ],
+  "level": 1,
+  "hold": null
+}

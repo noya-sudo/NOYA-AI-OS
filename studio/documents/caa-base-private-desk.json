@@ -192,6 +192,16 @@
       "class": "INFERRED"
     },
     {
+      "fact": "Client care at CAA Base sits with its football consultants: a CAA job listing describes the role as at the heart of client care, supporting players on and off the pitch.",
+      "source": "CAA 'Football Consultant' listing (jobsinfootball.com; entertainmentcareers.net), seen 17 Oct 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No named player-care or client-services lead found in public sources; senior figures on record are Leon Angel and player agent Frank Trimboli (at the 2019 acquisition).",
+      "source": "Web search, 17 Oct 2026; sponsorship.org",
+      "class": "VERIFIED"
+    },
+    {
       "fact": "Services, process and principles",
       "source": "Noya Concierge Private (Drive 1nDdSsJNcs2h1QgucmojGhm2mZhkLA4Mg); docs/NOYA_PRIVATE_EGYPT_DESK.md (draft for Adam, 8 Oct 2026)",
       "class": "NOYA MATERIAL"
@@ -199,7 +209,9 @@
   ],
   "review": [
     "No client or player is named, and nothing refers to anyone's private travel.",
-    "Contact email is noya@noyaconcierge.com (NOYA Private material); the Egypt Desk draft in docs uses adam@. Confirm which.",
-    "Best reader: a client-care or player-services lead; Leon Angel via LinkedIn until one is identified."
-  ]
+    "Contact email is noya@noyaconcierge.com, the standard document contact (Adam, 17 Oct).",
+    "Held until a player-care or client-services lead is identified and engaged (Adam, 17 Oct)."
+  ],
+  "level": 3,
+  "hold": "Held until Level 3 · full brief / proposal: cold today."
 }

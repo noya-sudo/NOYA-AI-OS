@@ -51,11 +51,23 @@
             ],
             [
               "Next action",
-              "First approach: one discreet note offering this overview (Leon Angel, LinkedIn), or a player-care lead once identified"
+              "Identify the player-care / client-services lead before any approach (Adam, 17 Oct): LinkedIn search of CAA Base football consultants and client-care staff"
             ],
             [
               "Value",
               null
+            ],
+            [
+              "Relationship",
+              "Cold"
+            ],
+            [
+              "Earned level",
+              "Level 1 · email idea"
+            ],
+            [
+              "Held",
+              "desk"
             ]
           ]
         },
@@ -115,6 +127,18 @@
               "text": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.",
               "source": "CRM opportunity ce410db0 (commercial trigger)",
               "class": "INFERRED"
+            },
+            {
+              "id": "client_care",
+              "text": "Client care at CAA Base sits with its football consultants: a CAA job listing describes the role as at the heart of client care, supporting players on and off the pitch.",
+              "source": "CAA 'Football Consultant' listing (jobsinfootball.com; entertainmentcareers.net), seen 17 Oct 2026",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "no_lead",
+              "text": "No named player-care or client-services lead found in public sources; senior figures on record are Leon Angel and player agent Frank Trimboli (at the 2019 acquisition).",
+              "source": "Web search, 17 Oct 2026; sponsorship.org",
+              "class": "VERIFIED"
             }
           ]
         },
@@ -173,7 +197,7 @@
           "t": "check",
           "items": [
             {
-              "text": "Who owns client care and lifestyle requests at CAA Base?",
+              "text": "Which football consultant or client-care lead handles players' off-pitch requests?",
               "status": "To ask"
             },
             {
@@ -246,6 +270,18 @@
       "fact": "Players and families travel privately in breaks and holidays; Egypt needs a discreet, reliable on-ground partner.",
       "source": "CRM opportunity ce410db0 (commercial trigger)",
       "class": "INFERRED"
+    },
+    {
+      "fact": "Client care at CAA Base sits with its football consultants: a CAA job listing describes the role as at the heart of client care, supporting players on and off the pitch.",
+      "source": "CAA 'Football Consultant' listing (jobsinfootball.com; entertainmentcareers.net), seen 17 Oct 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No named player-care or client-services lead found in public sources; senior figures on record are Leon Angel and player agent Frank Trimboli (at the 2019 acquisition).",
+      "source": "Web search, 17 Oct 2026; sponsorship.org",
+      "class": "VERIFIED"
     }
-  ]
+  ],
+  "level": 0,
+  "hold": null
 }

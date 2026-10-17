@@ -1,0 +1,289 @@
+{
+  "slug": "sporting-founders-egypt-note",
+  "type": "note",
+  "stage": "note",
+  "vertical": "retreat",
+  "master_label": "Founder Retreats",
+  "company": "Sporting Founders",
+  "company_id": "7c9f5e0c-2d5f-48c8-bad7-8e504510a01e",
+  "opportunity_id": "6b4e82bb-8008-49bd-b141-a0619def25c6",
+  "date": "17 October 2026",
+  "prepared_for": "Adam Elshazly",
+  "cover": {
+    "style": "paper",
+    "position": "high",
+    "quiet": true
+  },
+  "running": "Opportunity note",
+  "audience": "internal",
+  "eyebrow": "Founder Retreats · Opportunity note",
+  "title": "Sporting Founders",
+  "subtitle": "If the community grows into in-person cohort meet-ups, a destination and a ground team that keep the programme with Sporting Founders.",
+  "for_label": "For",
+  "pages": [
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "01",
+          "label": "Where it stands",
+          "title": "Lost."
+        },
+        {
+          "t": "kv",
+          "cols": 3,
+          "items": [
+            [
+              "Company",
+              "Sporting Founders"
+            ],
+            [
+              "Lane",
+              "Founder Retreats"
+            ],
+            [
+              "Stage",
+              "Lost"
+            ],
+            [
+              "Last contact",
+              "7 Oct 2026 · NOYA thanked Alex"
+            ],
+            [
+              "Next action",
+              "No chasing (declined 5 Oct). Concept held; use only if Alex writes back"
+            ],
+            [
+              "Value",
+              null
+            ],
+            [
+              "Relationship",
+              "Declined"
+            ],
+            [
+              "Earned level",
+              "Internal"
+            ],
+            [
+              "Held",
+              "onepage"
+            ]
+          ]
+        },
+        {
+          "t": "kv",
+          "cols": 2,
+          "items": [
+            [
+              "Founder",
+              "Alex Laird · verified email (he replied)"
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "02",
+          "label": "Relationship",
+          "title": "What has happened so far."
+        },
+        {
+          "t": "timeline",
+          "items": [
+            {
+              "date": "4 Oct",
+              "who": "NOYA",
+              "text": "First email to Alex: a private Egypt sports-founder retreat, 2–3 day pilot."
+            },
+            {
+              "date": "5 Oct",
+              "who": "Alex Laird",
+              "text": "A great idea, but not for us at our stage; will message if or when it is appropriate."
+            },
+            {
+              "date": "7 Oct",
+              "who": "NOYA",
+              "text": "Thanked him; glad to help if the timing changes. Alex reacted with an emoji."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "03",
+          "label": "What we know",
+          "title": "Facts, with their source."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "id": "decline",
+              "text": "On 5 Oct Alex wrote that it sounds like a great idea but is not for Sporting Founders at its stage, and that he will be in touch if or when it is appropriate.",
+              "source": "Gmail thread 1a10326728afca52 (alex@sportingfounders.com)",
+              "class": "VERIFIED"
+            },
+            {
+              "id": "community",
+              "text": "A sports entrepreneurship community that runs in cohorts, with a newsletter on opportunities and trends in sports entrepreneurship.",
+              "source": "Sporting Founders interest form (tally.so/r/xXGXkd), web search 17 Oct 2026",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "cohort",
+              "text": "Its first cohort brought together 128 'Players' and 22 'Prospects' across 43 countries.",
+              "source": "LinkedIn post by Colin Bowden (web search, 17 Oct 2026)",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "gem",
+              "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+              "source": "NOYA Partner Guide",
+              "class": "NOYA MATERIAL"
+            },
+            {
+              "id": "gouna",
+              "text": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences.",
+              "source": "NOYA Partner Guide (El Gouna highlights)",
+              "class": "NOYA MATERIAL"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "04",
+          "label": "What they need",
+          "title": "Our reading, to test on the call."
+        },
+        {
+          "t": "facts",
+          "items": [
+            {
+              "text": "If the community grows into in-person cohort meet-ups, a destination and a ground team that keep the programme with Sporting Founders.",
+              "source": "NOYA reading of the facts above",
+              "class": "INFERRED"
+            }
+          ]
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Product desk",
+              "NOYA Corporate Desk (with NOYA Private)"
+            ],
+            [
+              "Proposal shape",
+              "Delegation plan · Per-person or fixed fee · Pass-through costs · Security."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "t": "section",
+          "n": "05",
+          "label": "Next document",
+          "title": "What moves this forward."
+        },
+        {
+          "t": "callout",
+          "label": "Recommended · One-page concept (held)",
+          "big": "They declined on timing, politely. The concept is ready for the day Alex writes back; it is not sent before.",
+          "text": "Only if Alex reopens the conversation."
+        },
+        {
+          "t": "section",
+          "n": "06",
+          "label": "Open questions",
+          "title": "To answer before the proposal."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Does the community plan in-person cohort meet-ups?",
+              "status": "To ask"
+            },
+            {
+              "text": "Who would host: the founders, or a partner?",
+              "status": "To ask"
+            }
+          ]
+        },
+        {
+          "t": "section",
+          "n": "07",
+          "label": "Expected objections",
+          "title": "And the answer."
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "Our travel management company handles it.",
+              "TMCs book flights and hotels; NOYA handles everything on the ground. They work well together."
+            ],
+            [
+              "We have a concierge.",
+              "NOYA is often the specialist for Egypt and complex trips."
+            ]
+          ]
+        },
+        {
+          "t": "section",
+          "n": "08",
+          "label": "Rules for this account",
+          "title": "Do not."
+        },
+        {
+          "t": "check",
+          "items": [
+            {
+              "text": "Declined 5 Oct: no chasing, no follow-up sequence.",
+              "status": "Rule"
+            },
+            {
+              "text": "Alex's role and the cohort numbers come from public sources; confirm before use.",
+              "status": "Rule"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "fact": "On 5 Oct Alex wrote that it sounds like a great idea but is not for Sporting Founders at its stage, and that he will be in touch if or when it is appropriate.",
+      "source": "Gmail thread 1a10326728afca52 (alex@sportingfounders.com)",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "A sports entrepreneurship community that runs in cohorts, with a newsletter on opportunities and trends in sports entrepreneurship.",
+      "source": "Sporting Founders interest form (tally.so/r/xXGXkd), web search 17 Oct 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Its first cohort brought together 128 'Players' and 22 'Prospects' across 43 countries.",
+      "source": "LinkedIn post by Colin Bowden (web search, 17 Oct 2026)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "fact": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences.",
+      "source": "NOYA Partner Guide (El Gouna highlights)",
+      "class": "NOYA MATERIAL"
+    }
+  ],
+  "level": 0,
+  "hold": null
+}

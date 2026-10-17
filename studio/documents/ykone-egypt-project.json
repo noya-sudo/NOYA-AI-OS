@@ -324,5 +324,7 @@
       "source": "CRM Gmail history, checked 15 Oct 2026",
       "class": "VERIFIED"
     }
-  ]
+  ],
+  "level": 3,
+  "hold": null
 }

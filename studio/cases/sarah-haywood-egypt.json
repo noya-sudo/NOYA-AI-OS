@@ -7,26 +7,99 @@
   "party": "Sarah Haywood",
   "prepared_for": "Sarah Haywood and the events team",
   "date": "17 October 2026",
-  "status": { "stage": "LONG_TERM", "last_contact": "8 Oct 2026 · NOYA thanked them", "next_action": "Revisit in January 2027 with a specific Egypt wedding angle (this concept)", "value": null },
-  "people": [{ "name": "Sarah Haywood", "role": "Founder Director", "route": "verified email", "class": "VERIFIED" }],
+  "status": {
+    "stage": "LONG_TERM",
+    "last_contact": "8 Oct 2026 · NOYA thanked them",
+    "next_action": "Hold until January 2027 unless a genuine relevant opportunity appears sooner (Adam, 17 Oct); then send the one-page concept",
+    "value": null
+  },
+  "relationship": {
+    "state": "warm",
+    "fact": "reply",
+    "why": "Thanked us and passed our note to the events team (6 Oct)."
+  },
+  "people": [
+    {
+      "name": "Sarah Haywood",
+      "role": "Founder Director",
+      "route": "verified email",
+      "class": "VERIFIED"
+    }
+  ],
   "timeline": [
-    { "date": "4 Oct", "who": "NOYA", "text": "First email to Sarah Haywood: discreet Egypt execution for high-profile celebrations." },
-    { "date": "6 Oct", "who": "Sarah Haywood", "text": "Reply from the weddings inbox: thank you; passed to the events team; will be in touch if an opportunity arises." },
-    { "date": "8 Oct", "who": "NOYA", "text": "Thanked them; offered local production, venue sourcing and on-ground support for any Egypt event." }
+    {
+      "date": "4 Oct",
+      "who": "NOYA",
+      "text": "First email to Sarah Haywood: discreet Egypt execution for high-profile celebrations."
+    },
+    {
+      "date": "6 Oct",
+      "who": "Sarah Haywood",
+      "text": "Reply from the weddings inbox: thank you; passed to the events team; will be in touch if an opportunity arises."
+    },
+    {
+      "date": "8 Oct",
+      "who": "NOYA",
+      "text": "Thanked them; offered local production, venue sourcing and on-ground support for any Egypt event."
+    }
   ],
   "facts": [
-    { "id": "reply", "text": "On 6 Oct they thanked us and passed our note to the events team, to be in touch should an opportunity arise.", "source": "CRM Gmail history: weddings@sarahhaywood.com", "class": "VERIFIED" },
-    { "id": "studio", "text": "International luxury event producer headquartered in London, with a European office in Milan.", "source": "sarahhaywood.com/about", "class": "PUBLIC" },
-    { "id": "anniversary", "text": "The practice is marking its 20th anniversary and continues international productions.", "source": "sarahhaywood.com", "class": "PUBLIC" },
-    { "id": "gem", "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.", "source": "NOYA Partner Guide", "class": "NOYA MATERIAL" },
-    { "id": "gouna", "text": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences, with destination weddings among its strengths.", "source": "NOYA Partner Guide (El Gouna highlights)", "class": "NOYA MATERIAL" },
-    { "id": "nile", "text": "Luxor and Aswan pair historic riverside hotels with luxury Nile journeys and private guided experiences.", "source": "NOYA Partner Guide (Luxor and Aswan)", "class": "NOYA MATERIAL" }
+    {
+      "id": "reply",
+      "text": "On 6 Oct they thanked us and passed our note to the events team, to be in touch should an opportunity arise.",
+      "source": "CRM Gmail history: weddings@sarahhaywood.com",
+      "class": "VERIFIED"
+    },
+    {
+      "id": "studio",
+      "text": "International luxury event producer headquartered in London, with a European office in Milan.",
+      "source": "sarahhaywood.com/about",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "anniversary",
+      "text": "The practice is marking its 20th anniversary and continues international productions.",
+      "source": "sarahhaywood.com",
+      "class": "PUBLIC"
+    },
+    {
+      "id": "gem",
+      "text": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "id": "gouna",
+      "text": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences, with destination weddings among its strengths.",
+      "source": "NOYA Partner Guide (El Gouna highlights)",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "id": "nile",
+      "text": "Luxor and Aswan pair historic riverside hotels with luxury Nile journeys and private guided experiences.",
+      "source": "NOYA Partner Guide (Luxor and Aswan)",
+      "class": "NOYA MATERIAL"
+    }
   ],
   "need": "A trusted Egypt partner on file for when a client asks for Egypt: venues, permits, room blocks and guest logistics, with Sarah Haywood keeping the client and the design.",
-  "next_doc": { "stage": "Concept", "why": "They asked to be contacted when there is an opportunity. A specific Egypt wedding angle gives the events team a reason to keep NOYA on file.", "when": "January 2027, as planned in the CRM; earlier only if the events team writes first." },
-  "questions": ["Has a client asked them for Egypt, or the region?", "Who on the events team owns destination logistics?", "Do they keep a preferred-partner list per destination?"],
-  "risks": ["No past NOYA weddings are claimed.", "Do not send before January unless they write first: they asked us to wait for an opportunity."],
-  "cover": { "style": "paper", "position": "low" },
+  "next_doc": {
+    "stage": "Concept",
+    "why": "They asked to be contacted when there is an opportunity. A specific Egypt wedding angle gives the events team a reason to keep NOYA on file.",
+    "when": "January 2027, as planned in the CRM; earlier only if the events team writes first."
+  },
+  "questions": [
+    "Has a client asked them for Egypt, or the region?",
+    "Who on the events team owns destination logistics?",
+    "Do they keep a preferred-partner list per destination?"
+  ],
+  "risks": [
+    "No past NOYA weddings are claimed.",
+    "Do not send before January unless they write first: they asked us to wait for an opportunity."
+  ],
+  "cover": {
+    "style": "paper",
+    "position": "low"
+  },
   "concept": {
     "title": "Celebrations, *on Egyptian ground.*",
     "subtitle": "Three settings for an Egypt wedding or celebration produced by Sarah Haywood, with NOYA running the ground: venues, permits, stays and every guest.",
@@ -35,32 +108,123 @@
     "quote": "A welcome evening facing the Pyramids, a celebration on the Nile, a weekend on the Red Sea.",
     "why_title": "Why Egypt, now.",
     "why": [
-      { "label": "Culture", "fact": "gem" },
-      { "label": "The Red Sea", "fact": "gouna" },
-      { "label": "The Nile", "fact": "nile" }
+      {
+        "label": "Culture",
+        "fact": "gem"
+      },
+      {
+        "label": "The Red Sea",
+        "fact": "gouna"
+      },
+      {
+        "label": "The Nile",
+        "fact": "nile"
+      }
     ],
     "options_label": "Three settings",
     "options_title": "Choose the setting.",
     "options": [
-      { "n": "I", "title": "A welcome evening at Giza", "text": "The weekend opens with dinner facing the Pyramids at sunset, for every guest.", "meta": [["Setting", "Giza, Cairo"], ["Moment", "Welcome evening"], ["NOYA handles", "Venue, permits, transfers, security"]] },
-      { "n": "II", "title": "A celebration on the Nile", "text": "A smaller celebration between Luxor and Aswan: riverside hotels, a Nile journey and private guided visits.", "meta": [["Setting", "Luxor and Aswan"], ["Moment", "Wedding or anniversary"], ["NOYA handles", "Hotels, river journey, guiding, guest movement"]] },
-      { "n": "III", "title": "A weekend on the Red Sea", "text": "El Gouna for the full weekend: a ceremony by the sea, the celebration and a farewell lunch, with guests in one resort.", "meta": [["Setting", "El Gouna"], ["Moment", "Full wedding weekend"], ["NOYA handles", "Room blocks, beach venue, transfers, guest desk"]] }
+      {
+        "n": "I",
+        "title": "A welcome evening at Giza",
+        "text": "The weekend opens with dinner facing the Pyramids at sunset, for every guest.",
+        "meta": [
+          [
+            "Setting",
+            "Giza, Cairo"
+          ],
+          [
+            "Moment",
+            "Welcome evening"
+          ],
+          [
+            "NOYA handles",
+            "Venue, permits, transfers, security"
+          ]
+        ]
+      },
+      {
+        "n": "II",
+        "title": "A celebration on the Nile",
+        "text": "A smaller celebration between Luxor and Aswan: riverside hotels, a Nile journey and private guided visits.",
+        "meta": [
+          [
+            "Setting",
+            "Luxor and Aswan"
+          ],
+          [
+            "Moment",
+            "Wedding or anniversary"
+          ],
+          [
+            "NOYA handles",
+            "Hotels, river journey, guiding, guest movement"
+          ]
+        ]
+      },
+      {
+        "n": "III",
+        "title": "A weekend on the Red Sea",
+        "text": "El Gouna for the full weekend: a ceremony by the sea, the celebration and a farewell lunch, with guests in one resort.",
+        "meta": [
+          [
+            "Setting",
+            "El Gouna"
+          ],
+          [
+            "Moment",
+            "Full wedding weekend"
+          ],
+          [
+            "NOYA handles",
+            "Room blocks, beach venue, transfers, guest desk"
+          ]
+        ]
+      }
     ],
     "journey_label": "The guest weekend",
     "journey_title": "An example weekend.",
     "journey": [
-      { "when": "Day one", "text": "Arrivals met by the NOYA guest desk; transfers; the welcome evening." },
-      { "when": "Day two", "text": "The ceremony and celebration, produced by Sarah Haywood. NOYA runs guest movement and suppliers on the ground." },
-      { "when": "Day three", "text": "A farewell lunch, optional visits, and departures with the guest desk." }
+      {
+        "when": "Day one",
+        "text": "Arrivals met by the NOYA guest desk; transfers; the welcome evening."
+      },
+      {
+        "when": "Day two",
+        "text": "The ceremony and celebration, produced by Sarah Haywood. NOYA runs guest movement and suppliers on the ground."
+      },
+      {
+        "when": "Day three",
+        "text": "A farewell lunch, optional visits, and departures with the guest desk."
+      }
     ],
     "next_title": "An Egypt partner on file.",
     "next": [
-      { "title": "Keep NOYA on file", "text": "For the next client who asks for Egypt." },
-      { "title": "A first brief", "text": "NOYA returns venue options, room-block terms and a costed outline." },
-      { "title": "Holds and permits", "text": "Once approved, NOYA holds venues and begins permits with our local partners." }
+      {
+        "title": "Keep NOYA on file",
+        "text": "For the next client who asks for Egypt."
+      },
+      {
+        "title": "A first brief",
+        "text": "NOYA returns venue options, room-block terms and a costed outline."
+      },
+      {
+        "title": "Holds and permits",
+        "text": "Once approved, NOYA holds venues and begins permits with our local partners."
+      }
     ],
-    "review": ["Planned for the January revisit. It can go earlier only if the events team writes first.", "No past NOYA weddings are claimed."]
+    "review": [
+      "Adam, 17 Oct: hold until January unless a genuine relevant opportunity appears sooner. The one-page version goes then; the full concept waits for interest.",
+      "No past NOYA weddings are claimed."
+    ]
   },
-  "build": ["note", "concept"],
-  "review": []
+  "build": [
+    "note",
+    "onepage",
+    "concept"
+  ],
+  "review": [],
+  "hold": [
+    "concept"
+  ]
 }

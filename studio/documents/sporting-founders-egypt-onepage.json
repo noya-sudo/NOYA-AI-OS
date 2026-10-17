@@ -1,0 +1,152 @@
+{
+  "slug": "sporting-founders-egypt-onepage",
+  "type": "onepage",
+  "stage": "onepage",
+  "vertical": "retreat",
+  "master_label": "Founder Retreats",
+  "company": "Sporting Founders",
+  "company_id": "7c9f5e0c-2d5f-48c8-bad7-8e504510a01e",
+  "opportunity_id": "6b4e82bb-8008-49bd-b141-a0619def25c6",
+  "date": "17 October 2026",
+  "prepared_for": "Alex Laird · Sporting Founders",
+  "cover": {
+    "style": "paper",
+    "position": "low"
+  },
+  "running": "Egypt concept",
+  "audience": "client",
+  "eyebrow": "Egypt · Retreat concept",
+  "title": "Egypt, *for sports founders.*",
+  "subtitle": "A Sporting Founders cohort meet-up in Egypt: three settings, with NOYA running the ground and the community keeping the programme.",
+  "pages": [
+    {
+      "kind": "one",
+      "blocks": [
+        {
+          "t": "section",
+          "label": "The idea",
+          "title": "The cohort, in one place."
+        },
+        {
+          "t": "lead",
+          "text": "Sporting Founders brings sports entrepreneurs together across more than forty countries. One in-person meet-up gives a cohort what a call cannot. NOYA runs the place, the stays and the movement; Sporting Founders keeps the programme and the people."
+        },
+        {
+          "t": "options",
+          "items": [
+            {
+              "n": "I",
+              "title": "The Cairo meet-up",
+              "text": "Two days in Cairo: sessions and pitches by day, an evening facing the Pyramids, the Grand Egyptian Museum before flights.",
+              "meta": [
+                [
+                  "Setting",
+                  "Cairo and Giza"
+                ],
+                [
+                  "NOYA handles",
+                  "Hotel, venues, permits, transfers"
+                ]
+              ]
+            },
+            {
+              "n": "II",
+              "title": "The Red Sea performance retreat",
+              "text": "Three days in El Gouna: training and recovery by the sea in the morning, sessions in the afternoon.",
+              "meta": [
+                [
+                  "Setting",
+                  "El Gouna"
+                ],
+                [
+                  "NOYA handles",
+                  "Resort, training spaces, boats, recovery"
+                ]
+              ]
+            },
+            {
+              "n": "III",
+              "title": "The founders' Nile journey",
+              "text": "A small group of founders between Luxor and Aswan: a private Nile journey and time to think.",
+              "meta": [
+                [
+                  "Setting",
+                  "Luxor and Aswan"
+                ],
+                [
+                  "NOYA handles",
+                  "Hotels, river journey, guiding"
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "t": "ledger",
+          "rows": [
+            [
+              "The community",
+              "A first cohort spread across 43 countries: Egypt sits within easy reach of Europe, Africa and the Gulf."
+            ],
+            [
+              "Egypt now",
+              "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark."
+            ]
+          ]
+        },
+        {
+          "t": "strip",
+          "label": "Next step",
+          "title": "When the timing is right.",
+          "text": "When an in-person meet-up is on the table, one call to choose the setting and the size.",
+          "contact": {
+            "name": "Adam Elshazly",
+            "role": "Founder, NOYA Concierge",
+            "lines": [
+              "noya@noyaconcierge.com",
+              "+44 786 456 9006",
+              "noyaconcierge.com"
+            ]
+          }
+        },
+        {
+          "t": "note",
+          "text": "Venues, access and dates are subject to permits, approvals and availability. NOYA confirms each before anything is presented to a client."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "fact": "On 5 Oct Alex wrote that it sounds like a great idea but is not for Sporting Founders at its stage, and that he will be in touch if or when it is appropriate.",
+      "source": "Gmail thread 1a10326728afca52 (alex@sportingfounders.com)",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "A sports entrepreneurship community that runs in cohorts, with a newsletter on opportunities and trends in sports entrepreneurship.",
+      "source": "Sporting Founders interest form (tally.so/r/xXGXkd), web search 17 Oct 2026",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Its first cohort brought together 128 'Players' and 22 'Prospects' across 43 countries.",
+      "source": "LinkedIn post by Colin Bowden (web search, 17 Oct 2026)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The opening of the Grand Egyptian Museum has given Cairo a new cultural landmark.",
+      "source": "NOYA Partner Guide",
+      "class": "NOYA MATERIAL"
+    },
+    {
+      "fact": "El Gouna is a year-round Red Sea resort town of marinas, luxury hotels and residences.",
+      "source": "NOYA Partner Guide (El Gouna highlights)",
+      "class": "NOYA MATERIAL"
+    }
+  ],
+  "review": [
+    "Held: Sporting Founders declined on 5 Oct. Send only if Alex writes back.",
+    "No sports partnerships or venues are claimed; training spaces are subject to the resort."
+  ],
+  "level": 2,
+  "hold": "Held: Sporting Founders declined; send only if they reopen."
+}
