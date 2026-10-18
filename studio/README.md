@@ -28,8 +28,13 @@ marked SENT, recorded proposal values and the opportunity's won date. `studio_ou
 `studio_conversion` the funnel by level (value counts only contracted values recorded on won work), and `studio_queue` the companies
 that warmed in the last 30 days with no Studio output since, with the level they have earned.
 
-**Drafts.** Cover emails are prepared as unsent Gmail drafts in the existing thread. The Gmail connector cannot attach the PDF from
-this environment, so the draft says the file is attached and Adam attaches the PDF before sending.
+**Drafts and attachments.** Cover emails are prepared as unsent Gmail drafts in the existing thread. The Gmail connector accepts
+attachments only as inline content and cannot fetch a stored file, so no PDF is attached automatically. The draft text therefore
+never says "attached" (the email builder refuses it and the gate checks it); it stands on its own, and the PDF is Adam's one action:
+**ATTACH APPROVED PDF**. Each output records the attachment's provenance in `studio_outputs.evidence.attachment`: document and version,
+approval state, document hash, filename, PDF hash and size, and where the file came from. `studio_output_status.next_step` and the
+opportunity's CRM next action name the file. Only APPROVED documents are attached; a document awaiting approval reads
+"Adam to approve the document and timing". The repository is public, so approved PDFs are not stored in git.
 
 ```
 studio/cases/<slug>.json          one live opportunity: facts (with provenance), people, timeline, status, and the idea per stage

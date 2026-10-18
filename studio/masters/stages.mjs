@@ -297,10 +297,15 @@ export function email(c, v) {
   need(e?.to_name && e?.subject && e?.paragraphs?.length, `${c.slug}: an email idea needs to_name, subject and paragraphs`);
   const n = words(e.paragraphs.join(' '));
   need(n <= 150, `${c.slug}: the email idea is ${n} words; Level 1 stays under 150`);
+  // The mail connector cannot attach a stored PDF, so the draft never claims one: the text stands on its own and the PDF is
+  // Adam's one action (ATTACH APPROVED PDF), recorded on the output with its version, filename and provenance.
+  need(!/\battach|\benclos|\bplease find\b|\bsee the (pdf|document)\b/i.test(e.paragraphs.join(' ')),
+    `${c.slug}: the email must not say a file is attached; the attachment is Adam's action (ATTACH APPROVED PDF)`);
   const body = [`Hi ${e.to_name},`, ...e.paragraphs, `Best,\n${CONTACT.name}\n${CONTACT.role}\n${CONTACT.lines[2]}`].join('\n\n');
   return { slug: `${c.slug}-email`, type: 'email', stage: 'email', vertical: v.key, company: c.company, company_id: c.company_id || null,
     opportunity_id: c.opportunity_id || null, date: c.date, prepared_for: c.prepared_for, audience: 'client', title: e.subject,
-    to: e.to || [], reply_to_message_id: e.reply_to_message_id || null, attach: e.attach || null, subject: e.subject, body, words: n,
+    to: e.to || [], reply_to_message_id: e.reply_to_message_id || null, attach: e.attach || null,
+    attach_action: e.attach ? `ATTACH APPROVED PDF: ${c.slug}-${e.attach}` : null, subject: e.subject, body, words: n,
     sources: sourcesOf(c), review: [...(e.review || [])] };
 }
 

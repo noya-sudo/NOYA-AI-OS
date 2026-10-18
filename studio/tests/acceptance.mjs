@@ -58,6 +58,7 @@ check(allowedLevel({ ...cold, strong: { fact: 'launch' } }) === 2, 'gate', 'a st
 check(throws(() => allowedLevel({ ...base, relationship: { state: 'warm', fact: 'fin_dates' } }), /must be a VERIFIED fact/), 'gate', 'warm must cite a verified reply');
 check(throws(() => gate({ ...base, relationship: { state: 'declined', fact: 'sent' }, hold: [], build: ['email'] }), /has earned Internal/), 'gate', 'a declined prospect gets nothing sendable unless held');
 check(throws(() => STAGES.email({ ...base, email: { to_name: 'X', subject: 'S', paragraphs: ['word '.repeat(151)] } }, brandV), /under 150/), 'guard', 'a Level 1 email idea stays under 150 words');
+check(throws(() => STAGES.email({ ...base, email: { to_name: 'X', subject: 'S', paragraphs: ['The concept is attached.'] } }, brandV), /must not say a file is attached/), 'guard', 'an email never claims an attachment');
 for (const k of Object.keys(VERTICALS)) {
   const v = vertical(k);
   check(v.deskInfo.every((d) => d?.name && d.proposal), `master ${k}`, 'every desk resolves to a CRM product desk');
@@ -98,6 +99,7 @@ for (const f of CASES) {
       check(body.includes(CONTACT.name) && body.includes(CONTACT.lines[2]), w, 'email sign-off missing');
       check(!doc.attach || c.build.includes(doc.attach), w, `email attaches "${doc.attach}", which the case does not build`);
       check(!doc.attach || LEVEL[doc.attach] <= max, w, `email attaches a held document (${doc.attach})`);
+      check(!/\battach|\benclos/i.test(body.split('Best,')[0]), w, 'email claims an attachment the connector cannot add');
     }
 
     check(render.ok, w, `render: overflow ${JSON.stringify(render.over)} fonts ${JSON.stringify(render.fonts)}`);
