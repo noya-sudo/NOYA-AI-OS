@@ -10,7 +10,7 @@ import { chromium } from 'playwright-core';
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const fx = (f) => (existsSync(`tests/fixtures/${f}.json`) ? JSON.parse(readFileSync(`tests/fixtures/${f}.json`, 'utf8')) : null);
-const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'advisor', 'weekly', 'ceo', 'network', 'command', 'health', 'integrity'];
+const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', 'desk', 'directors', 'club', 'operations', 'advisor', 'weekly', 'ceo', 'network', 'command', 'health', 'integrity', 'studio'];
 if (need.some((f) => !fx(f))) { console.log(`SKIP ui_command: live fixtures missing (${need.filter((f) => !fx(f)).join(', ')})`); process.exit(0); }
 const F = Object.fromEntries(need.map((f) => [f, fx(f)]));
 F.execution = fx('execution');
@@ -23,7 +23,7 @@ const SNAP = { ceo: F.ceo, command: F.command, network: F.network, advisor: F.ad
 const READS = {
   hq_dashboard: () => F.snapshot, hq_overview: () => F.overview, hq_directory: () => F.directory, hq_insight: () => F.insight, hq_relationships: () => F.relationships,
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
-  hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_club: () => F.club, hq_weekly_review: () => F.weekly,
+  hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_club: () => F.club, hq_weekly_review: () => F.weekly, hq_studio: () => F.studio,
   hq_cached: (b) => { const v = SNAP[b?.p_key] || (String(b?.p_key).startsWith('director:') ? { key: b.p_key.slice(9), sections: [] } : null);
     return v ? { ...v, _cache: { built_at: new Date(Date.now() - 120000).toISOString(), age_s: 120 } } : { ok: false, reason: 'UNKNOWN_KEY' }; },
   hq_cache_status: () => ({ generated_at: new Date().toISOString(), items: [], jobs: [] }), hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
@@ -39,7 +39,8 @@ const READS = {
   },
 };
 const WRITES = { hq_work_order: { ok: true, id: '00000000-0000-0000-0000-0000000000w1' }, hq_work_order_action: { ok: true }, hq_opportunity_plan: { ok: true },
-  hq_recommendation_action: { ok: true, state: 'APPLIED' }, hq_advisor_seen: { ok: true } };
+  hq_recommendation_action: { ok: true, state: 'APPLIED' }, hq_advisor_seen: { ok: true },
+  hq_studio_request: { ok: true, id: '00000000-0000-0000-0000-0000000000s1', level: 2 }, hq_studio_request_action: { ok: true } };
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
@@ -178,6 +179,57 @@ const C = F.command;
   check('No browser errors (1440)', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
 }
+// 10. Destination Egypt mission and Studio (Adam, 19 Oct): Studio in the primary navigation, the Studio team under Agents with
+// the Brief & Proposal Architect, the six Studio columns and nine create actions, and the compact mission panel on the Dashboard.
+{
+  const { browser, page, errors, calls } = await open({ width: 1440, height: 900 });
+  const nav = (await page.locator('.nav-primary .nav-item > span:first-child').allTextContents()).map((t) => t.trim());
+  check('Navigation: Studio is primary, between Outreach and Relationships', JSON.stringify(nav) === JSON.stringify(['Dashboard', 'Agents', 'Outreach', 'Studio', 'Relationships', 'Club', 'Operations']), nav.join(' | '));
+  await page.waitForSelector('#mission');
+  const tiles = (await page.locator('#mission .wk-t .l').allTextContents()).map((t) => t.trim());
+  check('Mission panel: the nine numbers Adam asked for, in order', JSON.stringify(tiles) === JSON.stringify(['Qualified project opportunities', 'Email-ready', 'Contacted', 'Replied', 'Meetings', 'Briefs', 'Proposals', 'Projects won', 'Revenue']), tiles.join(' | '));
+  const nums = (await page.locator('#mission .wk-t .n').allTextContents()).map((t) => t.trim());
+  check('Mission panel: numbers come from the mission record (23 qualified, 14 email-ready, 9 contacted, 3 replied, £0 revenue)', JSON.stringify(nums) === JSON.stringify(['23', '14', '9', '3', '0', '0', '0', '0', '£0']), nums.join(' | '));
+  const mission = await txt(page, '#mission');
+  check('Mission panel: top opportunities only (5 shown, CRUSH first as an agency client project, Studio level and email state)', await page.locator('#mission tbody tr').count() === 5
+    && /CRUSH Agency/.test(await txt(page, '#mission tbody tr:first-child')) && /Agency client project/.test(await txt(page, '#mission tbody tr:first-child')) && /Level 3/.test(await txt(page, '#mission tbody tr:first-child')) && /Verified email/i.test(await txt(page, '#mission tbody tr:first-child')));
+  check('Mission panel: no deal value anywhere (the only money is recorded revenue)', (mission.match(/£/g) || []).length === 1);
+  check('Mission panel: research progress by programme, not discovery volume', /Brand \/ production \/ marketing 7 of 20/.test(mission) && /Weddings \/ events 7 of 20/.test(mission));
+  await page.click('[data-mission-all]'); await page.waitForTimeout(150);
+  check('Mission panel: the full top list opens on request', await page.locator('#mission tbody tr').count() === 7);
+  await page.locator('#mission').screenshot({ path: 'tests/out/command/mission-1440.png' });
+
+  await page.click('.nav-primary [data-tab="agents"]'); await page.waitForSelector('.studio-role'); await page.waitForTimeout(150);
+  check('Agents: the eight Studio roles are shown', await page.locator('.studio-role').count() === 8);
+  check('Agents: the Brief & Proposal Architect is the main Studio employee', /Brief & Proposal Architect/.test(await txt(page, '.studio-role.main')) && /Main/i.test(await txt(page, '.studio-role.main')));
+  await page.click('.studio-role.main'); await page.waitForSelector('.modal');
+  const arch = await txt(page, '.modal');
+  check('Architect: current work, briefs, concepts ready, proposals, needs Adam and last outputs', ['Current work', 'Briefs being produced', 'Concepts ready', 'Proposals', 'Needs you', 'Last outputs'].every((s) => arch.toLowerCase().includes(s.toLowerCase())) && /CRUSH x NOYA brief/.test(arch), arch.slice(0, 200));
+  await page.screenshot({ path: 'tests/out/command/architect-1440.png' });
+  await page.click('.modal [data-go="studio"]'); await page.waitForSelector('.kanban');
+  const cols = (await page.locator('.kanban .kh span').allTextContents()).map((t) => t.trim());
+  check('Studio: Needs brief, Drafting, Needs review, Approved, Sent, Superseded', JSON.stringify(cols) === JSON.stringify(['Needs brief', 'Drafting', 'Needs review', 'Approved', 'Sent', 'Superseded']), cols.join(' | '));
+  const counts = (await page.locator('.kanban .kh b').allTextContents()).map((t) => t.trim());
+  check('Studio: column counts from the Studio record (2 · 1 · 3 · 1 · 0 · 24)', JSON.stringify(counts) === JSON.stringify(['2', '1', '3', '1', '0', '24']), counts.join(' | '));
+  check('Studio: the nine create actions and the three levels', await page.locator('.sacts [data-modal="studio-new"]').count() === 9 && await page.locator('.lvls .lvl').count() === 3);
+  check('Studio: a held document shows why it is held', /Held until Level 3/.test(await txt(page, '.kanban')));
+  await page.screenshot({ path: 'tests/out/command/studio-1440.png', fullPage: true });
+  await page.click('.sacts [data-type="ONE_PAGE_CONCEPT"]'); await page.waitForSelector('#sn-company');
+  await page.fill('#sn-company', 'Nobody Real Ltd'); await page.click('#m-ok'); await page.waitForTimeout(150);
+  check('Create: an unknown company is refused before anything is requested', /Pick the company from the list/.test(await txt(page, '.modal')) && !calls.some((c) => c.fn === 'hq_studio_request'));
+  await page.fill('#sn-company', 'CRUSH Agency'); await page.fill('#sn-note', 'Two shoot days at Giza for a beauty client'); await page.click('#m-ok'); await page.waitForTimeout(250);
+  const req = last(calls, 'hq_studio_request')?.body || {};
+  check('Create: one request with the kind, the company and the note', req.p_kind === 'ONE_PAGE_CONCEPT' && req.p_company === '2e46b475-7f3b-4461-815f-6b97475df90e' && req.p_note === 'Two shoot days at Giza for a beauty client', JSON.stringify(req));
+  await page.locator('.kcol .sd.warm [data-modal="studio-new"]').first().click(); await page.waitForSelector('#sn-company');
+  check('Create from a warm conversation: the company is pre-filled and the level is the one earned (brief)', await page.inputValue('#sn-company') === 'Greycoat Lumleys' && /Create brief/i.test(await txt(page, '.modal h3')));
+  await page.click('.modal [data-close]'); await page.waitForTimeout(100);
+  await page.click('[data-studio-cancel]'); await page.waitForTimeout(250);
+  const can = last(calls, 'hq_studio_request_action')?.body || {};
+  check('Cancel request: one call with the request and CANCEL', can.p_id === '00000000-0000-0000-0000-00000000r001' && can.p_action === 'CANCEL', JSON.stringify(can));
+  check('Studio: nothing is sent from Studio', !calls.some((c) => /send|approve_draft|approve_email/.test(c.fn)));
+  check('No browser errors (Studio, 1440)', errors.length === 0, errors.slice(0, 3).join(' | '));
+  await browser.close();
+}
 {
   const { browser, page, errors } = await open({ width: 390, height: 844 });
   check('Phone 390: dashboard fits the screen (no sideways scroll)', (await overflow(page)) <= 1, `${await overflow(page)}px`);
@@ -185,6 +237,9 @@ const C = F.command;
   await page.click('.bnav [data-tab="agents"]'); await page.waitForSelector('.wo'); await page.waitForTimeout(200);
   check('Phone 390: Agents with work orders and scorecards fits the screen', (await overflow(page)) <= 1, `${await overflow(page)}px`);
   await page.screenshot({ path: 'tests/out/command/agents-390.png', fullPage: true });
+  await page.click('#bmenu'); await page.click('.sheet [data-tab="studio"]'); await page.waitForSelector('.kanban'); await page.waitForTimeout(150);
+  check('Phone 390: Studio is one tap from More and fits the screen', (await overflow(page)) <= 1, `${await overflow(page)}px`);
+  await page.screenshot({ path: 'tests/out/command/studio-390.png', fullPage: true });
   check('No browser errors (390)', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
 }

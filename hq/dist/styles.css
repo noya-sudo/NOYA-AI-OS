@@ -705,3 +705,26 @@ table.sc td, table.sc th { white-space: nowrap; }
 .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .three > .panel { margin-bottom: 16px; }
 @media (max-width: 860px) { .rv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two, .three { grid-template-columns: 1fr; } }
+
+/* Destination Egypt mission panel and Studio (19 Oct) */
+.mission .wk-tiles { margin-top: 4px; }
+.mission table.mtop td { vertical-align: top; }
+.mt0 { margin-top: 0; }
+.lvls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 12px; }
+.lvl { background: var(--panel); border-radius: var(--radius); box-shadow: 0 0 0 1px var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lvl b { font-size: 12.5px; color: var(--navy); }
+.lvl span { font-size: 12px; color: var(--muted); }
+.sacts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.kanban { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.kcol { background: var(--panel); border-radius: var(--radius); box-shadow: 0 0 0 1px var(--line); padding: 10px; min-width: 0; }
+.kh { display: flex; justify-content: space-between; align-items: baseline; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.kh b { font-size: 15px; color: var(--navy); letter-spacing: 0; }
+.sd { padding: 7px 0; border-bottom: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.sd:last-of-type { border-bottom: 0; }
+.sd-t { font-size: 13px; font-weight: 500; }
+.sd-m { font-size: 11.5px; color: var(--muted); }
+.sd.warm .sd-t a { font-weight: 600; }
+.kempty { padding: 8px 0; }
+.studio-role.main { box-shadow: 0 0 0 1px var(--navy); }
+@media (max-width: 1280px) { .kanban { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .kanban, .lvls { grid-template-columns: 1fr; } }

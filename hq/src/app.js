@@ -13,7 +13,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 
 // HQ V3 (Adam, 9 Oct): six destinations — one screen, one job. Everything that existed before stays reachable under More,
 // unchanged; nothing was deleted. Agents' old floor, email desk, radar and feed live under More → Agents & intelligence.
-const PRIMARY = [['dashboard', 'Dashboard'], ['agents', 'Agents'], ['desk', 'Outreach'], ['relations', 'Relationships'], ['club', 'Club'], ['ops', 'Operations']];
+// Studio joined the primary navigation on 19 Oct (Destination Egypt mission): it is operational, so it is no longer under More.
+const PRIMARY = [['dashboard', 'Dashboard'], ['agents', 'Agents'], ['desk', 'Outreach'], ['studio', 'Studio'], ['relations', 'Relationships'], ['club', 'Club'], ['ops', 'Operations']];
 const MORE = [
   ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
   ['Sales', [['overview', 'Command (classic)'], ['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach (classic)'], ['linkedin', 'LinkedIn'], ['website', 'Website leads'], ['partners', 'Partnerships'], ['events', 'Events']]],
@@ -91,7 +92,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
-  cmd: null, health: null, integ: null, scWin: 'd7',
+  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {},
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
@@ -168,7 +169,7 @@ const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 // once, and each section shows its own state, so one slow read never blanks a screen. Raw errors stay in state.errors for
 // More / Admin → System; CEO screens only ever say "Some data is temporarily unavailable" with a Retry.
 const READS = { data: 'hq_dashboard', ov: 'hq_overview', dir: 'hq_directory', ins: 'hq_insight', rel: 'hq_relationships', com: 'hq_commercial',
-  er: 'hq_email_review', desk: 'hq_outreach_desk', ops: 'hq_operations', club: 'hq_club' };
+  er: 'hq_email_review', desk: 'hq_outreach_desk', ops: 'hq_operations', club: 'hq_club', studio: 'hq_studio' };
 const SNAPSHOTS = { ceo: 'ceo', cmd: 'command', net: 'network', advisor: 'advisor', directors: 'directors', exec: 'execution', health: 'health', integ: 'integrity' };
 const COM_TABS = ['radar', 'library', 'actions', 'partners', 'events', 'projects', 'system'];
 const errKey = (k) => (k === 'data' ? 'main' : k);
@@ -196,6 +197,7 @@ async function load(silent = false, scope = 'full') {
   for (const wave of WAVES[scope]()) { await Promise.all(wave.map(readKey)); state.loading = false; render(); }
   state.inflight = false;
   if (state.tab === 'club' && state.club) readKey('club').then(render);
+  if (['studio', 'agents'].includes(state.tab) && state.studio) readKey('studio').then(render);
   if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true);
   if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
 }
@@ -261,6 +263,8 @@ function explain(r) {
     NOT_AWAITING_REVIEW: 'This email is not waiting for review any more (approved, sent, on hold or skipped). Refresh.',
     CANDIDATE_NOT_FOUND: 'This draft no longer exists. Refresh.',
     NOT_AN_EMAIL: 'This is not an email draft.',
+    UNKNOWN_KIND: 'Unknown Studio request.',
+    ALREADY_REQUESTED: 'This is already requested for that company. It is in Studio under Needs brief.',
   };
   if (reason.startsWith('EMAIL_NOT_VERIFIED')) return `Blocked: the email is ${String(reason.split(':')[1] || 'not verified').toLowerCase().replace('_', ' ')}, not SMTP-verified. Only verified emails become Gmail drafts.`;
   if (reason === 'DO_NOT_CONTACT') return 'Blocked: this contact is marked do-not-contact.';
@@ -382,9 +386,9 @@ function render() {
     </div>
     <nav class="bnav">
       ${[['dashboard', 'Dashboard'], ['agents', 'Agents'], ['desk', 'Outreach'], ['relations', 'Relationships']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k || (k === 'agents' && state.tab === 'director') ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
-      <button id="bmenu" class="${state.menu || ['club', 'ops', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
+      <button id="bmenu" class="${state.menu || ['studio', 'club', 'ops', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
     </nav>
-    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['club', 'Club'], ['ops', 'Operations']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
+    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['studio', 'Studio'], ['club', 'Club'], ['ops', 'Operations']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? renderDrawer(state.drawer) : ''}
     ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : renderAnyModal(state.modal)) : ''}`;
   bind();
@@ -2204,6 +2208,8 @@ function renderAnyModal(m) {
         <p class="small"><b>Recommended:</b> ${esc(r.recommend || '')}</p>${m.type === 'APPROVE' ? `<p class="small muted">${esc(what)} It is measured again 7 days after it is applied.</p>` : ''}${fld('Note (optional)', 'rec-note', 'text', '', 'maxlength="300"')}`,
         m.type === 'APPROVE' ? 'Approve' : 'Decline', m.type !== 'APPROVE');
     }
+    case 'studio-new': return studioNewModal(m);
+    case 'studio-role': return studioRoleModal(m);
     case 'revenue-import': {
       const P = m.preview;
       return `<div class="modal-bg"><div class="modal wide"><h3>Import historical revenue</h3>
@@ -2372,6 +2378,12 @@ async function submitModal() {
       const blocker = val('op-blocker'); const o = (state.cmd?.opportunities || []).find((x) => x.opportunity_id === m.opp) || {};
       return done('hq_opportunity_plan', { p_opportunity: m.opp, p_next_action: next, p_due: val('op-due'), p_owner: val('op-owner'), p_blocker: blocker, p_clear_blocker: !blocker && !!o.blocker }, 'Plan saved.'); }
     case 'rec': return done('hq_recommendation_action', { p_id: m.id, p_action: m.type, p_note: val('rec-note') }, m.type === 'APPROVE' ? 'Approved. It will be measured again in 7 days.' : 'Declined. It will not be recommended again for 30 days.');
+    case 'studio-new': {
+      const co = studioCompanyId(val('sn-company')); if (!need(co, 'Pick the company from the list (type to search).')) return;
+      const r = await done('hq_studio_request', { p_kind: m.type, p_company: co, p_opportunity: m.opp || null, p_note: val('sn-note') },
+        'Requested. The Studio prepares it for your review under Needs review. Nothing is sent.');
+      loadV3('studio', 'hq_studio', {}, true);
+      return r; }
     case 'revenue-import': {
       if (!need((m.preview?.valid || []).length, 'Check the rows first.')) return;
       return done('hq_revenue_import', { p_rows: m.rows, p_apply: true }, `Imported ${(m.preview.valid || []).length} historical revenue records.`); }
@@ -2896,7 +2908,7 @@ function weeklyModal() {
         ${(W.by_director || []).map((d) => `<tr><td>${esc(d.label)}</td><td class="num" data-l="Email coverage">${d.coverage_pct == null ? '—' : `${esc(d.coverage_pct)}%`}</td><td class="num" data-l="Verified / with decision maker">${n0(d.verified)} / ${n0(d.with_dm)}</td>
           <td class="num" data-l="LinkedIn fallback">${n0(d.linkedin_fallback)}</td><td class="num" data-l="Sent">${n0(d.sent)}</td><td class="num" data-l="Replies">${n0(d.replies)}</td></tr>`).join('')}</tbody></table></div>
       ${(W.strongest_opportunities || []).length ? `<h6 class="mt8">Strongest opportunities</h6>${W.strongest_opportunities.map((o) => `<div class="adv-row"><b>${esc(o.company)}</b> · ${esc(sentence(String(o.status || '').replace(/_/g, ' ')))}${o.next ? ` <span class="faint">→ ${esc(o.next)}</span>` : ''}</div>`).join('')}` : ''}
-      ${weeklyAttribution(W.attribution)}${weeklyHunter(W.hunter_funnel)}
+      ${weeklyMission(W.destination_egypt)}${weeklyAttribution(W.attribution)}${weeklyHunter(W.hunter_funnel)}
       ${W.acquisition ? `<h6 class="mt8">Acquisition health</h6><div class="adv-row">Email ready <b>${n0(W.acquisition.email_ready)}</b> (valid verified ${n0(W.acquisition.valid_verified_email_ready)}, verified general inbox ${n0(W.acquisition.verified_general_email_ready)}) · LinkedIn fallback ${n0(W.acquisition.linkedin_fallback)} · Instagram fallback ${n0(W.acquisition.instagram_fallback)} · warm ${n0(W.acquisition.warm)} · existing relationship ${n0(W.acquisition.existing_relationship)}</div>` : ''}
       ${W.weakest_bottleneck ? `<h6 class="mt8">Weakest bottleneck</h6><div class="adv-row">${esc(W.weakest_bottleneck)}</div>` : ''}
       ${W.recommended_allocation ? `<h6 class="mt8">Recommended allocation</h6><div class="adv-row">${esc(W.recommended_allocation)}</div>` : ''}`;
@@ -3164,7 +3176,7 @@ function dashWeekly() {
 function viewDashboard(d) {
   const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
   return `${head(state.advisor?.greeting || 'Dashboard', esc([day, asOf(state.ceo)].filter(Boolean).join(' · ')))}
-    ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashPipeline()}${dashFunnel()}${dashOpportunities()}${dashPulse()}${dashWeekly()}`;
+    ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashMission()}${dashPipeline()}${dashFunnel()}${dashOpportunities()}${dashPulse()}${dashWeekly()}`;
 }
 
 // ---------------------------------------------------------------- COMMAND CENTRE (Adam, 18 Oct: professional operating mode)
@@ -3407,6 +3419,7 @@ function viewAgentsV3() {
     ${woPanel()}${scorePanel()}
     <h3 class="grp">Directors</h3><div class="dgrid">${by('DIRECTOR').map(directorCard).join('')}</div>
     <h3 class="grp">Strategic partnerships</h3><div class="dgrid">${by('MANAGER').map(directorCard).join('')}</div>
+    ${studioTeam()}
     <h3 class="grp">Shared specialists</h3><div class="dgrid compact">${by('SUPPORT').map(directorCard).join('')}</div>
     <details class="panel mt8"><summary>Activity · ${feed.length}</summary><div class="body"><select class="w-auto" data-feed-dir><option value="">Everyone</option>${D.members.map((m) => `<option value="${m.key}" ${state.feedDir === m.key ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
       ${v3Feed(feed, state.feedAll ? 200 : 20)}${feed.length > 20 ? `<button class="linkish" data-feed-all>${state.feedAll ? 'Show less' : `Show all ${feed.length}`}</button>` : ''}</div></details>`;
@@ -3762,6 +3775,152 @@ function viewClub() {
     <section class="panel"><header><h3>${esc(title)}</h3></header><div class="body">${body || `<div class="empty">${esc(CLUB_EMPTY[key])}</div>`}</div></section>${routes}`;
 }
 
+// ---------------------------------------------------------------- DESTINATION EGYPT (Adam, 19 Oct): a mission run by the existing Directors
+// Read from hq_command (destination_egypt): mission companies on the canonical model, counted once. Top opportunities only, never
+// discovery volume; no deal value until one is recorded. Success is reply → meeting → brief → proposal → project → revenue.
+const PROJECT_TYPE = { BRAND_CAMPAIGN_EGYPT: 'Brand campaign', BRAND_SHOOT_EGYPT: 'Brand shoot', CREATOR_TRIP_EGYPT: 'Creator trip', BRAND_LAUNCH_EGYPT: 'Brand launch',
+  PRODUCTION_EGYPT: 'Production', AGENCY_CLIENT_PROJECT_EGYPT: 'Agency client project', DESTINATION_WEDDING_EGYPT: 'Destination wedding', WEDDING_GUEST_CONCIERGE: 'Wedding guest concierge',
+  WEDDING_SCOUTING_TRIP: 'Wedding scouting trip', PRIVATE_CLUB_MEMBER_TRIP: 'Member trip', FOUNDER_RETREAT_EGYPT: 'Founder retreat', CORPORATE_OFFSITE_EGYPT: 'Corporate offsite',
+  EXECUTIVE_RETREAT_EGYPT: 'Executive retreat', PRIVATE_DINNER_EGYPT: 'Private dinner', PODCAST_EGYPT: 'Podcast episode', MEDIA_PRODUCTION_EGYPT: 'Media production',
+  PRESS_TRIP_EGYPT: 'Press trip', TRAVEL_ADVISOR_FAM: 'Advisor FAM', WHITE_LABEL_EGYPT_DESK: 'White-label Egypt desk', TALENT_PRIVATE_TRIP: 'Talent private trip',
+  ATHLETE_PRIVATE_TRIP: 'Athlete private trip', HOTEL_BRAND_CREATOR_COLLABORATION: 'Hotel × brand × creator' };
+const ptype = (k) => PROJECT_TYPE[k] || (k ? sentence(String(k).replace(/_/g, ' ')) : '—');
+const ROUTE_STATE = { VERIFIED: ['Verified email', 'ok'], VERIFIED_INBOX: ['Verified inbox', 'ok'], VERIFIED_GENERAL: ['Verified general inbox', 'ok'],
+  OFFICIAL_PUBLISHED_INBOX: ['Official inbox · not verified', 'info'], NEEDS_VERIFICATION: ['Email found · to verify', 'warn'], FINDER_PENDING: ['Waiting for email finder', 'warn'],
+  RESEARCH_PENDING: ['Email research pending', 'warn'], NO_PERSON: ['Right person not confirmed', 'bad'] };
+const emailState = (s) => { const [l, c] = ROUTE_STATE[s] || [s ? sentence(String(s).replace(/_/g, ' ')) : 'No route yet', '']; return pill(l, c); };
+function dashMission() {
+  const C = state.cmd; if (!C) return '';
+  const M = C.destination_egypt; if (!M) return '';
+  const f = M.funnel || {}; const tl = (n, l) => `<div class="wk-t"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  const rev = cashOf(f.revenue) || '£0';
+  const top = (M.top || []).slice(0, state.missionAll ? 10 : 5);
+  const research = (M.buckets || []).map((b) => `<span class="wk-d"><b>${esc(b.label)}</b> ${n0(b.researched)} of ${n0(b.target)}</span>`).join('');
+  return `<section class="dsec mission" id="mission"><header><h2>Destination Egypt</h2><span class="faint small">Project generation · review ${esc(shortDay(M.review_by))}</span></header>
+    <p class="small muted mt0">${esc(M.question || '')}</p>
+    <div class="wk-tiles">${tl(n0(f.qualified), 'Qualified project opportunities')}${tl(n0(f.email_ready), 'Email-ready')}${tl(n0(f.contacted), 'Contacted')}${tl(n0(f.replied), 'Replied')}
+      ${tl(n0(f.meetings), 'Meetings')}${tl(n0(f.briefs), 'Briefs')}${tl(n0(f.proposals), 'Proposals')}${tl(n0(f.won), 'Projects won')}${tl(esc(rev), 'Revenue')}</div>
+    ${top.length ? `<div class="tbl-wrap mt8"><table class="stack mtop"><thead><tr><th>Company</th><th>Proposed project</th><th>Director</th><th>Studio</th><th>Email</th><th>Stage</th><th>Next action</th></tr></thead><tbody>
+      ${top.map((o) => `<tr><td><a class="clickable" data-open="company" data-id="${o.company_id}">${esc(o.company)}</a>${o.country ? `<div class="faint small">${esc(o.country)}</div>` : ''}</td>
+        <td data-l="Project" class="small"><b>${esc(ptype(o.project_type))}</b>${o.project ? `<div class="faint">${esc(plainText(o.project))}</div>` : ''}</td>
+        <td data-l="Director" class="small">${esc(dirName(o.director))}</td><td data-l="Studio" class="small">${o.studio_level ? `Level ${esc(o.studio_level)}` : '—'}</td>
+        <td data-l="Email">${emailState(o.email_state)}</td><td data-l="Stage" class="small">${esc(o.stage || '')}</td>
+        <td data-l="Next action" class="small">${o.next_action ? esc(plainText(o.next_action)) : '<span class="faint">—</span>'}${o.blocker ? `<div class="warn-text">${esc(o.blocker)}</div>` : ''}</td></tr>`).join('')}</tbody></table></div>
+      ${(M.top || []).length > 5 ? `<button class="linkish" data-mission-all>${state.missionAll ? 'Show the top 5' : `Show the top ${(M.top || []).length}`}</button>` : ''}`
+      : '<p class="small faint mt8">No mission opportunity recorded yet. The Directors are researching the first accounts.</p>'}
+    <div class="small mt6"><span class="faint">Research by programme:</span> ${research}</div>
+    <p class="src">${esc(M.method || '')}</p></section>`;
+}
+function weeklyMission(L) {
+  if (!L) return '';
+  const by = L.by || {}; const line = (k, l) => (by[k] || []).slice(0, 5).map((r) => `${esc(k === 'project_type' ? ptype(r.key) : k === 'director' ? dirName(r.key) : r.key)} ${n0(r.replied)}/${n0(r.contacted)}`).join(' · ');
+  const rows = [['project_type', 'Project types getting replies'], ['director', 'Directors (replied / contacted)'], ['market', 'Markets'], ['studio_level', 'Studio level']]
+    .map(([k, l]) => (line(k, l) ? `<dt>${l}</dt><dd>${line(k, l)}</dd>` : '')).join('');
+  const meet = (by.director || []).filter((r) => Number(r.meetings)).map((r) => `${esc(dirName(r.key))} ${n0(r.meetings)}`).join(' · ');
+  return `<h6 class="mt8">Destination Egypt · what is working</h6><dl class="wk-dl">${rows}
+    <dt>Directors producing meetings</dt><dd>${meet || 'None yet'}</dd>
+    <dt>Concepts with interest</dt><dd>${(L.concepts_with_interest || []).map((c) => `${esc(c.company)} (Level ${esc(c.level)})`).join(' · ') || 'None yet'}</dd>
+    <dt>Where conversion stops</dt><dd>${esc(L.conversion_stops_at || '—')}</dd>
+    <dt>More resources to</dt><dd>${esc(L.more_resources || 'Not enough contacted yet to say.')}</dd>
+    <dt>Stop</dt><dd>${(L.stop || []).map(esc).join(' · ') || 'Nothing yet'}</dd></dl><p class="src">${esc(L.note || '')}</p>`;
+}
+
+// ---------------------------------------------------------------- STUDIO (primary since 19 Oct): ideas, concepts, briefs, proposals
+// hq_studio(): six columns from studio_documents and Adam's requests, the eight Studio roles and the three levels. Studio prepares,
+// Adam approves and sends: nothing here sends, and a document above the level the relationship has earned is held, never sent early.
+const STUDIO_COLS = [['NEEDS_BRIEF', 'Needs brief'], ['DRAFTING', 'Drafting'], ['NEEDS_REVIEW', 'Needs review'], ['APPROVED', 'Approved'], ['SENT', 'Sent'], ['SUPERSEDED', 'Superseded']];
+const DOC_TYPE = { EMAIL_IDEA: 'Email idea', OPPORTUNITY_NOTE: 'Opportunity note', CONCEPT: 'Concept', ONE_PAGE_CONCEPT: 'One-page concept', BRIEF: 'Brief', PROPOSAL: 'Proposal',
+  ITINERARY: 'Itinerary', OPS_ITINERARY: 'Internal itinerary', PROJECT: 'Project plan', DESK_BRIEF: 'Desk brief' };
+const REQ_KIND = { IDEA: 'Idea', ONE_PAGE_CONCEPT: 'One-page concept', BRIEF: 'Brief', PROPOSAL: 'Proposal', ITINERARY: 'Itinerary', RETREAT_CONCEPT: 'Retreat concept',
+  WEDDING_CONCEPT: 'Wedding concept', BRAND_CAMPAIGN_CONCEPT: 'Brand campaign concept', MEDIA_CONCEPT: 'Media concept' };
+const coLink = (id, name) => (id ? `<a class="clickable" data-open="company" data-id="${id}">${esc(name || '')}</a>` : esc(name || ''));
+function studioDoc(x) {
+  return `<div class="sd"><div class="sd-t">${esc(x.title || x.slug)}</div>
+    <div class="sd-m">${coLink(x.company_id, x.company)}</div>
+    <div class="sd-m">${esc(DOC_TYPE[x.doc_type] || x.doc_type || '')}${x.level ? ` · Level ${esc(x.level)}` : ''}${x.version > 1 ? ` · v${esc(x.version)}` : ''} · <span class="faint">${esc(shortDay(x.sent_at || x.approved_at || x.created_at))}</span></div>
+    ${x.hold_reason ? `<div class="sd-m warn-text">${esc(x.hold_reason)}</div>` : ''}</div>`;
+}
+function studioCol(key, label, S) {
+  const C = S.columns || {}; const all = state.studioAll[key];
+  let items = []; let count = 0; let extra = '';
+  if (key === 'NEEDS_BRIEF') {
+    const req = C.NEEDS_BRIEF?.requests || []; const warm = C.NEEDS_BRIEF?.warmed || [];
+    count = req.length + warm.length;
+    items = [...req.map((r) => `<div class="sd req"><div class="sd-t">${esc(REQ_KIND[r.kind] || r.kind)} · ${esc(r.status === 'IN_PROGRESS' ? 'in progress' : 'requested')}</div>
+        <div class="sd-m">${coLink(r.company_id, r.company)}</div>${r.note ? `<div class="sd-m faint">${esc(r.note)}</div>` : ''}
+        <div class="sd-m faint">Level ${esc(r.level)} · ${esc(shortDay(r.created_at))} <button class="linkish" data-studio-cancel="${r.id}">Cancel</button></div></div>`),
+      ...warm.map((w) => `<div class="sd warm"><div class="sd-t">${coLink(w.company_id, w.company)}</div><div class="sd-m">${esc(w.next_output || '')}</div>
+        <div class="sd-m faint">Warm since ${esc(shortDay(w.warmed_at))} <button class="linkish" data-modal="studio-new" data-type="${Number(w.earned_level) >= 3 ? 'BRIEF' : 'ONE_PAGE_CONCEPT'}" data-company="${w.company_id}">Create ${Number(w.earned_level) >= 3 ? 'brief' : 'concept'}</button></div></div>`)];
+  } else if (key === 'SUPERSEDED') {
+    count = Number(C.SUPERSEDED?.count || 0); items = (C.SUPERSEDED?.recent || []).map(studioDoc);
+    if (count > items.length) extra = `<div class="sd-m faint">${count - items.length} older versions kept</div>`;
+  } else { const list = C[key] || []; count = list.length; items = list.map(studioDoc); }
+  const shown = all ? items : items.slice(0, 6);
+  return `<div class="kcol"><div class="kh"><span>${esc(label)}</span><b>${n0(count)}</b></div>
+    ${shown.join('') || `<div class="sd-m faint kempty">${key === 'SENT' ? 'Nothing sent yet. You send; Studio never does.' : 'Empty'}</div>`}
+    ${items.length > 6 ? `<button class="linkish" data-studio-all="${key}">${all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}${extra}</div>`;
+}
+function viewStudio() {
+  const S = state.studio; if (!S) { loadV3('studio', 'hq_studio'); return head('Studio') + waitFor('studio', 'the Studio'); }
+  const out = S.outputs || [];
+  return `${head('Studio', esc(['Ideas, concepts, briefs and proposals · Studio prepares, you approve and send', S.generated_at ? `updated ${new Date(S.generated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' })}` : ''].filter(Boolean).join(' · ')))}
+    <div class="lvls">${(S.levels || []).map((l) => `<div class="lvl"><b>${esc(l.label)}</b><span>${esc(l.when)}</span></div>`).join('')}</div>
+    <div class="sacts">${(S.actions || []).map((a) => `<button class="btn small ${a.level === 1 ? 'primary' : ''}" data-modal="studio-new" data-type="${a.kind}">${esc(a.label)}</button>`).join('')}</div>
+    <div class="kanban">${STUDIO_COLS.map(([k, l]) => studioCol(k, l, S)).join('')}</div>
+    ${out.length ? `<section class="dsec mt8"><header><h2>Prepared for a conversation</h2><span class="faint small">From prepared to sent, reply, meeting</span></header><div class="tbl-wrap"><table class="stack"><thead><tr><th>Company</th><th>Level</th><th>Status</th><th>Next step</th><th>Sent</th><th>Reply</th><th>Meeting</th></tr></thead><tbody>
+      ${out.map((o) => `<tr><td>${esc(o.company || '')}</td><td data-l="Level" class="small">${esc(o.level_label || `Level ${o.level}`)}</td><td data-l="Status">${pill(sentence(String(o.status || '').toLowerCase()), o.status === 'HELD' ? 'warn' : o.status === 'SENT' ? 'ok' : '')}</td>
+        <td data-l="Next step" class="small">${esc(plainText(o.next_step || '—'))}</td><td data-l="Sent" class="small">${o.sent_at ? esc(shortDay(o.sent_at)) : '—'}</td>
+        <td data-l="Reply" class="small">${o.reply_at ? esc(shortDay(o.reply_at)) : '—'}</td><td data-l="Meeting" class="small">${o.meeting_at ? esc(shortDay(o.meeting_at)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+    <p class="src">${esc(S.rules || '')} <button class="linkish" data-tab="agents">The Studio team</button></p>`;
+}
+// The Studio workforce on the Agents page: eight roles, the Brief & Proposal Architect first. Click a role for its work.
+function studioTeam() {
+  const S = state.studio; if (!S) { loadV3('studio', 'hq_studio'); return `<h3 class="grp">Studio</h3>${waitFor('studio', 'the Studio team')}`; }
+  const team = S.team || []; const cell = (n, l) => (n == null ? '' : `<div class="dc-c"><b>${n0(n)}</b><span>${l}</span></div>`);
+  const card = (t) => `<article class="dcard studio-role ${t.main ? 'main' : ''}" data-modal="studio-role" data-id="${t.key}">
+    <div class="dc-head"><div><div class="dc-name">${esc(t.name)}</div><div class="dc-role">${t.main ? 'Studio lead' : 'Studio'}</div></div>${t.main ? pill('Main', 'gold') : ''}</div>
+    <div class="dc-now small">${esc(t.does || '')}</div>
+    <div class="dc-cells mt6">${cell(t.drafting, 'drafting')}${cell(t.needs_review, 'needs review')}${cell(t.approved, 'approved')}${cell(t.sent, 'sent')}${cell(t.quotes, 'quotes')}${cell(t.qa_passed, 'QA checked')}</div>
+    <div class="dc-last"><span class="dc-sub">Last output</span>${t.last ? `${esc(t.last.title || '')}${t.last.company && t.last.company !== t.last.title ? ` · ${esc(t.last.company)}` : ''} · ${esc(rel(t.last.at))}` : '<span class="faint">None yet</span>'}</div></article>`;
+  const main = team.filter((t) => t.main); const rest = team.filter((t) => !t.main);
+  return `<h3 class="grp">Studio <button class="btn small ghost" data-go="studio">Open Studio</button></h3>
+    <div class="dgrid">${main.map(card).join('')}</div><div class="dgrid compact mt8">${rest.map(card).join('')}</div>`;
+}
+function studioRoleModal(m) {
+  const S = state.studio || {}; const t = (S.team || []).find((x) => x.key === m.id) || {};
+  const row = (x) => `<div class="adv-row">${esc(x.title || '')}${x.company && x.company !== x.title ? ` <span class="faint">· ${esc(x.company)}</span>` : ''}${x.doc_type ? ` <span class="faint">· ${esc(DOC_TYPE[x.doc_type] || x.doc_type)}</span>` : ''}${x.status ? ` ${pill(sentence(String(x.status).replace(/_/g, ' ').toLowerCase()))}` : ''}${x.at || x.created_at ? ` <span class="faint">${esc(shortDay(x.at || x.created_at))}</span>` : ''}</div>`;
+  const list = (title, items, empty, n = 8) => `<h6 class="mt8">${title} · ${(items || []).length}</h6>${(items || []).slice(0, n).map(row).join('') || `<div class="adv-row faint">${empty}</div>`}${(items || []).length > n ? `<div class="adv-row faint">and ${(items || []).length - n} more in Studio</div>` : ''}`;
+  let body;
+  if (t.main) {
+    const A = S.architect || {};
+    const needs = (A.needs_adam || []).map((x) => ({ ...x, title: `${x.what || ''}: ${x.title || ''}` }));
+    body = `${list('Current work', A.current, 'Nothing in progress.')}${list('Briefs being produced', A.briefs, 'No brief yet.')}${list('Concepts ready', A.concepts_ready, 'No concept ready.')}
+      ${list('Proposals', A.proposals, 'No proposal yet.')}${list('Needs you', needs, 'Nothing waiting for you.')}${list('Last outputs', A.last_outputs, 'No output yet.')}`;
+  } else body = `${list('Current work', t.current, 'Nothing in progress.')}${t.last ? `<h6 class="mt8">Last output</h6>${row(t.last)}` : ''}`;
+  return `<div class="modal-bg"><div class="modal wide"><h3>${esc(t.name || 'Studio')}</h3><p class="small muted">${esc(t.does || '')}</p>${body}
+    <div class="btn-row mt8"><button class="btn primary" data-go="studio">Open Studio</button><button class="btn ghost" data-close>Close</button></div></div></div>`;
+}
+// Companies Adam can request Studio work for: the CRM directory plus the warm queue and mission accounts (deduplicated by id).
+function studioCompanies() {
+  const seen = new Map();
+  const add = (id, name) => { if (id && name && !seen.has(id)) seen.set(id, name); };
+  (state.studio?.columns?.NEEDS_BRIEF?.warmed || []).forEach((w) => add(w.company_id, w.company));
+  (state.cmd?.destination_egypt?.top || []).forEach((o) => add(o.company_id, o.company));
+  (state.cmd?.opportunities || []).forEach((o) => add(o.company_id, o.company));
+  (state.dir?.companies || []).forEach((c) => add(c.id, c.name));
+  return [...seen.entries()];
+}
+const studioCompanyId = (name) => { if (!name) return null; const hit = studioCompanies().find(([, n]) => n.toLowerCase() === name.toLowerCase()); return hit ? hit[0] : null; };
+function studioNewModal(m) {
+  const S = state.studio || {}; const a = (S.actions || []).find((x) => x.kind === m.type) || { label: 'Create', level: 1 };
+  const lv = (S.levels || []).find((l) => l.level === a.level);
+  const pre = m.company ? studioCompanies().find(([id]) => id === m.company)?.[1] || '' : '';
+  return form(esc(a.label), `<p class="small muted">${esc(lv ? `${lv.label}: ${lv.when}` : '')} The Studio prepares it for your review; nothing is sent, and a document above the level the relationship has earned is held.</p>
+    <label class="field"><span>Company</span><input id="sn-company" list="sn-companies" value="${esc(pre)}" autocomplete="off" placeholder="Type to search the CRM"></label>
+    <datalist id="sn-companies">${studioCompanies().map(([, n]) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
+    ${area('What it should do (optional)', 'sn-note', '', 'maxlength="1000" rows="3" placeholder="e.g. a three-night member programme, Giza and the Grand Egyptian Museum"')}`, 'Request');
+}
+
 // ---------------------------------------------------------------- OPERATIONS: deliver projects. Confirmed client work only, never prospects.
 function viewOps() {
   const O = state.ops; const B = state.ceo?.operations; if (!O) return head('Operations') + waitFor('ops', 'operations');
@@ -3826,10 +3985,13 @@ function bindV3(on) {
     const { data, error } = await sb.rpc('hq_revenue_import', { p_rows: rows, p_apply: false });
     state.modal = { ...state.modal, text, rows, preview: error ? { valid: [], errors: [{ row: 0, errors: [friendly(error.message)] }] } : data }; render();
   });
+  on('[data-studio-cancel]', 'click', async (b, e) => { e.stopPropagation(); await call('hq_studio_request_action', { p_id: b.dataset.studioCancel, p_action: 'CANCEL' }, 'Request cancelled. It is kept in the history.'); loadV3('studio', 'hq_studio', {}, true); });
+  on('[data-mission-all]', 'click', () => { state.missionAll = !state.missionAll; render(); });
+  on('[data-studio-all]', 'click', (b) => { state.studioAll[b.dataset.studioAll] = !state.studioAll[b.dataset.studioAll]; render(); });
   on('[data-club-add]', 'click', async (b) => { await call('hq_club_person', { p_contact: b.dataset.contact, p_role: b.dataset.clubAdd, p_status: 'PROSPECT', p_note: null }, 'Added to the club structure. Nothing was sent.'); loadV3('club', 'hq_club', {}, true); });
 }
 
-const VIEWS = { dashboard: viewDashboard, today: viewDashboard, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
+const VIEWS = { dashboard: viewDashboard, today: viewDashboard, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, studio: viewStudio, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
   overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: () => revenuePanel() + viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
   intelligence: viewIntelligence, reports: viewReports, system: (d) => healthPanel() + viewSystem(d) + teamPanel(), help: viewHelp,

@@ -1,0 +1,120 @@
+{
+  "name": "Destination Egypt: Studio location intelligence",
+  "updated": "2026-10-19",
+  "use": "Reusable creative intelligence for Studio ideas, concepts, briefs and proposals. A location is suggested only for the project types listed. Every access, permit, venue or date is 'to verify' until NOYA has it in writing; Studio never promises it.",
+  "rules": [
+    "Never promise a permit, a closure, a private opening or exclusive access that has not been confirmed in writing.",
+    "Commercial, documentary, TV and cinematic filming needs permits; personal photography at sites does not. Write 'filming permits to be arranged' and never 'permitted'.",
+    "Every shoot at or near a historic site may need a Supreme Council of Antiquities inspector on set; budget and schedule for it.",
+    "Drones are regulated by a dedicated law with permits through the Ministry of Defence; treat any drone shot as subject to approval and never include it in a cold idea.",
+    "Hosting (FAM trips, recces, previews) is never offered in cold outreach and never free by default; any complimentary element needs Adam's approval."
+  ],
+  "permits": {
+    "filming_at_sites": {
+      "known": "The Supreme Council of Antiquities approved controls for commercial, advertising and cinematic photography at museums and archaeological sites (August 2021). Cabinet rules (2022) keep permits for cinema, TV, documentary and commercial filming; personal photography in public places needs none.",
+      "sources": [
+        "https://english.ahram.org.eg/NewsContent/1/1238/471850/Egypt/Tourism/Cabinet-approves-draft-law-allowing-photography-in.aspx",
+        "https://www.screenglobalproduction.com/country/egypt/guide/production-guide"
+      ],
+      "status": "TO_VERIFY per project: current fee schedule, application route and lead time are not confirmed."
+    },
+    "drones": {
+      "known": "Regulated by a dedicated law; applications go through the Ministry of Defence and silence after thirty days counts as refusal.",
+      "sources": ["https://masaar.net/en/law-drones-egypt/"],
+      "status": "TO_VERIFY: assume no drone footage unless approved in writing."
+    }
+  },
+  "locations": [
+    {
+      "id": "giza",
+      "name": "Giza and the Pyramids",
+      "facts": [{ "fact": "Pyramids plateau on the western edge of Greater Cairo; an Indian Sangeet was staged at the Pyramids of Giza in January 2026.", "source": "https://www.findglocal.com/IN/Mumbai/101448379204218/Wedfaqs" }],
+      "suits": ["BRAND_CAMPAIGN_EGYPT", "BRAND_SHOOT_EGYPT", "CREATOR_TRIP_EGYPT", "DESTINATION_WEDDING_EGYPT", "PRIVATE_CLUB_MEMBER_TRIP", "FOUNDER_RETREAT_EGYPT", "PODCAST_EGYPT", "MEDIA_PRODUCTION_EGYPT", "PRIVATE_DINNER_EGYPT"],
+      "formats": ["Dawn visit before crowds (timing to verify)", "Pyramids-view dinner or Sangeet at a hotel or venue with a view", "Conversation recorded with the Pyramids in frame (site filming permit to verify)"],
+      "verify": ["Filming permit and SCA inspector for any commercial footage", "Event venue access and capacity"]
+    },
+    {
+      "id": "gem",
+      "name": "Grand Egyptian Museum",
+      "facts": [
+        { "fact": "Official opening confirmed for 1 November 2025.", "source": "https://www.finestresullarte.info/en/museums/grand-egyptian-museum-to-open-nov-1-green-light-from-president-al-sisi" },
+        { "fact": "Has hosted selected private events and private tours since November 2022.", "source": "https://egyptianstreets.com/2025/02/26/grand-egyptian-museum-to-open-this-july-with-grand-ceremony/" }
+      ],
+      "suits": ["PRIVATE_CLUB_MEMBER_TRIP", "FOUNDER_RETREAT_EGYPT", "EXECUTIVE_RETREAT_EGYPT", "PRIVATE_DINNER_EGYPT", "PODCAST_EGYPT", "MEDIA_PRODUCTION_EGYPT", "BRAND_LAUNCH_EGYPT", "PRESS_TRIP_EGYPT"],
+      "formats": ["Private guided visit for a member or press group (to verify)", "Episode or interview in the museum (filming permit to verify)", "Evening reception (venue hire terms not public, to verify)"],
+      "verify": ["Private event terms, pricing and capacity", "Commercial filming rules inside the museum"]
+    },
+    {
+      "id": "cairo",
+      "name": "Cairo (Zamalek, Islamic Cairo, New Capital)",
+      "facts": [{ "fact": "Hosted the first Indian wedding at The St. Regis New Capital, Cairo (January 2026).", "source": "https://www.findglocal.com/IN/Mumbai/101448379204218/Wedfaqs" }],
+      "suits": ["BRAND_SHOOT_EGYPT", "CREATOR_TRIP_EGYPT", "BRAND_LAUNCH_EGYPT", "CORPORATE_OFFSITE_EGYPT", "EXECUTIVE_RETREAT_EGYPT", "DESTINATION_WEDDING_EGYPT", "PRIVATE_DINNER_EGYPT", "PRESS_TRIP_EGYPT"],
+      "formats": ["City base for a 3 to 4-night programme", "Street and architecture shoot days (public-place filming permit to verify)", "Hotel buy-out for a wedding or offsite"],
+      "verify": ["Filming permits for streets, mosques and historic districts"]
+    },
+    {
+      "id": "nile",
+      "name": "The Nile (Cairo, Luxor to Aswan)",
+      "facts": [{ "fact": "Egypt's main river corridor linking Cairo, Luxor and Aswan.", "source": "general geography" }],
+      "suits": ["PRIVATE_CLUB_MEMBER_TRIP", "FOUNDER_RETREAT_EGYPT", "DESTINATION_WEDDING_EGYPT", "PRIVATE_DINNER_EGYPT", "PODCAST_EGYPT", "MEDIA_PRODUCTION_EGYPT", "TALENT_PRIVATE_TRIP", "ATHLETE_PRIVATE_TRIP"],
+      "formats": ["Private dinner on the river in Cairo", "Chartered dahabiya or cruise week Luxor to Aswan (availability to verify)", "Conversation recorded on the water"],
+      "verify": ["Boat availability and licensing", "Filming on board and from the water"]
+    },
+    {
+      "id": "saqqara_desert",
+      "name": "Saqqara and the Western Desert",
+      "facts": [{ "fact": "Necropolis south of Giza with desert settings close to Cairo.", "source": "general geography" }],
+      "suits": ["BRAND_CAMPAIGN_EGYPT", "BRAND_SHOOT_EGYPT", "PRODUCTION_EGYPT", "MEDIA_PRODUCTION_EGYPT"],
+      "formats": ["Desert campaign shoot day from Cairo", "Film location for a luxury-house production"],
+      "verify": ["SCA permit and inspector for any shoot at or near the necropolis", "Desert access and security"]
+    },
+    {
+      "id": "luxor",
+      "name": "Luxor",
+      "facts": [{ "fact": "Upper Egypt city on the Nile with the temples of Karnak and Luxor and the Valley of the Kings.", "source": "general geography" }],
+      "suits": ["PRIVATE_CLUB_MEMBER_TRIP", "FOUNDER_RETREAT_EGYPT", "MEDIA_PRODUCTION_EGYPT", "DESTINATION_WEDDING_EGYPT", "TALENT_PRIVATE_TRIP"],
+      "formats": ["Two nights of private touring before a Nile sailing", "Documentary or episode location (permits to verify)"],
+      "verify": ["Site filming permits", "Event permissions at or near temples"]
+    },
+    {
+      "id": "aswan",
+      "name": "Aswan",
+      "facts": [{ "fact": "Southernmost Nile city of the classic Upper Egypt route.", "source": "general geography" }],
+      "suits": ["DESTINATION_WEDDING_EGYPT", "PRIVATE_CLUB_MEMBER_TRIP", "FOUNDER_RETREAT_EGYPT", "PODCAST_EGYPT", "MEDIA_PRODUCTION_EGYPT"],
+      "formats": ["Small private wedding or celebration (venue to verify)", "Retreat end-point after a Nile sailing", "Aswan story episode"],
+      "verify": ["Venue capacity and guest logistics (flights and hotels)"]
+    },
+    {
+      "id": "el_gouna",
+      "name": "El Gouna",
+      "facts": [{ "fact": "Red Sea resort town that hosts the El Gouna Film Festival (2026 edition 15 to 23 October).", "source": "CRM record: El Gouna Film Festival opportunity" }],
+      "suits": ["CREATOR_TRIP_EGYPT", "BRAND_SHOOT_EGYPT", "ATHLETE_PRIVATE_TRIP", "CORPORATE_OFFSITE_EGYPT", "PODCAST_EGYPT", "HOTEL_BRAND_CREATOR_COLLABORATION"],
+      "formats": ["Recovery and content days after a Cairo programme", "Red Sea brand weekend", "El Gouna episode"],
+      "verify": ["Hotel partner terms", "Marine and beach filming rules"]
+    },
+    {
+      "id": "red_sea",
+      "name": "Red Sea coast (Soma Bay, Marsa Alam, Sharm El Sheikh)",
+      "facts": [{ "fact": "Resort coast on the Red Sea; Rixos Sharm El Sheikh has hosted an Indian wedding.", "source": "general geography; wedding reported in search results, to confirm" }],
+      "suits": ["CREATOR_TRIP_EGYPT", "BRAND_SHOOT_EGYPT", "DESTINATION_WEDDING_EGYPT", "CORPORATE_OFFSITE_EGYPT", "ATHLETE_PRIVATE_TRIP", "TALENT_PRIVATE_TRIP"],
+      "formats": ["Swimwear or resortwear shoot", "Wedding weekend at a resort", "Incentive or offsite leg after Cairo"],
+      "verify": ["Resort availability and buy-out terms", "Underwater or boat filming permits"]
+    },
+    {
+      "id": "north_coast",
+      "name": "North Coast (Sahel, Ras El Hekma)",
+      "facts": [{ "fact": "Mediterranean summer coast west of Alexandria; a second Adrere Amellal lodge is planned at Ras El Hekma.", "source": "CRM record: Adrere Amellal opportunity" }],
+      "suits": ["PRIVATE_CLUB_MEMBER_TRIP", "TALENT_PRIVATE_TRIP", "BRAND_SHOOT_EGYPT", "PRIVATE_DINNER_EGYPT"],
+      "formats": ["Private villa summer stay", "Summer brand or lifestyle shoot"],
+      "verify": ["Seasonality (summer-led)", "Villa availability"]
+    },
+    {
+      "id": "villas_resorts_yachts",
+      "name": "Villas, resorts and yachts",
+      "facts": [{ "fact": "Private villas, resort buy-outs and yachts across the Red Sea, North Coast and the Nile.", "source": "NOYA supply knowledge, to confirm per project" }],
+      "suits": ["TALENT_PRIVATE_TRIP", "ATHLETE_PRIVATE_TRIP", "BRAND_SHOOT_EGYPT", "FOUNDER_RETREAT_EGYPT", "DESTINATION_WEDDING_EGYPT"],
+      "formats": ["Private stay with full staff", "Location for a campaign or retreat"],
+      "verify": ["Owner consent for filming", "Availability and rates in writing"]
+    }
+  ]
+}

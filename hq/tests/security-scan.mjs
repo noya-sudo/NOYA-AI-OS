@@ -29,6 +29,8 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_partner_upsert', 'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email',
   // Command Centre (18-19 Oct): admin-gated, audited writes (work orders, opportunity plans, recommendation decisions, historical revenue import)
   'hq_work_order', 'hq_work_order_action', 'hq_opportunity_plan', 'hq_recommendation_action', 'hq_revenue_import',
+  // Destination Egypt mission (19 Oct): Studio read model and Studio requests (admin-gated, audited; nothing is sent)
+  'hq_studio', 'hq_studio_request', 'hq_studio_request_action',
   // HQ V3 (9 Oct): admin-gated reads and audited desk / club writes
   'hq_outreach_desk', 'hq_operations', 'hq_directors', 'hq_director', 'hq_club', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person',
   // Email-first amendment (8 Oct): the HQ Advisor, its visit marker and the weekly review (admin-gated)

@@ -1569,3 +1569,42 @@ for the change from 40 → 44 contacted and 6 → 10 replied; their positive and
 - *Repository private.* Deployment checked (Cloudflare Pages and Workers Builds deploy through the Cloudflare GitHub App, which
   keeps access when the repository is private). GitHub does not allow Claude sessions to change repository settings, so the switch
   itself is one click for Adam.
+
+## Destination Egypt — Project Generation (19 Oct 2026)
+
+Adam's mission: make NOYA the company international brands, agencies, wedding planners, private clubs, travel companies, media
+companies and private-client representatives call when they want to do something exceptional in Egypt. Egypt is the destination;
+NOYA is the execution layer. The question every Director asks: who already moves people, clients, members, brands or audiences
+around the world, and how can NOYA bring their next project to Egypt?
+
+**Architecture unchanged.** No new Director, no new CRM, no new primary page except Studio (a visibility correction Adam asked for).
+The mission is a programme of work orders across the existing Directors.
+
+| Piece | Where |
+|---|---|
+| Programme definition (buckets, project types, score weights, hosting rule, capacity) | `system_config.destination_egypt` |
+| Seven work orders, one per bucket: Brands 20, Weddings 20, Private clubs 15, Travel 15, Media 15, NOYA Private 10, Corporate 5 (research targets, not outreach quotas; deadline 18 Nov) | `tasks` (WORK_ORDER, `spec.programme = DESTINATION_EGYPT`) |
+| Egypt opportunity record: bucket, category, role (project generator / partner-supplier / amplifier / talent), what they do, audience, evidence with URLs, why Egypt, project type, proposed project, Egypt format, Studio level, six 0-5 scores. Never a deal value | `opportunities.mission`, `opportunities.egypt` (checked by a constraint) |
+| Score: project generation and network leverage weigh most, then repeat potential and Egypt relevance, then destination evidence, warmth, contactability and a Studio-ready idea. Followers are never an input | `destination_egypt_score()` |
+| Dashboard panel: qualified, email-ready, contacted, replied, meetings, briefs, proposals, won, revenue (canonical model, companies counted once), top opportunities, research by programme | `destination_egypt_mission()` in `hq_command` |
+| Weekly CEO intelligence: replies by project type, Director, market and Studio level; Directors producing meetings; concepts with interest; where conversion stops; who gets more resources; what to stop (rates only after 5 contacted per Director, 8 per project type) | `destination_egypt_learning()` in `hq_weekly_review` |
+| Hosting rule: a cold draft that offers a complimentary trip, stay, FAM visit or hosting goes to edit-before-approving with the reason. Adam's own edits and warm conversations are untouched | `outreach_hosting_guard` trigger on `outreach_candidates` |
+| Lookalike discovery: Destination Egypt searches added to the rotating banks of 02 Brands, 04 Weddings and 07 Partnerships (same search volume per run) | n8n, versions of 19 Oct |
+| Decision makers by category (founder, managing director or partner, experiential / production / partnerships for agencies; membership, experiences, partnerships and events for clubs; producer, partnerships, commercial and editor for media) | `role_focus` |
+| Studio location intelligence: Giza, Grand Egyptian Museum, Cairo, Nile, Saqqara and the desert, Luxor, Aswan, El Gouna, Red Sea, North Coast, villas, resorts and yachts, each with sourced facts, suitable project types, formats and what must be verified. Permits and access are never promised | `studio/intelligence/egypt_locations.json` |
+
+**Studio is primary** (Dashboard · Agents · Outreach · Studio · Relationships · Club · Operations · More / Admin; on the phone it
+is the first item under More). The Studio page shows Needs brief, Drafting, Needs review, Approved, Sent and Superseded, the three
+levels (email idea, one-page concept, full brief / proposal) and nine create actions. A request (`hq_studio_request`) is queued
+for the Studio and prepared for Adam's review; it never sends, and a document above the level the relationship has earned is held.
+Agents shows the eight Studio roles with the Brief & Proposal Architect first; clicking it shows current work, briefs being produced,
+concepts ready, proposals, what needs Adam and the last outputs.
+
+**First 25 accounts (19 Oct).** Sixteen existing CRM accounts with real evidence were tagged to the mission and nine new accounts
+were researched from Adam's seeds and their lookalikes. Every record has evidence with a source, a project hypothesis, the right
+person where one is confirmed (otherwise the next action is to confirm them before any Hunter credit is spent), the email route and
+its honest state, a Studio level and a next action. Seeds that could not be verified from public sources (one agency name) and a
+brand that has publicly pulled back from influencer trips were not loaded; they are listed in the acceptance report.
+
+Research note: the Firecrawl account used for interactive research ran out of credits on 19 Oct (no upgrade made). The production
+departments are search-first and made no Firecrawl calls that day, so discovery is unaffected.

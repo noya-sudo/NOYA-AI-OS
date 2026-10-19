@@ -360,10 +360,10 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const su = last(calls, 'hq_service_update');
   check('Cost edit → hq_service_update (amount, currency, evidence), audited server-side', su && su.body.p_id === hunter.id && su.body.p.monthly_cost === '34' && su.body.p.currency === 'usd' && /INV-1/.test(su.body.p.verification_note), JSON.stringify(su?.body.p));
 
-  // V3 navigation: six destinations, then More (every older view, grouped). Checked in detail in tests/ui_v3.mjs.
+  // V3 navigation: seven destinations (Studio joined on 19 Oct), then More (every older view, grouped). Checked in detail in tests/ui_v3.mjs.
   const primary = await page.locator('.side .nav-primary .nav-item').allInnerTexts();
   const groups = await page.locator('.side .nav-group h6').allInnerTexts();
-  check('Navigation: six destinations plus More / Admin (older views kept, grouped)', primary.map((t) => t.replace(/\d+$/, '').trim()).join('|') === 'Dashboard|Agents|Outreach|Relationships|Club|Operations'
+  check('Navigation: seven destinations plus More / Admin (older views kept, grouped)', primary.map((t) => t.replace(/\d+$/, '').trim()).join('|') === 'Dashboard|Agents|Outreach|Studio|Relationships|Club|Operations'
     && groups.join('|').toLowerCase() === 'agents & intelligence|sales|records|admin', `${primary.join(' | ')} // ${groups.join(' | ')}`);
   await go(page, 'radar');
   const radar = await page.locator('main').innerText();

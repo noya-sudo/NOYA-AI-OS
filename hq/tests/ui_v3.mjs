@@ -32,6 +32,7 @@ const READS = {
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
   hq_execution: () => F.execution, hq_email_review: () => ({ counts: {}, verification: {}, needs_review: [], drafting: [], in_gmail: [], failed: [], sent: [] }),
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_directors: () => F.directors, hq_club: () => F.club,
+  hq_studio: () => fx('studio') || { team: [], columns: {}, levels: [], actions: [], outputs: [] },
   hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly, hq_ceo_dashboard: () => F.ceo, hq_network: () => F.network,
   // 17 Oct: the heavy CEO reads come from background snapshots (hq_cached); hq_cache_status feeds Admin diagnostics.
   hq_cached: (b) => {
@@ -124,9 +125,9 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   check('Load: the heavy CEO reads come from background snapshots (hq_cached), never computed live by the page', !calls.some((c) => heavy.includes(c.fn))
     && ['ceo', 'network', 'directors', 'advisor', 'execution'].every((k) => calls.some((c) => c.fn === 'hq_cached' && c.body?.p_key === k)), [...new Set(calls.filter((c) => heavy.includes(c.fn)).map((c) => c.fn))].join(','));
   check('Dashboard: shows how fresh the snapshot is', /updated \d\d:\d\d/.test(await page.locator('main .ov-head').innerText()));
-  // NAVIGATION: Dashboard, Agents, Outreach, Relationships, Club, Operations, More / Admin.
+  // NAVIGATION: Dashboard, Agents, Outreach, Studio (primary since 19 Oct), Relationships, Club, Operations, More / Admin.
   const primary = (await tc(page, '.side .nav-primary .nav-item')).map((t) => t.replace(/\s*\d+$/, ''));
-  check('nav: Dashboard · Agents · Outreach · Relationships · Club · Operations, then More / Admin', primary.join('|') === 'Dashboard|Agents|Outreach|Relationships|Club|Operations'
+  check('nav: Dashboard · Agents · Outreach · Studio · Relationships · Club · Operations, then More / Admin', primary.join('|') === 'Dashboard|Agents|Outreach|Studio|Relationships|Club|Operations'
     && (await page.locator('#nav-more').textContent()).trim() === 'More / Admin', primary.join(' | '));
   check('nav: More / Admin is collapsed until asked', (await page.locator('.side .nav-group').count()) === 0);
   await page.click('#nav-more');
@@ -183,7 +184,7 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
     rows.every((m, i) => (m.status === 'WORKING' ? /^Working/ : m.status === 'SCHEDULED' ? (m.next_run ? /^Scheduled — \d\d:\d\d$/ : /^Scheduled$/) : new RegExp(`^${m.status}`, 'i')).test(pst[i])), pst.join(' | '));
   check('AI workforce: no activity theatre', !/thinking|analysing\.\.\.|typing/i.test(dash));
   // Weekly CEO review.
-  const wk = await tc(page, 'main .wk-t .l');
+  const wk = await tc(page, 'main .wk .wk-t .l');
   check('Weekly CEO review: emails, LinkedIn fallbacks, replies, positive, meetings, briefs, proposals, won, revenue',
     wk.join('|') === 'Emails sent|LinkedIn fallbacks sent|Replies|Positive replies|Meetings|Briefs / concepts|Proposals|Projects won|Revenue', wk.join(' | '));
   const wkd = await page.locator('main .wk-dl').innerText();

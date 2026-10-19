@@ -18,6 +18,9 @@ A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **
 | `hq_opportunity_plan(opp, next_action, due, owner, blocker, clear_blocker)` | Owner, next action, date and blocker on a live opportunity |
 | `hq_recommendation_action(id, APPROVE\|DECLINE, note)` | Approve or decline an Advisor recommendation (allowlisted changes only; never sends) |
 | `hq_revenue_import(rows, apply)` | Historical revenue: dry run by default; each row needs evidence |
+| `hq_studio()` | Studio page and the Studio team under Agents: six columns (Needs brief, Drafting, Needs review, Approved, Sent, Superseded), the eight Studio roles, the Brief & Proposal Architect's work, the three levels and the nine create actions |
+| `hq_studio_request(kind, company, opportunity, note)` / `hq_studio_request_action(id, CANCEL)` | Ask the Studio for an idea, one-page concept, brief, proposal, itinerary or a retreat / wedding / brand campaign / media concept. Queued for the Studio; nothing is sent |
+| `hq_cached('command')` → `destination_egypt` | Dashboard Destination Egypt panel: mission funnel, top opportunities, research by programme (`destination_egypt_mission()`) |
 
 Each function:
 - checks that the signed-in user is in `hq_admins`, matching both the user id and the email;
