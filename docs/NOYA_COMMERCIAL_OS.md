@@ -1422,3 +1422,86 @@ CRM next actions and due dates are set on each opportunity, so they surface in H
 **Acceptance.** 11 cases and 33 outputs pass the gate, including the level checks. A planted-fault run showed that past-work
 claims, clichés, names from other cases and broken values are caught. Firecrawl ran out of credits during research; per Adam's rule
 it was not upgraded, and web search covered the facts.
+
+## CEO Command Centre and professional operating mode (18–19 Oct 2026)
+
+Adam's brief: NOYA has about £60k of real revenue over roughly 18 months. Increase revenue and conversion, run the AI team like
+employees, make founder decisions easy, keep data clean, improve from real results. "Do not rebuild the system from scratch. Do
+not create duplicate architecture… This is a professionalisation pass." The cycle: STRATEGY → AGENT WORK → OUTREACH →
+RELATIONSHIP → MEETING → STUDIO → PROPOSAL → PROJECT → DELIVERY → REVENUE → LEARNING.
+
+Migrations: `20261019000000_command_centre_core.sql`, `20261019010000_integrity_health_advisor.sql`,
+`20261019020000_audit_cleanup.sql`. One new read model (`hq_command()`, cached as `command`); everything else extends what was
+there (tasks, revenue, the cache, the Advisor, the queues).
+
+**Dashboard top row** (all from records, never invented): Actual revenue (from revenue records with evidence; the stated £60k
+shows beneath as "historical to reconcile"), Active projects, Open proposals, Meetings (30 days), Positive replies (30 days),
+Emails to send (approved Gmail drafts plus Studio drafts, with those held for later), Actions needing Adam.
+
+**Revenue.** Each record carries client, project, date, service, Director, gross, supplier costs, gross profit (computed),
+payment status, currency and evidence. The £60k is held in `system_config.historical_revenue` as TO_BE_RECONCILED and never
+counted. Admin → Revenue & finance shows HISTORICAL REVENUE — TO BE RECONCILED (stated, reconciled from records, remaining) and
+an import: paste rows, check them (dry run: every row needs client, date, gross, currency, payment status and evidence;
+duplicates refused), then import. `hq_revenue_import(rows, apply)` writes historical records with their payments. Won without a
+revenue record is an integrity error.
+
+**Commercial funnel** (15 stages, by company): Target → Qualified → Contact ready (a verified or officially published email) →
+Outreach sent → Replied → Positive → Meeting → Brief / concept → Proposal → Negotiation → Won → Project active → Completed → Paid,
+plus Lost / parked. Each stage shows how many are there now, how many ever reached it and how many are stuck. Every live
+opportunity shows owner, next action, date and blocker; a missing one is flagged and the Plan button sets it
+(`hq_opportunity_plan`, the date cannot be in the past). Rule: REPLY → NOTHING and MEETING → NOTHING are integrity errors.
+
+**Agents as employees.** Director scorecards (7 days, 30 days, all time): qualified, email coverage, first messages sent, reply
+rate, replies, positive, meetings, briefs, proposals, wins, revenue. Rates and rankings appear only from 20 first messages in
+the window ("n=" otherwise). Searches and contacts added are never rewarded.
+
+**Work orders** (built on `tasks`, task_type WORK_ORDER): Director, mission, target, metric and number, deadline, priority. Status
+comes from evidence, never from a claim: QUEUED until the Director's next real run, then WORKING, WAITING (on Adam or a blocker),
+COMPLETE (goal met) or BLOCKED. The results chain runs matched → qualified → people → email research → verified → email-ready →
+drafted → in review → Gmail drafts → sent → replies → positive → meetings → proposals → wins. The planner and the specialist queues
+(enrichment, email gap, verification, finder) rank a work order's target companies first; discovery query banks live in n8n and
+are not steered yet. Actions: issue, close, cancel (`hq_work_order`, `hq_work_order_action`).
+
+Example, issued 19 Oct for acceptance and attributed to the System: Brands & Production, "Open conversations with UK fashion and
+activewear brands that already shoot abroad", 5 emails sent by 30 Oct, P1. 11 matching companies (Adanola, Gymshark, LGK Apparel
+Global, LIGHTBLUE, House of CB, Hackett London, The Couture Club, Augustinus Bader, Hunza G, Seven Media, Represent), 2 email-ready,
+1 in Adam's review. Accepted at Brands & Production's next run.
+
+**Priorities and capacity.** Lane order: Brand / production, Weddings, Media, Travel, Hospitality, NOYA Private; member and founder
+communities are opportunistic. Email first. Weekly first-message targets 25–30 (Brands 8–10, Weddings 6–7, Travel 4–5, Hospitality
+3–4, Sports 2–3, Media 1–2, Private 1–2, Corporate 0–1). Daily standard: at least 5 high-quality sends a working day; draft supply
+matches review capacity (email reserve caps 10 / 5); 8–10 a day is a later test, never a jump back to 15. LinkedIn / Instagram
+fallbacks capped at 5 open.
+
+**HQ Advisor: five a day.** What you should do, Biggest bottleneck, Best opportunity, Agent to correct, What should stop; plus a
+weekly allocation. Plain language: no workflow numbers or tool names on CEO screens.
+
+**Improvement loop.** OBSERVE → DIAGNOSE → RECOMMEND → ADAM APPROVES → APPLY → MEASURE (`improvement_upsert`,
+`hq_recommendation_action`, `improvements_refresh` daily). Approving applies only allowlisted changes (lane allocation, volume,
+qualification threshold, follow-up cadence) or a prepared action (park excess fallbacks, close stale follow-ups); anything that
+needs n8n or a purchase stays MANUAL. Approving never sends anything.
+
+**Daily integrity check** (05:10 Cairo, `integrity_check`): duplicates, multiple cold routes, stuck approvals, approved emails with
+no Gmail draft, sends with no time, replies or meetings with no next action, overdue live opportunities, won with no project or
+revenue, projects with no owner, paid with no revenue, expired drafts, overdue follow-ups, fallbacks over the cap, Studio attachment
+mismatches, owner-name variants, workflow failures. Only safe deterministic issues are fixed automatically (first run: 377
+owner-name variants). Admin → System health shows services, agents on schedule, failures, AI calls by workflow and the integrity
+results. CEO screens carry none of it.
+
+**Audit.** `docs/NOYA_SYSTEM_AUDIT.md`: Supabase and n8n registers, cleanup done, items retained, decisions for Adam.
+
+**Acceptance (19 Oct): mission → Director accepts → specialists → results → outreach review → Adam approves → Gmail draft →
+reply detected → Studio → proposal / project → revenue recorded.**
+
+| Step | State |
+|---|---|
+| Mission issued | Proven live: the work order above, status QUEUED from evidence. |
+| Director accepts | Waits for Brands & Production's next run (06:00 Cairo); recorded automatically by `work_orders_refresh`. |
+| Specialists | Proven: the finder queue already ranks the targets first. The planner boost acts at the next drafting run, but workflow 18 has been failing on its model provider since 17 Oct (backup model needs n8n access). |
+| Results | Tracked live: 11 matched → 2 email-ready → 1 in review. |
+| Outreach review → Adam approves → Gmail draft | The existing chain (approval → workflow 12 → unsent Gmail draft); not re-run, because only Adam approves. |
+| Reply detected | Workflow 13 syncs every 30 minutes (last 19 Oct 00:30). |
+| Studio → proposal / project | Studio outputs tracked (CRUSH, YKONE); no proposal or project yet. Won → project and won → revenue are checked daily. |
+| Revenue recorded | Import validated by dry run; no record yet, waiting for Adam's evidence for the £60k. |
+
+Tests: `ui.mjs` 202/202, `ui_v3.mjs` 108/108, `ui_command.mjs` 37/37, security scan PASS.

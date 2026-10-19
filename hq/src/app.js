@@ -18,7 +18,7 @@ const MORE = [
   ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
   ['Sales', [['overview', 'Command (classic)'], ['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach (classic)'], ['linkedin', 'LinkedIn'], ['website', 'Website leads'], ['partners', 'Partnerships'], ['events', 'Events']]],
   ['Records', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts'], ['pipeline', 'Pipeline'], ['projects', 'Projects'], ['tasks', 'Tasks']]],
-  ['Admin', [['reports', 'Reports'], ['finance', 'Finance'], ['costs', 'System costs'], ['system', 'System & team'], ['help', 'Help & playbook']]],
+  ['Admin', [['reports', 'Reports'], ['finance', 'Revenue & finance'], ['costs', 'System costs'], ['system', 'System health'], ['help', 'Help & playbook']]],
 ];
 const NAV = [['HQ', PRIMARY], ...MORE];
 const MORE_KEYS = MORE.flatMap(([, items]) => items.map(([k]) => k));
@@ -91,6 +91,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
+  cmd: null, health: null, integ: null, scWin: 'd7',
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
@@ -168,7 +169,7 @@ const opp = (id) => state.data?.opportunities?.find((o) => o.id === id);
 // More / Admin → System; CEO screens only ever say "Some data is temporarily unavailable" with a Retry.
 const READS = { data: 'hq_dashboard', ov: 'hq_overview', dir: 'hq_directory', ins: 'hq_insight', rel: 'hq_relationships', com: 'hq_commercial',
   er: 'hq_email_review', desk: 'hq_outreach_desk', ops: 'hq_operations', club: 'hq_club' };
-const SNAPSHOTS = { ceo: 'ceo', net: 'network', advisor: 'advisor', directors: 'directors', exec: 'execution' };
+const SNAPSHOTS = { ceo: 'ceo', cmd: 'command', net: 'network', advisor: 'advisor', directors: 'directors', exec: 'execution', health: 'health', integ: 'integrity' };
 const COM_TABS = ['radar', 'library', 'actions', 'partners', 'events', 'projects', 'system'];
 const errKey = (k) => (k === 'data' ? 'main' : k);
 async function readKey(k) {
@@ -182,9 +183,9 @@ async function readKey(k) {
   state[k] = data; delete state.errors[errKey(k)]; return true;
 }
 const WAVES = {
-  full: () => [['data', 'desk', 'ceo', 'net'], ['ov', 'dir', 'rel', 'ops', 'directors', 'exec'], ['ins', 'advisor', 'com', ...(state.tab === 'outreach' ? ['er'] : [])]],
-  light: () => [['desk', 'ceo', 'net', 'directors', 'advisor']],
-  write: () => [['data', 'desk'], ['ov', 'dir', 'rel', 'ops', ...(COM_TABS.includes(state.tab) ? ['com'] : []), ...(state.tab === 'outreach' ? ['er'] : [])]],
+  full: () => [['data', 'desk', 'ceo', 'cmd', 'net'], ['ov', 'dir', 'rel', 'ops', 'directors', 'exec'], ['ins', 'advisor', 'com', ...(state.tab === 'outreach' ? ['er'] : [])]],
+  light: () => [['desk', 'ceo', 'cmd', 'net', 'directors', 'advisor']],
+  write: () => [['data', 'desk', 'cmd'], ['ov', 'dir', 'rel', 'ops', ...(COM_TABS.includes(state.tab) ? ['com'] : []), ...(state.tab === 'outreach' ? ['er'] : [])]],
   desk: () => [['desk']],
 };
 async function load(silent = false, scope = 'full') {
@@ -907,7 +908,7 @@ function diagPanel() {
 function viewSystem(d) {
   const ov = state.ov; const h = d.health; const alerts = healthAlerts(d);
   return `
-    <h2>System health</h2>
+    <h2>Snapshots and signals</h2>
     ${diagPanel()}
     ${alerts.length ? `<div class="banner err">${alerts.map(esc).join('<br>')}</div>` : '<div class="banner ok">No production failures.</div>'}
     <h3>Workflow signals</h3>
@@ -2178,6 +2179,40 @@ function renderAnyModal(m) {
         <p class="small muted">Saved: name, company, position, profile link, connected date${rows.some((r) => r.email) ? ', and email where the person shared it with you' : ''}. Nothing else. Re-importing updates existing people.</p>
         <p class="small">${rows.slice(0, 3).map((r) => esc(`${r.first_name || ''} ${r.last_name || ''} — ${r.company || ''}`)).join('<br>')}${rows.length > 3 ? '<br>…' : ''}</p>`, `Import ${rows.length}`);
     }
+    case 'work-order': {
+      const D = (state.cmd?.directors || []).map((x) => [x.key, x.name]);
+      return form('Issue a work order', `<p class="small muted">The Director owns the result. Research, contact, email and writing specialists put the matching companies first from their next runs. Nothing is sent: emails still come to you for review.</p>
+        ${sel('Director', 'wo-dir', D, m.id || 'BRANDS')}${fld('Mission', 'wo-mission', 'text', '', 'maxlength="300" placeholder="e.g. Open conversations with UK jewellery brands for spring shoots"')}
+        ${fld('Target (comma-separated)', 'wo-target', 'text', '', 'maxlength="200" placeholder="e.g. jewellery, UK"')}
+        <div class="two">${sel('Result wanted', 'wo-metric', WO_METRIC, 'EMAILS_SENT')}${fld('Number', 'wo-goal', 'number', '5', 'min="1" max="500"')}</div>
+        <div class="two">${fld('Deadline', 'wo-deadline', 'date', isoPlus(7), `min="${isoPlus(0)}" max="${isoPlus(90)}"`)}${sel('Priority', 'wo-prio', [['P1', 'P1 · first'], ['P2', 'P2 · normal'], ['P3', 'P3 · when possible']], 'P2')}</div>`, 'Issue work order');
+    }
+    case 'wo-close': {
+      const w = (state.cmd?.work_orders || []).find((x) => x.id === m.id) || {};
+      return form(m.type === 'CANCEL' ? 'Cancel work order' : 'Close work order', `<p>${esc(w.mission || '')}</p><p class="small muted">Result so far: ${n0(w.result)} of ${n0(w.goal)}. The order and its results are kept.</p>${fld('Note (optional)', 'wo-note', 'text', '', 'maxlength="300"')}`, m.type === 'CANCEL' ? 'Cancel order' : 'Close order', m.type === 'CANCEL');
+    }
+    case 'opp-plan': {
+      const o = (state.cmd?.opportunities || []).find((x) => x.opportunity_id === m.opp) || {};
+      return form(`Plan · ${esc(o.company || 'opportunity')}`, `<p class="small muted">Every live opportunity has an owner, a next action, a date, and its blocker if there is one.</p>
+        ${fld('Next action', 'op-next', 'text', o.next_action || '', 'maxlength="300"')}<div class="two">${fld('Date', 'op-due', 'date', o.next_action_due || isoPlus(2), `min="${isoPlus(0)}"`)}${fld('Owner', 'op-owner', 'text', o.owner || 'Adam', 'maxlength="80"')}</div>
+        ${fld('Blocker (leave empty if none)', 'op-blocker', 'text', o.blocker || '', 'maxlength="200"')}`, 'Save plan');
+    }
+    case 'rec': {
+      const r = (state.cmd?.recommendations || []).find((x) => x.id === m.id) || {};
+      const what = r.change?.type === 'ACTION' ? 'Approving applies this now. It can be reversed from HQ.' : r.change?.type === 'CONFIG' ? 'Approving changes the setting now; the previous value is kept.' : 'Approving records your decision; the System carries it out next.';
+      return form(m.type === 'APPROVE' ? `Approve · ${esc(r.title || '')}` : `Decline · ${esc(r.title || '')}`, `<p class="small"><b>Seen:</b> ${esc(r.observe || '')}</p><p class="small"><b>Why:</b> ${esc(r.diagnose || '')}</p>
+        <p class="small"><b>Recommended:</b> ${esc(r.recommend || '')}</p>${m.type === 'APPROVE' ? `<p class="small muted">${esc(what)} It is measured again 7 days after it is applied.</p>` : ''}${fld('Note (optional)', 'rec-note', 'text', '', 'maxlength="300"')}`,
+        m.type === 'APPROVE' ? 'Approve' : 'Decline', m.type !== 'APPROVE');
+    }
+    case 'revenue-import': {
+      const P = m.preview;
+      return `<div class="modal-bg"><div class="modal wide"><h3>Import historical revenue</h3>
+        <p class="small">Paste the table with a header row (from Google Sheets or Excel, saved as CSV). Columns: <code>${REV_COLUMNS.join(', ')}</code>. Required on every row: client, date (YYYY-MM-DD), gross, currency, payment_status (PAID, PART_PAID or PENDING) and evidence (invoice number, bank reference, contract or email). Nothing is estimated: a row without evidence is refused.</p>
+        <label class="field"><span>Rows</span><textarea id="rv-text" rows="8" placeholder="client,project,date,service,director,gross,supplier_cost,payment_status,currency,evidence">${esc(m.text || '')}</textarea></label>
+        ${P ? `<div class="small ${P.errors?.length ? '' : 'ok-text'}"><b>${(P.valid || []).length}</b> rows ready${Object.keys(P.totals || {}).length ? ` · ${esc(Object.entries(P.totals).map(([c, a]) => cash(a, c)).join(' + '))}` : ''} · ${(P.duplicates || []).length} already recorded (skipped) · ${(P.errors || []).length} with problems</div>
+          ${(P.errors || []).length ? `<div class="banner err small">${P.errors.slice(0, 8).map((e) => `Row ${esc(e.row)}${e.client ? ` (${esc(e.client)})` : ''}: ${esc((e.errors || []).join('; '))}`).join('<br>')}</div>` : ''}` : ''}
+        <div class="btn-row"><button class="btn" id="rv-check">Check rows</button>${P && (P.valid || []).length && !(P.errors || []).length ? `<button class="btn primary" id="m-ok">Import ${(P.valid || []).length} records</button>` : ''}<button class="btn" data-close>Cancel</button></div></div></div>`;
+    }
     default: return renderModal(m);
   }
 }
@@ -2323,6 +2358,23 @@ async function submitModal() {
       state.notice = err ? { err: true, text: `Import stopped after ${nw + upd}: ${err}` } : { err: false, text: `LinkedIn import done: ${summary}. People linked to NOYA are listed first.` };
       state.netF.only = 'known';
       await load(true); return null; }
+    case 'work-order': {
+      const mission = val('wo-mission'); if (!need(mission && mission.length >= 5, 'Write the mission in a sentence.')) return;
+      const goal = Number(val('wo-goal')); if (!need(goal >= 1, 'The number must be at least 1.')) return;
+      const r = await done('hq_work_order', { p_director: val('wo-dir'), p_mission: mission, p_target: val('wo-target'), p_metric: val('wo-metric'), p_goal: goal, p_deadline: val('wo-deadline'), p_priority: val('wo-prio') },
+        'Work order issued. Its status follows the evidence: it shows Working once the Director and specialists act on it.');
+      if (r && r.ok === false) state.notice = { err: true, text: { UNKNOWN_DIRECTOR: 'Pick a Director.', MISSION_LENGTH: 'The mission needs 5 to 300 characters.', DEADLINE_RANGE: 'The deadline must be within the next 90 days.', GOAL_RANGE: 'The number must be between 1 and 500.' }[r.reason] || explain(r) };
+      return r; }
+    case 'wo-close': return done('hq_work_order_action', { p_id: m.id, p_action: m.type, p_note: val('wo-note') }, m.type === 'CANCEL' ? 'Work order cancelled. Its results are kept.' : 'Work order closed. Its results are kept.');
+    case 'opp-plan': {
+      const next = val('op-next'); if (!need(next, 'A next action is required.')) return;
+      if (!need(!val('op-due') || val('op-due') >= todayKey(), 'Pick today or a later date.')) return;
+      const blocker = val('op-blocker'); const o = (state.cmd?.opportunities || []).find((x) => x.opportunity_id === m.opp) || {};
+      return done('hq_opportunity_plan', { p_opportunity: m.opp, p_next_action: next, p_due: val('op-due'), p_owner: val('op-owner'), p_blocker: blocker, p_clear_blocker: !blocker && !!o.blocker }, 'Plan saved.'); }
+    case 'rec': return done('hq_recommendation_action', { p_id: m.id, p_action: m.type, p_note: val('rec-note') }, m.type === 'APPROVE' ? 'Approved. It will be measured again in 7 days.' : 'Declined. It will not be recommended again for 30 days.');
+    case 'revenue-import': {
+      if (!need((m.preview?.valid || []).length, 'Check the rows first.')) return;
+      return done('hq_revenue_import', { p_rows: m.rows, p_apply: true }, `Imported ${(m.preview.valid || []).length} historical revenue records.`); }
     default: return null;
   }
 }
@@ -2940,21 +2992,23 @@ const btnLink = (url, label, primary = true) => `<a class="btn small ${primary ?
 // Verified-email drafts that failed the quality check wait under Held for Adam's edit: they count as emails needing review.
 const qaHeld = () => (state.desk?.held || []).filter((x) => x.channel === 'EMAIL' && x.status === 'OPEN' && /quality check/i.test(x.reason || ''));
 function dashStrip(d) {
-  const C = state.ceo; const desk = state.desk?.counts || { needs_review: {} }; const t = todayItems(d);
-  const rev = C ? moneyOf(C.money?.revenue) : null;
+  const C = state.cmd; const K = C?.kpis || {}; const H = C?.revenue?.historical || {};
+  const rows = needsRows(d); const rev = C ? cashOf(K.revenue) : null;
+  const gap = Number(H.stated_amount || 0) - Number(H.reconciled || 0);
+  const send = C ? Number(K.gmail_drafts_to_send || 0) + Number(K.studio_drafts_to_send || 0) : null;
   const k = (n, l, attrs, sub = '') => `<button class="kpi" ${attrs}><span class="kn">${n}</span><span class="kl">${l}</span>${sub ? `<span class="ks">${sub}</span>` : ''}</button>`;
   return `<section class="kpis" aria-label="Key numbers">
-    ${k(n0((desk.needs_review?.EMAIL || 0) + qaHeld().length), 'Emails needing review', qaHeld().length && !desk.needs_review?.EMAIL ? 'data-go="desk" data-desk-tab="HELD"' : 'data-go="desk" data-desk-tab="NEEDS_REVIEW"', qaHeld().length ? `${qaHeld().length} to edit` : '')}
-    ${k(n0(desk.gmail_drafts_confirmed), 'Gmail drafts ready to send', 'data-go="desk" data-desk-tab="APPROVED"')}
-    ${k(n0(t.replies.length), 'Replies needing you', 'data-scroll="needs"')}
-    ${k(n0(t.meetings.length), 'Meetings / calls', 'data-scroll="needs"')}
-    ${k(C ? n0(C.active_opportunities) : '—', 'Active opportunities', 'data-go="relations" data-rel-tab="PIPELINE"', 'replied or further')}
-    ${k(C ? n0(C.funnel?.active_projects) : '—', 'Active projects', 'data-go="ops"')}
-    ${k(esc(rev || '£0'), 'Won revenue', 'data-go="finance"', rev ? 'recorded' : 'No recorded revenue')}</section>`;
+    ${k(C ? esc(rev || '£0') : '—', 'Actual revenue', 'data-go="finance"', C ? (gap > 0 ? `${esc(cash(gap, H.currency))} historical to reconcile` : rev ? 'recorded with evidence' : 'none recorded') : '')}
+    ${k(C ? n0(K.active_projects) : '—', 'Active projects', 'data-go="ops"')}
+    ${k(C ? n0(K.open_proposals) : '—', 'Open proposals', 'data-scroll="pipeline"')}
+    ${k(C ? n0(K.meetings_30) : '—', 'Meetings', 'data-scroll="pipeline"', 'last 30 days')}
+    ${k(C ? n0(K.positive_30) : '—', 'Positive replies', 'data-scroll="pipeline"', 'last 30 days')}
+    ${k(send == null ? '—' : n0(send), 'Emails to send', 'data-go="desk" data-desk-tab="APPROVED"', C ? `${n0(K.gmail_drafts_to_send)} Gmail · ${n0(K.studio_drafts_to_send)} Studio${Number(K.studio_drafts_later) ? ` · ${n0(K.studio_drafts_later)} later` : ''}` : '')}
+    ${k(n0(rows.length), 'Actions needing you', 'data-scroll="needs"')}</section>`;
 }
 
 // WHAT NEEDS YOU TODAY: only things Adam can personally act on, ranked, one obvious button each.
-function dashActions(d) {
+function needsRows(d) {
   const t = todayItems(d); const desk = state.desk || {}; const rows = [];
   t.meetings.forEach((m) => rows.push({ r: 1, who: m.person || m.company, co: m.person ? m.company : '', dir: dirByName(m.company),
     why: m.kind === 'CALL' ? 'They asked for a call: a project can start here' : 'They asked for a meeting', next: m.kind === 'CALL' ? (m.next_action || 'Book the call, then record it') : 'Agree a time, then record the outcome',
@@ -2980,7 +3034,6 @@ function dashActions(d) {
   qaHeld().forEach((x) => rows.push({ r: 2, who: x.person || x.company, co: x.person ? x.company : '', dir: x.director, why: 'Verified email; the draft failed the quality check',
     next: 'Edit the draft (Approve then creates an unsent Gmail draft), or reject', when: x.created_at,
     cta: `<button class="btn small primary" data-go="desk" data-desk-tab="HELD" data-desk-dir="${x.director || ''}">Edit</button>` }));
-  const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date());
   t.followups.slice(0, 4).forEach((f) => rows.push({ r: f.overdue ? 3 : 4, who: f.person || f.company, co: f.person ? f.company : '', dir: f.director,
     why: 'No answer yet: one short follow-up keeps it alive', next: `Follow-up ${f.step} by ${CH_LABEL[f.channel] || f.channel}`, when: f.due_at, overdue: f.overdue,
     cta: f.thread_id ? btnLink(`${GMAIL_THREAD_URL}${f.thread_id}`, 'Open thread', false) + `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Done</button>`
@@ -2990,6 +3043,11 @@ function dashActions(d) {
   t.issues.forEach((i) => rows.push({ r: 1, who: i.title, co: '', dir: null, why: 'Client delivery issue', next: 'Resolve with the client or supplier', when: i.due_at,
     cta: '<button class="btn small primary" data-go="ops">Operations</button>' }));
   rows.sort((a, b) => a.r - b.r);
+  return rows;
+}
+function dashActions(d) {
+  const t = todayItems(d); const rows = needsRows(d);
+  const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date());
   const more = t.followups.length > 4 ? `<button class="btn small ghost" data-go="desk" data-desk-tab="FOLLOWUPS">All ${t.followups.length} follow-ups${overdue.length ? ` · ${overdue.length} overdue` : ''}</button>` : '';
   const body = rows.map((x) => `<div class="act">
       <div class="act-main"><div class="act-who">${esc(x.who || '')}${x.co ? ` <span class="faint">· ${esc(x.co)}</span>` : ''}</div>
@@ -3004,11 +3062,11 @@ function dashActions(d) {
 function dashAdvisor() {
   const A = state.advisor;
   if (!A) return state.errors.advisor ? `<section class="dsec"><header><h2>HQ Advisor</h2></header>${unavailable('advisor')}</section>` : '<section class="dsec advisor"><p class="muted small">HQ Advisor is reading the Directors…</p></section>';
-  const obs = (A.observations || []).slice(0, 5).map((o) => `<li class="adv-obs ${o.kind === 'BOTTLENECK' ? 'bottleneck' : o.kind === 'ATTENTION' ? 'attention' : ''}">
+  const obs = (A.observations || []).slice(0, 5).map((o) => `<li class="adv-obs ${o.kind === 'BOTTLENECK' || o.kind === 'STOP' ? 'bottleneck' : o.kind === 'ATTENTION' || o.kind === 'CORRECTION' ? 'attention' : ''}">
       ${o.title ? `<div class="adv-k">${esc(o.title)}</div>` : ''}
       <div class="adv-s"><span class="adv-l">Situation</span>${esc(o.situation)}</div><div class="adv-m"><span class="adv-l">Meaning</span>${esc(o.meaning)}</div>
       <div class="adv-a"><span class="adv-l">Recommended action</span>${esc(o.action)}</div></li>`).join('');
-  return `<section class="dsec advisor"><header><h2>HQ Advisor</h2></header>${obs ? `<ol class="adv-list">${obs}</ol>` : '<p class="muted small">Nothing to flag: the Directors are on plan.</p>'}</section>`;
+  return `<section class="dsec advisor"><header><h2>HQ Advisor</h2><span class="faint small">Five recommendations a day</span></header>${obs ? `<ol class="adv-list">${obs}</ol>` : '<p class="muted small">Nothing to flag: the Directors are on plan.</p>'}${dashApprovals()}</section>`;
 }
 
 // TOP COMMERCIAL OPPORTUNITIES: potential projects, not prospects. No invented deal values.
@@ -3042,15 +3100,10 @@ function dashFunnel() {
     ['Meetings', (x) => n0(x.meetings)], ['Briefs / concepts', (x) => n0(x.concepts)], ['Proposals', (x) => n0(x.proposals)], ['Active projects', () => n0(F.active_projects)],
     ['Won', (x) => n0(x.won)], ['Revenue', (x) => esc(moneyOf(x.revenue) || '£0')]];
   const row = (label, x) => `<tr><th>${label}</th>${steps.map(([, f]) => `<td>${f(x)}</td>`).join('')}</tr>`;
-  const P = C.pipeline || []; const stuck = P.filter((s) => s.stuck > 0);
-  const live = P.filter((s) => !['PROSPECT', 'LOST_PARKED'].includes(s.stage));
   const bd = F.by_director_30 || {}; const active = Object.entries(bd).filter(([, v]) => v.sent || v.replies || v.meetings || v.proposals || v.wins);
   return `<section class="dsec"><header><h2>From outreach to business</h2></header>
     <div class="tbl-wrap"><table class="funnel"><thead><tr><th></th>${steps.map(([l]) => `<th>${l}</th>`).join('')}</tr></thead>
       <tbody>${row('This week', w)}${row('Last 30 days', m)}</tbody></table></div>
-    <div class="pipe">${live.map((s) => `<div class="pst ${s.n ? '' : 'zero'}"><span class="pn">${n0(s.n)}</span><span class="pl">${esc(STAGE_NAME[s.stage] || s.stage)}</span>${s.stuck ? `<span class="pk">${s.stuck} stuck</span>` : ''}</div>`).join('<span class="parr">→</span>')}</div>
-    <p class="small faint">${n0((P.find((s) => s.stage === 'PROSPECT') || {}).n)} qualified prospects not yet contacted · ${n0((P.find((s) => s.stage === 'LOST_PARKED') || {}).n)} lost or parked.
-      ${stuck.length ? `<b class="warn-text">Stuck: ${esc(stuck.map((s) => `${s.stuck} at ${(STAGE_NAME[s.stage] || s.stage).toLowerCase()}`).join(', '))}</b> (no open task and no movement for 7 days).` : ''}</p>
     ${active.length ? `<details class="mt6"><summary class="small">By Director · last 30 days</summary><div class="tbl-wrap"><table class="stack"><thead><tr><th>Director</th><th class="num">Sent</th><th class="num">Replies</th><th class="num">Positive</th><th class="num">Meetings</th><th class="num">Proposals</th><th class="num">Wins</th></tr></thead><tbody>
       ${active.map(([k, v]) => `<tr><td>${esc(dirName(k))}</td><td class="num" data-l="Sent">${n0(v.sent)}</td><td class="num" data-l="Replies">${n0(v.replies)}</td><td class="num" data-l="Positive">${n0(v.positive)}</td><td class="num" data-l="Meetings">${n0(v.meetings)}</td><td class="num" data-l="Proposals">${n0(v.proposals)}</td><td class="num" data-l="Wins">${n0(v.wins)}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <p class="src">${esc(F.method || '')}</p></section>`;
@@ -3073,10 +3126,11 @@ function dashPulse() {
   const D = state.directors; if (!D) { loadV3('directors', 'hq_directors'); return `<section class="dsec"><header><h2>AI workforce</h2></header>${waitFor('directors', 'the workforce')}</section>`; }
   const rows = D.members.filter((m) => m.role !== 'SUPPORT');
   return `<section class="dsec"><header><h2>AI workforce</h2><button class="btn small ghost" data-go="agents">All agents</button></header>
-    <div class="tbl-wrap"><table class="pulse stack"><thead><tr><th>Director</th><th>Status</th><th>Current mission</th><th>Today's output</th><th>Blocker</th><th>Result / opportunity</th></tr></thead><tbody>
+    <div class="tbl-wrap"><table class="pulse stack"><thead><tr><th>Director</th><th>Status</th><th>Current mission</th><th>Today's output</th><th>Last 7 days</th><th>Blocker</th><th>Result / opportunity</th></tr></thead><tbody>
     ${rows.map((m) => { const top = state.ceo?.directors?.[m.key]?.top; const blk = (m.blockers || [])[0];
       return `<tr class="clickable" data-director="${m.key}"><td><b>${esc(m.name)}</b></td><td data-l="Status">${statusLabel(m)}</td>
         <td data-l="Mission" class="small">${esc(missionLine(m))}</td><td data-l="Today" class="small">${esc(outputLine(m))}</td>
+        <td data-l="7 days" class="small">${(() => { const w = scoreOf(m.key)?.d7; return w ? `${n0(w.sent)} sent · ${n0(w.replies)} replies · ${n0(w.meetings)} meetings${Number(w.briefs) ? ` · ${n0(w.briefs)} briefs` : ''}${Number(w.wins) ? ` · ${n0(w.wins)} wins` : ''}` : '<span class="faint">—</span>'; })()}${ordersOf(m.key).length ? `<div class="faint">${plural(ordersOf(m.key).length, 'work order', 'work orders')} · ${esc((WO_STATUS[ordersOf(m.key)[0].status] || [''])[0].toLowerCase())}</div>` : ''}</td>
         <td data-l="Blocker" class="small ${blk?.hard ? 'bad-text' : 'warn-text'}">${blk ? esc(blk.text) : '<span class="faint">—</span>'}</td>
         <td data-l="Result" class="small">${top ? `${esc(top.company)} · ${esc(projectName(top.project))}${top.stage ? ` <span class="faint">(${esc((STAGE_NAME[top.stage] || '').toLowerCase())})</span>` : ''}` : '<span class="faint">No opportunity yet</span>'}</td></tr>`; }).join('')}</tbody></table></div></section>`;
 }
@@ -3110,7 +3164,171 @@ function dashWeekly() {
 function viewDashboard(d) {
   const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
   return `${head(state.advisor?.greeting || 'Dashboard', esc([day, asOf(state.ceo)].filter(Boolean).join(' · ')))}
-    ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashOpportunities()}${dashFunnel()}${dashPulse()}${dashWeekly()}`;
+    ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashPipeline()}${dashFunnel()}${dashOpportunities()}${dashPulse()}${dashWeekly()}`;
+}
+
+// ---------------------------------------------------------------- COMMAND CENTRE (Adam, 18 Oct: professional operating mode)
+// One read, hq_command (snapshot 'command'): the seven top numbers, the 15-stage funnel with each live opportunity's owner, next
+// action, date and blocker, revenue and its reconciliation, Director scorecards, CEO work orders and the recommendations waiting
+// for Adam. Nothing is estimated: a number exists only when a record behind it exists.
+const CUR_SIGN = { GBP: '£', USD: '$', EUR: '€' };
+const cash = (amount, currency) => (amount == null ? '—' : `${CUR_SIGN[currency] || `${currency || ''} `}${Number(amount).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`);
+const cashOf = (list) => (Array.isArray(list) && list.length ? list.map((m) => cash(m.amount, m.currency)).join(' + ') : null);
+const WO_STATUS = { QUEUED: ['Queued', ''], WORKING: ['Working', 'ok'], WAITING: ['Waiting for you', 'warn'], COMPLETE: ['Complete', 'ok'], BLOCKED: ['Blocked', 'bad'], CANCELLED: ['Cancelled', ''] };
+const WO_METRIC = [['EMAILS_SENT', 'Emails sent'], ['QUALIFIED_TARGETS', 'New qualified targets'], ['EMAIL_READY', 'New email-ready contacts'], ['REPLIES', 'Replies'], ['MEETINGS', 'Meetings'], ['PROPOSALS', 'Proposals'], ['WINS', 'Wins']];
+const MISSING_LABEL = { NO_OPPORTUNITY: 'no opportunity record', NO_NEXT_ACTION: 'no next action', NO_DATE: 'no date', OVERDUE: 'overdue', NO_OWNER: 'no owner' };
+const scoreOf = (key) => (state.cmd?.scorecards?.directors || []).find((x) => x.key === key);
+const ordersOf = (key) => (state.cmd?.work_orders || []).filter((w) => w.director === key && !['COMPLETE', 'CANCELLED'].includes(w.status));
+
+// PIPELINE: every company at its furthest stage; every live opportunity with owner, next action, date and blocker.
+function dashPipeline() {
+  const C = state.cmd; if (!C) return `<section class="dsec" id="pipeline"><header><h2>Pipeline</h2></header>${waitFor('cmd', 'the pipeline')}</section>`;
+  const st = C.funnel?.stages || []; const by = Object.fromEntries(st.map((s) => [s.stage, s]));
+  const strip = st.filter((s) => s.stage !== 'LOST_PARKED').map((s) => `<div class="pst ${s.n ? '' : 'zero'}"><span class="pn">${n0(s.n)}</span><span class="pl">${esc(s.label)}</span>${s.stuck ? `<span class="pk">${s.stuck} stuck</span>` : ''}</div>`).join('<span class="parr">→</span>');
+  // Conversion between the commercial steps, shown as a rate only when the base is 20 or more (no decisions on tiny samples).
+  const step = (a, b) => { const x = by[a]?.reached || 0; const y = by[b]?.reached || 0; return `${esc(by[b]?.label || b)} ${n0(y)}${x >= 20 ? ` <span class="faint">(${Math.round((100 * y) / x)}%)</span>` : ''}`; };
+  const opps = C.opportunities || []; const gaps = opps.filter((o) => (o.missing || []).length);
+  const stuck = st.reduce((n, s) => n + (s.stuck || 0), 0);
+  const rows = opps.map((o) => `<tr><td><a class="clickable" data-open="company" data-id="${o.company_id}">${esc(o.company)}</a>${o.director ? `<div class="faint small">${esc(dirName(o.director))}</div>` : ''}</td>
+      <td data-l="Stage">${esc(o.label)}</td><td data-l="Owner" class="small">${esc(o.owner || '—')}</td>
+      <td data-l="Next action" class="small">${o.next_action ? esc(plainText(o.next_action)) : '<span class="bad-text">No next action</span>'}</td>
+      <td data-l="Date" class="small ${(o.missing || []).includes('OVERDUE') ? 'bad-text' : ''}">${o.next_action_due ? esc(shortDay(o.next_action_due)) : '<span class="bad-text">No date</span>'}</td>
+      <td data-l="Blocker" class="small">${o.blocker ? `<span class="warn-text">${esc(o.blocker)}</span>` : '<span class="faint">—</span>'}</td>
+      <td>${o.opportunity_id ? `<button class="btn small" data-modal="opp-plan" data-opp="${o.opportunity_id}">Plan</button>` : ''}</td></tr>`).join('');
+  return `<section class="dsec" id="pipeline"><header><h2>Pipeline</h2><span class="faint small">Every company at the furthest stage it has reached</span></header>
+    <div class="pipe">${strip}</div>
+    <p class="small"><b>Where business is lost:</b> ${n0(by.LOST_PARKED?.n)} lost or parked · ${stuck ? `<span class="warn-text">${stuck} stuck</span>` : '0 stuck'} · ${gaps.length ? `<span class="bad-text">${plural(gaps.length, 'live opportunity', 'live opportunities')} missing a next action or date</span>` : 'every live opportunity has a next action and date'}.
+      <span class="faint">Outreach sent ${n0(by.OUTREACH_SENT?.reached)} → ${step('OUTREACH_SENT', 'REPLIED')} → ${step('REPLIED', 'MEETING')} → ${step('MEETING', 'PROPOSAL')} → ${step('PROPOSAL', 'WON')}</span></p>
+    ${opps.length ? `<div class="tbl-wrap"><table class="stack"><thead><tr><th>Opportunity</th><th>Stage</th><th>Owner</th><th>Next action</th><th>Date</th><th>Blocker</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="calm"><div class="calm-t">No live opportunity yet.</div><div class="t-sub">A company appears here from its first reply.</div></div>'}
+    <p class="src">${esc(C.funnel?.method || '')}</p></section>`;
+}
+
+// RECOMMENDATIONS AWAITING ADAM: the improvement loop's decision step. Approve applies the change (or records it for the System).
+function dashApprovals() {
+  const recs = (state.cmd?.recommendations || []).filter((r) => r.state === 'RECOMMENDED');
+  if (!recs.length) return '';
+  return `<div class="recs"><div class="adv-k">Awaiting your approval · ${recs.length}</div>${recs.map((r) => `<article class="rec">
+      <div class="rec-t">${esc(r.title)} <span class="faint small">· ${esc(r.area || '')}</span></div>
+      <div class="small"><b>Seen:</b> ${esc(r.observe || '')}</div><div class="small"><b>Recommended:</b> ${esc(r.recommend || '')}</div>
+      <div class="btn-row mt6"><button class="btn small primary" data-modal="rec" data-id="${r.id}" data-type="APPROVE">Approve</button><button class="btn small ghost" data-modal="rec" data-id="${r.id}" data-type="DECLINE">Decline</button></div></article>`).join('')}</div>`;
+}
+
+// WORK ORDERS: Adam -> Director. Status comes from evidence (work_order_eval), never from a setting.
+function woCard(w) {
+  const [l, c] = WO_STATUS[w.status] || [w.status, '']; const r = w.results || {}; const open = !['COMPLETE', 'CANCELLED'].includes(w.status);
+  const chain = [['matched', 'matching companies'], ['email_ready', 'email-ready'], ['drafted', 'drafted'], ['in_review', 'in your review'], ['sent', 'sent'], ['replies', 'replies'], ['meetings', 'meetings'], ['proposals', 'proposals'], ['wins', 'wins']]
+    .map(([k, t]) => `<span class="ef"><b>${n0(r[k] ?? 0)}</b> ${t}</span>`).join('<span class="ef-a">→</span>');
+  return `<article class="wo">
+    <div class="wo-top"><div><div class="wo-m">${esc(w.mission || '')}</div><div class="small faint">${esc(w.director_name || dirName(w.director))} · ${esc(w.priority || 'P2')} · target ${esc((w.terms || []).join(', ') || 'the Director’s universe')} · due ${esc(shortDay(w.deadline))}</div></div>
+      <span class="st ${c}">${esc(l)}</span></div>
+    <div class="wo-goal"><b>${n0(w.result)}</b> of ${n0(w.goal)} ${esc((WO_METRIC.find(([k]) => k === w.metric) || [, w.metric])[1].toLowerCase())}
+      <span class="faint small">· issued ${esc(shortDay(w.issued_at))}${w.accepted_at ? ` · accepted ${esc(fmtDate(w.accepted_at))}` : ''}</span></div>
+    <div class="ef-row small">${chain}</div>
+    ${w.blocker ? `<div class="small bad-text mt6">${esc(w.blocker)}</div>` : w.note ? `<div class="small mt6">${esc(w.note)}</div>` : ''}
+    ${!open && w.outcome ? `<div class="small mt6"><b>Outcome:</b> ${esc(w.outcome)}</div>` : ''}
+    ${open ? `<div class="btn-row mt6"><button class="btn small ghost" data-modal="wo-close" data-id="${w.id}" data-type="CLOSE">Close</button><button class="btn small ghost" data-modal="wo-close" data-id="${w.id}" data-type="CANCEL">Cancel</button></div>` : ''}
+  </article>`;
+}
+function woPanel() {
+  const C = state.cmd; if (!C) return '';
+  const list = C.work_orders || [];
+  return `<section class="dsec"><header><h2>Work orders</h2><span class="faint small">Your missions to the Directors. The Director owns the result; the specialists support it.</span>
+      <button class="btn small primary" data-modal="work-order">Issue a work order</button></header>
+    ${list.length ? `<div class="wo-grid">${list.map(woCard).join('')}</div>` : '<div class="calm"><div class="calm-t">No work order yet.</div><div class="t-sub">Issue one to a Director: the target companies go first in research, contact, email and drafting from their next run.</div></div>'}</section>`;
+}
+
+// SCORECARDS: commercial results only. Rates and rankings need at least 20 first messages in the window.
+function scorePanel() {
+  const S = state.cmd?.scorecards; if (!S) return '';
+  const w = state.scWin || 'd7'; const min = S.min_sample || 20;
+  const tabs = [['d7', '7 days'], ['d30', '30 days'], ['all', 'All time']].map(([k, l]) => `<button class="${w === k ? 'on' : ''}" data-sc-win="${k}">${l}</button>`).join('');
+  const rows = (S.directors || []).map((x) => { const s = x[w] || {}; const cv = x.coverage || {};
+    return `<tr class="clickable" data-director="${x.key}"><td><b>${esc(x.name)}</b></td><td class="num" data-l="Qualified">${n0(s.qualified)}</td>
+      <td class="num" data-l="Email coverage">${cv.coverage_pct != null ? `${esc(cv.coverage_pct)}%` : '—'}</td><td class="num" data-l="Sent">${n0(s.sent)}</td>
+      <td class="num" data-l="Reply rate">${s.sample === 'OK' ? `${esc(s.reply_rate_pct)}%` : `<span class="faint" title="Fewer than ${min} first messages">n=${n0(s.sent)}</span>`}</td>
+      <td class="num" data-l="Replies">${n0(s.replies)}</td><td class="num" data-l="Positive">${n0(s.positive)}</td><td class="num" data-l="Meetings">${n0(s.meetings)}</td>
+      <td class="num" data-l="Briefs">${n0(s.briefs)}</td><td class="num" data-l="Proposals">${n0(s.proposals)}</td><td class="num" data-l="Wins">${n0(s.wins)}</td>
+      <td class="num" data-l="Revenue">${esc(Object.entries(s.revenue || {}).map(([c, a]) => cash(a, c)).join(' + ') || '—')}</td></tr>`; }).join('');
+  const rank = (S.ranking_d30 || []);
+  return `<section class="dsec"><header><h2>Director scorecards</h2><div class="tabs sm">${tabs}</div></header>
+    <div class="tbl-wrap"><table class="stack sc"><thead><tr><th>Director</th><th class="num">Qualified</th><th class="num">Email coverage</th><th class="num">Sent</th><th class="num">Reply rate</th><th class="num">Replies</th><th class="num">Positive</th><th class="num">Meetings</th><th class="num">Briefs</th><th class="num">Proposals</th><th class="num">Wins</th><th class="num">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="small">${rank.length ? `<b>Ranking (30 days, reply rate):</b> ${rank.map((r) => `${esc(dirName(r.key))} ${esc(r.reply_rate_pct)}% of ${esc(r.sent)}`).join(' · ')}` : `<b>No ranking yet:</b> no Director has ${min} first messages in the last 30 days, so a rate would mislead. “n=” is the number of first messages sent.`}</p>
+    <p class="src">${esc(S.method || '')}</p></section>`;
+}
+
+// REVENUE: actual revenue from records with evidence, and the reconciliation of the historical figure.
+function revenuePanel() {
+  const C = state.cmd; if (!C) return `${waitFor('cmd', 'revenue')}`;
+  const R = C.revenue || {}; const H = R.historical || {}; const stated = Number(H.stated_amount || 0); const rec = Number(H.reconciled || 0);
+  const card = (l, v, sub) => `<div class="rv"><div class="rv-l">${l}</div><div class="rv-v">${v}</div>${sub ? `<div class="rv-s">${sub}</div>` : ''}</div>`;
+  const tbl = (title, list, col) => `<section class="panel"><header><h3>${title}</h3></header><div class="body">${list.length ? `<table class="mini-t"><tbody>${list.map((x) => `<tr><td>${esc(col(x))}</td><td class="num">${esc(cash(x.amount, x.currency))}</td>${x.records != null ? `<td class="num faint">${esc(x.records)}</td>` : ''}</tr>`).join('')}</tbody></table>` : '<p class="muted small">Not recorded.</p>'}</div></section>`;
+  return `<h2>Revenue</h2>
+    <p class="small muted">Actual revenue is the sum of revenue records that carry evidence (invoice, bank reference, contract or email). Currencies are never added together and nothing is estimated.</p>
+    <div class="rv-grid">${card('Actual revenue', esc(cashOf(R.recorded) || '£0'), `${(R.recorded || []).reduce((n, x) => n + Number(x.records || 0), 0)} records`)}
+      ${card('Received', esc(cashOf(R.received) || '£0'))}${card('Receivables', esc(cashOf(R.receivables) || '£0'))}
+      ${card('Gross profit', esc(cashOf(R.gross_profit) || 'Not recorded'), 'only where supplier costs are recorded')}</div>
+    ${stated ? `<section class="hist ${rec >= stated ? 'done' : ''}"><div class="hist-k">${rec >= stated ? 'HISTORICAL REVENUE — RECONCILED' : 'HISTORICAL REVENUE — TO BE RECONCILED'}</div>
+      <div class="hist-row"><span><b>${esc(cash(stated, H.currency))}</b> stated (${esc(H.period || '')}, ${esc(H.stated_by || '')})</span><span><b>${esc(cash(rec, H.currency))}</b> reconciled from ${n0(H.reconciled_records)} records</span>
+        <span><b>${esc(cash(Math.max(stated - rec, 0), H.currency))}</b> still to reconcile</span></div>
+      <p class="small">The stated figure is not counted as revenue. Each historical project is added as one record with its client, date, service, gross, supplier costs, payment status, currency and evidence; the totals above then follow from the records.${H.other_currency_records ? ` ${esc(H.other_currency_records)} records are in other currencies and are not added to the ${esc(H.currency)} total.` : ''}</p>
+      <div class="btn-row"><button class="btn primary small" data-modal="revenue-import">Import historical revenue</button></div></section>` : ''}
+    <div class="three">${tbl('By service', R.by_service || [], (x) => x.service)}${tbl('By Director', R.by_director || [], (x) => (x.director === 'UNATTRIBUTED' ? 'Not attributed' : dirName(x.director)))}${tbl('By month', R.by_month || [], (x) => x.month)}</div>
+    ${(R.won_without_revenue || []).length ? `<div class="banner err">Won without a revenue record: ${esc(R.won_without_revenue.map((x) => x.company).join(', '))}. Every won project needs its revenue recorded.</div>` : ''}
+    ${(R.records || []).length ? `<h3>Revenue records (${R.records.length})</h3><div class="tbl-wrap"><table class="stack"><thead><tr><th>Date</th><th>Client</th><th>Project / service</th><th>Director</th><th class="num">Gross</th><th class="num">Supplier cost</th><th class="num">Gross profit</th><th>Status</th><th>Evidence</th></tr></thead><tbody>
+      ${R.records.map((x) => `<tr><td data-l="Date">${esc(shortDay(x.date))}</td><td data-l="Client">${esc(x.client || '—')}${x.historical ? ' <span class="pill">historical</span>' : ''}</td><td data-l="Project" class="small">${esc([x.project, x.service].filter(Boolean).join(' · ') || '—')}</td>
+        <td data-l="Director" class="small">${esc(x.director ? dirName(x.director) : '—')}</td><td class="num" data-l="Gross">${esc(cash(x.gross, x.currency))}</td><td class="num" data-l="Supplier cost">${esc(x.supplier_cost != null ? cash(x.supplier_cost, x.currency) : '—')}</td>
+        <td class="num" data-l="Gross profit">${esc(x.gross_profit != null ? cash(x.gross_profit, x.currency) : '—')}</td><td data-l="Status">${pill(sentence(String(x.payment_status).replace('_', ' ')), x.payment_status === 'PAID' ? 'ok' : 'warn')}</td><td data-l="Evidence" class="small">${esc(x.evidence || '—')}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+}
+const REV_COLUMNS = ['client', 'project', 'date', 'service', 'director', 'gross', 'supplier_cost', 'payment_status', 'amount_paid', 'currency', 'evidence', 'invoice_reference', 'notes'];
+function revenueRows(text) {
+  const rows = parseCsv(String(text || '').trim()).filter((r) => r.some((c) => String(c).trim()));
+  if (!rows.length) return [];
+  const head = rows[0].map((h) => String(h).trim().toLowerCase().replace(/[^a-z_]/g, '_'));
+  return rows.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h, String(r[i] ?? '').trim()]).filter(([h]) => REV_COLUMNS.includes(h))));
+}
+
+// SYSTEM HEALTH (Admin only): services, agents on schedule, AI calls, integrity checks. CEO screens never show this.
+async function loadHealth(force = false) {
+  const ks = ['health', 'integ'].filter((k) => force || (!state[k] && !state.busy[k] && !state.errors[k]));
+  if (!ks.length) return;
+  ks.forEach((k) => delete state.errors[k]);
+  await Promise.all(ks.map(readKey)); render();
+}
+function healthPanel() {
+  const H = state.health; const I = state.integ || H?.integrity;
+  if (!H) { loadHealth(); return `<h2>System health</h2>${waitFor('health', 'system health')}`; }
+  const ok = (b) => `<span class="dot ${b ? '' : 'bad'}"></span>`;
+  const agents = H.agents || []; const late = agents.filter((a) => !a.on_schedule);
+  const ai = H.ai?.by_workflow_7d || []; const hun = H.hunter || {};
+  // a workflow failure alert in the last 7 days (and a provider outage in the last 3) is a Check, even when every agent is on schedule
+  const asAt = new Date(H.generated_at || Date.now()).getTime();
+  const recent = (f, days) => /SYSTEM_FAILURE/.test(f.type) && asAt - new Date(f.at).getTime() < days * 864e5;
+  const wfFail = (H.failures || []).filter((f) => recent(f, 7)); const provFail = wfFail.filter((f) => recent(f, 3) && /PROVIDER_UNAVAILABLE|payment required|credit/i.test(f.title));
+  const wfName = (t) => String(t).replace(/^SYSTEM FAILURE\s*[—-]+\s*/, '').replace(/\s*\[.*$/, '');
+  const svc = [
+    ['Supabase', true, `${esc(H.supabase?.database_mb)} MB · ${(H.supabase?.cron || []).filter((j) => j.active).length} scheduled jobs · ${(H.supabase?.cron || []).reduce((n, j) => n + Number(j.failed_7d || 0), 0)} job failures in 7 days · backups: ${esc(H.supabase?.backups || '')}`],
+    ['n8n workflows', !late.length && !wfFail.length, [late.length ? `${late.length} of ${agents.length} agents behind schedule: ${esc(late.map((a) => a.name).join(', '))}` : `all ${agents.length} agents ran within their schedule`,
+      wfFail.length ? `${wfFail.length} failure alert${wfFail.length > 1 ? 's' : ''} in 7 days: ${esc([...new Set(wfFail.map((f) => wfName(f.title)))].join(', '))}` : ''].filter(Boolean).join(' · ')],
+    ['Gmail sync', !!H.gmail?.on_schedule, `last sync ${esc(fmtDate(H.gmail?.last_sync))} (every 30 minutes)`],
+    ['Gmail history import', !!H.gmail_history?.on_schedule, `last import ${esc(fmtDate(H.gmail_history?.last_import))}${H.gmail_history?.error ? ` · ${esc(H.gmail_history.error)}` : ''}`],
+    ['Hunter', hun.ok !== false, `${esc(hun.plan || '—')} plan · ${esc(hun.verifications_left ?? '—')} verifications left · resets ${esc(hun.reset_date || '—')} · checked ${esc(fmtDate(hun.checked_at))}`],
+    ['Serper', !!H.serper, H.serper ? `${esc(Number(H.serper.balance).toLocaleString('en-GB'))} searches left · ${esc(fmtDate(H.serper.at))}` : 'no balance recorded'],
+    ['AI providers', !provFail.length && !ai.some((x) => Number(x.error) + Number(x.rate_limited) > Number(x.ok)), `${provFail.length ? `model unavailable on ${provFail.length} run${provFail.length > 1 ? 's' : ''} in 3 days (${esc([...new Set(provFail.map((f) => wfName(f.title)))].join(', '))}) · ` : ''}${ai.reduce((n, x) => n + Number(x.ok), 0)} successful calls, ${ai.reduce((n, x) => n + Number(x.error), 0)} errors, ${ai.reduce((n, x) => n + Number(x.rate_limited), 0)} rate-limited in 7 days · $${esc(H.ai?.usd_30d)} in 30 days`],
+    ['Studio renderer', true, `${esc(H.studio?.documents)} documents recorded · last ${esc(fmtDate(H.studio?.last_recorded))} · ${esc(H.studio?.renderer || '')}`],
+  ].map(([n, g, t]) => `<div class="row"><div class="t">${ok(g)}${esc(n)} ${g ? pill('OK', 'ok') : pill('Check', 'bad')}</div><div class="meta">${t}</div></div>`).join('');
+  const checks = (I?.checks || []).filter((c) => Number(c.count) > 0 || Number(c.auto_fixed) > 0);
+  return `<h2>System health</h2><p class="small muted">Live from Supabase every 15 minutes. Technical detail lives here, never on the CEO screens. <button class="linkish" data-health-refresh>Refresh</button></p>
+    <div class="list">${svc}</div>
+    ${(H.failures || []).length ? `<h3>Open workflow failures (${H.failures.length})</h3><div class="list">${H.failures.map((f) => `<div class="row"><div class="t">${pill(sentence(String(f.type).replace(/_/g, ' ')), 'bad')} ${esc(f.title)}</div><div class="meta">${esc(fmtDate(f.at))}</div></div>`).join('')}</div>` : ''}
+    <h3>Data integrity ${I ? `<span class="faint small">· checked ${esc(fmtDate(I.generated_at))} · daily 05:10 Cairo</span>` : ''}</h3>
+    ${I ? (checks.length ? `<div class="tbl-wrap"><table class="stack"><thead><tr><th>Check</th><th class="num">Found</th><th>Examples</th></tr></thead><tbody>${checks.map((c) => `<tr><td>${pill(c.severity, c.severity === 'ERROR' ? 'bad' : c.severity === 'WARN' ? 'warn' : '')} ${esc(c.label)}${Number(c.auto_fixed) ? `<div class="small ok-text">${esc(c.auto_fixed)} corrected automatically: ${esc(c.fix || '')}</div>` : ''}</td>
+        <td class="num" data-l="Found">${n0(c.count)}</td><td data-l="Examples" class="small">${esc((c.sample || []).map((s) => Object.values(s).filter((v) => v != null && typeof v !== 'object').join(' · ')).join(' | '))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="banner ok">All integrity checks pass.</div>')
+      : '<p class="muted small">Integrity check not run yet.</p>'}
+    <h3>Agents</h3><div class="tbl-wrap"><table class="stack"><thead><tr><th>Agent</th><th>Workflows</th><th>Last run</th><th>Schedule</th></tr></thead><tbody>
+      ${agents.map((a) => `<tr><td>${esc(a.name)}</td><td data-l="Workflows" class="small">${esc((a.workflows || []).join(' ').replace(/ -/g, ''))}</td><td data-l="Last run" class="small">${esc(a.last_run ? fmtDate(a.last_run) : 'never')}</td><td data-l="Schedule">${a.on_schedule ? pill('On schedule', 'ok') : pill(`Late (max ${a.max_gap_hours} h)`, 'bad')}</td></tr>`).join('')}</tbody></table></div>
+    <h3>AI calls by workflow · 7 days</h3><div class="tbl-wrap"><table class="stack"><thead><tr><th>Workflow</th><th class="num">OK</th><th class="num">Errors</th><th class="num">Rate-limited</th><th class="num">Cost</th><th>Last call</th></tr></thead><tbody>
+      ${ai.map((x) => `<tr><td>${esc(x.workflow)}</td><td class="num" data-l="OK">${n0(x.ok)}</td><td class="num ${Number(x.error) ? 'bad-text' : ''}" data-l="Errors">${n0(x.error)}</td><td class="num ${Number(x.rate_limited_pct) >= 20 ? 'warn-text' : ''}" data-l="Rate-limited">${n0(x.rate_limited)}${x.rate_limited_pct ? ` (${esc(x.rate_limited_pct)}%)` : ''}</td><td class="num" data-l="Cost">$${esc(x.usd)}</td><td data-l="Last" class="small">${esc(fmtDate(x.last))}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No AI calls recorded in 7 days.</td></tr>'}</tbody></table></div>`;
 }
 
 // ---------------------------------------------------------------- AGENTS: the workforce as a company
@@ -3151,7 +3369,9 @@ function directorCard(m) {
   const cell = (n, l) => `<div class="dc-c"><b>${n0(n)}</b><span>${l}</span></div>`;
   const today = support ? (SMETRIC[m.key] || []).map(([k, l]) => cell(t[k], l)).join('')
     : cell(t.companies_found, 'qualified companies') + cell(t.people_confirmed, 'correct people') + cell(t.verified_emails, 'verified emails') + cell(t.outreach_drafts, 'outreach ready') + cell(t.replies, 'replies') + cell(t.opportunities, 'opportunities');
-  const week = support ? '' : cell(d7.sent, 'sent') + cell(d7.replies, 'replies') + cell(d7.positive, 'positive') + cell(d7.meetings, 'meetings') + cell(d7.proposals, 'proposals') + cell(d7.wins, 'wins');
+  const card7 = scoreOf(m.key)?.d7; const wk = card7 || d7; const wos = ordersOf(m.key);
+  const week = support ? '' : cell(wk.sent, 'sent') + cell(wk.replies, 'replies') + cell(wk.positive, 'positive') + cell(wk.meetings, 'meetings') + cell(card7 ? card7.briefs : null, 'briefs') + cell(wk.proposals, 'proposals') + cell(wk.wins, 'wins')
+    + (card7 && Object.keys(card7.revenue || {}).length ? `<div class="dc-c"><b>${esc(Object.entries(card7.revenue).map(([c, a]) => cash(a, c)).join(' + '))}</b><span>revenue</span></div>` : '');
   return `<article class="dcard" data-director="${m.key}">
     <div class="dc-head"><div><div class="dc-name">${esc(m.name)}</div><div class="dc-role">${esc(ROLE_LABEL[m.role] || '')}</div></div>
       <span class="st ${sc}">${esc(m.status === 'SCHEDULED' && next ? `${sl} — ${next}` : sl)}</span></div>
@@ -3163,6 +3383,8 @@ function directorCard(m) {
     ${week ? `<div class="dc-sub">Last 7 days</div><div class="dc-cells">${week}</div>` : ''}
     ${support ? '' : emailLine(m.channel)}
     ${hard.map((b) => `<div class="dc-block bad-text">Blocked: ${esc(b.text)}</div>`).join('')}${soft.slice(0, 1).map((b) => `<div class="dc-block warn-text">${esc(b.text)}</div>`).join('')}
+    ${!support && m.role === 'DIRECTOR' ? `<div class="dc-wo"><span class="dc-sub">Work orders</span>${wos.length ? wos.map((w) => `${esc((WO_STATUS[w.status] || [w.status])[0])}: ${esc(w.mission)} <span class="faint">(${n0(w.result)} of ${n0(w.goal)})</span>`).join('<br>') : '<span class="faint">None open</span>'}
+      <button class="btn small ghost" data-modal="work-order" data-id="${m.key}">Issue a work order</button></div>` : ''}
     ${support ? '' : `<div class="dc-top"><span class="dc-sub">Top opportunity</span>${top ? `${esc(top.company)} · ${esc(projectName(top.project))}${top.stage ? ` <span class="faint">(${esc((STAGE_NAME[top.stage] || '').toLowerCase())})</span>` : ''}` : '<span class="faint">None yet</span>'}</div>`}
   </article>`;
 }
@@ -3178,6 +3400,7 @@ function viewAgentsV3() {
   const a = state.exec?.queue?.acquisition; const feed = (D.feed || []).filter((x) => !state.feedDir || x.agent === state.feedDir);
   return `${head('Agents', esc(['The people running each department of NOYA', asOf(D)].filter(Boolean).join(' · ')))}
     ${a ? `<p class="lead-line">Email ready <b>${n0(a.email_ready)}</b> <span class="faint">(target ${esc((a.reserve?.target || [100, 150]).join('–'))})</span> · waiting for verification <b>${n0(a.pipeline?.needs_verification)}</b> · LinkedIn fallback ${n0(a.linkedin_fallback)}</p>` : ''}
+    ${woPanel()}${scorePanel()}
     <h3 class="grp">Directors</h3><div class="dgrid">${by('DIRECTOR').map(directorCard).join('')}</div>
     <h3 class="grp">Strategic partnerships</h3><div class="dgrid">${by('MANAGER').map(directorCard).join('')}</div>
     <h3 class="grp">Shared specialists</h3><div class="dgrid compact">${by('SUPPORT').map(directorCard).join('')}</div>
@@ -3591,13 +3814,21 @@ function bindV3(on) {
   $('#dm-ok')?.addEventListener('click', submitDeskModal);
   on('[data-rel-tab]', 'click', (b) => { state.relTab = b.dataset.relTab; render(); });
   on('[data-club-tab]', 'click', (b) => { state.clubTab = b.dataset.clubTab; render(); });
+  on('[data-sc-win]', 'click', (b, e) => { e.stopPropagation(); state.scWin = b.dataset.scWin; render(); });
+  on('[data-health-refresh]', 'click', () => loadHealth(true));
+  $('#rv-check')?.addEventListener('click', async () => {
+    const text = $('#rv-text')?.value || ''; const rows = revenueRows(text);
+    if (!rows.length) { state.modal = { ...state.modal, text, preview: { valid: [], errors: [{ row: 0, errors: ['No rows found: paste a header row and at least one record.'] }] } }; render(); return; }
+    const { data, error } = await sb.rpc('hq_revenue_import', { p_rows: rows, p_apply: false });
+    state.modal = { ...state.modal, text, rows, preview: error ? { valid: [], errors: [{ row: 0, errors: [friendly(error.message)] }] } : data }; render();
+  });
   on('[data-club-add]', 'click', async (b) => { await call('hq_club_person', { p_contact: b.dataset.contact, p_role: b.dataset.clubAdd, p_status: 'PROSPECT', p_note: null }, 'Added to the club structure. Nothing was sent.'); loadV3('club', 'hq_club', {}, true); });
 }
 
 const VIEWS = { dashboard: viewDashboard, today: viewDashboard, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
   overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
-  contacts: viewContacts, companies: viewCompanies, finance: () => viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
-  intelligence: viewIntelligence, reports: viewReports, system: (d) => viewSystem(d) + teamPanel(), help: viewHelp,
+  contacts: viewContacts, companies: viewCompanies, finance: () => revenuePanel() + viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
+  intelligence: viewIntelligence, reports: viewReports, system: (d) => healthPanel() + viewSystem(d) + teamPanel(), help: viewHelp,
   radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects,
   agent: viewAgent, emails: viewEmails, agentradar: viewAgentRadar, feed: viewFeed };
 

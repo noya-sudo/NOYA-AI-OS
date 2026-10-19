@@ -12,6 +12,12 @@ A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **
 | `hq_hold(opp, review_date, reason)` | HOLD |
 | `hq_reject(opp, reason)` | REJECT (a reason is required) |
 | `hq_redispatch(outbound_id)` | Retry draft creation if the hand-off to workflow 12 was lost |
+| `hq_cached('command')` | Dashboard top row, 15-stage funnel, live opportunities, revenue and reconciliation, scorecards, work orders (`hq_command()`, refreshed every 5 minutes and right after each action below) |
+| `hq_cached('health')`, `hq_cached('integrity')` | Admin → System health and the daily integrity check |
+| `hq_work_order(director, mission, target, metric, goal, deadline, priority)` / `hq_work_order_action(id, CANCEL\|CLOSE, note)` | CEO work orders to a Director |
+| `hq_opportunity_plan(opp, next_action, due, owner, blocker, clear_blocker)` | Owner, next action, date and blocker on a live opportunity |
+| `hq_recommendation_action(id, APPROVE\|DECLINE, note)` | Approve or decline an Advisor recommendation (allowlisted changes only; never sends) |
+| `hq_revenue_import(rows, apply)` | Historical revenue: dry run by default; each row needs evidence |
 
 Each function:
 - checks that the signed-in user is in `hq_admins`, matching both the user id and the email;
@@ -28,7 +34,7 @@ npm run build    # outputs dist/ (self-contained, no CDN)
 npm test         # build + security scan of dist/ + headless browser checks
 ```
 
-`npm test` runs its browser checks only if `tests/fixtures/snapshot.json` exists. That file is a live `hq_dashboard()` response and is git-ignored, so it is never committed.
+`npm test` runs `tests/ui.mjs`, `tests/ui_v3.mjs` and `tests/ui_command.mjs` (Command Centre: top row, funnel, work orders, scorecards, revenue, System health; screenshots in `tests/out/command/`). Browser checks run only if `tests/fixtures/snapshot.json` exists. That file is a live `hq_dashboard()` response and is git-ignored, so it is never committed.
 
 ## Deploy (Cloudflare Workers Static Assets)
 

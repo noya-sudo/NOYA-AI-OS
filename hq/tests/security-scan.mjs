@@ -27,6 +27,8 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_connection_update', 'hq_request_draft', 'hq_draft_action', 'hq_finance_upsert', 'hq_record_payment', 'hq_create_opportunity', 'hq_company_update', 'hq_relationship_status', 'hq_service_update',
   'hq_commercial', 'hq_execution', 'hq_account', 'hq_signal_update', 'hq_signal_org', 'hq_signal_capture', 'hq_signal_promote', 'hq_signal_org_to_crm', 'hq_prepare_outreach', 'hq_opportunity_commercial',
   'hq_partner_upsert', 'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email',
+  // Command Centre (18-19 Oct): admin-gated, audited writes (work orders, opportunity plans, recommendation decisions, historical revenue import)
+  'hq_work_order', 'hq_work_order_action', 'hq_opportunity_plan', 'hq_recommendation_action', 'hq_revenue_import',
   // HQ V3 (9 Oct): admin-gated reads and audited desk / club writes
   'hq_outreach_desk', 'hq_operations', 'hq_directors', 'hq_director', 'hq_club', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person',
   // Email-first amendment (8 Oct): the HQ Advisor, its visit marker and the weekly review (admin-gated)

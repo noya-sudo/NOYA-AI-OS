@@ -15,6 +15,7 @@ const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', '
 if (need.some((f) => !fx(f))) { console.log(`SKIP ui_v3: live fixtures missing (${need.filter((f) => !fx(f)).join(', ')})`); process.exit(0); }
 const F = Object.fromEntries(need.map((f) => [f, fx(f)]));
 F.execution = fx('execution'); // live hq_execution capture (queue health + acquisition split); optional
+F.command = fx('command'); // live hq_command capture (Command Centre, 19 Oct); optional
 const DET = { HOSPITALITY: F.director_hospitality, PARTNERSHIPS: F.director_partnerships, GROWTH: F.director_growth, EMAIL: F.director_email,
   BRANDS: F.director_brands, WEDDINGS: F.director_weddings, MEDIA: F.director_media, SPORTS: F.director_sports };
 // The live desk has no email in Needs review tonight (Hunter Free is used up until 27 Oct). To prove Approve on an email, one
@@ -34,7 +35,7 @@ const READS = {
   hq_advisor: () => F.advisor, hq_weekly_review: () => F.weekly, hq_ceo_dashboard: () => F.ceo, hq_network: () => F.network,
   // 17 Oct: the heavy CEO reads come from background snapshots (hq_cached); hq_cache_status feeds Admin diagnostics.
   hq_cached: (b) => {
-    const k = b?.p_key || ''; const snap = { ceo: F.ceo, network: F.network, advisor: F.advisor, directors: F.directors, execution: F.execution }[k];
+    const k = b?.p_key || ''; const snap = { ceo: F.ceo, command: F.command, network: F.network, advisor: F.advisor, directors: F.directors, execution: F.execution }[k];
     const v = snap || (k.startsWith('director:') ? DET[k.slice(9)] || { key: k.slice(9), sections: [] } : null);
     return v ? { ...v, _cache: { built_at: new Date(Date.now() - 120000).toISOString(), age_s: 120 } } : { ok: false, reason: 'UNKNOWN_KEY' };
   },
@@ -136,17 +137,18 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await page.waitForSelector('main .ocard');
   const kl = await tc(page, 'main .kpi .kl'); const kn = await tc(page, 'main .kpi .kn');
   const K = Object.fromEntries(kl.map((l, i) => [l, kn[i]]));
-  check('Dashboard strip: the seven numbers, in order', kl.join('|') === 'Emails needing review|Gmail drafts ready to send|Replies needing you|Meetings / calls|Active opportunities|Active projects|Won revenue', kl.join(' | '));
-  check('Dashboard strip: emails needing review = email drafts in Needs review + verified email drafts waiting for a quality edit',
-    Number(K['Emails needing review']) === C.needs_review.EMAIL + QA.length, `${K['Emails needing review']} vs ${C.needs_review.EMAIL}+${QA.length}`);
-  check('Dashboard strip: Gmail drafts ready = Gmail-confirmed drafts on the desk', Number(K['Gmail drafts ready to send']) === C.gmail_drafts_confirmed, `${K['Gmail drafts ready to send']}`);
-  check('Dashboard strip: active opportunities and projects are hq_ceo_dashboard()', Number(K['Active opportunities']) === CEO.active_opportunities && Number(K['Active projects']) === CEO.funnel.active_projects);
-  const rev = (CEO.money?.revenue || []).length;
-  check('Dashboard strip: revenue never invented — £0 / No recorded revenue when none is recorded', rev ? K['Won revenue'] !== '£0' : K['Won revenue'] === '£0' && /No recorded revenue/.test(await page.locator('main .kpi').last().textContent()));
+  // 18 Oct (professional operating mode): the seven numbers Adam asked for, from hq_command.
+  check('Dashboard strip: the seven numbers, in order', kl.join('|') === 'Actual revenue|Active projects|Open proposals|Meetings|Positive replies|Emails to send|Actions needing you', kl.join(' | '));
+  const CK = F.command?.kpis || {};
+  check('Dashboard strip: emails to send = approved Gmail drafts + Studio drafts due', Number(K['Emails to send']) === Number(CK.gmail_drafts_to_send || 0) + Number(CK.studio_drafts_to_send || 0), `${K['Emails to send']}`);
+  check('Dashboard strip: projects, proposals, meetings and positive replies are hq_command()', Number(K['Active projects']) === CK.active_projects && Number(K['Open proposals']) === CK.open_proposals
+    && Number(K.Meetings) === CK.meetings_30 && Number(K['Positive replies']) === CK.positive_30);
+  const rev = (CK.revenue || []).length;
+  check('Dashboard strip: revenue never invented — £0 when no revenue record exists', rev ? K['Actual revenue'] !== '£0' : K['Actual revenue'] === '£0');
   const acts = await page.locator('main #needs .act').count(); const why = await tc(page, 'main #needs .act-why');
   const nReplies = why.filter((w) => /reply waiting for you$|^Your own follow-up|^They asked for a meeting: the closest/.test(w)).length;
   const nMeet = why.filter((w) => w === 'They asked for a call: a project can start here' || w === 'They asked for a meeting').length;
-  check('What needs you today: replies and meetings in the list equal the strip', Number(K['Replies needing you']) === nReplies && Number(K['Meetings / calls']) === nMeet, `${K['Replies needing you']}/${nReplies} · ${K['Meetings / calls']}/${nMeet}`);
+  check('What needs you today: the strip counts exactly these actions', Number(K['Actions needing you']) === acts && nReplies + nMeet <= acts, `${K['Actions needing you']}/${acts}`);
   check('What needs you today: every row has who, why it matters, the next action, and one button', acts > 0 && (await page.locator('main #needs .act .act-who').count()) === acts
     && (await page.locator('main #needs .act .act-next').count()) === acts && (await page.locator('main #needs .act .act-cta .btn').count()) >= acts, `${acts} actions`);
   check('What needs you today: the Gmail drafts waiting for Send are listed', (await page.locator('main #needs .act', { hasText: 'only your Send is missing' }).count()) === C.gmail_drafts_confirmed);
@@ -263,7 +265,8 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await page.locator(`#desk-${em.ref} [data-desk-approve]`).click();
   await page.waitForTimeout(600);
   const after = [...new Set(calls.slice(beforeApprove).map((c) => c.fn))];
-  check('Approve: refreshes only what an approval changes (no 14-read reload, no snapshot rebuild)', after.every((f) => ['hq_approve_email', 'hq_dashboard', 'hq_outreach_desk', 'hq_overview', 'hq_directory', 'hq_relationships', 'hq_operations'].includes(f)), after.join(','));
+  check('Approve: refreshes only what an approval changes (no 14-read reload, no snapshot rebuild; the command snapshot is a cached read)', after.every((f) => ['hq_approve_email', 'hq_dashboard', 'hq_outreach_desk', 'hq_overview', 'hq_directory', 'hq_relationships', 'hq_operations', 'hq_cached'].includes(f))
+    && calls.slice(beforeApprove).filter((c) => c.fn === 'hq_cached').every((c) => c.body?.p_key === 'command'), after.join(','));
   const ap = last(calls, 'hq_approve_email');
   check('Approve: creates an unsent Gmail draft through the approval RPC; nothing is ever sent', ap && ap.body.p_candidate === em.candidate_id && !calls.some((c) => /send/i.test(c.fn))
     && /unsent Gmail draft/.test(await page.locator('main .banner').first().innerText()), em.company);
