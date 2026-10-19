@@ -121,6 +121,25 @@ n8n.**
 | 24 | Email Verification (Hunter) | Email Intelligence & Verification | scheduled | PRODUCTION, capped | 9 Oct | Hunter Free credits used until 27 Oct (Adam: stay Free until the 27 Oct test). |
 | 25 | Email Finder | Email Intelligence & Verification | scheduled | PRODUCTION, capped | 8 Oct | Same Hunter cap. |
 
+**Live inspection after the connector was re-authorised (19 Oct).** 33 workflows: 00–25 above plus 00b, 10d (website
+enquiry intake, live) and three inactive website-to-Sanity workflows that belong to the website and were not touched. Every NOYA
+workflow reports failures to 00; none reads from GitHub. Changes, nothing redesigned:
+
+| # | Finding | Change |
+|---|---|---|
+| 01 | Inactive skeleton ("placeholder pass, not executed"), Anthropic model, no executions in retention | Archived (reversible). |
+| 05 | Inactive since 7 Oct, replaced by 18, no executions in retention | Archived (reversible). |
+| 10a/10b/10c | Growth reads, blocked by the Windsor plan | Unpublished: Growth Director paused by Adam. 10d stays live. |
+| 11 | CEO brief fallback used the same model as the primary; billing alert told Adam to restore Anthropic credit | Fallback on a different Gemini model; alert names the Gemini account. |
+| 13 | Reply classifier already on Gemini since 16 Oct (Gemini backup, human review last) | None needed; recommendation marked applied. |
+| 18 | 22:30 failures: the planner RPC exceeded PostgREST's 8 s limit, not a provider outage | 55 s function-level limit on the agent RPCs; redraft falls back to a second Gemini model on model errors or rate limits. |
+| 00b | The informational Anthropic probe could stop the run before the Serper and Gemini probes | Probe continues on error. |
+
+Fallback check: 14, 16 and 17 fall back to a different provider (GPT-5 mini through the n8n AI gateway); department extraction
+(02–07), 11 and 18 fall back to a different Gemini model; qualification (02–08), 09, 19, 21 and 23 have no model fallback and
+continue on error (the run keeps going and the item is retried next run). All Gemini nodes share one Google credential, so a
+Gemini account outage would stop most AI steps; the deterministic paths (CEO brief, human review of replies) still run.
+
 Repo coverage: 12–25 are rebuildable from `n8n/`; 00–11 exist only in n8n (02–06 partly, as node-code snapshots). Exporting
 them belongs after the repository is made private (decision REPO_PRIVATE), because workflow exports name credentials.
 

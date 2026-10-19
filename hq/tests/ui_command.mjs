@@ -102,7 +102,11 @@ const C = F.command;
   check('Pipeline: 14 stages from Target to Paid (Lost / parked counted separately)', await page.locator('#pipeline .pst').count() === 14);
   const lost = await txt(page, '#pipeline p.small');
   check('Pipeline: "Where business is lost" names the lost / parked count and live opportunities without a next step', /105 lost or parked/.test(lost) && /every live opportunity has a next action and date|missing a next action or date/.test(lost), lost.slice(0, 160));
-  check('Pipeline: conversion rates only where the base is 20 or more (no rate on 3 replies)', /Replied 3 \(8%\)/.test(lost) && !/Meeting 2 \(/.test(lost), lost.slice(lost.indexOf('Outreach sent'), lost.indexOf('Outreach sent') + 140));
+  const ever = await txt(page, '#pipeline .ever'); const CA = C.kpis?.canonical_all?.companies || {}; const M30 = C.kpis?.canonical_30?.messages || {};
+  check('Pipeline: "now" per stage, plus ever reached (companies) and outreach messages from the one canonical model',
+    /Where each company stands now/.test(await txt(page, '#pipeline header'))
+      && ever.includes(`Contacted ${CA.contacted || 0} → Replied ${CA.replied || 0} → Positive ${CA.positive || 0} → Meeting ${CA.meetings || 0} → Brief ${CA.briefs || 0} → Proposal ${CA.proposals || 0} → Won ${CA.wins || 0}`)
+      && ever.includes(`Outreach messages, last 30 days: ${M30.outreach || 0} (${M30.first || 0} first, ${M30.follow_ups || 0} follow-ups)`), ever);
   const rows = await page.locator('#pipeline tbody tr').count();
   check('Pipeline: every live opportunity listed with owner, next action, date and blocker', rows === C.opportunities.length && /CRUSH Agency/.test(await txt(page, '#pipeline tbody')), `${rows} rows`);
   check('Pipeline: an overdue next action is shown in red (The Arts Club, 30 Sep)', await page.locator('#pipeline tbody tr:has-text("The Arts Club") td.bad-text').count() === 1);

@@ -1929,7 +1929,7 @@ const SEG_LABEL = { PRIVATE_OFFICE: 'Private office / EA / FO', TRAVEL_PARTNER: 
   HOTELS_HOSPITALITY: 'Hotels & hospitality', LIVE_SIGNAL: 'Live signals', MEMBER_COMMUNITIES: 'Member communities', CORPORATE_EVENTS: 'Corporate & events', TALENT: 'Talent', OTHER: 'Other' };
 function weeklyPanel() {
   const w = state.exec?.weekly; if (!w) return '';
-  const cols = [['qualified', 'New accounts'], ['contacts', 'Usable contacts'], ['verified', 'Verified emails'], ['linkedin_ready', 'LinkedIn-ready'], ['sends', 'Sends'], ['replies', 'Replies'],
+  const cols = [['qualified', 'New accounts'], ['contacts', 'Usable contacts'], ['verified', 'Verified emails'], ['linkedin_ready', 'LinkedIn-ready'], ['sends', 'New outreach'], ['follow_ups', 'Follow-ups'], ['replies', 'Replied'],
     ['positive', 'Positive'], ['meetings', 'Meetings'], ['proposals', 'Proposals'], ['wins', 'Wins']];
   const weeks = [...new Set(w.rows.map((r) => r.week_start))].sort().reverse().slice(0, 2);
   const block = (wk) => { const rows = w.rows.filter((r) => r.week_start === wk);
@@ -2888,9 +2888,9 @@ function weeklyModal() {
   if (W) {
     const t = W.this_week || {}; const p = W.previous_week || {};
     const tl = (n, l) => `<div class="tile"><div class="n">${n}</div><div class="l">${l}</div></div>`;
-    body = `<p class="adv-summary">This week: ${esc(plural(n0(t.sent), 'message sent', 'messages sent'))} (${n0(t.sent_email)} email, ${n0(t.sent_linkedin)} LinkedIn; ${n0(p.sent)} the week before),
-        ${esc(plural(n0(t.replies), 'reply', 'replies'))}${W.reply_rate_pct != null ? ` (${W.reply_rate_pct}%${t.unclassified ? `; ${n0(t.unclassified)} not classified yet, positive counted from your own triage` : ''})` : ''}, ${esc(plural(n0(W.meetings), 'meeting', 'meetings'))}, ${esc(plural(n0(W.wins), 'win', 'wins'))}.</p>
-      <div class="tiles">${tl(n0(t.sent), 'Outreach sent')}${tl(W.reply_rate_pct != null ? `${W.reply_rate_pct}%` : '—', 'Reply rate')}${tl(W.positive_reply_rate_pct != null ? `${W.positive_reply_rate_pct}%` : '—', 'Positive reply rate')}
+    body = `<p class="adv-summary">This week: ${esc(plural(n0(t.sent), 'new outreach message', 'new outreach messages'))} (${n0(t.sent_email)} email, ${n0(t.sent_linkedin)} LinkedIn; ${n0(p.sent)} the week before),
+        ${esc(plural(n0(t.replies), 'company replied', 'companies replied'))}${W.reply_rate_pct != null ? ` (${W.reply_rate_pct}%${t.unclassified ? `; ${n0(t.unclassified)} not classified yet, positive counted from your own triage` : ''})` : ''}, ${esc(plural(n0(W.meetings), 'meeting', 'meetings'))}, ${esc(plural(n0(W.wins), 'win', 'wins'))}.</p>
+      <div class="tiles">${tl(n0(t.sent), 'New outreach')}${tl(W.reply_rate_pct != null ? `${W.reply_rate_pct}%` : '—', 'Reply rate')}${tl(W.positive_reply_rate_pct != null ? `${W.positive_reply_rate_pct}%` : '—', 'Positive reply rate')}
         ${tl(n0(W.meetings), 'Meetings')}${tl(n0(W.proposals), 'Proposals')}${tl(n0(W.wins), 'Wins')}${tl(n0(W.verified_emails), 'Verified emails')}${tl(`${n0(W.email_drafts)} / ${n0(W.linkedin_drafts)}`, 'Email / LinkedIn drafts')}</div>
       <div class="tbl-wrap mt8"><table class="stack wk-dir"><thead><tr><th>Director</th><th class="num">Email coverage</th><th class="num">Verified / with decision maker</th><th class="num">LinkedIn fallback</th><th class="num">Sent</th><th class="num">Replies</th></tr></thead><tbody>
         ${(W.by_director || []).map((d) => `<tr><td>${esc(d.label)}</td><td class="num" data-l="Email coverage">${d.coverage_pct == null ? '—' : `${esc(d.coverage_pct)}%`}</td><td class="num" data-l="Verified / with decision maker">${n0(d.verified)} / ${n0(d.with_dm)}</td>
@@ -3001,8 +3001,8 @@ function dashStrip(d) {
     ${k(C ? esc(rev || '£0') : '—', 'Actual revenue', 'data-go="finance"', C ? (gap > 0 ? `${esc(cash(gap, H.currency))} historical to reconcile` : rev ? 'recorded with evidence' : 'none recorded') : '')}
     ${k(C ? n0(K.active_projects) : '—', 'Active projects', 'data-go="ops"')}
     ${k(C ? n0(K.open_proposals) : '—', 'Open proposals', 'data-scroll="pipeline"')}
-    ${k(C ? n0(K.meetings_30) : '—', 'Meetings', 'data-scroll="pipeline"', 'last 30 days')}
-    ${k(C ? n0(K.positive_30) : '—', 'Positive replies', 'data-scroll="pipeline"', 'last 30 days')}
+    ${k(C ? n0(K.meetings_30) : '—', 'Meetings', 'data-scroll="pipeline"', 'booked or held · 30 days')}
+    ${k(C ? n0(K.positive_30) : '—', 'Positive replies', 'data-scroll="pipeline"', 'companies · 30 days')}
     ${k(send == null ? '—' : n0(send), 'Emails to send', 'data-go="desk" data-desk-tab="APPROVED"', C ? `${n0(K.gmail_drafts_to_send)} Gmail · ${n0(K.studio_drafts_to_send)} Studio${Number(K.studio_drafts_later) ? ` · ${n0(K.studio_drafts_later)} later` : ''}` : '')}
     ${k(n0(rows.length), 'Actions needing you', 'data-scroll="needs"')}</section>`;
 }
@@ -3096,7 +3096,7 @@ function dashOpportunities() {
 function dashFunnel() {
   const C = state.ceo; if (!C) return '';
   const F = C.funnel || {}; const w = F.week || {}; const m = F.d30 || {};
-  const steps = [['Outreach sent', (x) => n0((x.sent_email || 0) + (x.sent_linkedin || 0) + (x.sent_instagram || 0))], ['Replies', (x) => n0(x.replies)], ['Positive', (x) => n0(x.positive)],
+  const steps = [['New outreach', (x) => n0((x.sent_email || 0) + (x.sent_linkedin || 0) + (x.sent_instagram || 0))], ['Follow-ups', (x) => n0(x.follow_ups)], ['Replied', (x) => n0(x.replies)], ['Positive', (x) => n0(x.positive)],
     ['Meetings', (x) => n0(x.meetings)], ['Briefs / concepts', (x) => n0(x.concepts)], ['Proposals', (x) => n0(x.proposals)], ['Active projects', () => n0(F.active_projects)],
     ['Won', (x) => n0(x.won)], ['Revenue', (x) => esc(moneyOf(x.revenue) || '£0')]];
   const row = (label, x) => `<tr><th>${label}</th>${steps.map(([, f]) => `<td>${f(x)}</td>`).join('')}</tr>`;
@@ -3186,7 +3186,6 @@ function dashPipeline() {
   const st = C.funnel?.stages || []; const by = Object.fromEntries(st.map((s) => [s.stage, s]));
   const strip = st.filter((s) => s.stage !== 'LOST_PARKED').map((s) => `<div class="pst ${s.n ? '' : 'zero'}"><span class="pn">${n0(s.n)}</span><span class="pl">${esc(s.label)}</span>${s.stuck ? `<span class="pk">${s.stuck} stuck</span>` : ''}</div>`).join('<span class="parr">→</span>');
   // Conversion between the commercial steps, shown as a rate only when the base is 20 or more (no decisions on tiny samples).
-  const step = (a, b) => { const x = by[a]?.reached || 0; const y = by[b]?.reached || 0; return `${esc(by[b]?.label || b)} ${n0(y)}${x >= 20 ? ` <span class="faint">(${Math.round((100 * y) / x)}%)</span>` : ''}`; };
   const opps = C.opportunities || []; const gaps = opps.filter((o) => (o.missing || []).length);
   const stuck = st.reduce((n, s) => n + (s.stuck || 0), 0);
   const rows = opps.map((o) => `<tr><td><a class="clickable" data-open="company" data-id="${o.company_id}">${esc(o.company)}</a>${o.director ? `<div class="faint small">${esc(dirName(o.director))}</div>` : ''}</td>
@@ -3195,10 +3194,15 @@ function dashPipeline() {
       <td data-l="Date" class="small ${(o.missing || []).includes('OVERDUE') ? 'bad-text' : ''}">${o.next_action_due ? esc(shortDay(o.next_action_due)) : '<span class="bad-text">No date</span>'}</td>
       <td data-l="Blocker" class="small">${o.blocker ? `<span class="warn-text">${esc(o.blocker)}</span>` : '<span class="faint">—</span>'}</td>
       <td>${o.opportunity_id ? `<button class="btn small" data-modal="opp-plan" data-opp="${o.opportunity_id}">Plan</button>` : ''}</td></tr>`).join('');
-  return `<section class="dsec" id="pipeline"><header><h2>Pipeline</h2><span class="faint small">Every company at the furthest stage it has reached</span></header>
+  const A = C.kpis?.canonical_all || {}; const ca = A.companies || {}; const M30 = C.kpis?.canonical_30?.messages || {};
+  const ever = [['Contacted', ca.contacted], ['Replied', ca.replied], ['Positive', ca.positive], ['Meeting', ca.meetings], ['Brief', ca.briefs], ['Proposal', ca.proposals], ['Won', ca.wins]]
+    .map(([l, v]) => `${l} ${n0(v)}`).join(' → ');
+  return `<section class="dsec" id="pipeline"><header><h2>Pipeline</h2><span class="faint small">Where each company stands now</span></header>
     <div class="pipe">${strip}</div>
     <p class="small"><b>Where business is lost:</b> ${n0(by.LOST_PARKED?.n)} lost or parked · ${stuck ? `<span class="warn-text">${stuck} stuck</span>` : '0 stuck'} · ${gaps.length ? `<span class="bad-text">${plural(gaps.length, 'live opportunity', 'live opportunities')} missing a next action or date</span>` : 'every live opportunity has a next action and date'}.
-      <span class="faint">Outreach sent ${n0(by.OUTREACH_SENT?.reached)} → ${step('OUTREACH_SENT', 'REPLIED')} → ${step('REPLIED', 'MEETING')} → ${step('MEETING', 'PROPOSAL')} → ${step('PROPOSAL', 'WON')}</span></p>
+      </p>
+    <p class="small ever"><b>Ever reached (companies, all time):</b> ${ever}${n0(ca.contacted) >= 20 ? ` <span class="faint">· reply rate ${Math.round((100 * (ca.replied || 0)) / ca.contacted)}%</span>` : ''}<br>
+      <span class="faint">Outreach messages, last 30 days: ${n0(M30.outreach)} (${n0(M30.first)} first, ${n0(M30.follow_ups)} follow-ups) · ${n0(M30.replies)} reply messages</span></p>
     ${opps.length ? `<div class="tbl-wrap"><table class="stack"><thead><tr><th>Opportunity</th><th>Stage</th><th>Owner</th><th>Next action</th><th>Date</th><th>Blocker</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<div class="calm"><div class="calm-t">No live opportunity yet.</div><div class="t-sub">A company appears here from its first reply.</div></div>'}
     <p class="src">${esc(C.funnel?.method || '')}</p></section>`;
@@ -3326,13 +3330,13 @@ function healthPanel() {
         <td class="num" data-l="Found">${n0(c.count)}</td><td data-l="Examples" class="small">${esc((c.sample || []).map((s) => Object.values(s).filter((v) => v != null && typeof v !== 'object').join(' · ')).join(' | '))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="banner ok">All integrity checks pass.</div>')
       : '<p class="muted small">Integrity check not run yet.</p>'}
     <h3>Agents</h3><div class="tbl-wrap"><table class="stack"><thead><tr><th>Agent</th><th>Workflows</th><th>Last run</th><th>Schedule</th></tr></thead><tbody>
-      ${agents.map((a) => `<tr><td>${esc(a.name)}</td><td data-l="Workflows" class="small">${esc((a.workflows || []).join(' ').replace(/ -/g, ''))}</td><td data-l="Last run" class="small">${esc(a.last_run ? fmtDate(a.last_run) : 'never')}</td><td data-l="Schedule">${a.on_schedule ? pill('On schedule', 'ok') : pill(`Late (max ${a.max_gap_hours} h)`, 'bad')}</td></tr>`).join('')}</tbody></table></div>
+      ${agents.map((a) => `<tr><td>${esc(a.name)}</td><td data-l="Workflows" class="small">${esc((a.workflows || []).join(' ').replace(/ -/g, ''))}</td><td data-l="Last run" class="small">${esc(a.last_run ? fmtDate(a.last_run) : 'never')}</td><td data-l="Schedule">${a.paused ? pill('Paused', '') : a.on_schedule ? pill('On schedule', 'ok') : pill(`Late (max ${a.max_gap_hours} h)`, 'bad')}</td></tr>`).join('')}</tbody></table></div>
     <h3>AI calls by workflow · 7 days</h3><div class="tbl-wrap"><table class="stack"><thead><tr><th>Workflow</th><th class="num">OK</th><th class="num">Errors</th><th class="num">Rate-limited</th><th class="num">Cost</th><th>Last call</th></tr></thead><tbody>
       ${ai.map((x) => `<tr><td>${esc(x.workflow)}</td><td class="num" data-l="OK">${n0(x.ok)}</td><td class="num ${Number(x.error) ? 'bad-text' : ''}" data-l="Errors">${n0(x.error)}</td><td class="num ${Number(x.rate_limited_pct) >= 20 ? 'warn-text' : ''}" data-l="Rate-limited">${n0(x.rate_limited)}${x.rate_limited_pct ? ` (${esc(x.rate_limited_pct)}%)` : ''}</td><td class="num" data-l="Cost">$${esc(x.usd)}</td><td data-l="Last" class="small">${esc(fmtDate(x.last))}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No AI calls recorded in 7 days.</td></tr>'}</tbody></table></div>`;
 }
 
 // ---------------------------------------------------------------- AGENTS: the workforce as a company
-const DSTATUS = { WORKING: ['Working', 'ok'], SCHEDULED: ['Scheduled', ''], BLOCKED: ['Blocked', 'warn'], ERROR: ['Error', 'bad'] };
+const DSTATUS = { WORKING: ['Working', 'ok'], SCHEDULED: ['Scheduled', ''], PAUSED: ['Paused', ''], BLOCKED: ['Blocked', 'warn'], ERROR: ['Error', 'bad'] };
 const DMETRIC = [['companies_found', 'Companies found'], ['people_confirmed', 'People confirmed'], ['verified_emails', 'Verified emails'], ['outreach_drafts', 'Outreach drafts'],
   ['gmail_drafts', 'Gmail drafts'], ['replies', 'Replies'], ['opportunities', 'Opportunities']];
 const SMETRIC = { RESEARCH: [['companies_researched', 'Researched'], ['companies_qualified', 'Qualified'], ['signals', 'Signals']],

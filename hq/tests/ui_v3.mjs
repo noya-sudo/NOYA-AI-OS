@@ -171,8 +171,8 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   const fr = await page.$$eval('main table.funnel tbody tr', (trs) => trs.map((tr) => [...tr.children].map((c) => c.textContent.trim()).join(' ')));
   const sent30 = CEO.funnel.d30.sent_email + CEO.funnel.d30.sent_linkedin + (CEO.funnel.d30.sent_instagram || 0);
   check('Funnel: this week and last 30 days, sent → replies → positive → meetings → briefs → proposals → projects → won → revenue',
-    (await tc(page, 'main table.funnel thead th')).slice(1).join('|') === 'Outreach sent|Replies|Positive|Meetings|Briefs / concepts|Proposals|Active projects|Won|Revenue'
-      && fr.length === 2 && fr[1].startsWith(`Last 30 days ${sent30} ${CEO.funnel.d30.replies} ${CEO.funnel.d30.positive} ${CEO.funnel.d30.meetings}`), fr.join(' / '));
+    (await tc(page, 'main table.funnel thead th')).slice(1).join('|') === 'New outreach|Follow-ups|Replied|Positive|Meetings|Briefs / concepts|Proposals|Active projects|Won|Revenue'
+      && fr.length === 2 && fr[1].startsWith(`Last 30 days ${sent30} ${CEO.funnel.d30.follow_ups ?? '—'} ${CEO.funnel.d30.replies} ${CEO.funnel.d30.positive} ${CEO.funnel.d30.meetings}`), fr.join(' / '));
   const stuck = CEO.pipeline.filter((x) => x.stuck > 0);
   check('Pipeline: where prospects are stuck is stated', !stuck.length || stuck.every((x) => dash.includes(`${x.stuck} stuck`)), stuck.map((x) => `${x.stage}:${x.stuck}`).join(','));
   // AI workforce pulse: one row per Director; Working only while a scheduled run is actually in progress.

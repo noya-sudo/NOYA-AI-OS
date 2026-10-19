@@ -1505,3 +1505,67 @@ reply detected → Studio → proposal / project → revenue recorded.**
 | Revenue recorded | Import validated by dry run; no record yet, waiting for Adam's evidence for the £60k. |
 
 Tests: `ui.mjs` 202/202, `ui_v3.mjs` 108/108, `ui_command.mjs` 37/37, security scan PASS.
+
+## One commercial attribution model, n8n live audit and Adam's decisions (19 Oct 2026)
+
+Adam: "I do not want competing definitions across HQ." Dashboard, Director scorecards, weekly review, the segment table,
+the Advisor, work orders and the commercial performance review now all read the same three functions
+(`commercial_messages`, `commercial_facts`, `commercial_metrics`; migration `20261019030000_canonical_commercial_metrics.sql`).
+Historical evidence was not changed to make figures agree.
+
+**Definitions.**
+
+| Measure | Counts | Rule |
+|---|---|---|
+| Outreach sent | MESSAGES | Every NOYA outreach message (email, LinkedIn, Instagram) before the company's first reply. Split into **new outreach** (first message of a sequence, nothing sent to that company in the previous 120 days) and **follow-ups**. |
+| Companies contacted | COMPANIES | Each company once, on the date of its first outreach message. |
+| Replies | COMPANIES (headline) and MESSAGES (detail) | A company replied when an inbound message follows NOYA's first outreach. Reply messages are shown separately. A company that wrote to NOYA first is an **inbound lead**, not a reply. |
+| Positive replies | COMPANIES | Reply classified positive, meeting request, needs information or referral; a meeting or call requested; opportunity moved to interested, call, proposal, negotiation or won; or any meeting. |
+| Meetings | COMPANIES | Booked or held only: a recorded meeting or a dated meeting task. A request is positive, not a meeting. |
+| Briefs / concepts | COMPANIES | A Studio level 2–3 document actually sent, a concept used with the counterpart, or a project brief. |
+| Proposals | COMPANIES | Opportunity at proposal, negotiation or won, a recorded proposal value, or a Studio proposal sent. |
+| Wins | COMPANIES | Opportunity won (won_at) or a Studio output marked won. |
+| Revenue | MONEY | Revenue rows with evidence only, per currency. The stated £60k is a reconciliation target, never counted. |
+
+Windows count a company in the window in which it first reached a step, so weeks add up to the all-time totals. Reply rate is a
+cohort rate (of the companies first contacted in the window, how many have replied since) and is only shown from 20 companies.
+Messages count CRM interactions plus mailbox messages on CRM-linked threads that are not yet logged, never both.
+
+**Why the old figures disagreed** (same report, 18 Oct): "34 outreach sent → 1 replied → 2 meetings" was the pipeline view, where
+each company sits only at its furthest stage today, so a company that moved on left the earlier stage, and meeting requests were
+counted as meetings. "37 companies contacted → 3 replies" counted companies that ever reached outreach but left out lost and parked
+ones, and only replies logged as CRM interactions. Earlier commercial reviews counted Gmail threads, including companies that were
+not in the CRM, inbound enquiries and opportunity status changes. The Advisor counted every message, follow-ups included, as
+"sent". All four now read the canonical layer; the pipeline view keeps "now" per stage and adds "ever reached".
+
+**Canonical numbers after today's data work** (19 Oct, all time): 44 companies contacted (47 new outreach messages, 7 follow-ups)
+→ 10 replied (29 reply messages) → 2 positive → 1 meeting → 0 briefs sent → 0 proposals → 0 wins, plus 1 inbound lead. Last 30
+days: 31 contacted (31 new, 2 follow-ups) → 7 replied → 2 positive → 1 meeting. The five Gmail relationships added today account
+for the change from 40 → 44 contacted and 6 → 10 replied; their positive and meeting stages stay unset until Adam reviews them.
+
+**Decisions applied (Adam, 19 Oct).**
+
+- *n8n.* Live instance inspected (33 workflows). Outreach drafting (18): the 22:30 failures were the planner RPC exceeding
+  PostgREST's 8 s limit, fixed with a 55 s function-level limit on the agent RPCs; the redraft step falls back to a second Gemini
+  model on model errors and rate limits. Reply classifier (13) has run on Gemini since 16 Oct (Gemini backup, human review last).
+  CEO brief (11): its fallback was the same model as the primary, now a different model; its billing alert named Anthropic, now
+  Gemini. Provider health (00b): the informational Anthropic probe can no longer stop the run. Archived (inactive, never executed
+  in retention, replaced): 01 Lead Engine skeleton, 05 Sales & Outreach (replaced by 18). No workflow reads from GitHub; every
+  workflow reports failures to 00.
+- *Growth Director paused* until marketing reporting is commercially relevant: 10a, 10b, 10c unpublished, 10d (website enquiries)
+  stays live. `agent_registry.paused_reason`; HQ shows Paused, never late (migration `20261019040000_growth_paused.sql`).
+- *Social backlog.* 69 open LinkedIn / Instagram items reviewed: 60 parked (re-openable), 9 kept (named senior decision-makers at
+  priority 78+ and an Egypt flagship).
+- *Stale follow-ups.* 26 reviewed one by one: 7 closed as cold, 1 kept as a relationship, 18 kept as live sequences.
+- *Duplicates.* Mandarin Oriental (3 records) and Aman (3 records) merged into the canonical accounts: people the canonical record
+  lacked moved across, duplicate opportunities archived under the canonical account, research and AI history moved, duplicate
+  records kept with `MERGED_INTO` and excluded. Nothing deleted.
+- *Gmail relationships.* Encore Lifestyle, Empiria Group, HIGHSTAY, Nouva Group and Purple Ski created from their Gmail threads
+  only (company, people from the headers, opportunity `NEW` / `PENDING` / `SOURCE_BACKED`, threads linked, one review task each).
+  Stage not assumed.
+- *Historical revenue.* Workflow prepared: `docs/NOYA_REVENUE_RECONCILIATION.md`, an empty import template and a private Drive
+  folder for the evidence. No row is created until Adam's evidence is matched and Adam approves the table.
+- *Leaked-password protection.* Not available on the Supabase Free plan (Pro feature). Not enabled; a plan decision for Adam.
+- *Repository private.* Deployment checked (Cloudflare Pages and Workers Builds deploy through the Cloudflare GitHub App, which
+  keeps access when the repository is private). GitHub does not allow Claude sessions to change repository settings, so the switch
+  itself is one click for Adam.
