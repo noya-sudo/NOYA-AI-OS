@@ -143,6 +143,8 @@ const C = F.command;
   check('Confirm meeting: another time is sent as UK time', last(calls, 'hq_meeting_confirm')?.body?.p_start === '2026-10-28 16:30 Europe/London', last(calls, 'hq_meeting_confirm')?.body?.p_start);
   // 4. Plan an opportunity: owner, next action, date, blocker.
   await page.locator('#pipeline tbody tr:has-text("CRUSH Agency") [data-modal="opp-plan"]').click();
+  // The captured due date can fall behind the clock; pick a future date so the form's today-or-later rule passes.
+  await page.fill('#op-due', new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10));
   await page.fill('#op-next', 'Send the concept, then book the call'); await page.fill('#op-blocker', 'Waiting for their production dates');
   await page.click('#m-ok'); await page.waitForTimeout(250);
   const plan = last(calls, 'hq_opportunity_plan')?.body || {};

@@ -3657,12 +3657,15 @@ function deskButtons(x, readOnly) {
   if (x.bucket === 'NEEDS_REVIEW') {
     if (x.approve_via === 'EMAIL_CANDIDATE' || x.approve_via === 'OPPORTUNITY_DRAFT') b.push(`<button class="btn small primary" data-desk-approve="${ref}" title="Re-checks the address, then creates an unsent Gmail draft. Never sends.">Approve</button>`);
     else if (x.approve_via === 'MANUAL_SEND') {
-      const url = x.channel === 'LINKEDIN' ? x.route?.linkedin : null;
+      // A LinkedIn item the LinkedIn agent holds uses the agent's message and its Mark sent (one record of the send).
+      const li = x.channel === 'LINKEDIN' ? liOf(x) : null; const msg = li?.message || x.draft;
+      const url = x.channel === 'LINKEDIN' ? (li?.linkedin || x.route?.linkedin) : null;
       // One step for a LinkedIn fallback: copy the message and open the profile; Adam sends it himself.
-      if (x.draft && url) b.push(`<a class="btn small primary" href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-copy="${esc(x.draft)}" title="Copies the message, then opens the profile">Copy & open LinkedIn</a>`);
-      else if (x.draft) b.push(`<button class="btn small primary" data-copy="${esc(x.draft)}">Copy message</button>`);
+      if (msg && url) b.push(`<a class="btn small primary" href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-copy="${esc(msg)}" title="Copies the message, then opens the profile">Copy & open LinkedIn</a>`);
+      else if (msg) b.push(`<button class="btn small primary" data-copy="${esc(msg)}">Copy message</button>`);
       else if (url) b.push(`<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open LinkedIn</a>`);
-      if (x.task_id) b.push(`<button class="btn small" data-modal="task-done" data-id="${x.task_id}" data-title="${esc(`Sent to ${x.person || x.company || ''} on ${CH_LABEL[x.channel] || x.channel}`)}" title="You sent it yourself: logs the send and books follow-up 1 for 4 days later.">Mark sent</button>`);
+      if (li) b.push(`<button class="btn small" data-modal="li-sent" data-id="${li.id}" title="You sent it yourself: records the send and books one follow-up.">Mark sent</button>`);
+      else if (x.task_id) b.push(`<button class="btn small" data-modal="task-done" data-id="${x.task_id}" data-title="${esc(`Sent to ${x.person || x.company || ''} on ${CH_LABEL[x.channel] || x.channel}`)}" title="You sent it yourself: logs the send and books follow-up 1 for 4 days later.">Mark sent</button>`);
     }
   }
   if (x.task_id && ['NEEDS_REVIEW', 'HELD'].includes(x.bucket)) {
@@ -3678,7 +3681,7 @@ function deskButtons(x, readOnly) {
 }
 function deskRow(x, readOnly = false) {
   const open = state.deskOpen[x.ref]; const src = state.deskSrc[x.ref]; const s = x.source || {}; const t = x.tech || {};
-  const draft = String(x.draft || ''); const preview = draft.replace(/\s+/g, ' ').slice(0, 170);
+  const draft = String((x.channel === 'LINKEDIN' && liOf(x)?.message) || x.draft || ''); const preview = draft.replace(/\s+/g, ' ').slice(0, 170);
   const proj = coInfo(x.company_id)[1];
   const route = x.channel === 'EMAIL' ? `${deskRoute(x)} ${estatePill(x.route?.email_state)}` : `${esc(CH_LABEL[x.channel] || x.channel)} · ${deskRoute(x)}${x.fallback ? ` <span class="warn-text small">${esc(x.fallback.label)}</span>` : ''}`;
   return `<article class="drow" id="desk-${esc(x.ref)}">

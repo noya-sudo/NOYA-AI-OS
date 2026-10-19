@@ -341,8 +341,15 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
     check('Reject (under •••): refused without a reason', calls.filter((c) => c.fn === 'hq_outreach_action').length === before && /reason is required/i.test(await page.locator('.modal').innerText()));
     await page.fill('#d-reason', 'Mass-market, not a fit'); await page.click('#dm-ok'); await page.waitForTimeout(300);
     check('Reject: reason stored', last(calls, 'hq_outreach_action').body.p_action === 'REJECT');
-    await page.locator(`#desk-${li.ref} [data-modal=task-done]`).click(); await page.click('[data-confirm-task=COMPLETE]'); await page.waitForTimeout(300);
-    check('LinkedIn: Mark sent closes the task (Adam sent it himself)', last(calls, 'hq_task_action')?.body.p_action === 'COMPLETE' && last(calls, 'hq_task_action').body.p_task_id === li.task_id);
+    const liA = D.linkedin.find((a) => a.task_id === li.task_id);
+    if (liA) {
+      check('LinkedIn on Needs review: copies the LinkedIn agent\'s message (one source of truth)', (await page.locator(`#desk-${li.ref} a[data-copy]`).getAttribute('data-copy')) === liA.message);
+      await page.locator(`#desk-${li.ref} [data-modal=li-sent]`).click(); await page.click('#m-ok'); await page.waitForTimeout(300);
+      check('LinkedIn: Mark sent records the send through the LinkedIn agent (Adam sent it himself)', last(calls, 'hq_linkedin_action')?.body.p_action === 'SENT' && last(calls, 'hq_linkedin_action').body.p_id === liA.id);
+    } else {
+      await page.locator(`#desk-${li.ref} [data-modal=task-done]`).click(); await page.click('[data-confirm-task=COMPLETE]'); await page.waitForTimeout(300);
+      check('LinkedIn: Mark sent closes the task (Adam sent it himself)', last(calls, 'hq_task_action')?.body.p_action === 'COMPLETE' && last(calls, 'hq_task_action').body.p_task_id === li.task_id);
+    }
   } else check('Outreach: a LinkedIn fallback exists on page 1', false);
   await page.click('main [data-desk-ch=EMAIL]');
   await page.click('main [data-desk-tab=FOLLOWUPS]');
