@@ -86,7 +86,7 @@ const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 const state = {
   session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'dashboard', loading: false,
   desk: null, ops: null, directors: null, club: null, busy: {}, dirKey: null, dirDetail: {}, dirSec: {}, more: false, feedAll: false, feedDir: '',
-  deskTab: 'NEEDS_REVIEW', deskCh: 'EMAIL', deskDir: '', deskProj: '', deskMore: null, ceo: null, net: null, deskPage: 0, deskOpen: {}, deskSrc: {}, relTab: 'IMPORTANT', clubTab: 'PRIVATE',
+  deskTab: 'TOP5', deskCh: 'EMAIL', deskDir: '', deskProj: '', deskMore: null, ceo: null, net: null, deskPage: 0, deskOpen: {}, deskSrc: {}, relTab: 'IMPORTANT', clubTab: 'PRIVATE',
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
   com: null, account: {}, radarF: { h: 'ALL', region: '', cat: '', q: '' }, actF: { view: 'TODAY', seg: '', owner: '', track: '' }, parF: { tab: 'DEVELOP', cls: '' }, evF: { tab: 'UPCOMING' },
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
@@ -2017,6 +2017,28 @@ function renderAnyModal(m) {
         ${fld('Outcome', 'f-outcome', 'text', '', 'maxlength="200" placeholder="e.g. Wants a proposal for March trip"')}
         ${sel('Move stage to', 'f-stage', [['', 'Keep current stage'], ...STAGES.map((s) => [s, S(s)])])}
         ${fld('Follow up on (optional)', 'f-follow', 'date', isoPlus(3))}${fld('Next meeting (optional)', 'f-next', 'date')}`, 'Save meeting');
+    case 'li-edit': {
+      const x = liItem(m.id) || {}; const k = m.type || 'MESSAGE';
+      const [title, cur, hint] = { MESSAGE: ['Edit the LinkedIn message', x.message, '40 to 80 words: the specific reason, the Egypt opportunity, what NOYA would run, one simple next step.'],
+        NOTE: ['Connection note', x.connection_note, 'Up to 300 characters. Who you are and why them, nothing more: the real message follows once they accept.'],
+        FOLLOWUP: ['Follow-up after they accept', x.followup || x.message, '40 to 80 words, sent once they accept the request.'] }[k];
+      return form(`${title} — ${esc(x.person || '')}`, `<p class="small muted">${esc(hint)}</p>${area('Text', 'li-text', cur || '', k === 'NOTE' ? 'maxlength="300"' : 'maxlength="1500"')}`, 'Save');
+    }
+    case 'li-sent': { const x = liItem(m.id) || {};
+      return form(`Mark sent — ${esc(x.person || '')}`, `<p class="small muted">Only after you sent it yourself on LinkedIn. HQ records the send (it counts as a real message) and books one follow-up.</p>
+        ${fld('Follow up on', 'li-date', 'date', isoPlus(5), `min="${isoPlus(1)}" max="${isoPlus(60)}"`)}`, 'Mark sent'); }
+    case 'li-hold': { const x = liItem(m.id) || {};
+      return form(`Hold — ${esc(x.person || '')}`, `${fld('Why', 'li-reason', 'text', '', 'maxlength="200" placeholder="e.g. wait for a warm introduction"')}${fld('Review on', 'li-date', 'date', isoPlus(7), `min="${isoPlus(1)}"`)}`, 'Hold'); }
+    case 'li-reply': { const x = liItem(m.id) || {};
+      return form(`Log their reply — ${esc(x.person || '')}`, `<p class="small muted">Paste what they wrote on LinkedIn. HQ classifies it (you can correct it), logs it as a reply, stops the follow-ups and suggests a response. A meeting request opens Meeting Assist. Nothing is sent.</p>
+        ${area('Their reply', 'li-text', '', 'maxlength="3000"')}${sel('Type of reply', 'li-class', [['', 'Detect automatically'], ...LI_CLASSES])}`, 'Log reply'); }
+    case 'meet-confirm': {
+      const x = (state.desk?.meeting_assist || []).find((a) => a.task_id === m.id) || {};
+      const slots = (x.slots || []).map((sl, i) => `<label class="radio"><input type="radio" name="mc-slot" value="${esc(sl.start)}" ${i === 0 ? 'checked' : ''}> ${esc(slotText([sl]))}</label>`).join('');
+      return form(`Confirm meeting — ${esc(x.company || '')}`, `<p class="small muted">Only once they have confirmed a time. HQ records the meeting, links it to the person, company, opportunity and Director, and prepares the briefing. The calendar entry goes in your own calendar without inviting anyone; you add the guest yourself.</p>
+        ${slots ? `<div class="field"><span>They picked</span>${slots}<label class="radio"><input type="radio" name="mc-slot" value=""> Another time</label></div>` : ''}
+        ${fld('Date', 'mc-date', 'date', '', `min="${todayKey()}"`)}${fld('Time (UK)', 'mc-time', 'time', '10:00')}${sel('Length', 'mc-min', [['30', '30 minutes'], ['20', '20 minutes'], ['45', '45 minutes'], ['60', '1 hour']])}
+        ${fld('Where (optional)', 'mc-where', 'text', '', 'maxlength="200" placeholder="e.g. Google Meet, their office"')}`, 'Confirm meeting'); }
     case 'note':
       return form(`Add note${who ? ` — ${who}` : ''}`, `${sel('Type', 'f-kind', NOTE_KINDS)}${area('Note', 'f-body', '', 'maxlength="4000"')}${fld('Remind me on (optional)', 'f-follow', 'date')}`, 'Save note');
     case 'stage': { const o = opp(m.opp) || {};
@@ -2244,6 +2266,21 @@ async function submitModal() {
       return r; }
     case 'meeting': { const s = val('f-summary'); if (!need(s, 'A short summary is required.')) return;
       return done('hq_record_meeting', { p_opportunity: m.opp, p_summary: s, p_outcome: val('f-outcome'), p_new_status: val('f-stage'), p_follow_up: val('f-follow'), p_next_meeting: val('f-next'), p_task: m.task || null }, 'Meeting recorded.'); }
+    case 'li-edit': { const tx = val('li-text'); if (!need(tx, 'The text is empty.')) return;
+      const r = await done('hq_linkedin_action', { p_id: m.id, p_action: { MESSAGE: 'EDIT', NOTE: 'EDIT_NOTE', FOLLOWUP: 'EDIT_FOLLOWUP' }[m.type || 'MESSAGE'], p_text: tx, p_date: null }, 'Saved.');
+      if (r?.ok && r.warning) { state.notice = { err: false, text: `Saved. ${r.warning} This one is ${r.words} words.` }; render(); }
+      return r; }
+    case 'li-sent': return done('hq_linkedin_action', { p_id: m.id, p_action: 'SENT', p_text: null, p_date: val('li-date') }, 'Recorded as sent by you. One follow-up is booked; a reply cancels it.');
+    case 'li-hold': return done('hq_linkedin_action', { p_id: m.id, p_action: 'HOLD', p_text: val('li-reason'), p_date: val('li-date') }, 'Held.');
+    case 'li-reply': { const tx = val('li-text'); if (!need(tx, 'Paste their reply first.')) return;
+      const r = await done('hq_linkedin_reply', { p_id: m.id, p_text: tx, p_class: val('li-class') }, 'Reply logged.');
+      if (r?.ok) { state.notice = { err: false, text: r.class === 'MEETING_INTENT' ? 'Reply logged as a meeting request. Meeting Assist proposes two times from your calendar; the reply is under Meetings to schedule.' : `Reply logged (${liClass(r.class).toLowerCase()}). A suggested response is ready to copy.` }; render(); }
+      return r; }
+    case 'meet-confirm': {
+      const pick = document.querySelector('input[name="mc-slot"]:checked')?.value || '';
+      const start = pick || (val('mc-date') && val('mc-time') ? `${val('mc-date')} ${val('mc-time')} Europe/London` : null);
+      if (!need(start, 'Pick the time they confirmed, or enter a date and time.')) return;
+      return done('hq_meeting_confirm', { p_task: m.id, p_start: start, p_minutes: Number(val('mc-min') || 30), p_where: val('mc-where') }, 'Meeting recorded with its briefing. It counts as a meeting in the funnel.'); }
     case 'note': { const b = val('f-body'); if (!need(b, 'Write the note first.')) return;
       return done('hq_add_note', { p_kind: val('f-kind'), p_body: b, p_company: m.company || null, p_contact: m.contact || null, p_opportunity: m.opp || null, p_connection: m.conn || null, p_follow_up: val('f-follow') }, 'Note saved.'); }
     case 'stage': return done('hq_opportunity_update', { p_opportunity: m.opp, p_status: val('f-stage'), p_next_action: val('f-next'), p_note: val('f-note') }, 'Stage updated.');
@@ -2464,6 +2501,9 @@ function bind() {
   on('[data-close-drawer]', 'click', () => { state.drawer = null; render(); });
   on('[data-modal]', 'click', (b, e) => { e.stopPropagation(); const x = b.dataset; state.menu = false;
     state.modal = { kind: x.modal, id: x.id || null, opp: x.opp || null, task: x.task || null, channel: x.channel || null, conn: x.conn || null, contact: x.contact || null, company: x.company || null, draft: x.draft || null, next: x.next || null, type: x.type || null, title: x.title || null }; render(); });
+  on('[data-li-act]', 'click', (b, e) => { e.stopPropagation(); const k = b.dataset.liAct;
+    call('hq_linkedin_action', { p_id: b.dataset.id, p_action: k, p_text: null, p_date: null }, { CONNECTION_SENT: 'Connection request recorded. Press Connected when they accept: the follow-up is then ready.',
+      CONNECTED: 'Connected. The follow-up message is ready to copy and send.', RELEASE: 'Back in the queue.', CLOSE: 'Closed.' }[k] || 'Done.'); });
   on('[data-hist-act]', 'click', (b) => call('hq_history_action', { p_key: b.dataset.id, p_action: b.dataset.histAct }, b.dataset.histAct === 'DISMISS' ? 'Hidden from the list (kept in the history).' : 'Restored.'));
   on('[data-relq]', 'click', (b, e) => { e.stopPropagation(); state.relF = { tab: 'ALL', q: b.dataset.relq }; state.tab = 'relationships'; state.q = ''; render(); window.scrollTo(0, 0); });
   on('button[data-rf]', 'click', (b) => { state.relF.tab = b.dataset.v; state.relF.i = 0; render(); });
@@ -2965,7 +3005,7 @@ function todayItems(d) {
   // Replies, plus Adam's own reply / review tasks that have no inbound email behind them (a personal LinkedIn follow-up).
   const field = (desc, label) => (String(desc || '').match(new RegExp(`^${label}:\\s*(.+)$`, 'mi')) || [])[1] || '';
   const replies = [...repliesForAdam(d), ...openTasks(d).filter((t) => ['REPLY_ACTION', 'HUMAN_REVIEW'].includes(t.task_type) && !repliesForAdam(d).some((r) => r.task_id === t.id))
-    .map((t) => { const act = field(t.description, 'EXACT ACTION'); return { task_only: true, task_id: t.id, opportunity_id: t.opportunity_id, due_at: t.due_at,
+    .map((t) => { const act = field(t.description, 'EXACT ACTION'); return { task_only: true, task_id: t.id, opportunity_id: t.opportunity_id, due_at: t.due_at, title: t.title,
       company_name: [field(t.description, 'CONTACT').split(',')[0], t.company_name].filter(Boolean).join(' · ') || t.title,
       summary: act.replace(/\s*(to\s+)?https?:\/\/\S+/g, '').trim() || t.title, url: (act.match(/https?:\/\/\S+/) || [])[0] }; })];
   const meetings = [...(state.ov?.actions || []).filter((a) => a.kind === 'MEETING'),
@@ -3019,55 +3059,90 @@ function dashStrip(d) {
     ${k(n0(rows.length), 'Actions needing you', 'data-scroll="needs"')}</section>`;
 }
 
-// WHAT NEEDS YOU TODAY: only things Adam can personally act on, ranked, one obvious button each.
+// WHAT NEEDS YOU TODAY (Adam, 19 Oct): five lists every morning: replies to answer, meetings to schedule, follow-ups due, the
+// five best new outreach items, Studio documents ready. Clients and proposals sit on top only when they exist. One button each.
+const NEED_GROUPS = [['clients', 'Clients and proposals'], ['replies', 'Replies to answer'], ['meetings', 'Meetings to schedule'], ['followups', 'Follow-ups due'],
+  ['outreach', 'Top 5 new outreach to approve'], ['studio', 'Studio documents ready']];
+const NEED_EMPTY = { replies: 'No reply waiting.', meetings: 'No meeting to schedule.', followups: 'No follow-up due today.',
+  outreach: 'Nothing strong enough today. Fewer is fine.', studio: 'No Studio document waiting.' };
+const studioReady = () => (state.desk?.studio_ready || []).filter((s) => !s.hold_reason);
 function needsRows(d) {
   const t = todayItems(d); const desk = state.desk || {}; const rows = [];
-  t.meetings.forEach((m) => rows.push({ r: 1, who: m.person || m.company, co: m.person ? m.company : '', dir: dirByName(m.company),
-    why: m.kind === 'CALL' ? 'They asked for a call: a project can start here' : 'They asked for a meeting', next: m.kind === 'CALL' ? (m.next_action || 'Book the call, then record it') : 'Agree a time, then record the outcome',
-    when: null, cta: m.opportunity_id ? `<button class="btn small primary" data-modal="meeting" data-opp="${m.opportunity_id}" data-task="${m.task_id || ''}">Record meeting</button>` : '' }));
+  const assist = desk.meeting_assist || []; const assisted = new Set(assist.map((m) => m.opportunity_id).filter(Boolean));
+  t.issues.forEach((i) => rows.push({ g: 'clients', r: 1, who: i.title, co: '', dir: null, why: 'Client delivery issue', next: 'Resolve with the client or supplier', when: i.due_at,
+    cta: '<button class="btn small primary" data-go="ops">Operations</button>' }));
+  t.proposals.forEach((o) => rows.push({ g: 'clients', r: 2, who: o.company_name, co: '', dir: dirByName(o.company_name), why: `${S(o.status)}: money is on the table`, next: o.next_action || 'Move the proposal forward',
+    when: o.updated_at, cta: `<button class="btn small primary" data-open="opp" data-id="${o.id}">Open</button>` }));
   t.replies.forEach((x) => {
     const own = x.task_only; const meeting = x.classification === 'MEETING_REQUEST';
-    rows.push({ r: meeting ? 1 : own ? 3 : 2, who: own ? x.company_name : (x.company_name || x.from), co: '', dir: dirByName(String(x.company_name || '').split(' · ').pop()),
+    // A LinkedIn reply is listed once, from the LinkedIn agent, with its suggested response; a meeting with Meeting Assist open, once.
+    if (own && /^LINKEDIN REPLY/.test(x.title || '')) return;
+    if (meeting && x.opportunity_id && assisted.has(x.opportunity_id)) return;
+    rows.push({ g: own ? 'followups' : meeting ? 'meetings' : 'replies', r: meeting ? 1 : own ? 3 : 2, who: own ? x.company_name : (x.company_name || x.from), co: '', dir: dirByName(String(x.company_name || '').split(' · ').pop()),
       why: own ? 'Your own follow-up on a live relationship' : meeting ? 'They asked for a meeting: the closest thing to a project' : `${REPLY_GROUP[x.classification] || 'A'} reply waiting for you`,
       next: plainText(x.summary || x.subject || 'Reply'), when: own ? x.due_at : x.received_at, overdue: own && x.due_at && new Date(x.due_at) < new Date(),
       cta: own ? (x.url ? btnLink(x.url, 'Open LinkedIn') : x.opportunity_id ? `<button class="btn small primary" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : '')
         : x.thread_id ? btnLink(`${GMAIL_THREAD_URL}${x.thread_id}`, 'Reply in Gmail') : x.opportunity_id ? `<button class="btn small primary" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : '' });
   });
-  t.gmail.forEach((x) => rows.push({ r: 2, who: x.person || x.to_email, co: x.company, dir: x.director, why: 'Approved and waiting in Gmail: only your Send is missing',
-    next: `Send "${x.subject || 'the draft'}"`, when: x.approved_at, cta: btnLink(x.gmail_url, 'Open in Gmail') }));
-  t.failed.forEach((x) => rows.push({ r: 2, who: x.person || x.to_email, co: x.company, dir: x.director, why: 'The Gmail draft could not be created', next: 'Retry from the desk', when: x.approved_at,
-    cta: '<button class="btn small" data-go="desk" data-desk-tab="APPROVED">Retry</button>' }));
-  // Review, grouped by Director: "Review 6 Brands & Production emails".
-  const byDir = {};
-  (desk.needs_review || []).filter((x) => x.channel === 'EMAIL').forEach((x) => { byDir[x.director || 'OTHER'] = (byDir[x.director || 'OTHER'] || 0) + 1; });
-  Object.entries(byDir).sort((a, b) => b[1] - a[1]).forEach(([k, n]) => rows.push({ r: 3, who: `Review ${plural(n, 'email', 'emails')}`, co: '', dir: k === 'OTHER' ? null : k,
-    why: 'Verified addresses, drafted and quality-checked', next: 'Approve creates an unsent Gmail draft; nothing is sent', when: null,
-    cta: `<button class="btn small primary" data-go="desk" data-desk-tab="NEEDS_REVIEW" data-desk-dir="${k === 'OTHER' ? '' : k}">Review</button>` }));
-  qaHeld().forEach((x) => rows.push({ r: 2, who: x.person || x.company, co: x.person ? x.company : '', dir: x.director, why: 'Verified email; the draft failed the quality check',
-    next: 'Edit the draft (Approve then creates an unsent Gmail draft), or reject', when: x.created_at,
-    cta: `<button class="btn small primary" data-go="desk" data-desk-tab="HELD" data-desk-dir="${x.director || ''}">Edit</button>` }));
-  t.followups.slice(0, 4).forEach((f) => rows.push({ r: f.overdue ? 3 : 4, who: f.person || f.company, co: f.person ? f.company : '', dir: f.director,
+  (desk.linkedin || []).filter((a) => a.state === 'REPLIED' && a.reply_class !== 'MEETING_INTENT').forEach((a) => rows.push({ g: 'replies', r: 1, who: a.person || a.company, co: a.person ? a.company : '',
+    dir: a.director, why: `LinkedIn reply (${liClass(a.reply_class).toLowerCase()}): a response is suggested`, next: plainText(a.reply_text || '').slice(0, 160), when: a.replied_at,
+    cta: liCopyOpen(a.response_draft, a.linkedin, 'Copy response & open LinkedIn') || '<button class="btn small primary" data-go="desk" data-desk-tab="LINKEDIN">Open</button>' }));
+  t.meetings.filter((m) => !(m.opportunity_id && assisted.has(m.opportunity_id))).forEach((m) => rows.push({ g: 'meetings', r: 1, who: m.person || m.company, co: m.person ? m.company : '', dir: dirByName(m.company),
+    why: m.kind === 'CALL' ? 'They asked for a call: a project can start here' : 'They asked for a meeting', next: m.kind === 'CALL' ? (m.next_action || 'Book the call, then record it') : 'Agree a time, then record the outcome',
+    when: null, cta: m.opportunity_id ? `<button class="btn small primary" data-modal="meeting" data-opp="${m.opportunity_id}" data-task="${m.task_id || ''}">Record meeting</button>` : '' }));
+  assist.forEach((m) => rows.push({ g: 'meetings', r: 1, who: m.person || m.company, co: m.person ? m.company : '', dir: dirByName(m.company),
+    why: m.state === 'SLOTS_PROPOSED' ? 'Two times offered from your calendar: confirm when they pick one' : 'They want to talk: two free times from your calendar go into the reply',
+    next: (m.slots || []).length ? `Offered ${slotText(m.slots)}` : 'Times are checked against your calendar at the next daily check', when: m.created_at,
+    cta: `<button class="btn small primary" data-modal="meet-confirm" data-id="${m.task_id}">Confirm meeting</button>` }));
+  t.followups.slice(0, 4).forEach((f) => rows.push({ g: 'followups', r: f.overdue ? 3 : 4, who: f.person || f.company, co: f.person ? f.company : '', dir: f.director,
     why: 'No answer yet: one short follow-up keeps it alive', next: `Follow-up ${f.step} by ${CH_LABEL[f.channel] || f.channel}`, when: f.due_at, overdue: f.overdue,
     cta: f.thread_id ? btnLink(`${GMAIL_THREAD_URL}${f.thread_id}`, 'Open thread', false) + `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Done</button>`
       : `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button>` }));
-  t.proposals.forEach((o) => rows.push({ r: 2, who: o.company_name, co: '', dir: dirByName(o.company_name), why: `${S(o.status)}: money is on the table`, next: o.next_action || 'Move the proposal forward',
-    when: o.updated_at, cta: `<button class="btn small primary" data-open="opp" data-id="${o.id}">Open</button>` }));
-  t.issues.forEach((i) => rows.push({ r: 1, who: i.title, co: '', dir: null, why: 'Client delivery issue', next: 'Resolve with the client or supplier', when: i.due_at,
-    cta: '<button class="btn small primary" data-go="ops">Operations</button>' }));
+  // New outreach: what is approved and only needs Send, then the five strongest new items (never the whole queue).
+  t.gmail.forEach((x) => rows.push({ g: 'outreach', sub: 'send', r: 1, who: x.person || x.to_email, co: x.company, dir: x.director, why: 'Approved and waiting in Gmail: only your Send is missing',
+    next: `Send "${x.subject || 'the draft'}"`, when: x.approved_at, cta: btnLink(x.gmail_url, 'Open in Gmail') }));
+  t.failed.forEach((x) => rows.push({ g: 'outreach', sub: 'send', r: 1, who: x.person || x.to_email, co: x.company, dir: x.director, why: 'The Gmail draft could not be created', next: 'Retry from the desk', when: x.approved_at,
+    cta: '<button class="btn small" data-go="desk" data-desk-tab="APPROVED">Retry</button>' }));
+  qaHeld().forEach((x) => rows.push({ g: 'outreach', sub: 'edit', r: 2, who: x.person || x.company, co: x.person ? x.company : '', dir: x.director, why: 'Verified email; the draft failed the quality check',
+    next: 'Edit the draft (Approve then creates an unsent Gmail draft), or reject', when: x.created_at,
+    cta: `<button class="btn small primary" data-go="desk" data-desk-tab="HELD" data-desk-dir="${x.director || ''}">Edit</button>` }));
+  const top = desk.top5 || [];
+  top.forEach((p, i) => {
+    const x = deskItem(p.ref); if (!x) return; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
+    rows.push({ g: 'outreach', sub: 'top', r: 3, who: x.person || x.company, co: x.person ? x.company : '', dir: x.director, why: `${i + 1} of ${top.length} · ${p.why}`,
+      next: x.channel === 'EMAIL' ? 'Approve creates an unsent Gmail draft; nothing is sent' : 'Copy, open LinkedIn and send it yourself, then Mark sent', when: x.created_at,
+      cta: a ? `${liCopyOpen(a.message, a.linkedin, 'Copy & open LinkedIn')}<button class="btn small" data-modal="li-sent" data-id="${a.id}">Mark sent</button>`
+        : `<button class="btn small primary" data-go="desk" data-desk-tab="TOP5">Review</button>` });
+  });
+  studioReady().slice(0, 3).forEach((s) => rows.push({ g: 'studio', r: 4, who: s.title || 'Studio document', co: s.company || '', dir: null,
+    why: s.status === 'APPROVED' ? 'Approved: ready to go with its email' : `Prepared by the Studio${s.level ? ` (level ${s.level})` : ''}: ready for your review`,
+    next: s.status === 'APPROVED' ? 'Attach it to the email it belongs to' : 'Review, then approve or ask for changes', when: s.created_at,
+    cta: '<button class="btn small primary" data-go="studio">Open Studio</button>' }));
   rows.sort((a, b) => a.r - b.r);
   return rows;
 }
 function dashActions(d) {
-  const t = todayItems(d); const rows = needsRows(d);
-  const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date());
-  const more = t.followups.length > 4 ? `<button class="btn small ghost" data-go="desk" data-desk-tab="FOLLOWUPS">All ${t.followups.length} follow-ups${overdue.length ? ` · ${overdue.length} overdue` : ''}</button>` : '';
-  const body = rows.map((x) => `<div class="act">
+  const t = todayItems(d); const rows = needsRows(d); const desk = state.desk || {};
+  const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date()); const waiting = desk.counts?.needs_review?.total || 0; const sr = studioReady().length;
+  const extra = { followups: t.followups.length > 4 ? `<button class="btn small ghost" data-go="desk" data-desk-tab="FOLLOWUPS">All ${t.followups.length} follow-ups${overdue.length ? ` · ${overdue.length} overdue` : ''}</button>` : '',
+    outreach: waiting > (desk.top5 || []).length ? `<button class="btn small ghost" data-go="desk" data-desk-tab="NEEDS_REVIEW">${n0(waiting)} waiting in Outreach</button>` : '',
+    studio: sr > 3 ? `<button class="btn small ghost" data-go="studio">All ${sr} in Studio</button>` : '' };
+  const act = (x) => `<div class="act">
       <div class="act-main"><div class="act-who">${esc(x.who || '')}${x.co ? ` <span class="faint">· ${esc(x.co)}</span>` : ''}</div>
         <div class="act-why">${esc(x.why)}</div><div class="act-next">${esc(x.next || '')}</div></div>
       <div class="act-meta"><span>${x.dir ? esc(dirName(x.dir)) : ''}</span><span class="${x.overdue ? 'bad-text' : 'faint'}">${x.when ? `${x.overdue ? 'overdue · ' : ''}${esc(ageOf(x.when))}` : ''}</span></div>
-      <div class="act-cta">${x.cta || ''}</div></div>`).join('');
-  return `<section class="dsec" id="needs"><header><h2>What needs you today</h2><span class="faint small">${rows.length ? plural(rows.length, 'action', 'actions') : ''}</span>${more}</header>
-    ${body || '<div class="calm"><div class="calm-t">Nothing needs you right now.</div><div class="t-sub">Replies, approvals, Gmail drafts, meetings, proposals and due follow-ups appear here the moment they exist.</div></div>'}</section>`;
+      <div class="act-cta">${x.cta || ''}</div></div>`;
+  // New outreach keeps the five as five: what is already approved (only Send missing) and drafts to edit are labelled apart.
+  const SUBS = [['send', 'Approved: only your Send is missing'], ['top', "Today's best five"], ['edit', 'Drafts to edit']];
+  const list = (g, l) => (g !== 'outreach' || !l.some((x) => x.sub !== 'top') ? l.map(act).join('')
+    : SUBS.map(([k, sl]) => { const m = l.filter((x) => x.sub === k); return m.length ? `<div class="ngrp-sub">${esc(sl)} · ${m.length}</div>${m.map(act).join('')}` : ''; }).join(''));
+  const body = NEED_GROUPS.map(([g, label]) => {
+    const l = rows.filter((x) => x.g === g); if (!l.length && g === 'clients') return '';
+    const n = g === 'outreach' ? l.filter((x) => x.sub === 'top').length : l.length;
+    return `<div class="ngrp" data-need="${g}"><div class="ngrp-h"><h3>${esc(label)}${n ? ` <span class="n">${n}</span>` : ''}</h3>${extra[g] || ''}</div>
+      ${list(g, l) || `<div class="ngrp-none">${esc(NEED_EMPTY[g])}</div>`}</div>`;
+  }).join('');
+  return `<section class="dsec" id="needs"><header><h2>What needs you today</h2><span class="faint small">${rows.length ? plural(rows.length, 'action', 'actions') : 'nothing waiting'}</span></header>${body}</section>`;
 }
 
 // HQ ADVISOR: 3-5 observations, each situation -> meaning -> recommended action. A Chief of Staff, not an analytics bot.
@@ -3358,6 +3433,7 @@ const SMETRIC = { RESEARCH: [['companies_researched', 'Researched'], ['companies
   MEMORY: [['gmail_messages', 'Gmail messages'], ['relationships_summarised', 'Summaries']],
   REPLY: [['replies_detected', 'Replies detected'], ['sends_detected', 'Sends detected']],
   DIRECTOR: [['touches_planned', 'Touches planned'], ['briefs', 'Briefs']],
+  LINKEDIN: [['messages_sent', 'Messages sent'], ['replies', 'Replies'], ['meetings', 'Meetings'], ['ready', 'Waiting for you']],
   GROWTH: [['posts_analysed', 'Posts analysed'], ['concepts', 'Concepts'], ['content_items', 'Content items'], ['attributed_leads', 'Attributed leads']] };
 const ROLE_LABEL = { DIRECTOR: 'Director', MANAGER: 'Strategic Partnerships Manager', SUPPORT: 'Shared specialist' };
 // Every Director answers: what are you working on, what did you produce, what could become business, do you need Adam?
@@ -3449,6 +3525,7 @@ function dSection(s) {
       <div class="m">Right contact: ${o.contact ? `${esc(o.contact.name || '')}${o.contact.role ? `, ${esc(o.contact.role)}` : ''} ${estatePill(o.contact.email_state)}` : '<span class="warn-text">not identified yet</span>'}</div>
       <div class="m"><b>Next step:</b> ${esc(plainText(o.next_step))}</div>${o.angle ? `<div class="m faint">${esc(plainText(o.angle))}</div>` : ''}</div>`).join('');
     case 'desk': return it.map((x) => deskRow(x, true)).join('');
+    case 'linkedin': return it.map(liRow).join('');
     case 'verify': return it.map((v) => `<div class="mini clickable" data-open="company" data-id="${v.company_id}"><div class="t">${esc(v.name || v.email)}${v.position ? ` · <span class="faint">${esc(v.position)}</span>` : ''}</div>
       <div class="m">${esc(v.email)} · ${esc(v.company)} · ${esc(memberName(v.agent))}${v.draft_waiting ? ` · ${pill('draft waiting', 'gold')}` : ''}</div></div>`).join('');
     case 'verifications': return it.map((v) => `<div class="mini"><div class="t">${esc(v.name || v.email)} ${pill(v.result === 'valid' ? 'valid' : v.result.replace('_', '-'), v.result === 'valid' ? 'ok' : v.result === 'invalid' ? 'bad' : 'warn')}</div>
@@ -3503,7 +3580,7 @@ function viewDirector() {
     const secs = [...(det.sections || []), { key: 'activity', title: 'Recent activity', kind: 'feed', total: feed.length, items: feed }];
     const cur = secs.find((x) => x.key === state.dirSec[m.key]) || secs.find((x) => (x.total || 0) > 0) || secs[0];
     const shown = Array.isArray(cur.items) ? cur.items.length : 0;
-    return `${top}<div class="tabs mt8">${secs.map((x) => `<button class="${x.key === cur.key ? 'on' : ''}" data-dir-sec="${x.key}">${esc(x.title)} <span class="n">${esc(x.total ?? shown)}</span></button>`).join('')}</div>
+    return `${top}${det.scorecard ? liScore(det.scorecard) : ''}<div class="tabs mt8">${secs.map((x) => `<button class="${x.key === cur.key ? 'on' : ''}" data-dir-sec="${x.key}">${esc(x.title)} <span class="n">${esc(x.total ?? shown)}</span></button>`).join('')}</div>
       <section class="panel"><header><h3>${esc(cur.title)}</h3><span class="small faint">${cur.total != null && cur.total > shown ? `showing the latest ${shown} of ${cur.total}` : `${cur.total ?? shown} in total`}</span></header>
         <div class="body">${cur.kind === 'feed' ? v3Feed(cur.items, 200) : (dSection(cur) || '<div class="empty">Nothing here yet.</div>')}</div></section>`;
   }
@@ -3559,7 +3636,7 @@ function growthBody(g) {
 }
 
 // ---------------------------------------------------------------- OUTREACH: approve communication. Email first.
-const DESK_TABS = [['NEEDS_REVIEW', 'Needs review'], ['APPROVED', 'Gmail drafts'], ['FOLLOWUPS', 'Follow-ups'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Researching / held']];
+const DESK_TABS = [['TOP5', "Today's five"], ['NEEDS_REVIEW', 'Needs review'], ['LINKEDIN', 'LinkedIn'], ['APPROVED', 'Gmail drafts'], ['FOLLOWUPS', 'Follow-ups'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Researching / held']];
 const DESK_PAGE = 25;
 const PROJECT_FILTERS = [['', 'All projects'], ['BRAND', 'Brand shoot / campaign'], ['WEDDING', 'Wedding'], ['TRAVEL', 'Travel partner'], ['PRIVATE', 'NOYA Private'], ['MEDIA', 'Media / podcast'], ['HOSPITALITY', 'Hospitality partnership'], ['CORPORATE', 'Corporate / white-label']];
 const projectGroup = (p) => (!p ? '' : /^(BRAND_SHOOT|FASHION_CAMPAIGN|JEWELLERY_CAMPAIGN|CREATOR_TRIP|PRESS_TRIP|BRAND_ACTIVATION|PRODUCT_LAUNCH|AUTOMOTIVE_SHOOT|CONTENT_PRODUCTION)$/.test(p) ? 'BRAND'
@@ -3628,10 +3705,70 @@ function approvedRow(x) {
   return `<div class="t-row"><div><div class="t-main">${esc(x.person || x.to_email)} · <span class="faint">${esc(x.company || '')}</span></div>
     <div class="t-sub">${esc(x.to_email)} · ${esc(x.subject || '')} · approved ${esc(shortDay(x.approved_at))}${x.director ? ` · ${esc(dirName(x.director))}` : ''}${x.error && x.status === 'FAILED' ? ` · ${esc(String(x.error).slice(0, 100))}` : ''}</div></div><div class="t-btns">${st}</div></div>`;
 }
+// ---------------------------------------------------------------- LINKEDIN RELATIONSHIP AGENT (Adam, 19 Oct): relationships and meetings, never mass automation
+// One queue (linkedin_actions), read with the desk. Copy & open LinkedIn copies the text and opens the profile; Adam sends it himself and
+// presses Mark sent. A reply is what Adam pastes, never guessed from a notification. HQ never logs in to LinkedIn and never sends.
+const LI_STATE = { READY: ['Ready to send', 'gold'], CONNECTION_SENT: ['Connection request sent', ''], CONNECTED: ['Connected · follow-up ready', 'gold'], SENT: ['Sent · waiting for a reply', ''],
+  REPLIED: ['Replied', 'ok'], MEETING: ['Meeting', 'ok'], HELD: ['Held', 'warn'], CLOSED: ['Closed', ''] };
+const LI_CLASSES = [['POSITIVE', 'Positive'], ['QUESTION', 'Question'], ['INFO_REQUEST', 'Info request'], ['MEETING_INTENT', 'Meeting intent'], ['INTRODUCTION', 'Introduction'],
+  ['NOT_NOW', 'Not now'], ['SOFT_NO', 'Soft no'], ['DECLINED', 'Declined']];
+const LI_SECTIONS = [['REPLIED', 'Replies to answer'], ['CONNECTED', 'Connected: follow-up ready'], ['READY', 'Ready for you to send'], ['CONNECTION_SENT', 'Connection requests waiting for acceptance'],
+  ['SENT', 'Sent, waiting for a reply'], ['MEETING', 'Meetings'], ['HELD', 'Held'], ['CLOSED', 'Closed']];
+const liClass = (k) => (LI_CLASSES.find(([c]) => c === k) || [k, sentence(String(k || '').replace(/_/g, ' '))])[1];
+const liAll = () => [...(state.desk?.linkedin || []), ...((state.dirDetail?.LINKEDIN?.sections || []).flatMap((x) => x.items || []))];
+const liItem = (id) => liAll().find((a) => a.id === id);
+const liOf = (x) => (state.desk?.linkedin || []).find((a) => (x.task_id && a.task_id === x.task_id) || (x.contact_id && a.contact_id === x.contact_id && a.opportunity_id === x.opportunity_id));
+const liWords = (t) => String(t || '').trim().split(/\s+/).filter(Boolean).length;
+const liCopyOpen = (text, url, label, primary = true) => (!text ? '' : url
+  ? `<a class="btn small ${primary ? 'primary' : ''}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-copy="${esc(text)}" title="Copies the text, then opens their LinkedIn profile. You send it yourself.">${esc(label)}</a>`
+  : `<button class="btn small ${primary ? 'primary' : ''}" data-copy="${esc(text)}" title="No profile link on record: copies the text only">${esc(label.replace(' & open LinkedIn', '').replace(' & open', ''))}</button>`);
+const ukSlot = (iso) => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/London' })
+  .formatToParts(new Date(iso)).map((x) => [x.type, x.value])); return `${p.weekday} ${p.day} ${p.month} ${p.hour}:${p.minute}`; };
+const slotText = (slots) => `${(slots || []).map((x) => ukSlot(x.start)).join(' or ')} (UK)`;
+function liRow(a) {
+  const [sl, sc] = LI_STATE[a.state] || [a.state, ''];
+  const act = (k, label, primary = false) => `<button class="btn small ${primary ? 'primary' : ''}" data-li-act="${k}" data-id="${a.id}">${label}</button>`;
+  const mod = (kind, label, type = '', primary = false) => `<button class="btn small ${primary ? 'primary' : ''}" data-modal="${kind}" data-id="${a.id}"${type ? ` data-type="${type}"` : ''}>${label}</button>`;
+  const b = [];
+  if (a.state === 'READY') {
+    b.push(liCopyOpen(a.message, a.linkedin, 'Copy & open LinkedIn') || mod('li-edit', 'Write the message', 'MESSAGE', true), mod('li-edit', 'Edit', 'MESSAGE'), mod('li-sent', 'Mark sent'), mod('li-hold', 'Hold'));
+  } else if (a.state === 'CONNECTION_SENT') b.push(act('CONNECTED', 'Connected', true), mod('li-edit', 'Edit follow-up', 'FOLLOWUP'), mod('li-hold', 'Hold'));
+  else if (a.state === 'CONNECTED') b.push(liCopyOpen(a.followup || a.message, a.linkedin, 'Copy follow-up & open LinkedIn'), mod('li-edit', 'Edit follow-up', 'FOLLOWUP'), mod('li-sent', 'Mark sent'));
+  else if (a.state === 'SENT') b.push(mod('li-reply', 'Log reply', '', true), mod('li-hold', 'Hold'));
+  else if (a.state === 'REPLIED') b.push(a.reply_class === 'MEETING_INTENT' && a.meeting_task_id ? `<button class="btn small primary" data-modal="meet-confirm" data-id="${a.meeting_task_id}">Confirm meeting</button>` : '',
+    liCopyOpen(a.response_draft, a.linkedin, 'Copy response & open LinkedIn', a.reply_class !== 'MEETING_INTENT'), mod('li-reply', 'Log another reply'));
+  else if (a.state === 'HELD') b.push(act('RELEASE', 'Release', true), act('CLOSE', 'Close'));
+  const conn = a.state === 'READY' ? `<div class="dr-line li-conn"><span>Not connected?</span>${a.connection_note
+    ? `${liCopyOpen(a.connection_note, a.linkedin, 'Copy note & open', false)}${act('CONNECTION_SENT', 'Connection sent')}${mod('li-edit', 'Edit note', 'NOTE')} <span class="faint small">${String(a.connection_note).length}/300 · the follow-up is sent after they accept</span>`
+    : `${mod('li-edit', 'Write a connection note', 'NOTE')} <span class="faint small">LinkedIn notes are up to 300 characters</span>`}</div>` : '';
+  const text = a.state === 'CONNECTED' || a.state === 'CONNECTION_SENT' ? (a.followup || a.message) : a.message;
+  return `<article class="drow li-row" id="li-${esc(a.id)}">
+    <div class="dr-top"><div class="dr-who"><b>${esc(a.person || '—')}</b>${a.role ? ` <span class="faint">· ${esc(a.role)}</span>` : ''}${a.company ? ` · <a class="clickable" data-open="company" data-id="${a.company_id}">${esc(a.company)}</a>` : ''}</div>
+      ${pill(sl, sc)}</div>
+    <div class="dr-meta">${esc(dirName(a.director))}${a.relationship ? ` · ${esc(REL_NAME[a.relationship] || sentence(String(a.relationship).replace(/_/g, ' ')))}` : ''} · ${a.linkedin ? `<a href="${esc(a.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn profile</a>` : '<span class="warn-text">no LinkedIn profile on record</span>'}</div>
+    ${a.project ? `<div class="dr-line"><span>Project</span>${esc(plainText(a.project))}</div>` : ''}
+    ${a.why_them ? `<div class="dr-line"><span>Why them</span>${esc(plainText(a.why_them).replace(/^Partnership model \(recorded\):\s*/i, ''))}</div>` : ''}
+    ${a.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(a.why_now))}</div>` : ''}
+    ${a.state === 'REPLIED' || a.reply_text ? `<div class="dr-line li-reply"><span>They replied${a.reply_class ? ` · ${esc(liClass(a.reply_class))}` : ''}</span>${esc(a.reply_text || '')}</div>` : ''}
+    ${a.state === 'REPLIED' && a.response_draft ? `<div class="dr-msg"><span class="faint">Suggested response:</span> ${esc(a.response_draft)}</div>`
+      : text ? `<div class="dr-msg">${esc(text)} <span class="faint small">· ${liWords(text)} words</span></div>` : '<div class="dr-msg warn-text">No message written yet.</div>'}
+    ${a.next_action ? `<div class="dr-line"><span>Next</span>${esc(a.next_action)}</div>` : ''}${conn}
+    <div class="dr-act btn-row">${b.filter(Boolean).join('')}</div>
+  </article>`;
+}
+function liScore(c) {
+  if (!c) return '';
+  const cell = (n, l) => `<div class="dc-c"><b>${n0(n)}</b><span>${l}</span></div>`;
+  const rev = (c.revenue || []).length ? `<div class="dc-c"><b>${esc(c.revenue.map((r) => cash(r.amount, r.currency)).join(' + '))}</b><span>revenue</span></div>` : cell(0, 'revenue');
+  return `<section class="panel mt8"><header><h3>Scorecard</h3><span class="small faint">what actually happened on LinkedIn</span></header><div class="body"><div class="dc-cells">
+    ${cell(c.sent, 'messages sent')}${cell(c.replies, 'replies')}${cell(c.positive, 'positive')}${cell(c.meetings, 'meetings')}${cell(c.introductions, 'introductions')}${cell(c.briefs, 'briefs')}${cell(c.proposals, 'proposals')}${cell(c.wins, 'wins')}${rev}</div>
+    <p class="src">${esc(c.note || '')}</p></div></section>`;
+}
 function viewDesk() {
   const D = state.desk; if (!D) return head('Outreach') + waitFor('desk', 'the outreach desk');
   const c = D.counts; const t = DESK_TABS.some(([k]) => k === state.deskTab) ? state.deskTab : (state.deskTab === 'RESEARCHING' ? 'HELD' : 'NEEDS_REVIEW');
-  const n = { NEEDS_REVIEW: c.needs_review.total, APPROVED: c.approved, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
+  const L = D.linkedin || [];
+  const n = { TOP5: (D.top5 || []).length, NEEDS_REVIEW: c.needs_review.total, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
   const filt = (list, withCh) => {
     let l = list;
     if (state.deskDir) l = l.filter((x) => x.director === state.deskDir);
@@ -3649,7 +3786,16 @@ function viewDesk() {
     <select class="w-auto" data-desk-dir><option value="">All Directors</option>${dirs.map((k) => `<option value="${k}" ${state.deskDir === k ? 'selected' : ''}>${esc(dirName(k))}</option>`).join('')}</select>
     <select class="w-auto" data-desk-proj>${PROJECT_FILTERS.map(([k, l]) => `<option value="${k}" ${state.deskProj === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
   let body = '';
-  if (['NEEDS_REVIEW', 'HELD'].includes(t)) {
+  if (t === 'TOP5') {
+    const top = (D.top5 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
+      return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 1}</span><span class="small">${esc(p.why)}</span></div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
+    const rest = Math.max(0, c.needs_review.total - (D.top5 || []).length);
+    body = `<div class="dlist">${top || '<div class="calm"><div class="calm-t">Nothing strong enough today.</div><div class="t-sub">Fewer is fine: replies, meetings and follow-ups come first.</div></div>'}</div>
+      ${rest ? `<p class="src">${plural(rest, 'more item waits', 'more items wait')} under <button class="linkish" data-desk-tab="NEEDS_REVIEW">Needs review</button>. They are not lost; they are simply not today's best five.</p>` : ''}`;
+  } else if (t === 'LINKEDIN') {
+    body = LI_SECTIONS.map(([st, l]) => { const it = L.filter((a) => a.state === st); return it.length ? `<h3 class="grp">${esc(l)} · ${it.length}</h3><div class="dlist">${it.map(liRow).join('')}</div>` : ''; }).join('')
+      || '<div class="empty">No LinkedIn item yet. Items arrive when email is exhausted for a strong person, or when a relationship is better on LinkedIn.</div>';
+  } else if (['NEEDS_REVIEW', 'HELD'].includes(t)) {
     const pages = Math.max(1, Math.ceil(list.length / DESK_PAGE)); const pg = Math.min(state.deskPage, pages - 1);
     const shown = list.slice(pg * DESK_PAGE, pg * DESK_PAGE + DESK_PAGE);
     const pager = list.length > DESK_PAGE ? `<div class="pager"><span class="small">Showing ${pg * DESK_PAGE + 1}–${pg * DESK_PAGE + shown.length} of ${list.length}</span><span><button class="btn small ghost" data-desk-page="-1" ${pg === 0 ? 'disabled' : ''}>Previous</button><button class="btn small ghost" data-desk-page="1" ${pg >= pages - 1 ? 'disabled' : ''}>Next</button></span></div>` : '';
@@ -3665,11 +3811,13 @@ function viewDesk() {
       <p class="src">Follow-up 1 is due 4 days after the real send; follow-up 2 six days after follow-up 1 is sent; never more than two. A reply, meeting, proposal, decline or do-not-contact cancels them automatically.</p>`;
   else if (t === 'SENT') body = `<div class="dlist">${list.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}</div><div class="t-sub">${esc(CH_LABEL[x.channel] || x.channel)} · ${esc(x.subject || x.summary || '')} · ${esc(fmtDate(x.sent_at))}</div></div></div>`).join('') || '<div class="empty">Nothing sent in the last 60 days.</div>'}</div>`;
   else if (t === 'REPLIED') body = `<div class="dlist">${list.map((x) => `<div class="t-row clickable" ${x.company_id ? `data-open="company" data-id="${x.company_id}"` : ''}><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}${x.classification ? ` · ${esc(REPLY_GROUP[x.classification] || x.classification)}` : ''}</div><div class="t-sub">${esc(x.summary || x.subject || '')} · ${esc(fmtDate(x.received_at))}</div></div></div>`).join('') || '<div class="empty">No replies in the last 60 days.</div>'}</div>`;
-  const intro = { NEEDS_REVIEW: 'Approve re-checks the address and creates one unsent Gmail draft. LinkedIn and Instagram are sent by you, then marked sent. Nothing is ever sent automatically.',
+  const intro = { TOP5: "The five strongest new conversations today, ranked by project potential, relationship warmth, timing, the decision maker, the Egypt opportunity and repeat business. At most two per Director; accounts you put on hold are left out. Nothing is sent automatically.",
+    LINKEDIN: 'Relationship messages, never mass outreach. Copy & open LinkedIn copies the message and opens their profile: you send it yourself, then press Mark sent. When they reply, paste what they wrote with Log reply. HQ never logs in to LinkedIn and never sends.',
+    NEEDS_REVIEW: 'Approve re-checks the address and creates one unsent Gmail draft. LinkedIn and Instagram are sent by you, then marked sent. Nothing is ever sent automatically.',
     HELD: 'Not ready yet: the person, role or a verified route is missing, you held it, or a draft failed the quality check. The agents keep working on these.' }[t];
   return `${head('Outreach', 'Approve communication · email first')}
     <div class="tabs">${DESK_TABS.map(([k, l]) => `<button data-desk-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k])}</span></button>`).join('')}</div>
-    ${filters}${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
+    ${['TOP5', 'LINKEDIN'].includes(t) ? '' : filters}${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
 }
 
 function deskModal(m) {

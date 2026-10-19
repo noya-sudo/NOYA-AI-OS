@@ -6,6 +6,7 @@ import http from 'node:http';
 import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
+import { withMorning } from './morning_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -25,6 +26,7 @@ if (!F.desk.needs_review.some((x) => x.channel === 'EMAIL' && x.approve_via) && 
   F.desk.needs_review.unshift({ ...QA[0], ref: `${QA[0].ref}-t`, bucket: 'NEEDS_REVIEW', reason: null, approve_via: 'EMAIL_CANDIDATE', candidate_id: '00000000-0000-0000-0000-0000000000e1' });
   F.desk.counts.needs_review.EMAIL += 1; F.desk.counts.needs_review.total += 1;
 }
+F.desk = withMorning(F.desk, F.snapshot.opportunities);
 mkdirSync('tests/out/v3', { recursive: true });
 
 const READS = {
@@ -48,7 +50,8 @@ const READS = {
 const WRITES = { hq_approve_draft: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a1' },
   hq_approve_email: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a2' },
   hq_outreach_action: { ok: true }, hq_outreach_edit: { ok: true }, hq_save_draft: { ok: true, version: 2 }, hq_task_action: { ok: true }, hq_task_dismiss: { ok: true },
-  hq_club_person: { ok: true, id: '00000000-0000-0000-0000-0000000000c1' }, hq_redispatch: { ok: true }, hq_record_meeting: { ok: true }, hq_advisor_seen: { ok: true } };
+  hq_club_person: { ok: true, id: '00000000-0000-0000-0000-0000000000c1' }, hq_redispatch: { ok: true }, hq_record_meeting: { ok: true }, hq_advisor_seen: { ok: true },
+  hq_linkedin_action: { ok: true, state: 'SENT', words: 60 }, hq_linkedin_reply: { ok: true, class: 'MEETING_INTENT', response: 'Thank you.', meeting_task: '00000000-0000-0000-0000-0000000000m1' } };
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
@@ -241,8 +244,47 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await page.click('.side [data-tab=desk]');
   await page.waitForSelector('main [data-desk-tab]');
   const dtabs = await tc(page, 'main .tabs button');
-  const want = { 'Needs review': C.needs_review.total, 'Gmail drafts': C.approved, 'Follow-ups': C.followups, Sent: C.sent, Replied: C.replied, 'Researching / held': C.held + C.rejected + C.researching };
-  check('Outreach: tabs Needs review · Gmail drafts · Follow-ups · Sent · Replied · Researching / held, counts from hq_outreach_desk', Object.entries(want).every(([l, n]) => dtabs.includes(`${l} ${n}`)) && dtabs.length === 6, dtabs.join(' | '));
+  const LIA = D.linkedin.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length;
+  const want = { "Today's five": D.top5.length, 'Needs review': C.needs_review.total, LinkedIn: LIA, 'Gmail drafts': C.approved, 'Follow-ups': C.followups, Sent: C.sent, Replied: C.replied, 'Researching / held': C.held + C.rejected + C.researching };
+  check("Outreach: tabs Today's five · Needs review · LinkedIn · Gmail drafts · Follow-ups · Sent · Replied · Researching / held, counts from hq_outreach_desk", Object.entries(want).every(([l, n]) => dtabs.includes(`${l} ${n}`)) && dtabs.length === 8, dtabs.join(' | '));
+  check("Outreach: opens on Today's five (never the whole queue)", (await page.locator('main .tabs button.on').innerText()).startsWith("Today's five") && (await page.locator('main .t5').count()) === D.top5.length && D.top5.length <= 5);
+  const t5why = await tc(page, 'main .t5-h');
+  check("Today's five: each item says why it ranks (project, warmth, decision maker, route)", t5why.length === D.top5.length && t5why.every((w, i) => w.includes(D.top5[i].why)), t5why[0]);
+  // LinkedIn Relationship Agent: Adam keeps the Send; HQ records what he did.
+  await page.click('main [data-desk-tab=LINKEDIN]');
+  const liReady = D.linkedin.find((a) => a.state === 'READY' && a.linkedin && a.connection_note);
+  const liCard = page.locator(`#li-${liReady.id}`); const liTxt = await liCard.innerText();
+  check('LinkedIn: each item shows person, company, role, Director, project, why them, why now, relationship, profile link, message and next action',
+    liTxt.includes(liReady.person) && liTxt.includes(liReady.company) && liTxt.includes(liReady.role) && /Project/i.test(liTxt) && /Why them/i.test(liTxt) && /Why now|Next/i.test(liTxt) && /Not contacted yet/.test(liTxt) && /LinkedIn profile/.test(liTxt) && /words/.test(liTxt) && /Next/i.test(liTxt), liTxt.slice(0, 200));
+  const liPrim = liCard.locator('.dr-act > .btn').first();
+  check('LinkedIn: primary action is Copy & open LinkedIn (copies the message, opens the profile in a new tab)', (await liPrim.innerText()).trim() === 'Copy & open LinkedIn' && (await liPrim.getAttribute('href')) === liReady.linkedin
+    && (await liPrim.getAttribute('data-copy')) === liReady.message && (await liPrim.getAttribute('target')) === '_blank');
+  check('LinkedIn: secondary Edit · Mark sent · Hold; never a Send button', (await liCard.locator('.dr-act > .btn').allTextContents()).map((x) => x.trim()).join('|') === 'Copy & open LinkedIn|Edit|Mark sent|Hold' && !/\bSend\b/.test((await liCard.locator('.btn').allTextContents()).join(' ')));
+  check('LinkedIn: not connected? connection note (≤ 300 characters) with Copy note & open and Connection sent', /\/300/.test(await liCard.locator('.li-conn').innerText()) && (await liCard.locator('.li-conn [data-li-act=CONNECTION_SENT]').count()) === 1);
+  await liCard.locator('.li-conn [data-li-act=CONNECTION_SENT]').click(); await page.waitForTimeout(250);
+  check('Connection liSent: recorded through hq_linkedin_action (nothing liSent from HQ)', last(calls, 'hq_linkedin_action')?.body?.p_action === 'CONNECTION_SENT' && last(calls, 'hq_linkedin_action').body.p_id === liReady.id);
+  const liPend = D.linkedin.find((a) => a.state === 'CONNECTION_SENT');
+  await page.locator(`#li-${liPend.id} [data-li-act=CONNECTED]`).click(); await page.waitForTimeout(250);
+  check('Connected: the follow-up becomes ready', last(calls, 'hq_linkedin_action')?.body?.p_action === 'CONNECTED' && last(calls, 'hq_linkedin_action').body.p_id === liPend.id);
+  const liConn = D.linkedin.find((a) => a.state === 'CONNECTED');
+  check('Connected: Copy follow-up & open LinkedIn carries the follow-up, not the first message', (await page.locator(`#li-${liConn.id} .dr-act a[data-copy]`).getAttribute('data-copy')) === liConn.followup);
+  await liCard.locator('.dr-act [data-modal=li-edit]').click(); await page.fill('#li-text', 'Edited on LinkedIn view.'); await page.click('#m-ok'); await page.waitForTimeout(250);
+  check('Edit: saved through hq_linkedin_action EDIT (40–80 words advised)', last(calls, 'hq_linkedin_action')?.body?.p_action === 'EDIT' && last(calls, 'hq_linkedin_action').body.p_text === 'Edited on LinkedIn view.');
+  await liCard.locator('[data-modal=li-sent]').click();
+  check('Mark sent: only after Adam sent it himself; books one follow-up', /sent it yourself/.test(await page.locator('.modal').innerText()));
+  await page.click('#m-ok'); await page.waitForTimeout(250);
+  const liMs = last(calls, 'hq_linkedin_action')?.body || {};
+  check('Mark liSent: hq_linkedin_action SENT with the follow-up date (the CRM stores the real send time server-side)', liMs.p_action === 'SENT' && liMs.p_id === liReady.id && /^\d{4}-\d\d-\d\d$/.test(liMs.p_date || ''), JSON.stringify(liMs));
+  const liSent = D.linkedin.find((a) => a.state === 'SENT');
+  await page.locator(`#li-${liSent.id} [data-modal=li-reply]`).click();
+  await page.fill('#li-text', 'Happy to chat, could you send a couple of times next week?'); await page.click('#m-ok'); await page.waitForTimeout(250);
+  const liRp = last(calls, 'hq_linkedin_reply')?.body || {};
+  check('Log reply: Adam pastes the reply; classified server-side (or by his choice), nothing assumed from a notification', liRp.p_id === liSent.id && /couple of times/.test(liRp.p_text) && liRp.p_class === null, JSON.stringify(liRp));
+  check('Log reply: a meeting intent says Meeting Assist proposes two times from the calendar', /Meeting Assist proposes two times/.test(await page.locator('main .banner').first().innerText()));
+  const liRep = D.linkedin.find((a) => a.state === 'REPLIED');
+  check('Replied: their words, the class, and Copy response & open LinkedIn', (await page.locator(`#li-${liRep.id}`).innerText()).includes(liRep.reply_text) && (await page.locator(`#li-${liRep.id} a[data-copy]`).getAttribute('data-copy')) === liRep.response_draft);
+  await shot(page, 'outreach-linkedin-1440');
+  await page.click('main [data-desk-tab=NEEDS_REVIEW]');
   check('Outreach: Email is the default channel', (await page.locator('main [data-desk-ch=EMAIL]').getAttribute('class')).includes('on'));
   const projOpts = await tc(page, 'main select[data-desk-proj] option');
   check('Outreach: filters by Director, channel and project type (Brand shoot, Wedding, Travel partner, NOYA Private, Media / podcast, Hospitality partnership)',
@@ -363,8 +405,9 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   down.delete('directors');
   await page.click('main [data-retry=directors]');
   await page.waitForSelector('.dcard');
-  check('Slow database · Agents: Retry loads the workforce once the database answers', (await page.locator('.dcard').count()) === DIR.members.length);
-  await page.click('.side [data-tab=desk]'); await page.waitForSelector('main [data-desk-ch=LINKEDIN]');
+  // Workforce cards only: the Studio team (19 Oct) renders its own role cards on the same page.
+  check('Slow database · Agents: Retry loads the workforce once the database answers', (await page.locator('.dcard[data-director]').count()) === DIR.members.length);
+  await page.click('.side [data-tab=desk]'); await page.click('main [data-desk-tab=NEEDS_REVIEW]'); await page.waitForSelector('main [data-desk-ch=LINKEDIN]');
   await page.click('main [data-desk-ch=LINKEDIN]');
   const liRow = D.needs_review.find((x) => x.channel === 'LINKEDIN' && x.task_id);
   await page.locator(`#desk-${liRow.ref} [data-desk-modal=hold]`).click();

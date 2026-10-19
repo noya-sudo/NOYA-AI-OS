@@ -521,6 +521,21 @@ a.clickable:hover { text-decoration: underline; }
 .act-next { font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
 .act-meta { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
 .act-cta { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.ngrp { margin-top: 14px; }
+.ngrp:first-of-type { margin-top: 4px; }
+.ngrp-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.ngrp-h h3 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.ngrp-h h3 .n { color: var(--navy); margin-left: 4px; }
+.ngrp-none { font-size: 12.5px; color: var(--faint); padding: 9px 0 2px; }
+.ngrp-sub { font-size: 11px; color: var(--faint); padding: 10px 0 0; }
+/* Outreach: today's five, LinkedIn agent */
+.t5 { display: grid; gap: 4px; }
+.t5-h { display: flex; gap: 8px; align-items: baseline; color: var(--muted); }
+.t5-n { font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+.li-row .dr-msg { white-space: pre-wrap; }
+.li-row .li-reply { -webkit-line-clamp: 6; }
+.li-conn { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; -webkit-line-clamp: unset; overflow: visible; }
+label.radio { display: flex; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 
 /* HQ Advisor */
 .dsec.advisor { background: var(--panel); border: 0; border-left: 3px solid var(--navy); border-radius: 0 var(--radius) var(--radius) 0; padding: 14px 18px; }

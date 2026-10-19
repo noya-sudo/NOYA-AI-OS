@@ -6,6 +6,7 @@ import http from 'node:http';
 import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
+import { withMorning } from './morning_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -14,6 +15,7 @@ const need = ['snapshot', 'overview', 'directory', 'insight', 'relationships', '
 if (need.some((f) => !fx(f))) { console.log(`SKIP ui_command: live fixtures missing (${need.filter((f) => !fx(f)).join(', ')})`); process.exit(0); }
 const F = Object.fromEntries(need.map((f) => [f, fx(f)]));
 F.execution = fx('execution');
+F.desk = withMorning(F.desk, F.snapshot.opportunities);
 // 19 Oct capture of the Director cards and the email-ready reserve (Directors in priority order); the 16 Oct captures stay for the other suites
 const AL = fx('agents_live');
 if (AL) { F.directors = AL.directors; F.execution = { ...F.execution, queue: { ...(F.execution?.queue || {}), acquisition: AL.acquisition } }; }
@@ -40,7 +42,9 @@ const READS = {
 };
 const WRITES = { hq_work_order: { ok: true, id: '00000000-0000-0000-0000-0000000000w1' }, hq_work_order_action: { ok: true }, hq_opportunity_plan: { ok: true },
   hq_recommendation_action: { ok: true, state: 'APPLIED' }, hq_advisor_seen: { ok: true },
-  hq_studio_request: { ok: true, id: '00000000-0000-0000-0000-0000000000s1', level: 2 }, hq_studio_request_action: { ok: true } };
+  hq_studio_request: { ok: true, id: '00000000-0000-0000-0000-0000000000s1', level: 2 }, hq_studio_request_action: { ok: true },
+  hq_linkedin_action: { ok: true, state: 'SENT', words: 60 }, hq_linkedin_reply: { ok: true, class: 'QUESTION', response: 'Thank you.', meeting_task: null },
+  hq_meeting_confirm: { ok: true, meeting_task: '00000000-0000-0000-0000-0000000000m2', briefing: {} } };
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
@@ -112,6 +116,31 @@ const C = F.command;
   check('Pipeline: every live opportunity listed with owner, next action, date and blocker', rows === C.opportunities.length && /CRUSH Agency/.test(await txt(page, '#pipeline tbody')), `${rows} rows`);
   check('Pipeline: an overdue next action is shown in red (The Arts Club, 30 Sep)', await page.locator('#pipeline tbody tr:has-text("The Arts Club") td.bad-text').count() === 1);
   await page.screenshot({ path: 'tests/out/command/dashboard-1440.png', fullPage: true });
+  // 3b. The morning (Adam, 19 Oct): five lists, in order; the five best new outreach items, never the whole queue.
+  const groups = (await page.locator('#needs .ngrp-h h3').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim());
+  const want5 = ['Replies to answer', 'Meetings to schedule', 'Follow-ups due', 'Top 5 new outreach to approve', 'Studio documents ready'];
+  check('Morning: five lists in order (replies, meetings, follow-ups, top 5 new outreach, Studio documents)', JSON.stringify(groups.filter((g) => g !== 'Clients and proposals')) === JSON.stringify(want5), groups.join(' | '));
+  const topRows = await page.locator('#needs [data-need="outreach"] .act', { hasText: /\d of \d · / }).count();
+  check('Morning: new outreach shows the ranked five from hq_outreach_desk, not the whole queue', topRows === F.desk.top5.length && topRows <= 5 && F.desk.needs_review.length > 5, `${topRows} of ${F.desk.needs_review.length} waiting`);
+  check('Morning: "N waiting in Outreach" links to the rest', /waiting in Outreach/.test(await txt(page, '#needs [data-need="outreach"] .ngrp-h')));
+  const liTop = F.desk.linkedin.find((a) => a.state === 'READY' && F.desk.top5.some((t) => F.desk.needs_review.find((x) => x.ref === t.ref)?.task_id === a.task_id));
+  if (liTop) {
+    const lnk = page.locator(`#needs [data-need="outreach"] a[data-copy][href="${liTop.linkedin}"]`).first();
+    check('Morning: a LinkedIn item has Copy & open LinkedIn (copies the message, opens the profile; Adam sends)', (await lnk.count()) === 1 && (await lnk.getAttribute('data-copy')) === liTop.message && (await lnk.getAttribute('target')) === '_blank');
+  }
+  const liRep = F.desk.linkedin.find((a) => a.state === 'REPLIED');
+  check('Morning: a LinkedIn reply is under Replies to answer with the suggested response to copy', (await page.locator(`#needs [data-need="replies"] [data-copy="${liRep.response_draft}"]`).count()) === 1);
+  const ma = F.desk.meeting_assist[0];
+  check('Morning: Meeting Assist under Meetings to schedule, with the two times from the calendar', /Offered Thu 22 Oct.* or Fri 23 Oct.*\(UK\)/.test(await txt(page, `#needs [data-need="meetings"] .act:has([data-id="${ma.task_id}"])`)));
+  check('Morning: Studio documents ready, one tap to the Studio', (await page.locator('#needs [data-need="studio"] .act').count()) === F.desk.studio_ready.length);
+  await page.locator(`#needs [data-modal="meet-confirm"][data-id="${ma.task_id}"]`).click();
+  check('Confirm meeting: the times offered are listed, the first preselected', (await page.locator('.modal input[name="mc-slot"]').count()) === 3 && await page.locator('.modal input[name="mc-slot"]').first().isChecked());
+  await page.locator('.modal input[name="mc-slot"]').nth(1).check(); await page.selectOption('#mc-min', '30'); await page.click('#m-ok'); await page.waitForTimeout(250);
+  const mc = last(calls, 'hq_meeting_confirm')?.body || {};
+  check('Confirm meeting: one call with the picked time; the meeting, briefing and links are recorded server-side', mc.p_task === ma.task_id && mc.p_start === ma.slots[1].start && mc.p_minutes === 30, JSON.stringify(mc));
+  await page.locator(`#needs [data-modal="meet-confirm"][data-id="${ma.task_id}"]`).click();
+  await page.locator('.modal input[name="mc-slot"]').last().check(); await page.fill('#mc-date', '2026-10-28'); await page.fill('#mc-time', '16:30'); await page.click('#m-ok'); await page.waitForTimeout(250);
+  check('Confirm meeting: another time is sent as UK time', last(calls, 'hq_meeting_confirm')?.body?.p_start === '2026-10-28 16:30 Europe/London', last(calls, 'hq_meeting_confirm')?.body?.p_start);
   // 4. Plan an opportunity: owner, next action, date, blocker.
   await page.locator('#pipeline tbody tr:has-text("CRUSH Agency") [data-modal="opp-plan"]').click();
   await page.fill('#op-next', 'Send the concept, then book the call'); await page.fill('#op-blocker', 'Waiting for their production dates');

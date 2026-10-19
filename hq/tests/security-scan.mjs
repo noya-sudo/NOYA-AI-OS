@@ -38,7 +38,9 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   // CEO effectiveness pass (16 Oct): admin-gated, read-only Dashboard and network read models
   'hq_ceo_dashboard', 'hq_network',
   // Production fix (17 Oct): admin-gated snapshot read and the Admin diagnostics read
-  'hq_cached', 'hq_cache_status'];
+  'hq_cached', 'hq_cache_status',
+  // LinkedIn Relationship Agent and Meeting Assist (19 Oct): admin-gated, audited records of what Adam did himself; nothing is sent
+  'hq_linkedin_action', 'hq_linkedin_reply', 'hq_meeting_confirm'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));
