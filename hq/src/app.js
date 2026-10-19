@@ -2025,8 +2025,7 @@ function renderAnyModal(m) {
       return form(`${title} — ${esc(x.person || '')}`, `<p class="small muted">${esc(hint)}</p>${area('Text', 'li-text', cur || '', k === 'NOTE' ? 'maxlength="300"' : 'maxlength="1500"')}`, 'Save');
     }
     case 'li-sent': { const x = liItem(m.id) || {};
-      return form(`Mark sent — ${esc(x.person || '')}`, `<p class="small muted">Only after you sent it yourself on LinkedIn. HQ records the send (it counts as a real message) and books one follow-up.</p>
-        ${fld('Follow up on', 'li-date', 'date', isoPlus(5), `min="${isoPlus(1)}" max="${isoPlus(60)}"`)}`, 'Mark sent'); }
+      return form(`Mark sent — ${esc(x.person || '')}`, `<p class="small muted">Only after you sent it yourself on LinkedIn. HQ records the send (it counts as a real message) and books follow-up 1 four days later, the standard rule. A reply cancels it.</p>`, 'Mark sent'); }
     case 'li-hold': { const x = liItem(m.id) || {};
       return form(`Hold — ${esc(x.person || '')}`, `${fld('Why', 'li-reason', 'text', '', 'maxlength="200" placeholder="e.g. wait for a warm introduction"')}${fld('Review on', 'li-date', 'date', isoPlus(7), `min="${isoPlus(1)}"`)}`, 'Hold'); }
     case 'li-reply': { const x = liItem(m.id) || {};
@@ -2270,7 +2269,7 @@ async function submitModal() {
       const r = await done('hq_linkedin_action', { p_id: m.id, p_action: { MESSAGE: 'EDIT', NOTE: 'EDIT_NOTE', FOLLOWUP: 'EDIT_FOLLOWUP' }[m.type || 'MESSAGE'], p_text: tx, p_date: null }, 'Saved.');
       if (r?.ok && r.warning) { state.notice = { err: false, text: `Saved. ${r.warning} This one is ${r.words} words.` }; render(); }
       return r; }
-    case 'li-sent': return done('hq_linkedin_action', { p_id: m.id, p_action: 'SENT', p_text: null, p_date: val('li-date') }, 'Recorded as sent by you. One follow-up is booked; a reply cancels it.');
+    case 'li-sent': return done('hq_linkedin_action', { p_id: m.id, p_action: 'SENT', p_text: null, p_date: null }, 'Recorded as sent by you. Follow-up 1 is booked four days from now; a reply cancels it.');
     case 'li-hold': return done('hq_linkedin_action', { p_id: m.id, p_action: 'HOLD', p_text: val('li-reason'), p_date: val('li-date') }, 'Held.');
     case 'li-reply': { const tx = val('li-text'); if (!need(tx, 'Paste their reply first.')) return;
       const r = await done('hq_linkedin_reply', { p_id: m.id, p_text: tx, p_class: val('li-class') }, 'Reply logged.');

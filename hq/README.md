@@ -21,6 +21,10 @@ A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **
 | `hq_studio()` | Studio page and the Studio team under Agents: six columns (Needs brief, Drafting, Needs review, Approved, Sent, Superseded), the eight Studio roles, the Brief & Proposal Architect's work, the three levels and the nine create actions |
 | `hq_studio_request(kind, company, opportunity, note)` / `hq_studio_request_action(id, CANCEL)` | Ask the Studio for an idea, one-page concept, brief, proposal, itinerary or a retreat / wedding / brand campaign / media concept. Queued for the Studio; nothing is sent |
 | `hq_cached('command')` → `destination_egypt` | Dashboard Destination Egypt panel: mission funnel, top opportunities, research by programme (`destination_egypt_mission()`) |
+| `hq_outreach_desk()` → `top5`, `linkedin`, `meeting_assist`, `studio_ready` | The Dashboard's five morning lists and Outreach → Today's five / LinkedIn (same read, no extra call) |
+| `hq_linkedin_action(id, action, text, date)` | LinkedIn agent: EDIT, EDIT_NOTE, EDIT_FOLLOWUP, CONNECTION_SENT, CONNECTED, SENT, HOLD, RELEASE, CLOSE. Records what Adam did; never sends |
+| `hq_linkedin_reply(id, text, class)` | Log a LinkedIn reply Adam pasted: classified (or his class), logged, follow-ups cancelled, response suggested, Meeting Assist on a meeting intent |
+| `hq_meeting_confirm(task, start, minutes, where)` | Confirm meeting: the meeting record, briefing, relationship note and opportunity update; the calendar entry is added without guests |
 
 Each function:
 - checks that the signed-in user is in `hq_admins`, matching both the user id and the email;

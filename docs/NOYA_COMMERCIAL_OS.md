@@ -1630,3 +1630,51 @@ first project moving toward proposal as the objective. No new table, page or age
 
 Research note: the Firecrawl account used for interactive research ran out of credits on 19 Oct (no upgrade made). The production
 departments are search-first and made no Firecrawl calls that day, so discovery is unaffected.
+
+## LinkedIn Relationship Agent, Meeting Assist and the morning list (19 Oct 2026)
+
+Adam, 19 Oct: "LinkedIn becomes a high-value relationship and meeting channel, not a mass automation channel." No new system:
+one work-queue table linked to contacts, companies, opportunities, tasks and outreach candidates; every send and reply goes through
+`hq_log_touch`, so it counts in the one commercial model (`commercial_messages` / `commercial_facts`); meetings reuse the
+`MEETING_ACTION` tasks and the "MEETING --" record the funnel already counts.
+
+**Safety, by construction.** HQ never sends a LinkedIn message or connection request, never logs in to LinkedIn, never stores a
+LinkedIn password, cookie or session token, and never scrapes. "Copy & open LinkedIn" copies the text and opens the person's profile;
+Adam presses Send himself and then Mark sent. A LinkedIn notification email is only listed as "LINKEDIN REPLY — REVIEW": what they
+wrote is never assumed; Adam pastes the reply. Calendar entries for confirmed meetings go into the NOYA calendar with no guests and
+no notifications; Adam adds the guest himself.
+
+| Piece | Where |
+|---|---|
+| Work queue: one row per person and opportunity (READY → CONNECTION_SENT → CONNECTED → SENT → REPLIED → MEETING, or HELD / CLOSED); message (40-80 words), connection note (300 characters or fewer), follow-up after acceptance, why them, why now, project | `linkedin_actions` (migration `20261019100000_linkedin_relationship_agent.sql`) |
+| Sync from the desk every 30 minutes; decisions taken on Needs review (sent by hand, held, rejected) are mirrored | `linkedin_sync()`, cron `linkedin-sync` (`20261019110000_linkedin_sync_reconcile.sql`) |
+| Adam's actions: Edit, connection note, follow-up, Connection sent, Connected, Mark sent (follow-up 1 four days later, the standard rule), Hold, Release, Close | `hq_linkedin_action(id, action, text, date)` (`20261019130000_linkedin_sent_followup_date.sql`) |
+| Reply log: classified POSITIVE, QUESTION, INFO REQUEST, MEETING INTENT, INTRODUCTION, NOT NOW, SOFT NO or DECLINED (Adam can correct it), logged on the funnel, follow-ups cancelled, a response suggested, opportunity moved, Meeting Assist opened on a meeting intent | `hq_linkedin_reply(id, text, class)`, `linkedin_classify`, `linkedin_response` |
+| Meeting Assist: two real free times from the NOYA calendar (checked by the daily check), the reply with those times, Confirm meeting with the time they picked, briefing (who, why they matter, history, pitch, Destination Egypt opportunity, questions, desired outcome), relationship note, opportunity and LinkedIn item updated | `meeting_assist_open`, `meeting_assist_set_slots` (`20261019120000_meeting_assist_slots_result.sql`), `meeting_briefing`, `hq_meeting_confirm` |
+| The morning: five lists on the Dashboard (replies to answer, meetings to schedule, follow-ups due, Top 5 new outreach, Studio documents ready); the Top 5 is ranked by project potential, relationship warmth, timing, decision-maker quality, Egypt strength and repeat business, at most two per Director, sprint HOLD accounts and quality-flagged drafts left out, email before LinkedIn | `outreach_top5()`, `hq_outreach_desk()` → `top5`, `linkedin`, `meeting_assist`, `studio_ready` |
+| Outreach opens on Today's five; the LinkedIn tab lists the queue by state with Copy & open LinkedIn, Edit, Mark sent, Hold, the connection flow and Log reply; Needs review uses the agent's message for LinkedIn items | `hq/src/app.js` |
+| Agents: the LinkedIn Relationship Agent under shared specialists, with today's numbers and a scorecard on what actually happened (messages sent, replies, positive, meetings, introductions, briefs, proposals, wins, revenue; never drafts, profiles found or copies) | `linkedin_agent_detail()`, `linkedin_scorecard()`, `support_detail('LINKEDIN')`, `directors_snapshot()` |
+
+**Fixes found on the way.** `outreach_desk()` kept drafts to official published inboxes under Researching, so they never reached
+Adam; corrected (`20261019090000_desk_official_inbox_review.sql`): 28 items reached Needs review. Two LinkedIn items carried the
+whole internal sales dossier (including the "never send to prospect" section) as the message; all eleven LinkedIn messages were
+rewritten to 40-80 words with a connection note and a follow-up, through the audited edit (originals kept).
+
+**Contact intelligence.** Clay was not connected on 19 Oct. The ten-account test (two private member networks, a travel network, a
+podcast producer, two wedding planners, two brands, a creator agency and a player-care agency) ran on the CRM plus public research:
+people were confirmed or left unconfirmed with their source in the contact record; no LinkedIn URL or address was guessed. Public
+search rarely shows LinkedIn profile URLs, which is the gap Clay would close. If Clay is connected it works inside `contacts`
+(strongest one or two people per company, source, confidence, last checked; never employee lists), and Hunter is used only after
+the right person is known.
+
+**Warm network.** `linkedin_connections` is empty. Importing Adam's LinkedIn Connections export (HQ → LinkedIn → Import) lets the
+daily check match it against the top 20 and the open opportunities.
+
+**End-to-end proof (19 Oct, rolled back).** A real READY item went through Mark sent (interaction logged, opportunity CONTACTED,
+follow-up booked), a pasted reply (classified as a meeting intent, follow-ups cancelled, counted as positive, opportunity
+CALL_REQUIRED, Meeting Assist opened), two calendar-checked times, and Confirm meeting (meeting record, briefing, relationship note,
+LinkedIn item MEETING, counted as a meeting); everything was rolled back. A calendar entry with no guests was created in the NOYA
+calendar and removed. Nothing was sent.
+
+Supabase connection note: requests whose SQL resembles injection (a literal ending in a quote and semicolon combined with a run of
+positional nulls) were silently dropped on 19 Oct; the agent's functions use named arguments for `hq_log_touch`.

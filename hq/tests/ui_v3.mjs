@@ -262,7 +262,7 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   check('LinkedIn: secondary Edit · Mark sent · Hold; never a Send button', (await liCard.locator('.dr-act > .btn').allTextContents()).map((x) => x.trim()).join('|') === 'Copy & open LinkedIn|Edit|Mark sent|Hold' && !/\bSend\b/.test((await liCard.locator('.btn').allTextContents()).join(' ')));
   check('LinkedIn: not connected? connection note (≤ 300 characters) with Copy note & open and Connection sent', /\/300/.test(await liCard.locator('.li-conn').innerText()) && (await liCard.locator('.li-conn [data-li-act=CONNECTION_SENT]').count()) === 1);
   await liCard.locator('.li-conn [data-li-act=CONNECTION_SENT]').click(); await page.waitForTimeout(250);
-  check('Connection liSent: recorded through hq_linkedin_action (nothing liSent from HQ)', last(calls, 'hq_linkedin_action')?.body?.p_action === 'CONNECTION_SENT' && last(calls, 'hq_linkedin_action').body.p_id === liReady.id);
+  check('Connection sent: recorded through hq_linkedin_action (nothing sent from HQ)', last(calls, 'hq_linkedin_action')?.body?.p_action === 'CONNECTION_SENT' && last(calls, 'hq_linkedin_action').body.p_id === liReady.id);
   const liPend = D.linkedin.find((a) => a.state === 'CONNECTION_SENT');
   await page.locator(`#li-${liPend.id} [data-li-act=CONNECTED]`).click(); await page.waitForTimeout(250);
   check('Connected: the follow-up becomes ready', last(calls, 'hq_linkedin_action')?.body?.p_action === 'CONNECTED' && last(calls, 'hq_linkedin_action').body.p_id === liPend.id);
@@ -271,10 +271,10 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await liCard.locator('.dr-act [data-modal=li-edit]').click(); await page.fill('#li-text', 'Edited on LinkedIn view.'); await page.click('#m-ok'); await page.waitForTimeout(250);
   check('Edit: saved through hq_linkedin_action EDIT (40–80 words advised)', last(calls, 'hq_linkedin_action')?.body?.p_action === 'EDIT' && last(calls, 'hq_linkedin_action').body.p_text === 'Edited on LinkedIn view.');
   await liCard.locator('[data-modal=li-sent]').click();
-  check('Mark sent: only after Adam sent it himself; books one follow-up', /sent it yourself/.test(await page.locator('.modal').innerText()));
+  check('Mark sent: only after Adam sent it himself; follow-up 1 four days later', /sent it yourself/.test(await page.locator('.modal').innerText()));
   await page.click('#m-ok'); await page.waitForTimeout(250);
   const liMs = last(calls, 'hq_linkedin_action')?.body || {};
-  check('Mark liSent: hq_linkedin_action SENT with the follow-up date (the CRM stores the real send time server-side)', liMs.p_action === 'SENT' && liMs.p_id === liReady.id && /^\d{4}-\d\d-\d\d$/.test(liMs.p_date || ''), JSON.stringify(liMs));
+  check('Mark sent: hq_linkedin_action SENT (the CRM stores the real send time; follow-up 1 is booked four days later server-side)', liMs.p_action === 'SENT' && liMs.p_id === liReady.id && liMs.p_date === null, JSON.stringify(liMs));
   const liSent = D.linkedin.find((a) => a.state === 'SENT');
   await page.locator(`#li-${liSent.id} [data-modal=li-reply]`).click();
   await page.fill('#li-text', 'Happy to chat, could you send a couple of times next week?'); await page.click('#m-ok'); await page.waitForTimeout(250);
