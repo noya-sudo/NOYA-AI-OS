@@ -1584,7 +1584,7 @@ The mission is a programme of work orders across the existing Directors.
 |---|---|
 | Programme definition (buckets, project types, score weights, hosting rule, capacity) | `system_config.destination_egypt` |
 | Seven work orders, one per bucket: Brands 20, Weddings 20, Private clubs 15, Travel 15, Media 15, NOYA Private 10, Corporate 5 (research targets, not outreach quotas; deadline 18 Nov) | `tasks` (WORK_ORDER, `spec.programme = DESTINATION_EGYPT`) |
-| Egypt opportunity record: bucket, category, role (project generator / partner-supplier / amplifier / talent), what they do, audience, evidence with URLs, why Egypt, project type, proposed project, Egypt format, Studio level, six 0-5 scores, and (from 20 Oct) the six answers Adam asks for on every account: `proposed_project` (what they could realistically bring to Egypt), `why_now`, `decision_maker`, `reach`, `noya_executes`, `next_commercial_action`. Never a deal value | `opportunities.mission`, `opportunities.egypt` (checked by a constraint) |
+| Egypt opportunity record: bucket, category, role (project generator / partner-supplier / amplifier / talent), what they do, audience, evidence with URLs, why Egypt, project type, proposed project, Egypt format, Studio level, six 0-5 scores, and (from 19 Oct, batch 2) the six answers Adam asks for on every account: `proposed_project` (what they could realistically bring to Egypt), `why_now`, `decision_maker`, `reach`, `noya_executes`, `next_commercial_action`. Never a deal value | `opportunities.mission`, `opportunities.egypt` (checked by a constraint) |
 | Score: project generation and network leverage weigh most, then repeat potential and Egypt relevance, then destination evidence, warmth, contactability and a Studio-ready idea. Followers are never an input | `destination_egypt_score()` |
 | Dashboard panel: qualified, email-ready, contacted, replied, meetings, briefs, proposals, won, revenue (canonical model, companies counted once), top opportunities, research by programme | `destination_egypt_mission()` in `hq_command` |
 | Weekly CEO intelligence: replies by project type, Director, market and Studio level; Directors producing meetings; concepts with interest; where conversion stops; who gets more resources; what to stop (rates only after 5 contacted per Director, 8 per project type) | `destination_egypt_learning()` in `hq_weekly_review` |
@@ -1606,7 +1606,7 @@ person where one is confirmed (otherwise the next action is to confirm them befo
 its honest state, a Studio level and a next action. Seeds that could not be verified from public sources (one agency name) and a
 brand that has publicly pulled back from influencer trips were not loaded; they are listed in the acceptance report.
 
-**Batch 2 (20 Oct): repeat project generators.** Adam: quality and project potential before filling the number, biased toward
+**Batch 2 (19 Oct): repeat project generators.** Adam: quality and project potential before filling the number, biased toward
 businesses that can bring projects into Egypt more than once (marketing, PR and experiential agencies, destination wedding planners,
 brand production agencies, private clubs and member networks, luxury travel networks, major podcasts and media producers, beauty,
 fashion and jewellery brands that run international trips and shoots, corporate retreat and event companies). Fourteen new accounts
@@ -1614,6 +1614,19 @@ and three existing ones were researched to the six answers; Adam's three seed id
 Egypt-based agency as a partner rather than a buyer, a club that runs member trips, and a social club parked until it runs trips).
 A luxury agency network where an Egyptian DMC is already a preferred supplier was not loaded; NOYA reaches its agencies one by one.
 The programme stood at 42 researched accounts, 34 qualified.
+
+**Conversion sprint (20 to 28 Oct, review 29 Oct).** Adam, 19 Oct: "The research foundation is now strong enough. Do not
+expand the account universe aggressively for the next 7 working days." The work moves to QUALIFIED ACCOUNT → CORRECT PERSON →
+EMAIL → REPLY → MEETING → BRIEF, with 10-15 serious Destination Egypt conversations from the strongest existing accounts and the
+first project moving toward proposal as the objective. No new table, page or agent:
+
+| Piece | Where |
+|---|---|
+| Sprint definition (dates, 10-15 target, path, lane priorities, light research, about 5 excellent new emails a day, fewer when there are not five strong targets) | `system_config.destination_egypt.sprint` |
+| Dashboard panel, conversion first: Contacted, Replied, Positive, Meetings, Briefs, Proposals, Won, Revenue; the sprint line (working day, conversations against 10-15, new since the start); qualified, email-ready and research by programme on a secondary line | `destination_egypt_mission()` (migration `20261019080000_destination_egypt_sprint.sql`), `dashMission()` |
+| Ranked top 20: Destination Egypt buyers only (partners, amplifiers and accounts on hold left out), ranked by project generation, network leverage, repeat potential, Egypt relevance, evidence, warmth, contactability and a Studio-ready idea; never fame or followers | `destination_egypt_mission()->'top'` |
+| Sprint flags on the Egypt record: `sprint` = HOLD (no outreach capacity: Surf Office, Get2Gether, Mason Rose), WARM_FIRST (YPO, TIGER 21: warm introduction first, otherwise one targeted approach), PARTNER (Camouflé, `partner_class` EGYPT_SIDE_PARTNER: referrals and local execution, not a buyer); `risk` and the opportunity blocker for reputational or credibility checks; `concept` for a media production concept (Goalhanger's Empire in Egypt) | `opportunities.egypt` |
+| Daily sprint list for Adam (warm replies and scheduling, follow-ups as unsent Gmail replies in the thread, then up to five first emails), the 27 Oct Hunter test spending its first credits on the top 20's confirmed decision makers, and a one-off review on 29 Oct (contacted, replies, positive, meetings, concepts, briefs, project types, verticals, markets, where to put more attention, what to stop) | scheduled tasks |
 
 Research note: the Firecrawl account used for interactive research ran out of credits on 19 Oct (no upgrade made). The production
 departments are search-first and made no Firecrawl calls that day, so discovery is unaffected.

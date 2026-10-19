@@ -3796,10 +3796,16 @@ function dashMission() {
   const rev = cashOf(f.revenue) || '£0';
   const top = (M.top || []).slice(0, state.missionAll ? 10 : 5);
   const research = (M.buckets || []).map((b) => `<span class="wk-d"><b>${esc(b.label)}</b> ${n0(b.researched)} of ${n0(b.target)}</span>`).join('');
-  return `<section class="dsec mission" id="mission"><header><h2>Destination Egypt</h2><span class="faint small">Project generation · review ${esc(shortDay(M.review_by))}</span></header>
+  // Conversion sprint (Adam, 19 Oct): conversion first, research secondary.
+  const S = M.sprint;
+  const sprint = S ? `<p class="small mt6 sprint-line"><b>${esc(S.name || 'Conversion sprint')}</b> · ${esc(shortDay(S.started_at))} to ${esc(shortDay(S.ends_at))} ·
+      ${Number(S.day) ? `working day ${n0(S.day)} of ${n0(S.working_days)}` : 'starts ' + esc(shortDay(S.started_at))} ·
+      <b>${n0(S.conversations)}</b> conversations of ${n0(S.target_min)}–${n0(S.target_max)} (${n0(S.new_conversations)} new) · ${n0(S.contacted)} contacted, ${n0(S.positive)} positive, ${n0(S.meetings)} meetings since the start</p>` : '';
+  return `<section class="dsec mission" id="mission"><header><h2>Destination Egypt</h2><span class="faint small">Project generation · review ${esc(shortDay(S?.review_at || M.review_by))}</span></header>
     <p class="small muted mt0">${esc(M.question || '')}</p>
-    <div class="wk-tiles">${tl(n0(f.qualified), 'Qualified project opportunities')}${tl(n0(f.email_ready), 'Email-ready')}${tl(n0(f.contacted), 'Contacted')}${tl(n0(f.replied), 'Replied')}
+    <div class="wk-tiles">${tl(n0(f.contacted), 'Contacted')}${tl(n0(f.replied), 'Replied')}${tl(n0(f.positive), 'Positive')}
       ${tl(n0(f.meetings), 'Meetings')}${tl(n0(f.briefs), 'Briefs')}${tl(n0(f.proposals), 'Proposals')}${tl(n0(f.won), 'Projects won')}${tl(esc(rev), 'Revenue')}</div>
+    ${sprint}
     ${top.length ? `<div class="tbl-wrap mt8"><table class="stack mtop"><thead><tr><th>Company</th><th>Proposed project</th><th>Director</th><th>Studio</th><th>Email</th><th>Stage</th><th>Next action</th></tr></thead><tbody>
       ${top.map((o) => `<tr><td><a class="clickable" data-open="company" data-id="${o.company_id}">${esc(o.company)}</a>${o.country ? `<div class="faint small">${esc(o.country)}</div>` : ''}</td>
         <td data-l="Project" class="small"><b>${esc(ptype(o.project_type))}</b>${o.project ? `<div class="faint">${esc(plainText(o.project))}</div>` : ''}</td>
@@ -3808,7 +3814,7 @@ function dashMission() {
         <td data-l="Next action" class="small">${o.next_action ? esc(plainText(o.next_action)) : '<span class="faint">—</span>'}${o.blocker ? `<div class="warn-text">${esc(o.blocker)}</div>` : ''}</td></tr>`).join('')}</tbody></table></div>
       ${(M.top || []).length > 5 ? `<button class="linkish" data-mission-all>${state.missionAll ? 'Show the top 5' : `Show the top ${(M.top || []).length}`}</button>` : ''}`
       : '<p class="small faint mt8">No mission opportunity recorded yet. The Directors are researching the first accounts.</p>'}
-    <div class="small mt6"><span class="faint">Research by programme:</span> ${research}</div>
+    <div class="small mt6 faint">Pipeline: ${n0(f.qualified)} qualified · ${n0(f.email_ready)} email-ready · Research by programme: ${research}</div>
     <p class="src">${esc(M.method || '')}</p></section>`;
 }
 function weeklyMission(L) {

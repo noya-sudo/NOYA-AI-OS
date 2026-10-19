@@ -187,10 +187,12 @@ const C = F.command;
   check('Navigation: Studio is primary, between Outreach and Relationships', JSON.stringify(nav) === JSON.stringify(['Dashboard', 'Agents', 'Outreach', 'Studio', 'Relationships', 'Club', 'Operations']), nav.join(' | '));
   await page.waitForSelector('#mission');
   const tiles = (await page.locator('#mission .wk-t .l').allTextContents()).map((t) => t.trim());
-  check('Mission panel: the nine numbers Adam asked for, in order', JSON.stringify(tiles) === JSON.stringify(['Qualified project opportunities', 'Email-ready', 'Contacted', 'Replied', 'Meetings', 'Briefs', 'Proposals', 'Projects won', 'Revenue']), tiles.join(' | '));
+  check('Mission panel: conversion first (sprint, Adam 19 Oct): contacted, replied, positive, meetings, briefs, proposals, won, revenue', JSON.stringify(tiles) === JSON.stringify(['Contacted', 'Replied', 'Positive', 'Meetings', 'Briefs', 'Proposals', 'Projects won', 'Revenue']), tiles.join(' | '));
   const nums = (await page.locator('#mission .wk-t .n').allTextContents()).map((t) => t.trim());
-  check('Mission panel: numbers come from the mission record (23 qualified, 14 email-ready, 9 contacted, 3 replied, £0 revenue)', JSON.stringify(nums) === JSON.stringify(['23', '14', '9', '3', '0', '0', '0', '0', '£0']), nums.join(' | '));
+  check('Mission panel: numbers come from the mission record (9 contacted, 3 replied, 2 positive, £0 revenue)', JSON.stringify(nums) === JSON.stringify(['9', '3', '2', '0', '0', '0', '0', '£0']), nums.join(' | '));
   const mission = await txt(page, '#mission');
+  check('Mission panel: the conversion sprint line (conversations against the 10-15 target, new since the start)', /Destination Egypt conversion sprint/.test(mission) && /3 conversations of 10–15 \(0 new\)/.test(mission) && /starts 20 Oct/.test(mission), (mission.match(/Destination Egypt conversion sprint[^\n]*/) || [''])[0]);
+  check('Mission panel: research is secondary (qualified and email-ready move to the pipeline line)', /Pipeline: 35 qualified · 14 email-ready/.test(mission));
   check('Mission panel: top opportunities only (5 shown, CRUSH first as an agency client project, Studio level and email state)', await page.locator('#mission tbody tr').count() === 5
     && /CRUSH Agency/.test(await txt(page, '#mission tbody tr:first-child')) && /Agency client project/.test(await txt(page, '#mission tbody tr:first-child')) && /Level 3/.test(await txt(page, '#mission tbody tr:first-child')) && /Verified email/i.test(await txt(page, '#mission tbody tr:first-child')));
   check('Mission panel: no deal value anywhere (the only money is recorded revenue)', (mission.match(/£/g) || []).length === 1);
