@@ -31,3 +31,9 @@ An enquiry is treated as a Private Calendar enquiry only when it arrives with `s
 ## Roll back
 
 - Re-publish `2ea5fdfe…`: n8n MCP `publish_workflow` with `eLucjNPgTRKS5nBC` and that version, or in n8n: Workflow → History → that version → Publish. The website keeps sending the event fields; the old version ignores them.
+
+## Intake check, 19 Oct 2026 (VERIFIED)
+
+- The website's live smoke test (GitHub runner, headless Chromium) got **403 "Authorization data is wrong!"** from the webhook on 18 Oct. That is n8n's answer when the Webhook node's **Ignore Bots** option sees a bot user agent ("HeadlessChrome"); visitors' browsers are not affected. The website's request code had not changed.
+- The same enquiry sent with a desktop Chrome user agent passed: **NOYA-TNNSFA** ("DO NOT ACTION — WEBSITE QA", website-qa-live-test@example.com) reached `website_enquiries` as ROUTED with its opportunity, contact and task. Closed afterwards: task COMPLETED, opportunity ARCHIVED, contact DO_NOT_CONTACT.
+- No n8n change was needed or made. Automated enquiry tests must send a normal browser user agent (`noya-website/smoke/live.spec.ts`).
