@@ -7,7 +7,8 @@
       "drive_id": "1neXUyXHEbn3Ly6Dusxq2HSu3F8eE1yxz",
       "folder": "pyramids-khufu",
       "size": "1920x2400",
-      "subject": "Evening terrace tables facing the illuminated Pyramid of Khafre, Giza"
+      "subject": "Evening terrace tables facing the illuminated Pyramid of Khafre, Giza",
+      "print_crop": "The print copy drops the bottom 7% of the frame: the source carries three carousel dots from a phone screenshot."
     },
     "grand-egyptian-museum-04": {
       "file": "grand-egyptian-museum-04.webp",
@@ -44,11 +45,77 @@
       "size": "674x848",
       "low_res": true,
       "subject": "Pyramid of Khafre against a clear sky"
+    },
+    "pyramids-khufu-06": {
+      "file": "pyramids-khufu-06.webp",
+      "drive_id": "1H3GjKG3ImpD4kyBr3MInGbLL4HIfW-_8",
+      "folder": "pyramids-khufu",
+      "size": "1920x2400",
+      "subject": "Two travellers in hats facing the Giza pyramids across the plateau"
+    },
+    "pyramids-khufu-05": {
+      "file": "pyramids-khufu-05.webp",
+      "drive_id": "1MwwAJ1hpuo7qOaN79SEUu74tFeEHawGa",
+      "folder": "pyramids-khufu",
+      "size": "1920x2400",
+      "subject": "Two camels framing the Great Pyramid against a clear sky"
+    },
+    "pyramids-khufu-09": {
+      "file": "pyramids-khufu-09.webp",
+      "drive_id": "1Zo1Jevhu1XW2ph7f42op6aIvrHKg-k9W",
+      "folder": "pyramids-khufu",
+      "size": "1920x2400",
+      "subject": "A rider on a dressed camel with the pyramids behind"
+    },
+    "pyramids-khufu-10": {
+      "file": "pyramids-khufu-10.webp",
+      "drive_id": "1wC1pdLy-GXDDbLfZEqsGAz_fWLUYojIl",
+      "folder": "pyramids-khufu",
+      "size": "1920x2400",
+      "subject": "Two travellers walking towards the pyramids under a wide sky"
+    },
+    "branded-content-16": {
+      "file": "branded-content-16.webp",
+      "drive_id": "14TUlMnLxTSsspBcN0qteNqqyVzJrffbc",
+      "folder": "branded-content",
+      "size": "1920x2400",
+      "subject": "NOYA towels and a tray on a yacht deck (NOYA’s own brand shoot)"
+    },
+    "north-coast-villa-02": {
+      "file": "north-coast-villa-02.webp",
+      "drive_id": "1EzTbU_JD56y1r1aHfP72lTt3vLDmghpp",
+      "folder": "north-coast-villa",
+      "size": "1920x2400",
+      "subject": "Shaded villa terrace and pool facing the sea, North Coast"
+    },
+    "north-coast-06": {
+      "file": "north-coast-06.webp",
+      "drive_id": "1VKTBH4Ls0rxKSlj4hjZ1PVAo22SQqd42",
+      "folder": "north-coast",
+      "size": "1920x2400",
+      "subject": "Motor yachts moored in a North Coast marina"
+    },
+    "el-gouna-03": {
+      "file": "el-gouna-03.webp",
+      "drive_id": "1o0Q-vGWo1XV9i1NbBgAbQRADi-XdIO_-",
+      "folder": "el-gouna",
+      "size": "1920x2400",
+      "subject": "Aerial view of a low-rise resort with pools by the Red Sea, El Gouna"
+    },
+    "pyramids-khufu-01": {
+      "file": "pyramids-khufu-01.webp",
+      "drive_id": "19LMBHvRzo_mzEWRgKoXMJyc_8aKf8BWM",
+      "folder": "pyramids-khufu",
+      "size": "1920x2400",
+      "subject": "A terrace table of shared plates under a parasol, facing the pyramids at Giza"
     }
   },
   "never": {
     "egypt-private-event-vogue-arabia": "A third party's event: using it would imply NOYA produced it",
     "luxor-aswan-04": "Carries another company's logo",
-    "grand-egyptian-museum-01": "A phone screenshot"
+    "grand-egyptian-museum-01": "A phone screenshot",
+    "private-jet-01..04": "Phone screenshots of a third party’s Instagram posts",
+    "exclusive-access-01": "A phone screenshot of a third party’s post",
+    "exclusive-access-03": "A phone screenshot of a third party’s post"
   }
 }

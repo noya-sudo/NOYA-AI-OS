@@ -61,6 +61,9 @@ const BLOCKS = {
   // Dinner / experience creator: the setting and the guest's evening as direction, beside one image. Never a confirmed menu.
   evening: (b) => `<div class="evening"><div class="ph" style="background-image:url(${b.src});background-position:${b.pos || 'center'}"></div><div><span class="label">${esc(b.label)}</span><h3>${fmt(b.title)}</h3><div class="ledger">${b.rows.map(([k, v]) => `<div class="k"><span class="label">${esc(k)}</span></div><div class="v">${fmt(v)}</div>`).join('')}</div>${b.note ? `<div class="note">${fmt(b.note)}</div>` : ''}</div></div>`,
   value: (b) => `<div class="value">${b.items.map((v) => `<div class="vi"><h3>${fmt(v.title)}</h3><p>${fmt(v.text)}</p></div>`).join('')}</div>`,
+  // Editorial master: three ways in, each over a tall photo; and the capabilities ledger (two columns of title and one line).
+  pillars: (b) => `<div class="pillars" style="--ph:${b.h || 100}mm">${b.items.map((i) => `<div class="pl"><div class="ph" style="background-image:url(${i.src});background-position:${i.pos || 'center'}"></div>${i.caption ? `<span class="label cap">${esc(i.caption)}</span>` : ''}<span class="n">${esc(i.n)}</span><h3>${fmt(i.title)}</h3><p>${fmt(i.text)}</p></div>`).join('')}</div>`,
+  caps: (b) => `<div class="caps">${b.items.map((c) => `<div class="c"><h3>${fmt(c.title)}</h3><p>${fmt(c.text)}</p></div>`).join('')}</div>`,
   places: (b) => `${b.label ? `<span class="label places-label">${esc(b.label)}</span>` : ''}<div class="places">${b.items.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`,
   check: (b) => `<div class="check">${b.items.map((c) => `<div class="c"><div>${fmt(c.text)}${c.note ? `<span class="n">${fmt(c.note)}</span>` : ''}</div><span class="cls ${slugCls(c.status)}">${esc(c.status || 'To confirm')}</span></div>`).join('')}</div>`,
 };
@@ -129,7 +132,7 @@ function masterPages(doc, logo) {
   const foot = (i) => `<div class="foot"><span class="pn">${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}</span><span class="label">NOYA Concierge · Private &amp; confidential</span></div>`;
   return doc.pages.map((p, i) => {
     if (p.kind === 'm-hero') {
-      return `<section class="page master hero navy" data-kind="m-hero">
+      return `<section class="page master hero navy${doc.cover_style ? ` ${esc(doc.cover_style)}` : ''}" data-kind="m-hero">
   <div class="hero-img" style="background-image:url(${p.src});background-position:${p.pos || 'center'}"></div>
   <div class="hero-top">${lockup(doc, logo)}<div class="meta"><span class="label">${esc(doc.eyebrow)}</span><span class="label">${esc(doc.date)}</span></div></div>
   <div class="body hero-text">
@@ -145,7 +148,7 @@ function masterPages(doc, logo) {
     return `<section class="page master fixed${close ? ' close' : ''}" data-kind="${esc(p.kind)}">
   <div class="head">${mark(logo, true)}<span class="label">${esc(p.running || doc.running || '')}</span></div>
   <div class="body">${blocks(p.blocks)}</div>
-  ${close ? `<div class="band"><div class="nx"><span class="label">${esc(p.next.label || 'Next step')}</span><h2>${fmt(p.next.title)}</h2><p>${fmt(p.next.text)}</p></div><div class="who">${esc(p.contact.name)}<span class="role">${esc(p.contact.role)}</span><span class="ways">${p.contact.lines.map(esc).join('<br>')}</span></div></div>` : ''}
+  ${close ? `<div class="band"><div class="nx"><span class="label">${esc(p.next.label || 'Next step')}</span><h2>${fmt(p.next.title)}</h2>${p.next.text ? `<p>${fmt(p.next.text)}</p>` : ''}</div><div class="who">${esc(p.contact.name)}<span class="role">${esc(p.contact.role)}</span><span class="ways">${p.contact.lines.map(esc).join('<br>')}</span></div></div>` : ''}
   ${foot(i)}
 </section>`;
   }).join('\n');

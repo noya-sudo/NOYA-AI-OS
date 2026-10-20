@@ -6,21 +6,21 @@
   "company": "YKONE Middle East",
   "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
   "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
-  "date": "20 October 2026",
+  "date": "21 October 2026",
   "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
   "audience": "client",
-  "title": "Re: NOYA Concierge × YKONE | Egypt & Beyond",
+  "title": "Egypt — a few ideas for YKONE",
   "to": [
     "jad@ykone.com",
     "amalj@ykone.com",
     "magali@ykone.com"
   ],
-  "reply_to_message_id": "1a11c3b78af9793b",
+  "reply_to_message_id": null,
   "attach": "master",
   "attach_action": "ATTACH APPROVED PDF: ykone-egypt-master",
-  "subject": "Re: NOYA Concierge × YKONE | Egypt & Beyond",
-  "body": "Hi Jad and Amal,\n\nFollowing our call on 8 October, I have prepared a short Egypt brief for YKONE.\n\nIt sets out how we would work together: YKONE brings the vision and the client brief, and NOYA brings the Egypt side to life, on the ground and under your name. It covers the formats we can support, from campaigns and creator trips to private dinners, with one example evening at Giza.\n\nGiza is busy this autumn and the Grand Egyptian Museum marks its first year on 5 November. If anything is planned for this quarter or next, share whatever is known and we will come back with a concept and a costed proposal.\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
-  "words": 109,
+  "subject": "Egypt — a few ideas for YKONE",
+  "body": "Hi Jad and Amal,\n\nFollowing our call on 8 October, I have put together a few pages on how NOYA could work with YKONE in Egypt.\n\nThe idea is simple: YKONE leads the client relationship and the creative vision, and we bring the Egypt side to life, from shoots and creator trips to hosted dinners at Giza.\n\nGiza is busy this autumn and the Grand Egyptian Museum marks its first year on 5 November. If a brief with an Egypt angle comes up this quarter or next, send it over with the dates and we will build the Egypt layer around it.\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
+  "words": 98,
   "sources": [
     {
       "fact": "YKONE is looking at the Egypt market and asked for a call.",
@@ -84,7 +84,8 @@
     }
   ],
   "review": [
-    "Replaces the text of Adam's own 19 Oct edit of the draft (kept in studio_outputs evidence). Same opening and close in his words; the middle now matches the master brief v4. ATTACH APPROVED PDF before sending."
+    "Adam's 21 Oct subject: a new email, not a reply in the 8 Oct thread. It replaces the earlier follow-up draft r3413834542155918452 (same draft, updated), so there is one YKONE draft.",
+    "The brief goes with it as a PDF; the text does not say attached."
   ],
   "level": 1,
   "hold": null

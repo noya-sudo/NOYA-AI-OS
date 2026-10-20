@@ -337,15 +337,18 @@ export function master(c, v) {
   const m = c.master;
   need(m?.title && m?.positioning && m?.hero?.img && m?.pages?.length, `${c.slug}: a master brief needs title, positioning, hero image and pages`);
   need(m.pages.length <= 2, `${c.slug}: a master brief is two or three pages; it has ${m.pages.length + 1}`);
-  need((m.why || []).length >= 2, `${c.slug}: a master brief needs at least two cited why-now rows`);
+  // The editorial cover (title, supporting line, one photo) carries no why-now rows; the classic cover needs two cited ones.
+  need(m.cover === 'editorial' ? !(m.why || []).length || m.why.length >= 2 : (m.why || []).length >= 2,
+    `${c.slug}: a master brief needs at least two cited why-now rows`);
   const last = m.pages[m.pages.length - 1];
   need(last.next?.title && last.next?.text, `${c.slug}: the last page of a master brief carries the next step`);
   const doc = base(c, v, 'master', {
     slug: `${c.slug}-brief`, running: `${c.party} × NOYA · ${m.running || 'Egypt'}`, eyebrow: m.eyebrow || `NOYA × ${c.party} · Egypt`,
-    title: m.title, positioning: m.positioning, party_mark: m.party_mark || c.party.toUpperCase(), type_label: 'Brief',
+    title: m.title, positioning: m.positioning, party_mark: m.party_mark || c.party.toUpperCase(), type_label: 'Brief', cover_style: m.cover || null,
+    ...(m.date ? { date: m.date } : {}),
   });
   doc.pages = [
-    { kind: 'm-hero', img: m.hero.img, pos: m.hero.pos, why_label: m.why_label, why: whyRows(c, m.why) },
+    { kind: 'm-hero', img: m.hero.img, pos: m.hero.pos, why_label: m.why_label, why: m.why?.length ? whyRows(c, m.why) : [] },
     ...m.pages.map((p, i) => ({ kind: i === m.pages.length - 1 ? 'm-close' : 'm-body', running: p.running, blocks: p.blocks,
       ...(i === m.pages.length - 1 ? { next: p.next, contact: CONTACT } : {}) })),
   ];

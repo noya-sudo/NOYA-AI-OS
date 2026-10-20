@@ -306,7 +306,7 @@
     "note",
     "email",
     "concept",
-    "brief"
+    "master"
   ],
   "review": [],
   "email": {
@@ -314,16 +314,172 @@
     "to": [
       "sophie@crush-agency.com"
     ],
-    "reply_to_message_id": "1a11c8265f3f5a58",
-    "attach": "concept",
+    "reply_to_message_id": "1a155ec46dee25e3",
+    "attach": "master",
     "subject": "Re: NOYA x CRUSH Agency — Egypt production support",
     "paragraphs": [
-      "On your earlier question: the clearest way to show how we work is a concrete idea for CRUSH, so I have put one together.",
-      "Egypt as a stage: three settings for a CRUSH evening where art, music and a luxury brand meet. A dinner facing the Pyramids at sunset, an evening at the Grand Egyptian Museum, or a long table by the sea in El Gouna. CRUSH leads the artists and the creative; NOYA runs the venues, permits, hospitality and logistics on the ground.",
-      "Would twenty minutes next week work to talk it through?"
+      "Following my note last week, I have put the three settings into a few pages, with how CRUSH and NOYA would split the work.",
+      "If one of them fits a brand in your calendar, twenty minutes is enough to choose a setting, and we will come back with venues, logistics and a costed outline."
     ],
     "review": [
-      "Answers Sophie's 5 Oct request for material with an idea; claims no past NOYA productions. The text stands without the PDF: ATTACH APPROVED PDF before sending."
+      "Follow-up for 26 Oct in the 19 Oct thread, only if Sophie has not replied. Carries the editorial brief v3 (READY FOR ATTACHMENT)."
+    ]
+  },
+  "master": {
+    "cover": "editorial",
+    "date": "October 2026",
+    "eyebrow": "Egypt brief",
+    "running": "NOYA × CRUSH · Egypt",
+    "title": "Egypt *as a stage.*",
+    "positioning": "Three settings for a CRUSH evening where art, music and a luxury brand meet. CRUSH leads the artists and the creative; NOYA brings the Egypt side to life.",
+    "hero": {
+      "img": "pyramids-khufu-14",
+      "pos": "center 30%"
+    },
+    "pages": [
+      {
+        "running": "Three settings",
+        "blocks": [
+          {
+            "t": "section",
+            "n": "01",
+            "label": "The idea",
+            "title": "CRUSH formats, *an Egyptian setting.*"
+          },
+          {
+            "t": "lead",
+            "text": "CRUSH brings brands and artists together, Cartier with Gloria Gaynor, IWC with Jamiroquai, in moments people remember. Egypt offers settings few cities can match. NOYA makes them work on the day."
+          },
+          {
+            "t": "pillars",
+            "h": 96,
+            "items": [
+              {
+                "img": "pyramids-khufu-01",
+                "pos": "center 40%",
+                "caption": "Giza",
+                "n": "I",
+                "title": "Dinner facing the Pyramids",
+                "text": "A seated dinner for a brand's top clients, set so the Pyramids are the backdrop at sunset, followed by a live performance from an artist of CRUSH's choosing."
+              },
+              {
+                "img": "grand-egyptian-museum-04",
+                "pos": "center 45%",
+                "caption": "Grand Egyptian Museum",
+                "n": "II",
+                "title": "An evening among antiquities",
+                "text": "A reception and dinner at Egypt's newest cultural landmark, with a contemporary artist collaboration in conversation with the collection."
+              },
+              {
+                "img": "el-gouna-03",
+                "pos": "center 45%",
+                "caption": "El Gouna, Red Sea",
+                "n": "III",
+                "title": "A long table by the sea",
+                "text": "Two days on the Red Sea: arrival by yacht, a long-table dinner on the beach and an intimate performance after dinner."
+              }
+            ]
+          },
+          {
+            "t": "places",
+            "label": "Where each setting fits",
+            "items": [
+              "Jewellery & watches: an evening among antiquities",
+              "Fashion & beauty: the Pyramids or the sea",
+              "Automotive: the Giza plateau or the Red Sea coast"
+            ]
+          }
+        ]
+      },
+      {
+        "running": "How we work with CRUSH",
+        "blocks": [
+          {
+            "t": "section",
+            "n": "02",
+            "label": "How it works",
+            "title": "CRUSH leads. *NOYA delivers.*"
+          },
+          {
+            "t": "roles",
+            "left": {
+              "title": "CRUSH leads",
+              "items": [
+                "Brand relationship and creative concept",
+                "Artists and talent, including ICONS. by CRUSH",
+                "Show, staging design and content",
+                "Guest list and invitations"
+              ]
+            },
+            "right": {
+              "title": "NOYA delivers in Egypt",
+              "items": [
+                "Venues, locations and permit applications, with local production crews",
+                "Hotels, villas and residences",
+                "VIP arrivals, chauffeurs and security",
+                "Catering, production crews and suppliers",
+                "On-ground management, under CRUSH’s name"
+              ]
+            }
+          },
+          {
+            "t": "h3",
+            "text": "An example programme"
+          },
+          {
+            "t": "journey",
+            "items": [
+              {
+                "when": "Day one",
+                "text": "VIP airport reception, private transfers and check-in. A welcome dinner for the brand's hosts."
+              },
+              {
+                "when": "Day two",
+                "text": "The afternoon at leisure or a private guided visit. In the evening, the dinner and performance."
+              },
+              {
+                "when": "Day three",
+                "text": "A late breakfast, an optional morning on the Nile or the Red Sea, then departures."
+              }
+            ]
+          },
+          {
+            "t": "gallery",
+            "h": 27,
+            "items": [
+              {
+                "img": "v-class-pyramids",
+                "pos": "center 62%",
+                "caption": "Arrivals · Giza"
+              },
+              {
+                "img": "north-coast-villa-02",
+                "pos": "center 55%",
+                "caption": "Residences · North Coast"
+              },
+              {
+                "img": "branded-content-16",
+                "pos": "center 45%",
+                "caption": "Yachts"
+              }
+            ]
+          },
+          {
+            "t": "note",
+            "text": "Venues, access and dates are subject to permits, approvals and availability. NOYA confirms each before anything is presented to a client."
+          }
+        ],
+        "next": {
+          "label": "Next step",
+          "title": "One call to *choose the stage.*",
+          "text": "Choose a setting and a brand. NOYA returns venues, permits, hospitality and logistics, priced for CRUSH to present to its client."
+        }
+      }
+    ],
+    "review": [
+      "REFINE (21 Oct): the approved concept v3 (18 Oct, five text pages, no photography) in the 3-page editorial format with NOYA library photos. Same idea, settings, roles and programme; Adam re-approves before it goes.",
+      "Becomes crush-egypt-brief v3 and replaces the form brief v2 (held for the call, never sent). Concept v3 stays in the history.",
+      "“With our local production partners” and “begins permits with our local partners” became neutral wording: no partnership is claimed. No past NOYA productions are claimed; Cartier and IWC are CRUSH’s own published work."
     ]
   }
 }
