@@ -23,6 +23,7 @@ mkdirSync('tests/out/command', { recursive: true });
 
 const SNAP = { ceo: F.ceo, command: F.command, network: F.network, advisor: F.advisor, directors: F.directors, execution: F.execution, health: F.health, integrity: F.integrity };
 const READS = {
+  hq_follow_up_board: () => ({ due: [], replies_owed: [], reopen: [], meetings: [], counts: {} }),
   hq_dashboard: () => F.snapshot, hq_overview: () => F.overview, hq_directory: () => F.directory, hq_insight: () => F.insight, hq_relationships: () => F.relationships,
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_club: () => F.club, hq_weekly_review: () => F.weekly, hq_studio: () => F.studio,
@@ -116,10 +117,11 @@ const C = F.command;
   check('Pipeline: every live opportunity listed with owner, next action, date and blocker', rows === C.opportunities.length && /CRUSH Agency/.test(await txt(page, '#pipeline tbody')), `${rows} rows`);
   check('Pipeline: an overdue next action is shown in red (The Arts Club, 30 Sep)', await page.locator('#pipeline tbody tr:has-text("The Arts Club") td.bad-text').count() === 1);
   await page.screenshot({ path: 'tests/out/command/dashboard-1440.png', fullPage: true });
-  // 3b. The morning (Adam, 19 Oct): five lists, in order; the five best new outreach items, never the whole queue.
+  // 3b. The morning (Adam, 19 Oct; 21 Oct adds past relationships worth reopening): the lists in order; the five best new outreach
+  // items, never the whole queue.
   const groups = (await page.locator('#needs .ngrp-h h3').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim());
-  const want5 = ['Replies to answer', 'Meetings to schedule', 'Follow-ups due', 'Top 5 new outreach to approve', 'Studio documents ready'];
-  check('Morning: five lists in order (replies, meetings, follow-ups, top 5 new outreach, Studio documents)', JSON.stringify(groups.filter((g) => g !== 'Clients and proposals')) === JSON.stringify(want5), groups.join(' | '));
+  const want = ['Replies to answer', 'Meetings to schedule', 'Follow-ups due', 'Past relationships worth reopening', 'Top 5 new outreach to approve', 'Studio documents ready'];
+  check('Morning: lists in order (replies, meetings, follow-ups, past relationships worth reopening, top 5 new outreach, Studio documents)', JSON.stringify(groups.filter((g) => g !== 'Clients and proposals')) === JSON.stringify(want), groups.join(' | '));
   const topRows = await page.locator('#needs [data-need="outreach"] .act', { hasText: /\d of \d · / }).count();
   check('Morning: new outreach shows the ranked five from hq_outreach_desk, not the whole queue', topRows === F.desk.top5.length && topRows <= 5 && F.desk.needs_review.length > 5, `${topRows} of ${F.desk.needs_review.length} waiting`);
   check('Morning: "N waiting in Outreach" links to the rest', /waiting in Outreach/.test(await txt(page, '#needs [data-need="outreach"] .ngrp-h')));

@@ -1802,3 +1802,68 @@ shows only READY TO SEND documents with their cover drafts.
 
 **Daily check duties** are in the scheduled task, section 10: refresh next moves for relationships that moved, keep readiness
 current, reconcile sent mail into interactions, work a few past conversations a day, flag stale drafts (never delete them).
+
+## Follow up / Reopen: one button, the whole relationship first (21 Oct 2026)
+
+Adam, 21 Oct: **one powerful button, not another page. NO GOOD RELATIONSHIP GETS FORGOTTEN, AND NO BAD RELATIONSHIP GETS CHASED.**
+Migration `20261021090000_follow_up_reopen.sql`. Nothing sends: HQ analyses, decides, schedules, drafts, prepares a brief or a
+concept and surfaces it when due; Adam approves and sends every external message.
+
+**Where it is.** A **Follow up / Reopen** button on the opportunity, company, contact and LinkedIn drawers (in the Recommended next
+action panel), on every Past conversation card (it replaces the five separate buttons), on Past relationships, Important people and
+Going cold rows, the Relationships → Opportunities table, the Dashboard's top opportunities, Outreach → Follow-ups and LinkedIn
+items after a send.
+
+**What it reads** (`hq_follow_up`): Gmail history, LinkedIn messages and LinkedIn agent outreach, meetings and interactions, notes
+(including a follow-up date Adam noted), previous outreach and replies, Studio documents prepared or sent, the opportunity and its
+stage, company type, the person, the Director who owns it, last interaction, who wrote last, whether NOYA owes a reply, declines
+(lost opportunity, LinkedIn "no", not relevant, closed), "not now" and parked dates, dated Egypt events and seasons, and the
+Destination Egypt project on file. The operator's written recommendation wins when it is newer than their last message.
+
+**Outcomes:** FOLLOW UP NOW · REOPEN WITH NEW ANGLE · SEND MATERIAL · ASK FOR MEETING · WAIT UNTIL DATE · HOLD · CLOSE · DO NOT CONTACT.
+Context first, then cadence: do-not-contact → declined or closed → a reply owed (they wrote last within 30 days, or within 90 in a
+real conversation) → asked to talk later or parked → the operator's recommendation → material prepared and unsent ("send the brief,
+not another follow-up") → a follow-up already scheduled → after a meeting with nothing tailored sent → the recency rules.
+
+**Recency rules.** 0–14 days: a normal follow-up where appropriate (after the type's cadence: 7 days, 10 for planners, clubs, media
+and suppliers, 21 for NOYA Private). 15–30 days: contextual. 31–90 days: reopen only with a useful reason. 3–12 months: only with a
+credible new angle, event, project or change. 12+ months: dormant; a personal reconnect, never a sales follow-up. Two NOYA messages
+without a reply: stop chasing.
+
+**What changed since we last spoke?** Real reasons only, scored: 3 = specific to them (a document prepared for them, their own news,
+a date they asked for); 2 = credible (a Destination Egypt project new since the last contact; a dated Egypt event at least ten days
+away that fits the type; the planning window for travel, weddings and clubs); 1 = context only (never a reason on its own and never
+written into a message). A reopen without a 2+ reason becomes HOLD with a review date. The drafter's brief says what changed and
+forbids "just following up".
+
+**Who we are dealing with** (from the Director that owns the relationship). Brand: campaign, launch, creator trip, shoot, GCC/MENA,
+season. Marketing / creative agency: a specific client or project reason to use NOYA as the Egypt execution partner. Wedding planner:
+destination weddings, guest concierge, scouting, the October–April season. Travel / concierge: client requests, white-label Egypt,
+agent rates, referrals, winter demand. Private club / network: member trips, retreats, private dinners, planning windows. Media /
+podcast: production concepts, episodes, cultural moments, sponsors. NOYA Private / talent: discreet and relationship-led; one
+message until they respond; never a meeting ask. Hospitality / supplier: actual business only, so no event or season reopens a
+supplier.
+
+**The card** shows Recommendation, Why, Suggested action, Suggested date (with its reason), What changed, Prepared (message ready in
+Gmail or HQ, being drafted, or not yet; the concept, optional unless the answer is Send material), and the relationship behind it.
+Buttons (`hq_follow_up_action`):
+
+| Button | What happens |
+|---|---|
+| Schedule + Draft | A CRM follow-up task (or the existing one moved), owned by the right Director, due 09:00 London on the date (weekends move to Monday); the message is requested from the drafter now in Adam's voice, or the prepared Gmail draft is linked; the relationship leaves the reopen list while it is scheduled. It surfaces on the Dashboard when due |
+| Draft only | The message, no task |
+| Change date | Moves the scheduled follow-up |
+| Build concept | A Studio request at the right level |
+| Ask for meeting | A short meeting request in Adam's voice |
+| Hold | Parked until the date; open follow-ups move with it; it comes back on its own |
+| Close | Recorded; open follow-ups cancelled; it never comes back unless they write |
+
+A relationship only in NOYA Gmail (not in the CRM) can be scheduled, held or closed; drafting needs it added to the CRM first.
+Do-not-contact allows only Hold or Close.
+
+**The morning** (`hq_follow_up_board`, the Dashboard's "What needs you today" and the daily check). Only four kinds of item, each
+with the same analysis: follow-ups due (re-checked: a reply since, a decline or a hold changes the answer), replies owed, past
+relationships worth reopening (only with a 2+ reason, a dormant real relationship, material ready or a meeting to ask for), and
+meetings to schedule. First live run (20 Oct): 5 replies owed (including a Madrid v Barcelona request from yesterday, Sporting
+Founders' Egypt retreat and Encore Lifestyle), 2 past relationships worth reopening (Nouva Group: ask for a meeting; Hotel &
+Chalet Aurelio: the operator's prepared note), 1 meeting to schedule (Greycoat). Of the 40 strongest past conversations, 38 were not surfaced to reopen: no real reason yet, or a reply is owed instead.

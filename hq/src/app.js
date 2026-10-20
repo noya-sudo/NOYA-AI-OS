@@ -92,7 +92,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' }, liHist: {},
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
-  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, nextMove: {}, reopen: null,
+  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, nextMove: {}, reopen: null, fu: {}, fuBoard: null,
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
@@ -196,6 +196,8 @@ async function load(silent = false, scope = 'full') {
   if (scope === 'full' || scope === 'light') { if (!state.advisorSeen) { state.advisorSeen = true; sb.rpc('hq_advisor_seen'); } }
   for (const wave of WAVES[scope]()) { await Promise.all(wave.map(readKey)); state.loading = false; render(); }
   state.inflight = false;
+  // The morning follow-up lists (FOLLOW UP / REOPEN) load after the waves, never inside one.
+  if (state.tab === 'dashboard' && (scope === 'full' || !state.fuBoard)) loadV3('fuBoard', 'hq_follow_up_board', { p_limit: 5 }, scope === 'full');
   if (state.tab === 'club' && state.club) readKey('club').then(render);
   if (['studio', 'agents'].includes(state.tab) && state.studio) readKey('studio').then(render);
   if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true);
@@ -399,7 +401,7 @@ function render() {
     </nav>
     ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['studio', 'Studio'], ['club', 'Club'], ['ops', 'Operations']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? renderDrawer(state.drawer) : ''}
-    ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : renderAnyModal(state.modal)) : ''}`;
+    ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : state.modal.kind === 'fu' ? fuModal(state.modal) : renderAnyModal(state.modal)) : ''}`;
   bind();
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
@@ -679,7 +681,7 @@ function viewOutreach(d) {
   else if (t === 'READY') body = oneNav + (list.map(approvalCard).join('') || empty('No email outreach waiting for approval.'));
   else if (t === 'LINKEDIN' || t === 'INSTAGRAM') body = oneNav + (list.map(manualChannelCard).join('') || empty('Nothing ready on this channel.'));
   else if (t === 'FOLLOW-UP') body = `<div class="list">${tabs[t].map((x) => `<div class="row"><div class="t">${esc(sentence(x.title))}</div><div class="meta">${esc(x.company_name || '')} · due ${esc(fmtDay(x.due_at))}${new Date(x.due_at) < new Date() ? ' · <span class="bad-text">overdue</span>' : ''}</div>
-      <div class="btn-row mt6">${x.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : ''}<button class="btn small primary" data-modal="touch" data-channel="EMAIL" data-task="${x.id}" data-opp="${x.opportunity_id || ''}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${x.id}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${x.id}">No longer needed</button></div></div>`).join('') || empty('No follow-ups due.')}</div>`;
+      <div class="btn-row mt6">${fuBtn({ opp: x.opportunity_id, company: x.company_id })}${x.opportunity_id ? `<button class="btn small" data-open="opp" data-id="${x.opportunity_id}">Open</button>` : ''}<button class="btn small primary" data-modal="touch" data-channel="EMAIL" data-task="${x.id}" data-opp="${x.opportunity_id || ''}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${x.id}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${x.id}">No longer needed</button></div></div>`).join('') || empty('No follow-ups due.')}</div>`;
   else if (t === 'RESEARCHING') body = `<div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Vertical</th><th>Market</th><th>Contact</th><th class="num">Priority</th><th>Next</th></tr></thead><tbody>${tabs[t].sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0)).map((o) => { const f = facts(o.id); return `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}</td><td>${esc(V(f.vertical))}</td><td>${esc(M(f.origin_market))} → ${esc(M(f.opportunity_market))}</td><td>${esc(o.contact_name || '—')}</td><td class="num">${esc(o.priority ?? '—')}</td><td class="small">${esc(o.next_action || '')}</td></tr>`; }).join('')}</tbody></table></div>`;
   else body = tabs[t].map(approvalCard).join('') || empty('None.');
   return `
@@ -1173,7 +1175,7 @@ function relCard(g, review = false) {
     ${g.snippet ? `<div class="email small"><div class="faint">Latest preview (verbatim)</div><pre>${esc(unesc(g.snippet))}</pre></div>` : ''}
     ${rv.summary ? `<div class="ai small"><div class="faint">AI summary — from subjects and previews only; check the thread before acting</div>${esc(rv.summary)}${rv.their_position ? `<div class="mt6"><b>What they said:</b> ${esc(rv.their_position)}</div>` : ''}${sug && !rv.status && rv.suggested_reason ? `<div class="faint mt6">Why ${esc(REL_STATUS[sug]?.[0] || sug)}: ${esc(rv.suggested_reason)}</div>` : ''}</div>` : `<div class="small faint">${esc(why)}</div>`}
     ${g.received > 0 ? relStatusChips(g) : ''}
-    <div class="btn-row mt6">${gmailLink(g.reply_thread || g.last_thread, 'Open in Gmail').replace('<a ', '<a class="btn small" ')}
+    <div class="btn-row mt6">${g.received > 0 ? fuBtn(g.company_id ? { company: g.company_id } : g.contact_id ? { contact: g.contact_id } : { key: g.key }) : ''}${gmailLink(g.reply_thread || g.last_thread, 'Open in Gmail').replace('<a ', '<a class="btn small" ')}
       ${g.in_crm ? `<button class="btn small" ${rec}>Open record</button><button class="btn small primary" data-modal="draft-request" data-channel="EMAIL" data-type="${g.state === 'FOLLOW_UP' ? 'FOLLOW_UP' : 'RECONNECTION'}" ${draftTarget}>Draft ${g.state === 'FOLLOW_UP' ? 'follow-up' : 'reconnect'}</button>`
         : `<button class="btn small primary" data-modal="history-add" data-id="${esc(g.key)}">Add to CRM</button>`}
       ${g.received > 0 ? '' : g.dismissed ? `<button class="btn small ghost" data-hist-act="RESTORE" data-id="${esc(g.key)}">Restore</button>` : `<button class="btn small ghost" data-hist-act="DISMISS" data-id="${esc(g.key)}" title="Not relevant — hide it (the email history is kept)">Not relevant</button>`}
@@ -1572,7 +1574,7 @@ async function loadNextMove(kind, id) {
 const nmTarget = (o) => Object.entries(o).filter(([, v]) => v).map(([k, v]) => ` data-nm-${k}="${esc(v)}"`).join('');
 function nextMovePanel(kind, id) {
   const N = state.nextMove[`${kind}:${id}`];
-  const shell = (inner, cls = '') => `<section class="nm${cls}"><div class="nm-h"><span class="label">Recommended next action</span>${inner}`;
+  const shell = (inner, cls = '') => `<section class="nm${cls}"><div class="nm-h"><span class="label">Recommended next action</span>${fuBtn({ [kind]: id }, 'Follow up / Reopen', true)}${inner}`;
   if (!N) { loadNextMove(kind, id); return `${shell('</div><p class="muted small">Reading the whole relationship…</p>')}</section>`; }
   if (N.error || N.ok === false) return N.reason === 'RECORD_REQUIRED' ? '' : `${shell(`</div><p class="small warn-text">${esc(N.error ? friendly(N.error) : explain(N))}</p>`)}</section>`;
   const op = N.operator; const b = N.baseline || {}; const c = N.context || {};
@@ -1613,17 +1615,82 @@ function nmDone(r) {
   if (x.level != null || x.reason === 'ALREADY_REQUESTED') return 'With the Studio: it prepares the document for your review (Studio → Needs brief). Nothing is sent.';
   return 'The drafter is writing it in your voice; it appears with your drafts. Nothing is sent.';
 }
+// ---------------------------------------------------------------- FOLLOW UP / REOPEN (Adam, 21 Oct): one button on every relationship,
+// opportunity and relevant outreach item. hq_follow_up reads the whole relationship, decides whether to follow up at all, adapts to who
+// it is, suggests a date with its reason and answers "what changed since we last spoke?". hq_follow_up_action schedules a task for the
+// right Director, asks the drafter for a message in Adam's voice, hands a concept to the Studio, or holds / closes. Never sends.
+const FU_OUTCOME = { FOLLOW_UP_NOW: ['Follow up now', 'ok'], REOPEN_NEW_ANGLE: ['Reopen with a new angle', 'ok'], SEND_MATERIAL: ['Send material', 'ok'],
+  ASK_FOR_MEETING: ['Ask for a meeting', 'ok'], WAIT_UNTIL_DATE: ['Wait until the date', ''], HOLD: ['Hold', 'warn'], CLOSE: ['Close', 'bad'], DO_NOT_CONTACT: ['Do not contact', 'bad'] };
+const FU_ARGS = { company: 'p_company', opp: 'p_opportunity', contact: 'p_contact', connection: 'p_connection', key: 'p_key' };
+const FU_ACTIONS = [['SCHEDULE_AND_DRAFT', 'Schedule + Draft'], ['DRAFT_ONLY', 'Draft only'], ['BUILD_CONCEPT', 'Build concept'], ['ASK_FOR_MEETING', 'Ask for meeting'], ['HOLD', 'Hold'], ['CLOSE', 'Close']];
+const FU_PRIMARY = { FOLLOW_UP_NOW: 'SCHEDULE_AND_DRAFT', REOPEN_NEW_ANGLE: 'SCHEDULE_AND_DRAFT', WAIT_UNTIL_DATE: 'SCHEDULE_AND_DRAFT', SEND_MATERIAL: 'SCHEDULE_AND_DRAFT',
+  ASK_FOR_MEETING: 'ASK_FOR_MEETING', HOLD: 'HOLD', CLOSE: 'CLOSE', DO_NOT_CONTACT: 'CLOSE' };
+const fuTarget = (t) => Object.entries(t || {}).filter(([k, v]) => v && FU_ARGS[k]);
+// The button carries the record it belongs to: data-fu-company, data-fu-opp, data-fu-contact, data-fu-connection or data-fu-key.
+const fuBtn = (t, label = 'Follow up / Reopen', primary = false) => (fuTarget(t).length
+  ? `<button class="btn small fu-btn${primary ? ' primary' : ''}" data-fu${fuTarget(t).map(([k, v]) => ` data-fu-${k}="${esc(v)}"`).join('')}>${esc(label)}</button>` : '');
+async function openFollowUp(t) {
+  const key = fuTarget(t).map(([k, v]) => `${k}:${v}`).join('|');
+  state.modal = { kind: 'fu', t, key }; render();
+  const { data, error } = await sb.rpc('hq_follow_up', Object.fromEntries(Object.entries(FU_ARGS).map(([k, a]) => [a, t[k] || null])));
+  state.fu[key] = error ? { error: error.message } : data;
+  if (state.modal?.key === key) render();
+}
+function fuModal(m) {
+  const A = state.fu[m.key];
+  const shell = (inner) => `<div class="modal-bg"><div class="modal fu"><div class="nm-h"><span class="label">Follow up / Reopen</span><button class="btn small ghost" data-close>Close</button></div>${inner}</div></div>`;
+  if (!A) return shell('<p class="muted">Reading the whole relationship: Gmail, LinkedIn, meetings, notes, Studio documents and the opportunity…</p>');
+  if (A.error || A.ok === false) return shell(`<p class="small warn-text">${esc(A.error ? friendly(A.error) : explain(A))}</p>`);
+  const f = A.facts || {}; const p = A.prepared || {}; const [ol, oc] = FU_OUTCOME[A.outcome] || [A.outcome, ''];
+  const strong = (A.changes || []).filter((c) => c.strength >= 2 && c.kind !== 'MATERIAL'); const context = (A.changes || []).filter((c) => c.strength < 2);
+  const r = (k, v) => (v ? `<div class="nm-r"><span class="label">${esc(k)}</span><div>${v}</div></div>` : '');
+  const crm = !!(A.company_id || A.connection_id);
+  const acts = FU_ACTIONS.filter(([k]) => (A.outcome !== 'DO_NOT_CONTACT' || ['HOLD', 'CLOSE'].includes(k)) && (crm || ['SCHEDULE_AND_DRAFT', 'HOLD', 'CLOSE'].includes(k)))
+    .map(([k, l]) => `<button class="btn small${k === FU_PRIMARY[A.outcome] ? ' primary' : ''}" data-fu-act="${k}">${esc(k === 'SCHEDULE_AND_DRAFT' && !crm ? 'Schedule' : l)}</button>`).join('');
+  const prep = p.message === 'READY' ? `${pill('Message ready', 'ok')} ${p.gmail_draft_id ? 'in Gmail' : 'in HQ, with your drafts'}`
+    : p.message === 'DRAFTING' ? pill('Message being drafted') : `<span class="faint">${crm ? 'No message yet: Schedule + Draft prepares one now.' : 'Not in the CRM: add it first to prepare a message.'}</span>`;
+  const doc = p.material || p.concept;
+  const docLine = doc ? `${esc(doc.title)} <span class="faint">· ${esc(STAGE_DOC[doc.stage] || doc.stage || '')}${doc.version ? ` v${esc(doc.version)}` : ''}</span> ${p.material ? pill('Ready to send', 'ok') : readyPill(doc.ready_class)}${p.concept_optional ? ' <span class="faint">· optional</span>' : ''}`
+    : `<span class="faint">${crm ? 'No concept yet. Build concept asks the Studio for one (optional).' : 'None.'}</span>`;
+  return shell(`<h3>${esc(A.name || A.person || 'Relationship')}${A.person && A.person !== A.name ? ` <span class="faint small">· ${esc(A.person)}</span>` : ''}</h3>
+    <div class="pills">${A.type_label ? pill(A.type_label) : ''}${A.director_name ? pill(A.director_name) : ''}${A.source === 'OPERATOR' ? pill('Operator', 'ok') : ''}</div>
+    <div class="nm-r fu-rec"><span class="label">Recommendation</span><div class="fu-out ${oc}">${esc(ol)}</div></div>
+    ${r('Why', esc(A.why))}${r('Suggested action', esc(A.action))}
+    ${r('Suggested date', A.date ? `<b>${esc(fmtDay(A.date))}</b>${A.date_reason ? ` <span class="faint">· ${esc(A.date_reason)}</span>` : ''}` : '<span class="faint">None</span>')}
+    ${r('What changed since you last spoke', strong.length ? `<ul class="fu-ch">${strong.map((c) => `<li>${esc(c.text)}</li>`).join('')}</ul>` : '<span class="faint">Nothing specific. Any message stays personal and short, never a bare “just following up”.</span>')}
+    ${r('Prepared', `<div>${prep}</div><div class="mt6">${docLine}</div>`)}
+    <details class="small"><summary>The relationship behind it</summary><div class="fu-facts">
+      ${f.last_at ? `Last contact ${esc(shortDay(f.last_at))} · ${f.last_by === 'THEM' ? 'they wrote last' : 'NOYA wrote last'} · ${esc(f.days)} days` : 'No conversation yet.'}${f.band_rule ? ` · ${esc(f.band_rule)}` : ''}
+      <br>${n0(f.replies)} replies from them · ${n0(f.meetings)} meetings · ${n0(f.unanswered)} NOYA messages since their last reply${f.subject ? ` · latest thread: ${esc(f.subject)}` : ''}
+      ${f.declined ? `<br><span class="warn-text">${esc(f.declined)}</span>` : ''}${f.asked_later ? `<br>Not before ${esc(fmtDay(f.asked_later))}.` : ''}
+      ${A.task ? `<br>In the CRM: ${esc(sentence(A.task.title))}, due ${esc(shortDay(A.task.due))}.` : ''}
+      ${f.opportunity ? `<br>Opportunity: ${esc(S(f.opportunity.status))}${f.opportunity.next_action ? ` · next: ${esc(f.opportunity.next_action)}` : ''}` : ''}
+      ${context.length ? `<br><span class="faint">Context only, not a reason on its own: ${esc(context.map((c) => c.text).join(' · '))}</span>` : ''}
+      <br><span class="faint">${esc(A.type_label || '')}: ${esc(A.focus || '')}</span></div></details>
+    <div class="btn-row mt6">${p.thread ? btnLink(`${GMAIL_THREAD_URL}${p.thread}`, p.gmail_draft_id ? 'Open the thread and draft in Gmail' : 'Open thread', false) : ''}${p.text ? `<button class="btn small" data-copy="${esc(p.text)}">Copy the prepared message</button>` : ''}</div>
+    <div class="fu-date">${fld('Follow-up date', 'fu-date', 'date', A.date || isoPlus(7), `min="${isoPlus(0)}"`)}${A.task ? '<button class="btn small" data-fu-act="CHANGE_DATE">Change date</button>' : ''}</div>
+    <div class="btn-row nm-acts">${acts}</div>
+    <p class="src">Nothing is sent from here. HQ analyses, schedules and drafts; you approve and send every message yourself.</p>`);
+}
+function fuDone(r) {
+  const x = r.result || {}; const d = r.draft || {}; const owner = r.director_name ? ` ${r.director_name} owns it.` : '';
+  if (r.action === 'SCHEDULE_AND_DRAFT') return `Follow-up ${x.moved ? 'moved to' : 'scheduled for'} ${shortDay(x.due)}.${owner} ${d.prepared ? 'The prepared message is waiting in Gmail.' : d.id ? 'The drafter is writing the message in your voice; it appears with your drafts.' : ''} Nothing was sent.`;
+  if (r.action === 'CHANGE_DATE') return `Follow-up moved to ${shortDay(x.due)}. Nothing was sent.`;
+  if (r.action === 'DRAFT_ONLY') return 'The drafter is writing it in your voice; it appears with your drafts. Nothing was sent.';
+  if (r.action === 'HOLD') return `Held until ${shortDay(x.until)}. It comes back on its own. Nothing was sent.`;
+  if (r.action === 'CLOSE') return 'Closed: open follow-ups cancelled, and HQ will not suggest it again unless they write. Nothing was sent.';
+  if (r.action === 'BUILD_CONCEPT') return 'With the Studio: it prepares the concept for your review (Studio → Needs brief). Nothing was sent.';
+  if (r.action === 'ASK_FOR_MEETING') return 'The drafter is writing a short meeting request in your voice. Nothing was sent.';
+  return 'Recorded. Nothing was sent.';
+}
 // PAST CONVERSATION — OPPORTUNITY TO REOPEN (Relationships → Past conversations): two-way Gmail and LinkedIn conversations older than
 // three weeks, read before any cold outreach. The operator's assessment shows first; the rest carry the recency rule.
 function reopenCard(x, op) {
   const name = op ? (op.person || op.company || 'Relationship') : (x.name || x.person || x.email || '—');
   const company = op ? op.company : x.company; const last = op ? op.last_contact_at : x.last_at; const band = op ? op.recency_band : x.band;
   const by = op ? op.last_by : x.last_by; const thread = op ? op.gmail_thread_id : x.thread;
-  const target = op ? { move: op.id } : { company: x.company_id, connection: x.connection_id, key: x.company_id || x.connection_id ? null : x.key, kind: 'REOPEN' };
-  const can = !!(op?.company_id || op?.connection_id || x?.company_id || x?.connection_id);
-  const btns = [['RECONNECT', 'Draft reconnect'], ['BUILD_CONCEPT', 'Build concept'], ['ASK_FOR_CALL', 'Ask for meeting'], ['HOLD', 'Hold'], ['CLOSE', 'Close']]
-    .filter(([k]) => can || ['HOLD', 'CLOSE'].includes(k))
-    .map(([k, l]) => `<button class="btn small${k === (op?.action || x?.recommended) ? ' primary' : ''}" data-nm-act="${k}"${nmTarget(target)}>${esc(l)}</button>`).join('');
+  // One button (Adam, 21 Oct): FOLLOW UP / REOPEN reads the whole relationship first and offers the actions.
+  const btns = fuBtn(op ? { company: op.company_id, connection: op.connection_id, key: op.rel_key } : { company: x.company_id, connection: x.connection_id, key: x.key }, 'Follow up / Reopen', true);
   return `<article class="card rel reopen"><div class="card-head"><div><div class="co">${esc(name)}</div>${company && company !== name ? `<div class="muted small">${esc(company)}</div>` : ''}</div>
       <div class="pills">${op ? pill('Operator', 'ok') : ''}${band ? pill(BAND_SHORT[band] || band, band === '12M+' ? 'warn' : '') : ''}${x?.state ? liRel(x.state) : ''}${x?.owes_reply ? pill('they wrote last', 'warn') : ''}</div></div>
     <div class="small"><b>Last</b> ${esc(last ? shortDay(last) : '—')}${by ? ` · ${by === 'THEM' ? 'they wrote last' : 'NOYA wrote last'}` : ''}${x?.threads ? ` · ${x.threads} thread${x.threads > 1 ? 's' : ''}, ${x.received} from them` : ''}${x?.messages ? ` · ${x.messages} LinkedIn messages` : ''}</div>
@@ -2816,6 +2883,17 @@ function bind() {
     if (r && r.ok) state.notice = { err: false, text: nmDone(r) };
     state.nextMove = {}; state.reopen = null; render();
   });
+  // FOLLOW UP / REOPEN: one button opens the analysis; each choice is recorded and handed on. Nothing is sent.
+  on('[data-fu]', 'click', (b, e) => { e.stopPropagation(); const x = b.dataset;
+    openFollowUp({ company: x.fuCompany, opp: x.fuOpp, contact: x.fuContact, connection: x.fuConnection, key: x.fuKey }); });
+  on('[data-fu-act]', 'click', async (b) => {
+    const m = state.modal; if (m?.kind !== 'fu') return; const act = b.dataset.fuAct; const date = $('#fu-date')?.value || null;
+    document.querySelectorAll('[data-fu-act]').forEach((el) => { el.disabled = true; });
+    const r = await call('hq_follow_up_action', { p_action: act, p_company: m.t.company || null, p_opportunity: m.t.opp || null, p_contact: m.t.contact || null,
+      p_connection: m.t.connection || null, p_key: m.t.key || null, p_date: ['SCHEDULE_AND_DRAFT', 'CHANGE_DATE', 'HOLD'].includes(act) ? date : null, p_note: null }, 'Recorded. Nothing was sent.');
+    if (r && r.ok) state.notice = { err: false, text: fuDone(r) };
+    state.modal = null; state.fu = {}; state.fuBoard = null; state.nextMove = {}; state.reopen = null; render();
+  });
   on('[data-draft-act]', 'click', (b) => call('hq_draft_action', { p_draft: b.dataset.id, p_action: b.dataset.draftAct, p_text: null }, b.dataset.draftAct === 'RETRY' ? 'Draft re-requested.' : 'Draft discarded.'));
   on('[data-confirm-task]', 'click', (b) => confirmTask(b.dataset.confirmTask));
   $('#m-ok')?.addEventListener('click', submitModal);
@@ -3337,8 +3415,9 @@ function dashStrip(d) {
 // WHAT NEEDS YOU TODAY (Adam, 19 Oct): five lists every morning: replies to answer, meetings to schedule, follow-ups due, the
 // five best new outreach items, Studio documents ready. Clients and proposals sit on top only when they exist. One button each.
 const NEED_GROUPS = [['clients', 'Clients and proposals'], ['replies', 'Replies to answer'], ['meetings', 'Meetings to schedule'], ['followups', 'Follow-ups due'],
-  ['outreach', 'Top 5 new outreach to approve'], ['studio', 'Studio documents ready']];
+  ['reopen', 'Past relationships worth reopening'], ['outreach', 'Top 5 new outreach to approve'], ['studio', 'Studio documents ready']];
 const NEED_EMPTY = { replies: 'No reply waiting.', meetings: 'No meeting to schedule.', followups: 'No follow-up due today.',
+  reopen: 'None today: no past relationship has a real reason to reopen yet.',
   outreach: 'Nothing strong enough today. Fewer is fine.', studio: 'No Studio document waiting.' };
 const studioReady = () => (state.desk?.studio_ready || []).filter((s) => !s.hold_reason);
 function needsRows(d) {
@@ -3369,10 +3448,19 @@ function needsRows(d) {
     why: m.state === 'SLOTS_PROPOSED' ? 'Two times offered from your calendar: confirm when they pick one' : 'They want to talk: two free times from your calendar go into the reply',
     next: (m.slots || []).length ? `Offered ${slotText(m.slots)}` : 'Times are checked against your calendar at the next daily check', when: m.created_at,
     cta: `<button class="btn small primary" data-modal="meet-confirm" data-id="${m.task_id}">Confirm meeting</button>` }));
+  // FOLLOW UP / REOPEN (21 Oct): the same analysis as the button, for the morning. Only commercially justified items, never every stale one.
+  const B = state.fuBoard || {}; const seen = new Set(rows.map((x) => String(x.who || '').toLowerCase()));
+  const fuRow = (g, x, r) => { const w = x.person || x.name; if (seen.has(String(w || '').toLowerCase()) || seen.has(String(x.name || '').toLowerCase())) return; seen.add(String(w || '').toLowerCase());
+    rows.push({ g, r, who: w, co: x.person && x.name !== x.person ? x.name : '', dir: x.director, why: `${(FU_OUTCOME[x.outcome] || [x.outcome])[0]}: ${x.why}`, next: x.action,
+      when: x.due || x.facts?.last_at, overdue: !!(x.due && new Date(x.due) < new Date()),
+      cta: fuBtn({ company: x.company_id, connection: x.company_id ? null : x.connection_id, key: x.company_id || x.connection_id ? null : x.key }, 'Follow up / Reopen', true) }); };
+  (B.replies_owed || []).forEach((x) => fuRow('replies', x, 2));
+  (B.due || []).forEach((x) => fuRow('followups', x, 2));
+  (B.reopen || []).forEach((x) => fuRow('reopen', x, 3));
   t.followups.slice(0, 4).forEach((f) => rows.push({ g: 'followups', r: f.overdue ? 3 : 4, who: f.person || f.company, co: f.person ? f.company : '', dir: f.director,
     why: 'No answer yet: one short follow-up keeps it alive', next: `Follow-up ${f.step} by ${CH_LABEL[f.channel] || f.channel}`, when: f.due_at, overdue: f.overdue,
-    cta: f.thread_id ? btnLink(`${GMAIL_THREAD_URL}${f.thread_id}`, 'Open thread', false) + `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Done</button>`
-      : `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button>` }));
+    cta: fuBtn({ company: f.company_id, opp: f.opportunity_id }) + (f.thread_id ? btnLink(`${GMAIL_THREAD_URL}${f.thread_id}`, 'Open thread', false) + `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Done</button>`
+      : `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button>`) }));
   // New outreach: what is approved and only needs Send, then the five strongest new items (never the whole queue).
   t.gmail.forEach((x) => rows.push({ g: 'outreach', sub: 'send', r: 1, who: x.person || x.to_email, co: x.company, dir: x.director, why: 'Approved and waiting in Gmail: only your Send is missing',
     next: `Send "${x.subject || 'the draft'}"`, when: x.approved_at, cta: btnLink(x.gmail_url, 'Open in Gmail') }));
@@ -3446,7 +3534,7 @@ function oppCard(o) {
       <dt>Evidence</dt><dd class="faint">${esc(plainText(o.evidence || '—'))}</dd>
       <dt>Strategic value</dt><dd>${esc(o.strategic_value || '—')}</dd>
       ${ct.name ? `<dt>Contact</dt><dd>${esc(ct.name)}${ct.role ? `, ${esc(ct.role)}` : ''}${ct.email ? ` · ${esc(ct.email)}` : ''} ${ct.email_status === 'VERIFIED' ? '<span class="ok-text">verified</span>' : ''}</dd>` : ''}
-    </dl></article>`;
+    </dl>${o.last_at ? `<div class="oc-fu">${fuBtn({ company: o.company_id })}</div>` : ''}</article>`;
 }
 function dashOpportunities() {
   const C = state.ceo; if (!C) return `<section class="dsec">${waitFor('ceo', 'opportunities')}</section>`;
@@ -3525,6 +3613,7 @@ function dashWeekly() {
 }
 
 function viewDashboard(d) {
+  if (!state.inflight) loadV3('fuBoard', 'hq_follow_up_board', { p_limit: 5 });
   const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
   return `${head(state.advisor?.greeting || 'Dashboard', esc([day, asOf(state.ceo)].filter(Boolean).join(' · ')))}
     ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashMission()}${dashPipeline()}${dashFunnel()}${dashOpportunities()}${dashPulse()}${dashWeekly()}`;
@@ -4035,7 +4124,7 @@ function liRow(a) {
     ${a.state === 'REPLIED' && a.response_draft ? `<div class="dr-msg"><span class="faint">Suggested response:</span> ${esc(a.response_draft)}</div>`
       : text ? `<div class="dr-msg">${esc(text)} <span class="faint small">· ${liWords(text)} words</span></div>` : '<div class="dr-msg warn-text">No message written yet.</div>'}
     ${a.next_action ? `<div class="dr-line"><span>Next</span>${esc(a.next_action)}</div>` : ''}${conn}
-    <div class="dr-act btn-row">${b.filter(Boolean).join('')}</div>
+    <div class="dr-act btn-row">${b.filter(Boolean).join('')}${['SENT', 'REPLIED', 'HELD'].includes(a.state) ? fuBtn({ company: a.company_id }) : ''}</div>
   </article>`;
 }
 function liScore(c) {
@@ -4089,7 +4178,7 @@ function viewDesk() {
   } else if (t === 'APPROVED') body = `<div class="dlist">${list.map(approvedRow).join('') || '<div class="empty">Nothing approved yet. Approve an email under Needs review: HQ re-checks the address and creates one unsent Gmail draft.</div>'}</div>`;
   else if (t === 'FOLLOWUPS') body = `<div class="dlist">${list.map((f) => `<div class="t-row"><div><div class="t-main">${esc(f.person || f.company || '')}${f.person ? ` · <span class="faint">${esc(f.company || '')}</span>` : ''} · follow-up ${esc(f.step)}</div>
       <div class="t-sub">${esc(CH_LABEL[f.channel] || f.channel)} · ${f.overdue ? `<span class="bad-text">overdue since ${esc(shortDay(f.due_at))}</span>` : `due ${esc(shortDay(f.due_at))}`}${f.director ? ` · ${esc(dirName(f.director))}` : ''}${f.thread_id ? ` · ${gmailLink(f.thread_id, 'thread')}` : ''}</div></div>
-      <div class="t-btns"><button class="btn small primary" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${f.task_id}">Not needed</button></div></div>`).join('') || '<div class="empty">No follow-ups open.</div>'}</div>
+      <div class="t-btns">${fuBtn({ company: f.company_id, opp: f.opportunity_id })}<button class="btn small primary" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${f.task_id}">Not needed</button></div></div>`).join('') || '<div class="empty">No follow-ups open.</div>'}</div>
       <p class="src">Follow-up 1 is due 4 days after the real send; follow-up 2 six days after follow-up 1 is sent; never more than two. A reply, meeting, proposal, decline or do-not-contact cancels them automatically.</p>`;
   else if (t === 'SENT') body = `<div class="dlist">${list.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}</div><div class="t-sub">${esc(CH_LABEL[x.channel] || x.channel)} · ${esc(x.subject || x.summary || '')} · ${esc(fmtDate(x.sent_at))}</div></div></div>`).join('') || '<div class="empty">Nothing sent in the last 60 days.</div>'}</div>`;
   else if (t === 'REPLIED') body = `<div class="dlist">${list.map((x) => `<div class="t-row clickable" ${x.company_id ? `data-open="company" data-id="${x.company_id}"` : ''}><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}${x.classification ? ` · ${esc(REPLY_GROUP[x.classification] || x.classification)}` : ''}</div><div class="t-sub">${esc(x.summary || x.subject || '')} · ${esc(fmtDate(x.received_at))}</div></div></div>`).join('') || '<div class="empty">No replies in the last 60 days.</div>'}</div>`;
@@ -4144,7 +4233,7 @@ function netRow(x) {
       <div class="nr-why">${x.multiplier ? '<span class="mult-tag">Multiplier</span> ' : ''}${esc(x.why || '')}</div>
       <div class="nr-facts">${esc(x.state === 'COLD' && x.last_at ? 'Earlier email history, no current sequence' : REL_NAME[x.state] || sentence(String(x.state || '').replace(/_/g, ' ')))}${x.last_at ? ` · last interaction ${esc(shortDay(x.last_at))}${['THEY_WROTE_LAST', 'WAITING_FOR_THEM'].includes(x.state) ? '' : x.last_dir === 'OUTBOUND' ? ' (NOYA wrote last)' : x.last_dir === 'INBOUND' ? ' (they wrote last)' : ''}` : ''}${o ? ` · ${esc(projectName(o.project))}, ${esc(S(o.status).toLowerCase())}` : ''}${x.director ? ` · ${esc(dirName(x.director))}` : ''} · owner ${esc(x.owner || 'Adam')}</div>
       ${x.next_action ? `<div class="nr-next"><b>Next:</b> ${esc(plainText(x.next_action))}</div>` : x.going_cold ? '<div class="nr-next warn-text">No next step: a short personal note keeps it warm.</div>' : ''}</div>
-    <div class="t-btns">${x.thread ? btnLink(`${GMAIL_THREAD_URL}${x.thread}`, 'Open thread', false) : ''}${x.company_id ? `<button class="btn small" data-open="company" data-id="${x.company_id}">Record</button>` : ''}</div></div>`;
+    <div class="t-btns">${fuBtn({ company: x.company_id, key: x.company_id ? null : x.key })}${x.thread ? btnLink(`${GMAIL_THREAD_URL}${x.thread}`, 'Open thread', false) : ''}${x.company_id ? `<button class="btn small" data-open="company" data-id="${x.company_id}">Record</button>` : ''}</div></div>`;
 }
 function viewRelations(d) {
   const t = REL_TABS.some(([k]) => k === state.relTab) ? state.relTab : 'IMPORTANT'; const N = state.net; let body = '';
@@ -4164,8 +4253,8 @@ function viewRelations(d) {
         <div class="t-btns">${x.thread ? gmailLink(x.thread, 'Open in Gmail').replace('<a ', '<a class="btn small" ') : ''}${x.conn ? `<button class="btn small" data-open="connection" data-id="${x.conn}">Open</button>` : `<button class="btn small" data-relq="${esc(x.name)}">Review</button>`}</div></div>`).join('') || '<div class="empty">No warm relationship needs action right now.</div>'}</div>`;
   } else if (t === 'OPPORTUNITIES') {
     const list = d.opportunities.filter((o) => ACTIVE(o.status)).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-    body = `<p class="muted small">${list.length} open opportunities. No deal values are estimated here.</p><div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Stage</th><th>Next action</th></tr></thead><tbody>
-      ${list.map((o) => `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}</td><td>${esc(o.contact_name || '—')}</td><td>${esc(S(o.status))}</td><td class="small">${esc(o.next_action || '')}</td></tr>`).join('')}</tbody></table></div>`;
+    body = `<p class="muted small">${list.length} open opportunities. No deal values are estimated here.</p><div class="tbl-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Stage</th><th>Next action</th><th></th></tr></thead><tbody>
+      ${list.map((o) => `<tr class="clickable" data-open="opp" data-id="${o.id}"><td>${esc(o.company_name)}</td><td>${esc(o.contact_name || '—')}</td><td>${esc(S(o.status))}</td><td class="small">${esc(o.next_action || '')}</td><td>${fuBtn({ opp: o.id })}</td></tr>`).join('')}</tbody></table></div>`;
   } else {
     // Pipeline: where every account stands, from prospect to project; where it is stuck.
     const P = state.ceo?.pipeline || [];

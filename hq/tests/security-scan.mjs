@@ -41,7 +41,9 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_cached', 'hq_cache_status',
   // LinkedIn Relationship Agent and Meeting Assist (19 Oct): admin-gated, audited records of what Adam did himself; nothing is sent
   'hq_linkedin_action', 'hq_linkedin_reply', 'hq_meeting_confirm', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history',
-  'hq_next_move', 'hq_next_move_action', 'hq_reopen_list'];
+  'hq_next_move', 'hq_next_move_action', 'hq_reopen_list',
+  // FOLLOW UP / REOPEN (21 Oct): admin-gated analysis, the morning board and Adam's choice; schedules and drafts, never sends
+  'hq_follow_up', 'hq_follow_up_action', 'hq_follow_up_board'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

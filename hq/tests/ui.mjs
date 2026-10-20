@@ -12,7 +12,7 @@ import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { CONNECTIONS_CSV, MESSAGES_CSV, ARCHIVE_ZIP, ARCHIVE_EMPTY, ARCHIVE_REPORT, HISTORY } from './linkedin_archive_fixture.mjs';
-import { NEXT_MOVE, NEXT_MOVE_BASE } from './next_move_fixture.mjs';
+import { NEXT_MOVE, NEXT_MOVE_BASE, FOLLOW_UP } from './next_move_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -142,7 +142,7 @@ const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_l
   'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person', 'hq_redispatch',
   'hq_advisor_seen'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
-  'hq_create_opportunity', 'hq_import_connections', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history', 'hq_next_move', 'hq_next_move_action', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
+  'hq_create_opportunity', 'hq_import_connections', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history', 'hq_next_move', 'hq_next_move_action', 'hq_follow_up', 'hq_follow_up_board', 'hq_follow_up_action', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -203,6 +203,8 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_next_move') return route.fulfill({ json: body?.p_opportunity ? NEXT_MOVE : NEXT_MOVE_BASE });
       if (m[1] === 'hq_next_move_action') return route.fulfill({ json: { ok: true, id: body?.p_move || '00000000-0000-0000-0000-00000000b009', action: body?.p_action,
         result: body?.p_action === 'BUILD_BRIEF' ? { ok: true, id: '00000000-0000-0000-0000-00000000c001', level: 3 } : { recorded: true } } });
+      if (m[1] === 'hq_follow_up_board') return route.fulfill({ json: { due: [], replies_owed: [], reopen: [], meetings: [], counts: {} } });
+      if (m[1] === 'hq_follow_up') return route.fulfill({ json: FOLLOW_UP });
       if (WRITES.includes(m[1])) return route.fulfill({ json: { ok: true, id: '00000000-0000-0000-0000-000000000009' } });
       return route.fulfill({ status: 404, json: { message: 'not allowed in test' } });
     }

@@ -7,7 +7,7 @@ import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { withMorning } from './morning_fixture.mjs';
-import { REOPEN } from './next_move_fixture.mjs';
+import { REOPEN, FOLLOW_UP, FOLLOW_UP_BOARD } from './next_move_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -47,13 +47,15 @@ const READS = {
     { key: 'directors', built_at: new Date().toISOString(), age_s: 120, build_ms: 18686, last_error: 'canceling statement due to statement timeout', last_error_at: new Date().toISOString() }],
     jobs: [{ job: 'hq-cache-core', schedule: '*/5 * * * *', active: true, last_status: 'succeeded', last_run: new Date().toISOString() }] }),
   hq_director: (b) => DET[b?.p_key] || { key: b?.p_key, sections: [] }, hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
-  hq_reopen_list: () => REOPEN,
+  hq_reopen_list: () => REOPEN, hq_follow_up: () => FOLLOW_UP, hq_follow_up_board: () => FOLLOW_UP_BOARD,
 };
 const WRITES = { hq_approve_draft: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a1' },
   hq_approve_email: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a2' },
   hq_outreach_action: { ok: true }, hq_outreach_edit: { ok: true }, hq_save_draft: { ok: true, version: 2 }, hq_task_action: { ok: true }, hq_task_dismiss: { ok: true },
   hq_club_person: { ok: true, id: '00000000-0000-0000-0000-0000000000c1' }, hq_redispatch: { ok: true }, hq_record_meeting: { ok: true }, hq_advisor_seen: { ok: true },
   hq_next_move_action: { ok: true, id: '00000000-0000-0000-0000-00000000b009', action: 'HOLD', result: { recorded: true } },
+  hq_follow_up_action: { ok: true, action: 'SCHEDULE_AND_DRAFT', outcome: 'REOPEN_NEW_ANGLE', director: 'TRAVEL', director_name: 'Travel & Concierge Partnerships',
+    result: { task_id: '00000000-0000-0000-0000-00000000f001', due: '2026-10-21T08:00:00Z', date: '2026-10-21', moved: false }, draft: { ok: true, id: '00000000-0000-0000-0000-00000000f002' } },
   hq_linkedin_action: { ok: true, state: 'SENT', words: 60 }, hq_linkedin_reply: { ok: true, class: 'MEETING_INTENT', response: 'Thank you.', meeting_task: '00000000-0000-0000-0000-0000000000m1' } };
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
@@ -380,12 +382,31 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   check('Past conversations: one card each, last date, who wrote last, the recency rule, Gmail thread', (await page.locator('main article.card.reopen').count()) === REOPEN.gmail.length
     && /they wrote last/i.test(ro) && /NOYA wrote last/i.test(ro) && /Only with a credible new reason/.test(ro) && (await page.locator('main article.card.reopen a[href*="mail.google.com"]').count()) === REOPEN.gmail.length);
   const crmCard = page.locator('main article.card.reopen').nth(0); const outCard = page.locator('main article.card.reopen').nth(1);
-  check('Past conversations: a CRM company gets Draft reconnect · Build concept · Ask for meeting · Hold · Close; an address not in the CRM gets Add to CRM, Hold, Close',
-    (await crmCard.locator('[data-nm-act]').count()) === 5 && (await outCard.locator('[data-nm-act]').count()) === 2 && (await outCard.locator('[data-modal=history-add]').count()) === 1);
-  await outCard.locator('[data-nm-act=HOLD]').click();
-  await page.waitForTimeout(300);
-  const rh = calls.filter((c) => c.fn === 'hq_next_move_action').pop();
-  check('Hold on a past conversation → hq_next_move_action with its Gmail key, marked REOPEN; nothing sent', rh && rh.body.p_action === 'HOLD' && rh.body.p_key === 'e:someone@example.com' && rh.body.p_kind === 'REOPEN', JSON.stringify(rh?.body).slice(0, 160));
+  // FOLLOW UP / REOPEN (21 Oct): one button per card instead of five; it reads the whole relationship before anything is offered.
+  check('Past conversations: one Follow up / Reopen button per card (no separate action row); an address not in the CRM also gets Add to CRM',
+    (await crmCard.locator('[data-fu]').count()) === 1 && (await crmCard.locator('[data-nm-act]').count()) === 0 && (await outCard.locator('[data-fu][data-fu-key="e:someone@example.com"]').count()) === 1
+    && (await outCard.locator('[data-modal=history-add]').count()) === 1);
+  await outCard.locator('[data-fu]').click();
+  await page.waitForSelector('.modal.fu .fu-out');
+  const fq = calls.filter((c) => c.fn === 'hq_follow_up').pop();
+  check('Follow up / Reopen on an address not in the CRM → hq_follow_up with its Gmail key', fq && fq.body.p_key === 'e:someone@example.com' && !fq.body.p_company, JSON.stringify(fq?.body).slice(0, 160));
+  const fm = await page.locator('.modal.fu').innerText();
+  check('Follow up / Reopen card: recommendation, why, suggested action, suggested date, what changed, prepared, Director',
+    /Reopen with a new angle/.test(fm) && /Why/i.test(fm) && /Suggested action/i.test(fm) && /Suggested date/i.test(fm) && /What changed since you last spoke/i.test(fm)
+    && /winter season/.test(fm) && /Prepared/i.test(fm) && /Travel & Concierge Partnerships/i.test(fm) && /Nothing is sent from here/.test(fm), fm.replace(/\n/g, ' | ').slice(0, 300));
+  const fa = await tc(page, '.modal.fu [data-fu-act]');
+  check('Follow up / Reopen card: Schedule + Draft · Draft only · Build concept · Ask for meeting · Hold · Close, the recommended one first in weight',
+    fa.join('|') === 'Schedule + Draft|Draft only|Build concept|Ask for meeting|Hold|Close' && (await page.locator('.modal.fu [data-fu-act=SCHEDULE_AND_DRAFT].primary').count()) === 1, fa.join(' | '));
+  check('Follow up / Reopen card: context alone is not shown as a reason', !/What changed since you last spoke[\s\S]*Forever Is Now[\s\S]*Prepared/i.test(fm));
+  await shot(page, 'follow-up-reopen-1440');
+  await page.fill('#fu-date', '2026-10-30');
+  await page.click('.modal.fu [data-fu-act=SCHEDULE_AND_DRAFT]');
+  await page.waitForTimeout(400);
+  const fw = calls.filter((c) => c.fn === 'hq_follow_up_action').pop();
+  check('Schedule + Draft → hq_follow_up_action with the record and the chosen date; the banner says who owns it and that nothing was sent',
+    fw && fw.body.p_action === 'SCHEDULE_AND_DRAFT' && fw.body.p_key === 'e:someone@example.com' && fw.body.p_date === '2026-10-30'
+    && /Travel & Concierge Partnerships owns it/.test(await page.locator('.banner.ok').innerText().catch(() => '')) && /Nothing was sent/.test(await page.locator('.banner.ok').innerText().catch(() => ''))
+    && !calls.some((c) => /send/i.test(c.fn)), JSON.stringify(fw?.body).slice(0, 200));
   await shot(page, 'past-conversations-1440');
   for (const t of ['COMPANIES', 'WARM', 'PIPELINE', 'OPPORTUNITIES', 'COLD']) { await page.click(`main [data-rel-tab=${t}]`); await page.waitForTimeout(80); }
   check('Relationships: going cold lists hq_network().going_cold', (await page.locator('main .nrow').count()) === NET.going_cold.length);

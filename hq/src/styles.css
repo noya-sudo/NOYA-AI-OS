@@ -764,3 +764,20 @@ table.sc td, table.sc th { white-space: nowrap; }
 .nm-acts .btn { margin-bottom: 4px; }
 .card.reopen .nm-acts { border-top: 1px solid var(--line); padding-top: 8px; }
 @media (max-width: 640px) { .nm-r { grid-template-columns: 1fr; gap: 2px; } }
+
+/* FOLLOW UP / REOPEN (21 Oct): one button on every relationship, opportunity and outreach item; the analysis opens in a card */
+.fu-btn { white-space: nowrap; }
+.nm-h .fu-btn { margin-left: auto; }
+.modal.fu { width: min(680px, 100%); }
+.modal.fu h3 { margin: 4px 0 6px; }
+.fu-rec { border-top: 0; }
+.fu-out { font-weight: 600; font-size: 16px; }
+.fu-out.ok { color: var(--ok, #1f6f43); }
+.fu-out.warn { color: var(--warn, #8a5a00); }
+.fu-out.bad { color: var(--bad, #a33); }
+.fu-ch { margin: 0; padding-left: 18px; }
+.fu-ch li { margin: 2px 0; }
+.fu-facts { line-height: 1.6; padding: 6px 0; }
+.fu-date { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.fu-date .field { margin: 0; }
+.oc-fu { margin-top: 8px; }

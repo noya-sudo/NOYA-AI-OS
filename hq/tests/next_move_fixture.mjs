@@ -31,3 +31,23 @@ export const REOPEN = {
   linkedin: [],
   counts: { gmail: 2, owes_reply: 1, linkedin: 0 },
 };
+// FOLLOW UP / REOPEN (21 Oct): the analysis behind the one button (made-up relationship), and the morning board.
+export const FOLLOW_UP = {
+  ok: true, key: 'co:00000000-0000-0000-0000-00000000a002', company_id: '00000000-0000-0000-0000-00000000a002', connection_id: null, opportunity_id: null,
+  name: 'Harbour Hotel Group', person: 'Lena Harbour', type: 'TRAVEL', type_label: 'Travel / concierge', focus: 'Client requests, white-label Egypt execution, agent rates and repeat referrals.',
+  director: 'TRAVEL', director_name: 'Travel & Concierge Partnerships', outcome: 'REOPEN_NEW_ANGLE', outcome_label: 'Reopen with a new angle',
+  why: 'A useful reason to reopen: Egypt’s winter season (October to April) is when client demand peaks.', action: 'A short reopen built on what changed.',
+  date: '2026-10-21', date_reason: 'Today', channel: 'EMAIL', source: 'RULES',
+  angle: { kind: 'SEASON', strength: 2, text: 'Egypt’s winter season (October to April) is when client demand peaks.' },
+  changes: [{ kind: 'SEASON', strength: 2, text: 'Egypt’s winter season (October to April) is when client demand peaks.' },
+    { kind: 'EVENT', strength: 1, text: 'Forever Is Now 06 (Giza, 4 Nov–28 Nov)' }],
+  facts: { last_at: '2026-08-20T10:00:00Z', last_by: 'NOYA', days: 61, band: '31-90', band_rule: '31–90 days: reopen only with a useful reason.', replies: 2, meetings: 0,
+    unanswered: 1, subject: 'Egypt for your guests', state: 'COLD', declined: null, asked_later: null, opportunity: null },
+  task: null, prepared: { message: 'NONE', gmail_draft_id: null, thread: '1a0000000000hhg', text: null, material: null, concept: null, concept_optional: true },
+};
+export const FOLLOW_UP_BOARD = {
+  due: [], meetings: [], counts: { due: 0, replies_owed: 1, reopen: 1, meetings: 0, cold_sequence_due: 0 },
+  replies_owed: [{ ...FOLLOW_UP, key: 'e:client@example.com', company_id: null, name: 'Morgan Client', person: null, outcome: 'FOLLOW_UP_NOW',
+    why: 'They wrote last, yesterday: NOYA owes the reply.', action: 'Reply in their thread.', facts: { ...FOLLOW_UP.facts, last_by: 'THEM', days: 1 } }],
+  reopen: [FOLLOW_UP],
+};
