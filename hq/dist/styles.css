@@ -535,6 +535,15 @@ a.clickable:hover { text-decoration: underline; }
 .li-row .dr-msg { white-space: pre-wrap; }
 .li-row .li-reply { -webkit-line-clamp: 6; }
 .li-conn { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; -webkit-line-clamp: unset; overflow: visible; }
+/* LinkedIn history (Adam's own download, read-only): the report lists and a person's messages in the drawer */
+#li-archive .dc-cells { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.li-list { border-top: 1px solid var(--line); padding: 6px 0; }
+.li-list > summary { cursor: pointer; padding: 4px 0; }
+.li-list > summary .n { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.li-list .t-sub { white-space: normal; }
+.li-msg { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin: 6px 24px 6px 0; white-space: pre-wrap; font-size: 13px; }
+.li-msg.out { margin: 6px 0 6px 24px; border-left: 3px solid var(--line-2); }
+.li-hist { -webkit-line-clamp: unset; }
 label.radio { display: flex; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 
 /* HQ Advisor */
@@ -658,7 +667,7 @@ h3.grp { margin: 24px 0 10px; }
   .wk-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .wk-dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .wk-dl dd { margin-bottom: 8px; }
-  .dc-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .dc-cells, #li-archive .dc-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .nrow { grid-template-columns: minmax(0, 1fr); }
   .nrow .t-btns { justify-content: flex-start; }
   .dsec.advisor { padding: 12px 14px; }

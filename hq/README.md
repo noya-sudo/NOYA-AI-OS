@@ -25,6 +25,9 @@ A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **
 | `hq_linkedin_action(id, action, text, date)` | LinkedIn agent: EDIT, EDIT_NOTE, EDIT_FOLLOWUP, CONNECTION_SENT, CONNECTED, SENT, HOLD, RELEASE, CLOSE. Records what Adam did; never sends |
 | `hq_linkedin_reply(id, text, class)` | Log a LinkedIn reply Adam pasted: classified (or his class), logged, follow-ups cancelled, response suggested, Meeting Assist on a meeting intent |
 | `hq_meeting_confirm(task, start, minutes, where)` | Confirm meeting: the meeting record, briefing, relationship note and opportunity update; the calendar entry is added without guests |
+| `hq_import_linkedin_messages(rows)` | LinkedIn data download: up to 1,000 parsed messages a call (400 from HQ); a message already imported is never added twice |
+| `hq_linkedin_archive(step, stats)` | LinkedIn data download: `start` before the upload, then `self`, `people`, `history`, `match`, `states` (one short call each); no step reads the report |
+| `hq_linkedin_history(connection)` | A person's last twelve LinkedIn messages with Adam, newest first, read-only (their drawer) |
 
 Each function:
 - checks that the signed-in user is in `hq_admins`, matching both the user id and the email;

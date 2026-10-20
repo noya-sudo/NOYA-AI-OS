@@ -20,7 +20,9 @@ export function withMorning(desk, opportunities = []) {
     sent_at: i >= 4 ? new Date(Date.now() - 3 * 864e5).toISOString() : null, replied_at: i === 5 ? new Date(Date.now() - 36e5).toISOString() : null,
     reply_text: i === 5 ? 'Thanks Adam, interesting timing. What would a first project look like?' : null, reply_class: i === 5 ? 'QUESTION' : null,
     response_draft: i === 5 ? 'Thank you. [Answer the question in one or two lines.] Happy to explain more on a short call if useful.' : null,
-    meeting_task_id: null, hold_reason: null, created_at: x.created_at, words: String(x.draft || '').trim().split(/\s+/).filter(Boolean).length }));
+    meeting_task_id: null, hold_reason: null, created_at: x.created_at, words: String(x.draft || '').trim().split(/\s+/).filter(Boolean).length,
+    // From the LinkedIn data download (20 Oct): the second ready item is already a connection with an old two-way conversation.
+    ...(i === 1 ? { li_connected: true, li_state: 'DORMANT', li_reason: '4 messages (2 from them) · last 12 Mar 2023, they wrote last · connected since Jan 2021', li_last_at: '2023-03-12T10:00:00Z' } : {}) }));
   const o = opportunities.find((x) => x.contact_name && x.company_name) || {};
   const meeting_assist = o.id ? [{ task_id: id(90), title: `MEETING ASSIST -- ${o.company_name}`, company: o.company_name, company_id: null, opportunity_id: o.id, person: o.contact_name,
     source: 'LINKEDIN', state: 'SLOTS_PROPOSED', slots: [{ start: '2026-10-22T09:00:00+00:00', end: '2026-10-22T09:30:00+00:00' }, { start: '2026-10-23T14:00:00+00:00', end: '2026-10-23T14:30:00+00:00' }],

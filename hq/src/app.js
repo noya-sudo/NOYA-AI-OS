@@ -90,7 +90,7 @@ const state = {
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
   com: null, account: {}, radarF: { h: 'ALL', region: '', cat: '', q: '' }, actF: { view: 'TODAY', seg: '', owner: '', track: '' }, parF: { tab: 'DEVELOP', cls: '' }, evF: { tab: 'UPCOMING' },
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
-  contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' },
+  contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' }, liHist: {},
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
   cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {},
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
@@ -204,6 +204,13 @@ async function load(silent = false, scope = 'full') {
 // Load one read on demand (a section that needs data no wave has fetched yet), then redraw.
 const ensure = (k) => { if (!state[k] && !state.busy[k] && !state.errors[errKey(k)]) readKey(k).then(render); };
 
+async function loadLinkedInHistory(id) {
+  if (state.busy[`lih:${id}`]) return;
+  state.busy[`lih:${id}`] = true;
+  const { data, error } = await sb.rpc('hq_linkedin_history', { p_connection: id });
+  state.busy[`lih:${id}`] = false; state.liHist[id] = error ? { error: error.message } : (data || []);
+  render();
+}
 async function loadTimeline(kind, id) {
   const key = `${kind}:${id}`;
   const { data, error } = await sb.rpc('hq_timeline', { p_kind: kind, p_id: id });
@@ -1219,11 +1226,48 @@ function viewRelationships() {
 
 // ---------------------------------------------------------------- LINKEDIN
 const LI_OPTIONS = [
-  ['1. Your LinkedIn data export + draft here + you send (recommended)', 'Your 1st-degree connections file (name, company, position, profile link, connected date; email only if the contact allowed it)', 'Nothing. HQ drafts; you open the profile and send yourself', 'No password, cookie or token is stored. You upload the file; only the needed columns are kept', 'Fully compliant — it is your own data export', '£0', '£0'],
+  ['1. Your LinkedIn data download + draft here + you send (recommended)', 'Your connections (name, company, position, profile link, connected date; email only if the contact allowed it) and your message history, as read-only context', 'Nothing. HQ drafts; you open the profile and send yourself', 'No password, cookie or token is stored. You upload the file; only the needed columns are kept', 'Fully compliant — it is your own data export', '£0', '£0'],
   ['2. Official "Sign in with LinkedIn" API', 'Your own name, photo and email only', 'Posts to your own feed only', 'OAuth token kept server-side', 'Compliant, but cannot read connections or send messages (those APIs are partner-only)', '£0', '£0'],
   ['3. Sales Navigator (manual use)', 'Better search, lead lists, InMail credits inside LinkedIn', 'InMail by you, inside LinkedIn', 'None in HQ', 'Compliant; no API access for NOYA (SNAP partner programme is closed)', 'Paid — verify current price before any decision', 'None'],
   ['4. Browser-cookie automation tools (Phantombuster, Expandi, Dripify…)', 'Everything your account can see', 'Automated invites and messages', 'Requires your session cookie — account-takeover risk', 'Breaks LinkedIn User Agreement; account restriction risk. Not recommended', 'Paid — verify', 'Paid tiers'],
 ];
+// The LinkedIn relationship state from Adam's own LinkedIn download (read-only history; every state carries its date).
+const LI_REL = { ACTIVE: ['Active', 'ok'], WARM: ['Warm', 'ok'], DORMANT: ['Dormant', 'warn'], REPLIED_BEFORE: ['Replied before', ''], MESSAGED_BEFORE: ['Messaged before', ''],
+  CONNECTED: ['Connected', ''], DO_NOT_CONTACT: ['Do not contact', 'bad'] };
+const liRel = (s) => (s ? pill(...(LI_REL[s] || [sentence(String(s).replace(/_/g, ' ')), ''])) : '');
+const liRank = (s) => ['ACTIVE', 'WARM', 'DORMANT', 'REPLIED_BEFORE', 'MESSAGED_BEFORE', 'CONNECTED'].indexOf(s) + 1 || 9;
+function liArchivePanel() {
+  const A = state.liArch;
+  if (!A) { loadV3('liArch', 'hq_linkedin_archive', {}); return state.errors.liArch ? `<section class="panel mt8"><header><h3>Your LinkedIn history</h3></header><div class="body">${unavailable('liArch')}</div></section>` : ''; }
+  if (!A.connections && !A.messages) return '';
+  const D = A.duplicates_prevented || {}; const R = A.review || {}; const S = A.states || {};
+  const dups = (D.in_files || 0) + (D.connections_already_known || 0) + (D.messages_already_imported || 0);
+  const cell = (n, l) => `<div class="dc-c"><b>${n0(n)}</b><span>${l}</span></div>`;
+  const known = new Set((state.dir?.connections || []).map((c) => c.id));
+  const person = (p, extra = '') => `<div class="t-row li-p"><div><div class="t-main">${esc(p.person || '—')}${p.role || p.company ? ` · <span class="faint">${esc([p.role, p.company].filter(Boolean).join(', '))}</span>` : ''} ${liRel(p.state)}${p.in_crm ? ` ${pill('in CRM')}` : ''}</div>
+      <div class="t-sub">${esc([p.recency, extra].filter(Boolean).join(' · '))}</div>${p.reason ? `<div class="t-sub faint">${esc(p.reason)}</div>` : ''}</div>
+      <div class="t-btns">${p.profile_url ? `<a class="btn small" href="${esc(p.profile_url)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ''}${known.has(p.connection_id) ? `<button class="btn small" data-open="connection" data-id="${esc(p.connection_id)}">Open</button>` : ''}</div></div>`;
+  const list = (title, items, hint, render = (p) => person(p), open = false) => `<details class="li-list"${open ? ' open' : ''}><summary><b>${esc(title)}</b> <span class="n">${(items || []).length}</span>${hint ? ` <span class="small faint">${esc(hint)}</span>` : ''}</summary>
+      ${(items || []).map(render).join('') || '<p class="small muted">None.</p>'}</details>`;
+  const intro = (p) => person(p, p.intro ? `introduced${p.intro.by ? ` by ${p.intro.by}` : ''} ${shortDay(p.intro.at)}${p.intro.title ? ` (“${p.intro.title}”)` : ''}` : '');
+  return `<section class="panel mt8" id="li-archive"><header><h3>Your LinkedIn history</h3><span class="small faint">${A.imported_at ? `imported ${esc(fmtDate(A.imported_at))} · ` : ''}read-only</span></header><div class="body">
+    ${A.self_known === false ? '<div class="unavail"><span>HQ could not tell which profile is yours in messages.csv, so the conversations are stored but not yet linked to people. Upload the messages file from your own LinkedIn download.</span></div>' : ''}
+    <div class="dc-cells">${cell(A.connections, 'connections imported')}${cell(`${A.conversations_matched ?? 0} of ${A.conversations ?? 0}`, 'conversations matched to the CRM')}
+      ${cell(A.companies_new?.count, 'companies not in the CRM')}${cell((A.warm_destination_egypt || []).length, 'warm Destination Egypt routes')}
+      ${cell(S.DORMANT || 0, 'dormant relationships')}${cell((R.count || 0) + (R.warm_not_in_crm || 0), 'to review')}${cell(dups, 'duplicates prevented')}</div>
+    <div class="pills mt6">${Object.keys(LI_REL).filter((k) => S[k]).map((k) => `${liRel(k)} <span class="small">${n0(S[k])}</span>`).join(' ')}</div>
+    <p class="src">${esc(A.note || '')}</p>
+    ${list('Warm Destination Egypt routes', A.warm_destination_egypt, 'a real conversation at a Destination Egypt target', (p) => person(p, p.project ? `Project: ${plainText(p.project)}` : ''), true)}
+    ${(A.connected_destination_egypt || []).length ? list('Connected at Destination Egypt targets, never spoke', A.connected_destination_egypt, 'a route for a first message, not a warm relationship', (p) => person(p, p.project ? `Project: ${plainText(p.project)}` : '')) : ''}
+    ${list('Dormant relationships worth reopening', A.dormant, 'reopen personally, never with a cold introduction')}
+    ${list('Warm now', A.warm, 'two-way in the last 12 months')}
+    ${list('Introductions and referrals', A.introductions, 'who introduced you, and when', intro)}
+    ${list('Needs your review', [...(R.top || []), ...(R.warm_not_in_crm_top || [])], 'name-only matches are never linked automatically; warm people not in the CRM yet', (p) => person(p, p.review || 'warm, not in the CRM'))}
+    ${list('Companies not in the CRM', A.companies_new?.top, `${n0(A.companies_new?.count)} in total; nothing is created automatically`, (c) => `<div class="t-row"><div><div class="t-main">${esc(c.company)} ${liRel(c.best_state)}</div><div class="t-sub">${n0(c.people)} ${c.people === 1 ? 'person' : 'people'}${c.two_way ? ` · ${n0(c.two_way)} two-way` : ''}${c.person ? ` · best: ${esc(c.person)}` : ''}</div></div></div>`)}
+    ${(R.do_not_contact || []).length ? list('Asked not to be contacted', R.do_not_contact, 'held: check before any message') : ''}
+    <p class="small faint">Duplicates prevented: ${n0(D.in_files || 0)} repeated lines in the files, ${n0(D.connections_already_known || 0)} ${D.connections_already_known === 1 ? 'person' : 'people'} already known, ${n0(D.messages_already_imported || 0)} messages already imported, ${n0(D.linked_to_existing_crm_contacts || 0)} linked to existing CRM contacts instead of new ones.</p>
+  </div></section>`;
+}
 function viewLinkedin() {
   const dir = state.dir; if (!dir) return empty('LinkedIn data not loaded.');
   const conns = dir.connections; const f = state.netF; const q = f.q.trim().toLowerCase();
@@ -1234,11 +1278,14 @@ function viewLinkedin() {
   const lists = {
     known: conns.filter((c) => score(c) > 0).sort((a, b) => score(b) - score(a) || String(a.name).localeCompare(String(b.name))),
     warm: conns.filter((c) => c.active_opps > 0).sort((a, b) => b.active_opps - a.active_opps),
-    matched: conns.filter((c) => c.matched_company_id),
+    history: conns.filter((c) => c.li_messages > 0).sort((a, b) => liRank(a.li_state) - liRank(b.li_state) || String(b.li_last_at).localeCompare(String(a.li_last_at))),
     emailed: conns.filter((c) => c.email_history > 0),
     followup: due,
+    matched: conns.filter((c) => c.matched_company_id),
+    review: conns.filter((c) => c.review_reason),
     all: conns,
   };
+  const total = dir.connections_total ?? conns.filter((c) => c.connected !== false).length;
   const rows = (lists[f.only] || conns).filter((c) => (!f.vertical || c.vertical === f.vertical) && (!q || [c.name, c.company, c.position].some((v) => String(v ?? '').toLowerCase().includes(q))));
   const drafts = (dir.drafts || []).filter((x) => x.channel === 'LINKEDIN' || x.channel === 'INSTAGRAM' || x.channel === 'WHATSAPP' || x.channel === 'EMAIL');
   return `<h2>LinkedIn</h2>
@@ -1247,22 +1294,25 @@ function viewLinkedin() {
       <div class="body">${acts.slice(0, 3).map(manualChannelCard).join('') || '<div class="empty">No LinkedIn messages waiting.</div>'}${acts.length > 3 ? `<button class="linkish" data-go="outreach" data-otab="LINKEDIN">Show all ${acts.length}</button>` : ''}</div></section>
     <section class="panel mt8"><header><h3>Drafts (${drafts.length})</h3><span class="small faint">requested from HQ · written by the drafting workflow</span></header>
       <div class="body">${drafts.map(draftRow).join('') || '<div class="empty">No drafts. Use "Draft message" on any person, company or connection.</div>'}</div></section>
-    <section class="panel mt8"><header><h3>People you already know</h3><span class="small faint">${conns.length} connections imported</span></header>
+    ${liArchivePanel()}
+    <section class="panel mt8"><header><h3>People you already know</h3><span class="small faint">${n0(total)} connections imported${conns.length < total ? ` · ${conns.length} linked to NOYA or with history shown` : ''}</span></header>
       <div class="body">${conns.length ? `
-        <div class="tabs">${[['known', 'Linked to NOYA'], ['warm', 'At active prospects'], ['emailed', 'Also emailed NOYA'], ['followup', 'Follow-up due'], ['matched', 'At known companies'], ['all', 'All']].map(([k, l]) => `<button data-nf="only" data-v="${k}" class="${f.only === k ? 'on' : ''}">${l} <span class="n">${lists[k].length}</span></button>`).join('')}</div>
+        <div class="tabs">${[['known', 'Linked to NOYA'], ['warm', 'At active prospects'], ['history', 'Messaged on LinkedIn'], ['emailed', 'Also emailed NOYA'], ['followup', 'Follow-up due'], ['matched', 'At known companies'], ['review', 'To review'], ['all', 'All shown']].map(([k, l]) => `<button data-nf="only" data-v="${k}" class="${f.only === k ? 'on' : ''}">${l} <span class="n">${lists[k].length}</span></button>`).join('')}</div>
         <div class="filters"><input data-nf="q" placeholder="Name, company, role…" value="${esc(f.q)}"><select data-nf="vertical">${opt('', f.vertical || '', 'All verticals')}${Object.entries(VERTICAL_LABEL).map(([k, l]) => opt(k, f.vertical || '', l)).join('')}</select></div>
-        <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>Status</th><th>Relationship</th><th>Next follow-up</th></tr></thead><tbody>
-        ${rows.slice(0, 200).map((c) => `<tr class="clickable" data-open="connection" data-id="${c.id}"><td>${esc(c.name || '—')}<div class="muted small">${esc(c.position || '')}</div>${(c.evidence || []).length ? `<div class="small evidence">${(c.evidence || []).map((e) => `<div>✓ ${esc(e)}</div>`).join('')}</div>` : ''}</td>
-          <td>${esc(c.company || '—')}${c.active_opps ? ` ${pill(`${c.active_opps} active opp${c.active_opps > 1 ? 's' : ''}`, 'info')}` : ''}${c.email_history ? ` ${pill('emailed before', 'ok')}` : ''}${c.matched_contact_id ? ` ${pill('in CRM')}` : ''}</td><td>${pill(sentence(c.status.replace(/_/g, ' ')))}</td>
-          <td class="small" title="No data source measures relationship strength; it stays UNKNOWN until you describe how you know them.">${c.how_we_know ? esc(c.how_we_know) : 'Unknown'}</td>
+        <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>LinkedIn history</th><th>Status</th><th>Next follow-up</th></tr></thead><tbody>
+        ${rows.slice(0, 200).map((c) => `<tr class="clickable" data-open="connection" data-id="${c.id}"><td>${esc(c.name || '—')}<div class="muted small">${esc(c.position || '')}</div>${(c.evidence || []).length ? `<div class="small evidence">${(c.evidence || []).map((e) => `<div>✓ ${esc(e)}</div>`).join('')}</div>` : ''}${c.review_reason ? `<div class="small warn-text">${esc(c.review_reason)}</div>` : ''}</td>
+          <td>${esc(c.company || '—')}${c.active_opps ? ` ${pill(`${c.active_opps} active opp${c.active_opps > 1 ? 's' : ''}`, 'info')}` : ''}${c.email_history ? ` ${pill('emailed before', 'ok')}` : ''}${c.matched_contact_id ? ` ${pill('in CRM')}` : ''}</td>
+          <td class="small">${c.li_state ? `${liRel(c.li_state)}${c.li_last_at ? `<div class="faint">last ${esc(fmtDay(c.li_last_at))}</div>` : ''}` : '<span class="faint">—</span>'}</td>
+          <td>${pill(sentence(c.status.replace(/_/g, ' ')))}${c.how_we_know ? `<div class="small faint">${esc(c.how_we_know)}</div>` : ''}</td>
           <td class="small">${esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No connections match.</td></tr>'}</tbody></table></div>
         ${rows.length > 200 ? `<p class="small faint">Showing 200 of ${rows.length}. Narrow with the filter.</p>` : ''}`
-        : `<div class="empty">No connections imported yet. Import your LinkedIn export below to see which prospects you already know.</div>`}</div></section>
-    <section class="panel mt8"><header><h3>Import your LinkedIn connections</h3></header><div class="body">
+        : `<div class="empty">${total ? `${n0(total)} connections imported; none is linked to NOYA or has a message history yet.` : 'Nothing imported yet. Upload your LinkedIn download below to see who you already know and who you have spoken to.'}</div>`}</div></section>
+    <section class="panel mt8"><header><h3>Import your LinkedIn history</h3></header><div class="body">
       <ol class="small steps"><li>On LinkedIn: <b>Me → Settings &amp; Privacy → Data privacy → Get a copy of your data</b>.</li>
-        <li>Choose <b>Connections</b> only (not the full archive, not messages), request it. LinkedIn emails a link (usually within 10–30 minutes).</li>
-        <li>Download and unzip; choose <b>Connections.csv</b> below. It is read in your browser; only name, company, position, profile link and connected date are saved. Re-importing updates, never duplicates.</li></ol>
-      <label class="btn">Choose Connections.csv<input type="file" id="li-file" accept=".csv,text/csv" hidden></label>
+        <li>Tick <b>Connections</b> and <b>Messages</b> (or ask for the full archive) and request it. LinkedIn emails a download link, usually within a day.</li>
+        <li>Choose the downloaded <b>.zip</b> below, as it is. Or unzip it and choose <b>Connections.csv</b> and <b>messages.csv</b> together.</li></ol>
+      <p class="small muted">Read in your browser. Only people (name, company, position, profile link, connected date) and messages (date, who wrote to whom, the text) are saved, to NOYA's private database, as read-only history. Nothing is sent, no CRM person or company is created, and HQ never logs in to LinkedIn. Uploading again adds only what is new.</p>
+      <label class="btn">Choose the LinkedIn download<input type="file" id="li-file" accept=".zip,.csv,application/zip,text/csv" multiple hidden></label>
     </div></section>
     <details class="panel mt8"><summary><b>How HQ connects to LinkedIn — options and approval</b> (method 1 is in use; nothing else is connected)</summary><div class="body">
       <div class="tbl-wrap"><table><thead><tr><th>Option</th><th>Can read</th><th>Can write / send</th><th>Security</th><th>Platform / compliance risk</th><th>Monthly</th><th>Usage</th></tr></thead>
@@ -1570,15 +1620,21 @@ function renderDrawer(dr) {
   if (dr.kind === 'connection') {
     const c = dir.connections.find((x) => x.id === dr.id); if (!c) return drawerShell('', '<p class="muted">Connection not found.</p>');
     const drafts = (dir.drafts || []).filter((x) => x.connection_id === c.id);
-    return drawerShell(`<h2>${esc(c.name || 'Connection')}</h2><div class="pills">${pill(sentence(c.status.replace(/_/g, ' ')))}${c.vertical ? pill(V(c.vertical)) : ''}</div>`, `
+    const H = state.liHist[c.id];
+    if (c.li_messages > 0 && !H) loadLinkedInHistory(c.id);
+    const hist = !(c.li_messages > 0) ? '' : `<h3>LinkedIn messages</h3><p class="small muted">From your LinkedIn download, read-only, newest first. Check the date before writing: an old conversation is not a live lead.</p>
+      ${!H ? '<p class="muted small">Loading…</p>' : H.error ? `<p class="small warn-text">${esc(friendly(H.error))}</p>` : H.map((x) => `<div class="li-msg ${x.out ? 'out' : ''}"><div class="small faint">${esc(fmtDate(x.at))} · ${x.out ? 'You' : esc(x.who || 'They')}${x.group ? ' · group conversation' : ''}${x.title ? ` · ${esc(x.title)}` : ''}</div><div>${esc(x.text || '')}</div></div>`).join('')}`;
+    return drawerShell(`<h2>${esc(c.name || 'Connection')}</h2><div class="pills">${pill(sentence(c.status.replace(/_/g, ' ')))}${c.vertical ? pill(V(c.vertical)) : ''}${liRel(c.li_state)}${c.connected === false ? pill('not a connection') : ''}</div>`, `
       <div class="btn-row"><a class="btn small" href="${esc(c.profile_url)}" target="_blank" rel="noopener noreferrer">Open in LinkedIn</a>
         <button class="btn small primary" data-modal="draft-request" data-channel="LINKEDIN" data-conn="${c.id}">Draft message</button>
         <button class="btn small" data-modal="touch" data-channel="LINKEDIN" data-conn="${c.id}">Mark sent</button>
         <button class="btn small" data-modal="conn-status" data-conn="${c.id}">Update status</button><button class="btn small" data-modal="note" data-conn="${c.id}">Add note</button></div>
       <div class="grid2">${kv('Role', esc(c.position || '—'))}${kv('Company', c.matched_company_id ? `<button class="linkish" data-open="company" data-id="${c.matched_company_id}">${esc(c.company)}</button>` : esc(c.company || '—'))}
-        ${kv('Connected', esc(c.connected_on ? fmtDay(c.connected_on) : '—'))}${kv('Relationship strength', 'Unknown <span class="faint small">(no data source measures this)</span>')}
+        ${kv('Connected', esc(c.connected_on ? fmtDay(c.connected_on) : c.connected === false ? 'not a 1st-degree connection' : '—'))}${kv('LinkedIn relationship', c.li_state ? `${liRel(c.li_state)} <span class="faint small">${esc(c.li_reason || '')}</span>` : 'Unknown <span class="faint small">(no LinkedIn history imported)</span>')}
         ${kv('How you know them', esc(c.how_we_know || '—'))}${kv('Last contacted', esc(c.last_contacted_at ? fmtDate(c.last_contacted_at) : 'never (in HQ)'))}
         ${kv('Next follow-up', esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—'))}${kv('Active opportunities at company', esc(c.active_opps))}</div>
+      ${c.review_reason ? `<p class="small warn-text">${esc(c.review_reason)}</p>` : ''}
+      ${hist}
       ${drafts.length ? `<h3>Drafts</h3>${drafts.map(draftRow).join('')}` : ''}`);
   }
   return '';
@@ -2198,11 +2254,15 @@ function renderAnyModal(m) {
       return `<div class="modal-bg"><div class="modal"><h3>Account</h3><p class="small muted">Signed in as ${esc(state.session?.user?.email || '')}</p>
         <div class="quick"><button class="btn" id="acct-pw">Change password</button><button class="btn danger" id="acct-out">Sign out</button></div>
         <div class="btn-row"><button class="btn" data-close>Close</button></div></div></div>`;
-    case 'import': {
-      const rows = m.rows || [];
-      return form('Import LinkedIn connections', `<p><b>${rows.length}</b> connections found${m.skipped ? `, ${m.skipped} lines skipped (no profile link)` : ''}${m.dups ? `, ${m.dups} duplicate lines ignored` : ''}.</p>
-        <p class="small muted">Saved: name, company, position, profile link, connected date${rows.some((r) => r.email) ? ', and email where the person shared it with you' : ''}. Nothing else. Re-importing updates existing people.</p>
-        <p class="small">${rows.slice(0, 3).map((r) => esc(`${r.first_name || ''} ${r.last_name || ''} — ${r.company || ''}`)).join('<br>')}${rows.length > 3 ? '<br>…' : ''}</p>`, `Import ${rows.length}`);
+    case 'li-archive': {
+      const C = m.conns; const M = m.msgs;
+      const left = [C?.skipped && `${C.skipped} without a profile link`, C?.dups && `${C.dups} repeated connections`, M?.drafts && `${M.drafts} unsent drafts`, M?.spam && `${M.spam} spam`,
+        M?.bad && `${M.bad} unreadable lines`, M?.dups && `${M.dups} repeated messages`].filter(Boolean);
+      return form('Import your LinkedIn history', `<p>${C ? `<b>${n0(C.rows.length)}</b> connections` : 'No Connections.csv'} · ${M ? `<b>${n0(M.rows.length)}</b> messages in <b>${n0(M.conversations)}</b> conversations${M.first ? ` (${esc(fmtDay(M.first))} to ${esc(fmtDay(M.last))})` : ''}` : 'no messages.csv'}</p>
+        ${left.length ? `<p class="small">Left out: ${esc(left.join(', '))}.</p>` : ''}
+        ${M && M.rows.length && !M.self_hint ? '<p class="small warn-text">HQ could not tell which profile is yours in the messages. They will be stored, and linked to people once your own profile is clear.</p>' : ''}
+        <p class="small muted">Read in your browser. Saved to NOYA's private database: for people, name, company, position, profile link and connected date${C?.rows.some((r) => r.email) ? ' (email only where the person shared it with you)' : ''}; for messages, the date, who wrote to whom and the text (up to 4,000 characters each), as read-only history. Nothing is sent, no CRM person or company is created, and LinkedIn is never contacted. Uploading again adds only what is new.</p>`,
+        'Import');
     }
     case 'work-order': {
       const D = (state.cmd?.directors || []).map((x) => [x.key, x.name]);
@@ -2387,18 +2447,9 @@ async function submitModal() {
         p_contact_linkedin: val('f-li'), p_destination: val('f-dest'), p_note: val('f-note') }, 'Opportunity created.');
       if (r?.ok) { state.notice = { err: false, text: r.company_reused ? 'Opportunity created under the existing company (no duplicate).' : 'Opportunity and company created.' }; openDrawer('opp', r.opportunity_id); }
       return r; }
-    case 'import': {
-      const rows = m.rows || []; state.modal = null; let nw = 0; let upd = 0; let dup = m.dups || 0; let skip = m.skipped || 0; let err = null;
-      state.notice = { err: false, text: `Importing ${rows.length} connections…` }; render();
-      for (let i = 0; i < rows.length; i += 500) {
-        const { data, error } = await sb.rpc('hq_import_connections', { p_rows: rows.slice(i, i + 500) });
-        if (error || data?.ok === false) { err = error?.message || explain(data); break; }
-        nw += data.new ?? data.upserted ?? 0; upd += data.updated ?? 0; dup += data.duplicates ?? 0; skip += data.skipped ?? 0;
-        state.notice = { err: false, text: `Importing… ${Math.min(i + 500, rows.length)} of ${rows.length}` }; render();
-      }
-      const summary = `${nw} new, ${upd} already known (updated)${dup ? `, ${dup} duplicates ignored` : ''}${skip ? `, ${skip} skipped (no profile link)` : ''}`;
-      state.notice = err ? { err: true, text: `Import stopped after ${nw + upd}: ${err}` } : { err: false, text: `LinkedIn import done: ${summary}. People linked to NOYA are listed first.` };
-      state.netF.only = 'known';
+    case 'li-archive': {
+      state.modal = null; const r = await importLinkedIn(m.conns, m.msgs);
+      state.netF.only = r.ok && m.msgs?.rows.length ? 'history' : 'known';
       await load(true); return null; }
     case 'work-order': {
       const mission = val('wo-mission'); if (!need(mission && mission.length >= 5, 'Write the mission in a sentence.')) return;
@@ -2464,6 +2515,116 @@ function parseConnections(text) {
       company: r[I.company] || null, position: r[I.position] || null, connected_on: liDate(r[I.on]) });
   });
   return { rows: good, skipped, dups };
+}
+// LinkedIn "messages.csv": one line per message with LinkedIn's own UTC date. Unsent drafts and spam are left out; text is kept as plain text.
+// Adam is the profile present in most conversations (at least 60%): the database checks the same rule again and corrects any line.
+const liSlug = (u) => (String(u || '').toLowerCase().match(/linkedin\.com\/in\/([^/?#\s,;]+)/) || [])[1] || null;
+const liText = (s) => String(s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+function parseMessages(text) {
+  const rows = parseCsv(String(text).replace(/^﻿/, ''));
+  const h = rows.findIndex((r) => r.some((c) => /^conversation id$/i.test(c.trim())) && r.some((c) => /^date$/i.test(c.trim())));
+  if (h < 0) return { error: 'This does not look like LinkedIn\'s messages.csv (no "CONVERSATION ID" / "DATE" header).' };
+  const idx = (n) => rows[h].findIndex((c) => c.trim().toLowerCase() === n);
+  const I = { cid: idx('conversation id'), title: idx('conversation title'), from: idx('from'), furl: idx('sender profile url'), to: idx('to'), turl: idx('recipient profile urls'),
+    date: idx('date'), subject: idx('subject'), content: idx('content'), folder: idx('folder'), draft: idx('is message draft') };
+  const good = []; let drafts = 0; let spam = 0; let bad = 0; let dups = 0; const seen = new Set(); const where = new Map(); const convs = new Set();
+  const cell = (r, i) => (i >= 0 ? String(r[i] ?? '').trim() : '');
+  rows.slice(h + 1).forEach((r) => {
+    if (r.every((c) => !String(c).trim())) return;
+    if (/^(yes|true)$/i.test(cell(r, I.draft))) { drafts += 1; return; }
+    const folder = cell(r, I.folder);
+    if (/^spam$/i.test(folder)) { spam += 1; return; }
+    const d = cell(r, I.date).match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?/); const cid = cell(r, I.cid);
+    const from = cell(r, I.from) || null; const furl = liSlug(cell(r, I.furl));
+    if (!d || !cid || (!from && !furl)) { bad += 1; return; }
+    const sent_at = `${d[1]}T${d[2]}${d[3] || ':00'}Z`; const content = liText(cell(r, I.content)).slice(0, 4000);
+    const key = [cid, sent_at, furl || from, content].join('\u001f');
+    if (seen.has(key)) { dups += 1; return; }
+    seen.add(key); convs.add(cid);
+    const rurls = [...new Set(cell(r, I.turl).split(/[\s,;]+/).map(liSlug).filter(Boolean))];
+    [furl, ...rurls].filter(Boolean).forEach((s) => { if (!where.has(s)) where.set(s, new Set()); where.get(s).add(cid); });
+    good.push({ conversation_id: cid, title: cell(r, I.title) || null, sent_at, from, sender_url: furl ? `https://www.linkedin.com/in/${furl}` : null, to: cell(r, I.to) || null,
+      recipient_urls: rurls.map((s) => `https://www.linkedin.com/in/${s}`), subject: cell(r, I.subject) || null, content, folder: folder || null });
+  });
+  let self = null; let most = 0;
+  where.forEach((set, s) => { if (set.size > most) { most = set.size; self = s; } });
+  const dates = good.map((x) => x.sent_at).sort();
+  return { rows: good, drafts, spam, bad, dups, conversations: convs.size, first: dates[0] || null, last: dates[dates.length - 1] || null,
+    self_hint: self && most >= convs.size * 0.6 ? `https://www.linkedin.com/in/${self}` : null };
+}
+// LinkedIn's download is a .zip. Only Connections.csv and messages.csv are read from it, in the browser, from the zip's own index.
+async function unzipLinkedIn(buf) {
+  const v = new DataView(buf); const u8 = new Uint8Array(buf); const dec = new TextDecoder('utf-8'); let e = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i -= 1) if (v.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('This file is not a readable .zip. Unzip it and choose Connections.csv and messages.csv instead.');
+  const n = v.getUint16(e + 10, true); let p = v.getUint32(e + 16, true); const out = {};
+  if (p === 0xffffffff) throw new Error('This archive is too large to open here. Unzip it and choose Connections.csv and messages.csv instead.');
+  for (let k = 0; k < n && v.getUint32(p, true) === 0x02014b50; k += 1) {
+    const method = v.getUint16(p + 10, true); const size = v.getUint32(p + 20, true); const nl = v.getUint16(p + 28, true); const off = v.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nl));
+    p += 46 + nl + v.getUint16(p + 30, true) + v.getUint16(p + 32, true);
+    const key = /(^|\/)connections\.csv$/i.test(name) ? 'connections' : /(^|\/)messages\.csv$/i.test(name) ? 'messages' : null;
+    if (!key || out[key] != null) continue;
+    const at = off + 30 + v.getUint16(off + 26, true) + v.getUint16(off + 28, true); const data = u8.subarray(at, at + size);
+    if (method === 0) out[key] = dec.decode(data);
+    else if (method === 8 && typeof DecompressionStream === 'function') out[key] = await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+    else throw new Error('This browser cannot open the zip. Unzip it and choose Connections.csv and messages.csv instead.');
+  }
+  return out;
+}
+async function readLinkedInFiles(files) {
+  const txt = {};
+  for (const file of files) {
+    if (/\.zip$/i.test(file.name) || file.type === 'application/zip') {
+      if (file.size > 500 * 1024 * 1024) throw new Error('This archive is larger than 500 MB. Unzip it and choose Connections.csv and messages.csv instead.');
+      Object.assign(txt, await unzipLinkedIn(await file.arrayBuffer()));
+    } else if (file.size > 150 * 1024 * 1024) throw new Error(`${file.name} is larger than 150 MB.`);
+    else if (/messages\.csv$/i.test(file.name)) txt.messages = await file.text();
+    else txt.connections = await file.text();
+  }
+  if (txt.connections == null && txt.messages == null) throw new Error('No Connections.csv or messages.csv found. Choose the LinkedIn download (.zip) or those two files.');
+  const conns = txt.connections != null ? parseConnections(txt.connections) : null;
+  const msgs = txt.messages != null ? parseMessages(txt.messages) : null;
+  // A file chosen by another name is tried as the other kind before giving up.
+  if (conns?.error && !msgs) { const asM = parseMessages(txt.connections); if (!asM.error) return { conns: null, msgs: asM }; }
+  if (conns?.error) throw new Error(conns.error);
+  if (msgs?.error) throw new Error(msgs.error);
+  return { conns, msgs };
+}
+// Each call is its own short request (people 500 at a time, messages 400 at a time, then the linking steps), so a large archive never
+// hits the request time limit. A stop is safe: uploading again adds only what is missing.
+async function importLinkedIn(C, M) {
+  const say = (text) => { state.notice = { err: false, text }; render(); };
+  const rpc = async (fn, args) => { const { data, error } = await sb.rpc(fn, args); if (error || data?.ok === false) throw new Error(error?.message || explain(data)); return data; };
+  const st = { file_duplicates: (C?.dups || 0) + (M?.dups || 0), connections_new: 0, connections_updated: 0, connections_skipped: C?.skipped || 0,
+    messages_new: 0, messages_already_imported: 0, messages_skipped: 0, drafts_left_out: M?.drafts || 0, spam_left_out: M?.spam || 0 };
+  let stage = 'starting';
+  try {
+    await rpc('hq_linkedin_archive', { p_step: 'start', p_stats: { self_hint: M?.self_hint || null } });
+    const cr = C?.rows || []; stage = 'connections';
+    for (let i = 0; i < cr.length; i += 500) {
+      say(`Importing connections… ${n0(Math.min(i + 500, cr.length))} of ${n0(cr.length)}`);
+      const d = await rpc('hq_import_connections', { p_rows: cr.slice(i, i + 500) });
+      st.connections_new += d.new ?? 0; st.connections_updated += d.updated ?? 0; st.file_duplicates += d.duplicates ?? 0; st.connections_skipped += d.skipped ?? 0;
+    }
+    const mr = M?.rows || []; stage = 'messages';
+    for (let i = 0; i < mr.length; i += 400) {
+      say(`Importing messages… ${n0(Math.min(i + 400, mr.length))} of ${n0(mr.length)}`);
+      const d = await rpc('hq_import_linkedin_messages', { p_rows: mr.slice(i, i + 400) });
+      st.messages_new += d.new ?? 0; st.messages_already_imported += d.already_imported ?? 0; st.messages_skipped += d.skipped ?? 0;
+    }
+    const steps = [['self', 'Finding your own profile in the conversations'], ['people', 'Linking the people in each conversation'], ['history', 'Reading each relationship\'s history'], ['match', 'Matching people to the CRM']];
+    for (const [i, [s, label]] of steps.entries()) { stage = label.toLowerCase(); say(`${label}… (${i + 1} of 5)`); await rpc('hq_linkedin_archive', { p_step: s }); }
+    stage = 'relationship states'; say('Setting each relationship state… (5 of 5)');
+    const rep = await rpc('hq_linkedin_archive', { p_step: 'states', p_stats: st });
+    state.liArch = rep; state.liHist = {}; delete state.errors.liArch;
+    state.notice = { err: false, text: `LinkedIn history imported: ${n0(rep.connections)} connections, ${n0(rep.messages)} messages. ${n0(st.connections_new + st.messages_new)} new, ${n0(st.connections_updated + st.messages_already_imported + st.file_duplicates)} already known (no duplicates). Nothing was sent.` };
+    return { ok: true };
+  } catch (e) {
+    state.notice = { err: true, text: `The import stopped while ${stage}: ${friendly(e.message)} What was saved stays; upload the same file again to finish, nothing will be duplicated.` };
+    return { ok: false };
+  }
 }
 
 // ---------------------------------------------------------------- events
@@ -2583,11 +2744,12 @@ function bind() {
   on('input[data-nf], select[data-nf]', 'change', (el) => { state.netF[el.dataset.nf] = el.value; render(); });
   on('[data-market]', 'click', (r) => { state.pipeF = { stage: '', vertical: '', market: r.dataset.market, q: '', stale: false }; state.tab = 'pipeline'; render(); window.scrollTo(0, 0); });
   $('#li-file')?.addEventListener('change', async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { state.notice = { err: true, text: 'File is larger than 20 MB — choose Connections.csv only.' }; render(); return; }
-    const res = parseConnections(await file.text());
-    if (res.error) { state.notice = { err: true, text: friendly(res.error) }; render(); return; }
-    state.modal = { kind: 'import', rows: res.rows, skipped: res.skipped, dups: res.dups }; render();
+    const files = [...(e.target.files || [])]; if (!files.length) return;
+    state.notice = { err: false, text: 'Reading the LinkedIn download in your browser…' }; render();
+    try {
+      const { conns, msgs } = await readLinkedInFiles(files);
+      state.notice = null; state.modal = { kind: 'li-archive', conns, msgs }; render();
+    } catch (err) { state.notice = { err: true, text: friendly(err.message) }; render(); }
   });
 }
 
@@ -3740,7 +3902,9 @@ function liRow(a) {
   else if (a.state === 'REPLIED') b.push(a.reply_class === 'MEETING_INTENT' && a.meeting_task_id ? `<button class="btn small primary" data-modal="meet-confirm" data-id="${a.meeting_task_id}">Confirm meeting</button>` : '',
     liCopyOpen(a.response_draft, a.linkedin, 'Copy response & open LinkedIn', a.reply_class !== 'MEETING_INTENT'), mod('li-reply', 'Log another reply'));
   else if (a.state === 'HELD') b.push(act('RELEASE', 'Release', true), act('CLOSE', 'Close'));
-  const conn = a.state === 'READY' ? `<div class="dr-line li-conn"><span>Not connected?</span>${a.connection_note
+  const connected = a.li_connected || a.connection === 'CONNECTED';
+  const conn = a.state === 'READY' && connected ? '<div class="dr-line li-conn"><span>Connected</span>Already a 1st-degree connection: message them directly, no connection request needed.</div>'
+    : a.state === 'READY' ? `<div class="dr-line li-conn"><span>Not connected?</span>${a.connection_note
     ? `${liCopyOpen(a.connection_note, a.linkedin, 'Copy note & open', false)}${act('CONNECTION_SENT', 'Connection sent')}${mod('li-edit', 'Edit note', 'NOTE')} <span class="faint small">${String(a.connection_note).length}/300 · the follow-up is sent after they accept</span>`
     : `${mod('li-edit', 'Write a connection note', 'NOTE')} <span class="faint small">LinkedIn notes are up to 300 characters</span>`}</div>` : '';
   const text = a.state === 'CONNECTED' || a.state === 'CONNECTION_SENT' ? (a.followup || a.message) : a.message;
@@ -3751,6 +3915,7 @@ function liRow(a) {
     ${a.project ? `<div class="dr-line"><span>Project</span>${esc(plainText(a.project))}</div>` : ''}
     ${a.why_them ? `<div class="dr-line"><span>Why them</span>${esc(plainText(a.why_them).replace(/^Partnership model \(recorded\):\s*/i, ''))}</div>` : ''}
     ${a.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(a.why_now))}</div>` : ''}
+    ${a.li_state && a.li_state !== 'CONNECTED' ? `<div class="dr-line li-hist"><span>LinkedIn history</span>${liRel(a.li_state)} ${esc(a.li_reason || '')}${a.li_last_at && Date.now() - new Date(a.li_last_at) > 365 * 864e5 ? ' <span class="warn-text">· old conversation: reopen personally, not a live lead</span>' : ''}</div>` : ''}
     ${a.state === 'REPLIED' || a.reply_text ? `<div class="dr-line li-reply"><span>They replied${a.reply_class ? ` · ${esc(liClass(a.reply_class))}` : ''}</span>${esc(a.reply_text || '')}</div>` : ''}
     ${a.state === 'REPLIED' && a.response_draft ? `<div class="dr-msg"><span class="faint">Suggested response:</span> ${esc(a.response_draft)}</div>`
       : text ? `<div class="dr-msg">${esc(text)} <span class="faint small">· ${liWords(text)} words</span></div>` : '<div class="dr-msg warn-text">No message written yet.</div>'}
@@ -4100,6 +4265,7 @@ async function retry(k) {
   if (k.startsWith('agent:')) { const key = k.slice(6); delete state.agentDetail[key]; render(); return loadAgent(key, true); }
   if (k === 'agents') { delete state.errors.agents; render(); return loadAgents(true); }
   if (k === 'weekly') { delete state.errors.weekly; render(); return loadV3('weekly', 'hq_weekly_review', {}, true); }
+  if (k === 'liArch') { delete state.errors.liArch; render(); return loadV3('liArch', 'hq_linkedin_archive', {}, true); }
   delete state.errors[errKey(k)]; render(); await readKey(k); render();
 }
 function bindV3(on) {

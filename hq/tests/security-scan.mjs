@@ -17,8 +17,8 @@ for (const f of files) {
       if (payload.role && payload.role !== 'anon') problems.push(`${f}: JWT with role ${payload.role}`);
     } catch { /* not a JWT */ }
   }
-  for (const m of s.matchAll(/(?:\.rpc|\bcall|\bdone)\(\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
-  for (const m of s.matchAll(/\bloadV3\(\s*['"][a-z]+['"]\s*,\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
+  for (const m of s.matchAll(/(?:\.rpc|\brpc|\bcall|\bdone)\(\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
+  for (const m of s.matchAll(/\bloadV3\(\s*['"][A-Za-z]+['"]\s*,\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
   if (/\.from\(\s*['"](opportunities|contacts|tasks|outbound_emails|companies|approval_audit|hq_admins)['"]\s*\)/.test(s)) problems.push(`${f}: direct table access`);
 }
 const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_history_action', 'hq_add_contact',
@@ -40,7 +40,7 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   // Production fix (17 Oct): admin-gated snapshot read and the Admin diagnostics read
   'hq_cached', 'hq_cache_status',
   // LinkedIn Relationship Agent and Meeting Assist (19 Oct): admin-gated, audited records of what Adam did himself; nothing is sent
-  'hq_linkedin_action', 'hq_linkedin_reply', 'hq_meeting_confirm'];
+  'hq_linkedin_action', 'hq_linkedin_reply', 'hq_meeting_confirm', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

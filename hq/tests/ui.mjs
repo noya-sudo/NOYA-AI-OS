@@ -11,6 +11,7 @@ import http from 'node:http';
 import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
+import { CONNECTIONS_CSV, MESSAGES_CSV, ARCHIVE_ZIP, ARCHIVE_EMPTY, ARCHIVE_REPORT, HISTORY } from './linkedin_archive_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -140,7 +141,7 @@ const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_l
   'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person', 'hq_redispatch',
   'hq_advisor_seen'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
-  'hq_create_opportunity', 'hq_import_connections', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
+  'hq_create_opportunity', 'hq_import_connections', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -152,6 +153,7 @@ function session(meta = {}) {
   return { access_token: token, token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: 'r', user };
 }
 
+let liImported = false;
 async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
   const browser = await chromium.launch({ executablePath: CHROME });
   const ctx = await browser.newContext({ viewport, permissions: ['clipboard-read', 'clipboard-write'] });
@@ -188,6 +190,15 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
       if (m[1] === 'hq_timeline') return route.fulfill({ json: { events: [{ at: '2026-09-29T10:00:00Z', channel: 'Reply', direction: 'INBOUND', title: 'MEETING_REQUEST — Re: NOYA', detail: 'Timeline stub', src: 'reply' }], notes: [] } });
       if (m[1] === 'hq_create_opportunity') return route.fulfill({ json: { ok: true, opportunity_id: data.opportunities[0].id, company_id: null, company_reused: true } });
       if (m[1] === 'hq_import_connections') return route.fulfill({ json: { ok: true, new: body.p_rows.length - 1, updated: 1, duplicates: 0, skipped: 0, upserted: body.p_rows.length } });
+      if (m[1] === 'hq_import_linkedin_messages') return route.fulfill({ json: { ok: true, received: body.p_rows.length, new: body.p_rows.length, already_imported: 0, skipped: 0 } });
+      if (m[1] === 'hq_linkedin_archive') {
+        const st = body?.p_step;
+        if (st === 'start') return route.fulfill({ json: { ok: true, next: 'upload' } });
+        if (['self', 'people', 'history', 'match'].includes(st)) return route.fulfill({ json: { ok: true, step: st, result: {} } });
+        if (st === 'states') liImported = true;
+        return route.fulfill({ json: liImported ? ARCHIVE_REPORT : ARCHIVE_EMPTY });
+      }
+      if (m[1] === 'hq_linkedin_history') return route.fulfill({ json: HISTORY });
       if (WRITES.includes(m[1])) return route.fulfill({ json: { ok: true, id: '00000000-0000-0000-0000-000000000009' } });
       return route.fulfill({ status: 404, json: { message: 'not allowed in test' } });
     }
@@ -457,28 +468,97 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const fu = last(calls, 'hq_finance_upsert');
   check('New finance record calls hq_finance_upsert (client, EUR, 12500, SENT)', fu && fu.body.p_company === directory.companies[0].id && fu.body.p_currency === 'EUR' && fu.body.p_amount === 12500 && fu.body.p_invoice_status === 'SENT' && fu.body.p_id === null, JSON.stringify(fu?.body));
 
-  // LinkedIn: options gate + CSV import (Notes preamble, LinkedIn date format, non-profile rows skipped).
+  // LinkedIn: options gate + import of Adam's own LinkedIn download (Connections.csv alone, the .zip, or both CSVs), then the report.
   await go(page, 'linkedin');
   const li = await page.locator('main').innerText();
   check('LinkedIn: never-auto-send statement and options gate present', /Nothing is ever sent automatically/.test(li) && /options and approval/i.test(li));
-  const csv = 'Notes:\n"When exporting your connection data, you may notice that some of the email addresses are missing."\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\nSara,Khalil,https://www.linkedin.com/in/sara-khalil,,"Aman Resorts, Ltd",Director of Sales,01 May 2024\nOmar,Nasser,https://www.linkedin.com/in/omarn,,YKONE Middle East,Partner,15 Jan 2023\nOmar,Nasser,https://uk.linkedin.com/in/OmarN/,,YKONE Middle East,Partner,15 Jan 2023\nBad,Row,https://example.com/x,,X,Y,01 Jan 2020\n';
-  await page.setInputFiles('#li-file', { name: 'Connections.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  check('LinkedIn: no history panel before an import; steps ask for Connections and Messages', !(await page.locator('#li-archive').count()) && /Tick Connections and Messages/.test(li) && /never logs in to LinkedIn/.test(li));
+  await page.setInputFiles('#li-file', { name: 'Connections.csv', mimeType: 'text/csv', buffer: Buffer.from(CONNECTIONS_CSV) });
   await page.waitForSelector('.modal');
   const im = await page.locator('.modal').innerText();
-  check('import preview: 2 connections found, 1 skipped, same person twice counted once', /2 connections found/.test(im) && /1 lines skipped/.test(im) && /1 duplicate lines ignored/.test(im), im.replace(/\n/g, ' | ').slice(0, 120));
-  // After import the server returns matches with evidence (simulated here: one connection linked to YKONE).
+  check('import preview (Connections.csv alone): 2 connections, the same person twice counted once, the non-profile line left out', /2 connections/.test(im) && /no messages\.csv/.test(im) && /Left out: 1 without a profile link, 1 repeated connections/.test(im) && /Nothing is sent, no CRM person or company is created/.test(im), im.replace(/\n/g, ' | ').slice(0, 160));
+  // After import the server returns matches with evidence (simulated here: one connection linked to YKONE, with LinkedIn history).
   directory.connections.push({ id: '00000000-0000-0000-0000-0000000000c1', name: 'Omar Nasser', first_name: 'Omar', last_name: 'Nasser', company: 'YKONE Middle East', position: 'Partner',
     profile_url: 'https://www.linkedin.com/in/omarn', status: 'NOT_CONTACTED', active_opps: 1, email_history: 1, matched_company_id: directory.companies[0].id, matched_contact_id: null,
-    how_we_know: null, next_follow_up_at: null, vertical: 'BRAND_PRODUCTION', history_key: 'd:ykone.com',
-    evidence: ['Company matches CRM account: YKONE Middle East', 'Active opportunity at their company: 1', 'Emailed with NOYA (Gmail): 1 sent, 1 received'] });
+    how_we_know: null, next_follow_up_at: null, vertical: 'BRAND_PRODUCTION', history_key: 'd:ykone.com', connected: true,
+    li_state: 'REPLIED_BEFORE', li_reason: '2 messages (1 from them) · last 02 Sep 2026', li_last_at: '2026-09-02T08:00:00Z', li_messages: 2, review_reason: null,
+    evidence: ['Company matches CRM account: YKONE Middle East', 'Active opportunity at their company: 1', 'Emailed with NOYA (Gmail): 1 sent, 1 received', 'LinkedIn: 2 messages (1 from them), last 02 Sep 2026'] });
+  const before = calls.length;
   await page.click('#m-ok');
-  await page.waitForTimeout(400);
+  await page.waitForSelector('#li-archive');
+  await page.waitForTimeout(200);
+  const after = calls.slice(before);
+  const steps = after.filter((c) => c.fn === 'hq_linkedin_archive').map((c) => c.body?.p_step ?? 'report');
+  check('import runs as short calls in order: start, people in batches, then self, people, history, match, states',
+    steps.slice(0, 6).join() === 'start,self,people,history,match,states' && after.findIndex((c) => c.fn === 'hq_import_connections') > after.findIndex((c) => c.body?.p_step === 'start')
+      && after.findIndex((c) => c.fn === 'hq_import_connections') < after.findIndex((c) => c.body?.p_step === 'self') && !after.some((c) => c.fn === 'hq_import_linkedin_messages'), steps.join());
+  const stStats = after.find((c) => c.body?.p_step === 'states')?.body?.p_stats || {};
+  check('the import counts reach the report: repeated lines and lines without a profile link', stStats.file_duplicates === 1 && stStats.connections_skipped === 1 && stStats.connections_updated === 1 && stStats.connections_new === 1, JSON.stringify(stStats));
+  check('start carries no self hint without messages', after.find((c) => c.body?.p_step === 'start')?.body?.p_stats?.self_hint === null);
   const liAfter = await page.locator('main').innerText();
-  check('import result reports new / already known / duplicates / skipped', /LinkedIn import done: 1 new, 1 already known \(updated\), 1 duplicates ignored, 1 skipped/.test(liAfter), liAfter.match(/LinkedIn import done[^\n]*/)?.[0]);
-  check('LinkedIn: matched people listed first with their evidence; strength stays Unknown', /Linked to NOYA\s*1/i.test(liAfter) && /Company matches CRM account: YKONE/.test(liAfter) && /Emailed with NOYA \(Gmail\)/.test(liAfter) && /Unknown/.test(liAfter), liAfter.match(/Linked to NOYA\s*\d+/i)?.[0]);
+  check('import result: totals, new vs already known, nothing sent', /LinkedIn history imported: 2 connections, 4 messages\. 1 new, 2 already known \(no duplicates\)\. Nothing was sent\./.test(liAfter), liAfter.match(/LinkedIn history imported[^\n]*/)?.[0]);
+  check('LinkedIn: matched people listed first with their evidence and LinkedIn history', /Linked to NOYA\s*1/i.test(liAfter) && /Company matches CRM account: YKONE/.test(liAfter) && /Emailed with NOYA \(Gmail\)/.test(liAfter) && /Replied before/i.test(liAfter) && /Messaged on LinkedIn\s*1/i.test(liAfter), liAfter.match(/Linked to NOYA\s*\d+/i)?.[0]);
   const ic = last(calls, 'hq_import_connections');
   check('import sends only the needed fields, dates as ISO, quoted commas kept', ic && ic.body.p_rows.length === 2 && ic.body.p_rows[0].connected_on === '2024-05-01'
     && ic.body.p_rows[0].company === 'Aman Resorts, Ltd' && Object.keys(ic.body.p_rows[0]).sort().join() === 'company,connected_on,email,first_name,last_name,position,url', JSON.stringify(ic?.body.p_rows[0]));
+  const rep = await page.locator('#li-archive').textContent();
+  check('report: the seven numbers (connections, conversations matched, new companies, warm Destination Egypt, dormant, to review, duplicates prevented)',
+    ['connections imported', 'conversations matched to the CRM', 'companies not in the CRM', 'warm Destination Egypt routes', 'dormant relationships', 'to review', 'duplicates prevented'].every((w) => rep.includes(w))
+      && /2 of 3\s*conversations matched to the CRM/.test(rep) && /3\s*duplicates prevented/.test(rep), rep.replace(/\s+/g, ' ').slice(0, 220));
+  check('report: warm Destination Egypt route shows the person, project and recency; old relationships say they are not live leads',
+    /Omar Nasser/.test(rep) && /Project: A YKONE creator trip in Egypt/.test(rep) && /Recent: last message 02 Sep 2026/.test(rep) && /old, reopen personally, not a live lead/.test(rep));
+  check('report: introductions, review (name-only never linked), new companies and duplicates breakdown',
+    /introduced by Lina Intro/.test(rep) && /Same name as a CRM contact \(Elsewhere Ltd\): confirm before linking/.test(rep) && /Aman Resorts, Ltd/.test(rep) && /nothing is created automatically/.test(rep) && /1 person already known/.test(rep));
+  check('report: Open is offered only for people HQ lists; LinkedIn links open the profile', (await page.locator('#li-archive [data-open=connection]').count()) >= 1
+    && (await page.locator('#li-archive a[href="https://www.linkedin.com/in/sara-khalil"]').count()) >= 1);
+
+  await page.evaluate(() => document.querySelectorAll('#li-archive details').forEach((d) => { d.open = true; }));
+  await page.locator('#li-archive').screenshot({ path: 'tests/out/linkedin-history.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(150);
+  check('LinkedIn history fits a phone (no sideways scroll)', (await noOverflow(page)) <= 1, String(await noOverflow(page)));
+  await page.locator('#li-archive').screenshot({ path: 'tests/out/mobile-linkedin-history.png' });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  // The .zip as LinkedIn sends it: only Connections.csv and messages.csv are read (not guide_messages.csv), drafts and spam left out.
+  await page.setInputFiles('#li-file', { name: 'Basic_LinkedInDataExport_10-20-2026.zip', mimeType: 'application/zip', buffer: ARCHIVE_ZIP });
+  await page.waitForSelector('.modal');
+  const zm = await page.locator('.modal').innerText();
+  check('zip preview: connections and messages read in the browser, with dates and what is left out', /2 connections/.test(zm) && /4 messages in 3 conversations \(02 May 2024 to 02 Sept? 2026\)/.test(zm)
+    && /1 unsent drafts, 1 spam/.test(zm) && /1 repeated messages/.test(zm) && !/could not tell which profile is yours/.test(zm), zm.replace(/\n/g, ' | ').slice(0, 220));
+  const b2 = calls.length;
+  await page.click('#m-ok');
+  await page.waitForFunction(() => /LinkedIn history imported/.test(document.body.innerText));
+  const a2 = calls.slice(b2);
+  const mr = a2.filter((c) => c.fn === 'hq_import_linkedin_messages').flatMap((c) => c.body.p_rows);
+  check('messages: LinkedIn UTC dates as ISO, HTML turned into plain text, profile links canonical, both recipients kept',
+    mr.length === 4 && mr[0].sent_at === '2024-05-02T09:15:00Z' && mr[0].content === 'Hello Sara, lovely to meet. About Egypt next spring.' && mr[0].sender_url === 'https://www.linkedin.com/in/adam-test'
+      && mr[3].recipient_urls.join() === 'https://www.linkedin.com/in/adam-test,https://www.linkedin.com/in/omarn' && mr[3].title === 'Group', JSON.stringify(mr[3]));
+  check('messages: Adam\'s own profile is the self hint (the profile in every conversation)', a2.find((c) => c.body?.p_step === 'start')?.body?.p_stats?.self_hint === 'https://www.linkedin.com/in/adam-test');
+  const s2 = a2.find((c) => c.body?.p_step === 'states')?.body?.p_stats || {};
+  check('messages: drafts and spam counts reach the report; messages imported before the linking steps', s2.drafts_left_out === 1 && s2.spam_left_out === 1 && s2.messages_new === 4
+    && a2.findIndex((c) => c.fn === 'hq_import_linkedin_messages') < a2.findIndex((c) => c.body?.p_step === 'self'), JSON.stringify(s2));
+  check('no write beyond the import calls (nothing sent, nothing else changed)', a2.filter((c) => WRITES.includes(c.fn)).length === 0, a2.filter((c) => WRITES.includes(c.fn)).map((c) => c.fn).join());
+
+  // Both CSVs chosen together work the same way; closing the preview imports nothing. A broken .zip is explained in plain words.
+  await page.setInputFiles('#li-file', [{ name: 'Connections.csv', mimeType: 'text/csv', buffer: Buffer.from(CONNECTIONS_CSV) }, { name: 'messages.csv', mimeType: 'text/csv', buffer: Buffer.from(MESSAGES_CSV) }]);
+  await page.waitForSelector('.modal');
+  const pm = await page.locator('.modal').innerText();
+  const b3 = calls.length;
+  await page.click('.modal [data-close]');
+  check('two CSVs together: same preview; closing it imports nothing', /2 connections/.test(pm) && /4 messages in 3 conversations/.test(pm) && !calls.slice(b3).some((c) => /import|archive/.test(c.fn)));
+  await page.setInputFiles('#li-file', { name: 'broken.zip', mimeType: 'application/zip', buffer: Buffer.from('not a zip at all') });
+  await page.waitForFunction(() => /not a readable \.zip/.test(document.body.innerText));
+  check('a broken .zip is explained in plain words, no modal', !(await page.locator('.modal').count()));
+
+  // A person's drawer shows the LinkedIn relationship and the messages themselves, read-only and dated.
+  await page.click('main tr[data-open=connection][data-id="00000000-0000-0000-0000-0000000000c1"]');
+  await page.waitForFunction(() => /Thanks Adam, good to hear from you/.test(document.querySelector('.drawer')?.innerText || ''));
+  const dw = await page.locator('.drawer').innerText();
+  check('drawer: LinkedIn relationship with its reason, messages newest first, yours marked You, the recency rule stated',
+    /Replied before/i.test(dw) && /2 messages \(1 from them\)/.test(dw) && /You/.test(dw) && dw.indexOf('Thanks Adam') < dw.indexOf('Hi Omar') && /an old conversation is not a live lead/.test(dw)
+      && last(calls, 'hq_linkedin_history')?.body?.p_connection === '00000000-0000-0000-0000-0000000000c1', dw.replace(/\n/g, ' | ').slice(0, 200));
+  await page.locator('.drawer').screenshot({ path: 'tests/out/linkedin-drawer.png' });
+  await closeDrawer(page);
 
   // Outreach: tabs, cards, approval flow unchanged.
   await go(page, 'outreach');

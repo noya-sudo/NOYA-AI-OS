@@ -261,6 +261,10 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
     && (await liPrim.getAttribute('data-copy')) === liReady.message && (await liPrim.getAttribute('target')) === '_blank');
   check('LinkedIn: secondary Edit · Mark sent · Hold; never a Send button', (await liCard.locator('.dr-act > .btn').allTextContents()).map((x) => x.trim()).join('|') === 'Copy & open LinkedIn|Edit|Mark sent|Hold' && !/\bSend\b/.test((await liCard.locator('.btn').allTextContents()).join(' ')));
   check('LinkedIn: not connected? connection note (≤ 300 characters) with Copy note & open and Connection sent', /\/300/.test(await liCard.locator('.li-conn').innerText()) && (await liCard.locator('.li-conn [data-li-act=CONNECTION_SENT]').count()) === 1);
+  const liKnown = D.linkedin.find((a) => a.state === 'READY' && a.li_connected);
+  const lkTxt = liKnown ? await page.locator(`#li-${liKnown.id}`).innerText() : '';
+  check('LinkedIn history: a 1st-degree connection gets no connection-request prompt; an old conversation is flagged as not a live lead',
+    !!liKnown && /Already a 1st-degree connection/.test(lkTxt) && !/Not connected\?/.test(lkTxt) && /dormant/i.test(lkTxt) && /not a live lead/.test(lkTxt) && /last 12 Mar 2023/.test(lkTxt), lkTxt.slice(0, 160));
   await liCard.locator('.li-conn [data-li-act=CONNECTION_SENT]').click(); await page.waitForTimeout(250);
   check('Connection sent: recorded through hq_linkedin_action (nothing sent from HQ)', last(calls, 'hq_linkedin_action')?.body?.p_action === 'CONNECTION_SENT' && last(calls, 'hq_linkedin_action').body.p_id === liReady.id);
   const liPend = D.linkedin.find((a) => a.state === 'CONNECTION_SENT');

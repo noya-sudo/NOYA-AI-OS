@@ -1667,8 +1667,7 @@ search rarely shows LinkedIn profile URLs, which is the gap Clay would close. If
 (strongest one or two people per company, source, confidence, last checked; never employee lists), and Hunter is used only after
 the right person is known.
 
-**Warm network.** `linkedin_connections` is empty. Importing Adam's LinkedIn Connections export (HQ → LinkedIn → Import) lets the
-daily check match it against the top 20 and the open opportunities.
+**Warm network.** `linkedin_connections` is empty until Adam uploads his LinkedIn data download (see the next section).
 
 **End-to-end proof (19 Oct, rolled back).** A real READY item went through Mark sent (interaction logged, opportunity CONTACTED,
 follow-up booked), a pasted reply (classified as a meeting intent, follow-ups cancelled, counted as positive, opportunity
@@ -1678,3 +1677,68 @@ calendar and removed. Nothing was sent.
 
 Supabase connection note: requests whose SQL resembles injection (a literal ending in a quote and semicolon combined with a run of
 positional nulls) were silently dropped on 19 Oct; the agent's functions use named arguments for `hq_log_touch`.
+
+## LinkedIn data archive: relationship history from Adam's own download (20 Oct 2026)
+
+Adam, 20 Oct, decision A. The connector check found no official LinkedIn integration that reads personal messages or the
+1st-degree network (the official APIs are sign-in, posting and partner-only programmes), so Adam requested his own LinkedIn data
+download with Connections and Messages. HQ imports it as **read-only historical relationship context**. Supabase stays the source
+of truth; no CRM person or company is created from it; there is no separate LinkedIn CRM; nothing is sent; HQ never logs in to
+LinkedIn. It feeds what exists: CRM matching, Relationship Memory (the person's evidence list), the warm route, the LinkedIn
+Relationship Agent and the Top 5. Migration `20261020090000_linkedin_archive.sql`.
+
+**Upload.** HQ → LinkedIn → Import your LinkedIn history: the .zip exactly as LinkedIn sends it, or Connections.csv and
+messages.csv together. Files are read in the browser (the zip through its own index; only those two files are opened). Unsent
+drafts and spam are left out; message text is kept as plain text up to 4,000 characters; LinkedIn's own UTC dates are kept. A
+preview shows what will be saved and what is left out before anything is written. The upload then runs as short calls, each well
+under the 8-second request limit (tested at 60,000 messages and 5,000 connections, every step under 1.3 s): people 500 at a time,
+messages 400 at a time, then five linking steps. If it stops, uploading the same file again finishes it: a message is keyed by its
+conversation, time, sender and text, a person by the profile link, so nothing is ever duplicated.
+
+| Piece | Where |
+|---|---|
+| People: connections (and people seen only in messages, `connected = false`) with their history summary, relationship state, reason and dates | `linkedin_connections` (`li_state`, `li_state_reason`, `li_messages`, `li_in`, `li_out`, `li_first_at`, `li_last_at`, `li_last_dir`, `li_intro`, `li_opt_out_at`, `match_method`, `review_reason`) |
+| The message archive and who took part in each conversation | `linkedin_messages`, `linkedin_conversation_people` (RLS on, no client access) |
+| Import | `hq_import_connections` (existing), `hq_import_linkedin_messages`, `linkedin_archive_rows` |
+| Rebuild steps: Adam's own profile (the one in at least 60% of conversations; the browser proposes it and the database checks it), participants, history, introductions and opt-outs, CRM matching, states | `hq_linkedin_archive('start' / 'self' / 'people' / 'history' / 'match' / 'states')`, `linkedin_archive_step`, `linkedin_archive_rebuild()` for a server-side rerun |
+| Report: the seven numbers and the lists | `hq_linkedin_archive()` → `linkedin_archive_report()` |
+| A person's last messages in their HQ drawer | `hq_linkedin_history(connection)` |
+
+**Matching, strictest evidence first.** (1) The same LinkedIn profile link on exactly one CRM contact. (2) The email in the
+Connections export on a CRM contact. (3) The same full name at the same CRM company. A name alone never links: the record carries
+"Same name as a CRM contact (…): confirm before linking" and waits for Adam. Several CRM contacts carrying the same profile link are
+a duplicate to merge first, never guessed. People in messages are resolved by profile link, or by a full name that is unique among
+Adam's connections (the download sometimes uses another link form for the same person).
+
+**States** (each with its reason in plain words and its dates): ACTIVE (two-way, last 30 days), WARM (a real two-way exchange in
+the last 12 months), DORMANT (a real two-way exchange, older), REPLIED BEFORE (a thin reply), MESSAGED BEFORE (one-way), CONNECTED
+(never messaged), DO NOT CONTACT (they asked not to be contacted in their latest message, or the CRM says so). A real exchange
+means at least two messages from them, or a substantive one.
+
+**Recency rule.** An old conversation is never treated as a current opportunity: every list shows the date; over 90 days "check
+what changed before writing"; over 12 months "old, reopen personally, not a live lead".
+
+**What it changes downstream.** The warm route counts only ACTIVE, WARM and DORMANT (with the date): a plain connection or a one-way
+message is not a warm route, so EMAIL READY and first-email wording are unaffected by a large connection list. The Top 5 adds
+warmth for warm (15), spoke before (8) and already connected (6), and leaves out anyone who asked not to be contacted. On the
+LinkedIn agent, a 1st-degree connection needs no connection request, and an item for someone who asked not to be contacted is held
+with the reason. The person's evidence list gains "LinkedIn: N messages (x from them), last DD Mon YYYY".
+
+**Report after each upload** (HQ → LinkedIn → Your LinkedIn history): connections imported; conversations matched to the CRM;
+companies not in the CRM (listed, never created); warm Destination Egypt routes (a real conversation at a Destination Egypt target,
+with the project); people connected at Destination Egypt targets who were never messaged (a route for a first message, not a warm
+relationship); dormant relationships worth reopening (ranked by an open opportunity at their company, seniority, depth of the
+exchange and introductions); introductions and referrals (who introduced whom, when); records needing review (name-only matches,
+warm people not in the CRM); people who asked not to be contacted; duplicates prevented (repeated lines in the files, people
+already known, messages already imported, people linked to existing CRM contacts instead of new ones).
+
+**Daily check duties after an upload.** Report the seven numbers once; draft reconnect notes in Adam's voice for the strongest warm
+or dormant people at Destination Egypt and top-20 accounts from the actual conversation (what was discussed and when), on the
+existing queue, never sent; list name-only matches for Adam; never draft for anyone who asked not to be contacted.
+
+**Tests.** Rolled back on the live database: 28 checks on a synthetic archive mixed with real CRM records (profile-link match,
+name-and-company match, name-only to review, every state, introductions, opt-out holding the agent item, the agent marking a
+connection, a person seen only in messages kept separate, no CRM person or company created, file and re-import duplicates blocked,
+spam and bad dates skipped, the warm-route text, the report lists, the board, the directory filter, the audit row), and a load test
+at 60,000 messages. Browser tests: Connections.csv alone, the .zip, both CSVs together, a broken zip, the report, the drawer
+history, phone width, and the agent card for a connection with an old conversation.
