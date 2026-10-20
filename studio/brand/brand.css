@@ -297,3 +297,71 @@ strong { font-weight: 480; color: var(--ink); }
 .strip .who { font-family: var(--serif); font-size: 12pt; line-height: 1.3; color: var(--on-navy); border-left: .25mm solid var(--rule-navy); padding-left: 6mm; }
 .strip .who .role { display: block; font-family: var(--sans); font-size: 7pt; letter-spacing: .04em; color: var(--on-navy-2); margin-top: 1mm; }
 .strip .who .ways { display: block; font-family: var(--sans); font-size: 7.2pt; line-height: 1.6; color: var(--on-navy-2); margin-top: 1.6mm; }
+
+/* ---------- Master brief (20 Oct 2026): 2-3 fixed pages with NOYA library imagery; page one is cover, positioning and why now ---------- */
+.lockup { display: flex; align-items: center; gap: 5mm; }
+.lockup .x { font-family: var(--serif); font-weight: 300; font-size: 15pt; line-height: 1; opacity: .7; }
+.lockup .pm { font-family: var(--sans); font-weight: 420; font-size: 13pt; letter-spacing: .42em; margin-right: -.42em; line-height: 1; }
+.master.hero .hero-img { position: absolute; top: 0; left: 0; right: 0; height: 172mm; background-size: cover; background-repeat: no-repeat; }
+.master.hero .hero-img::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(6, 20, 34, .55) 0, rgba(6, 20, 34, 0) 34mm, rgba(6, 20, 34, 0) 118mm, rgba(6, 20, 34, 1) 172mm); }
+.master.hero .hero-top { position: absolute; top: 18mm; left: var(--margin-x); right: var(--margin-x); display: flex; justify-content: space-between; align-items: flex-start; color: var(--on-navy); }
+.master.hero .hero-top .meta { text-align: right; display: grid; gap: 2.2mm; }
+.master.hero .hero-top .label { color: var(--on-navy); }
+.master.hero .hero-text { top: 140mm; bottom: 27mm; }
+.master.hero h1 { font-family: var(--serif); font-weight: 300; font-size: 40pt; line-height: 1.02; letter-spacing: -.012em; color: var(--on-navy); }
+.master.hero h1 em { font-style: italic; }
+.master.hero .pos { font-family: var(--serif); font-weight: 300; font-size: 14.5pt; line-height: 1.4; color: var(--on-navy-2); margin-top: 6mm; max-width: 150mm; }
+.master.hero .pos em { color: var(--on-navy); }
+.master.hero .why { margin-top: 9mm; border-top: .25mm solid var(--rule-navy); padding-top: 4mm; }
+.master.hero .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7mm; margin-top: 3.5mm; }
+.master.hero .why-grid h3 { font-size: 12.5pt; margin-bottom: 1.4mm; }
+.master.hero .why-grid p { font-size: 8.1pt; line-height: 1.55; margin: 0; }
+.master.hero .for { position: absolute; bottom: 0; left: 0; right: 0; font-family: var(--serif); font-size: 11.5pt; line-height: 1.4; color: var(--on-navy); }
+.master.hero .for .label { display: block; margin-bottom: 1.6mm; }
+.master .foot .pn { font-size: 10pt; }
+.master.fixed .head { top: 15mm; }
+.master.fixed .body { top: 30mm; bottom: 27mm; }
+.master.fixed .sec { margin-bottom: 4.5mm; }
+.master.fixed .sec .sl { margin-bottom: 2.4mm; }
+.master.fixed .sec h2 { font-size: 21pt; }
+.master.fixed .lead { font-size: 12.6pt; line-height: 1.42; margin-bottom: 4.5mm; max-width: none; }
+.master.close .body { bottom: 96mm; }
+.master.close .band { position: absolute; left: 0; right: 0; bottom: 0; height: 84mm; background: var(--navy); color: var(--on-navy);
+  padding: 11mm var(--margin-x) 0; display: grid; grid-template-columns: 1fr 58mm; gap: 12mm; align-content: start; }
+.master.close .band .label { color: var(--on-navy-2); display: block; margin-bottom: 3mm; }
+.master.close .band h2 { font-family: var(--serif); font-weight: 300; font-size: 23pt; line-height: 1.12; color: var(--on-navy); margin-bottom: 3.5mm; }
+.master.close .band h2 em { font-style: italic; }
+.master.close .band p { color: var(--on-navy-2); font-size: 9pt; }
+.master.close .band .who { font-family: var(--serif); font-size: 14pt; line-height: 1.3; color: var(--on-navy); border-left: .25mm solid var(--rule-navy); padding-left: 7mm; }
+.master.close .band .who .role { display: block; font-family: var(--sans); font-size: 7.4pt; letter-spacing: .04em; color: var(--on-navy-2); margin-top: 1.4mm; }
+.master.close .band .who .ways { display: block; font-family: var(--sans); font-size: 8.2pt; line-height: 1.8; color: var(--on-navy-2); margin-top: 3mm; }
+.master.close .foot { border-color: var(--rule-navy); }
+.master.close .foot .pn { color: var(--on-navy-3); }
+.master.close .foot .label { color: var(--on-navy-2); }
+
+.gallery { display: grid; grid-template-columns: repeat(var(--gcols, 3), 1fr); gap: 4mm; margin: 1mm 0 5mm; }
+.gallery figure { margin: 0; }
+.gallery .ph, .evening .ph { height: var(--gh, 58mm); background-size: cover; background-repeat: no-repeat; }
+.gallery figcaption { display: block; margin-top: 2mm; }
+.formats { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 7mm; margin: 0 0 4mm; border-top: .25mm solid var(--ink); }
+.formats .fm { padding: 2.6mm 0 2.2mm; border-bottom: .25mm solid var(--rule); }
+.formats .fm h3 { font-size: 12.2pt; margin-bottom: 1.2mm; }
+.formats .fm p { font-size: 8.1pt; line-height: 1.5; margin: 0; }
+.evening { display: grid; grid-template-columns: 52mm 1fr; gap: 8mm; border-top: .25mm solid var(--ink); padding-top: 4.5mm; margin: 1mm 0 3mm; }
+.evening .ph { height: 100%; min-height: 70mm; }
+.evening > div > .label { display: block; color: var(--ink); margin-bottom: 1.6mm; }
+.evening h3 { font-size: 15pt; margin-bottom: 3mm; }
+.evening .ledger { grid-template-columns: 34mm 1fr; margin: 0; }
+.evening .ledger > div { padding: 1.5mm 0; }
+.evening .ledger .v { font-size: 8.3pt; line-height: 1.45; }
+.evening .note { margin-top: 2.4mm; font-size: 7pt; }
+.value { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7mm; margin: 1mm 0 4mm; }
+.value .vi { border-top: .25mm solid var(--ink); padding-top: 3.4mm; }
+.value .vi h3 { font-size: 12.6pt; margin-bottom: 1.4mm; }
+.value .vi p { font-size: 8.2pt; line-height: 1.52; margin: 0; }
+.places { display: flex; flex-wrap: wrap; gap: 2mm 0; margin: 2mm 0 4mm; padding-top: 3.4mm; border-top: .25mm solid var(--rule); font-family: var(--serif); font-style: italic; font-size: 10.6pt; color: var(--ink); }
+.places span:not(:last-child)::after { content: '·'; font-style: normal; color: var(--ink-3); margin: 0 3.4mm; }
+.master .roles { margin: 1mm 0 5mm; gap: 9mm; }
+.master .roles li { font-size: 8.5pt; padding: 1.7mm 0; }
+.places-label { display: block; margin-top: 6mm; }

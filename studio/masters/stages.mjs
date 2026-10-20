@@ -62,7 +62,7 @@ export function note(c, v) {
     ] },
     { blocks: [
       s('What we know', 'Facts, with their source.'),
-      { t: 'facts', items: c.facts },
+      ...Array.from({ length: Math.ceil(c.facts.length / 6) }, (_, i) => ({ t: 'facts', items: c.facts.slice(i * 6, i * 6 + 6) })),  // pages break between blocks
       s('What they need', 'Our reading, to test on the call.'),
       { t: 'facts', items: [{ text: c.need, source: 'NOYA reading of the facts above', class: 'INFERRED' }] },
       { t: 'ledger', rows: [['Product desk', `${desk.name}${v.deskInfo[1] ? ` (with ${v.deskInfo[1].name})` : ''}`], ['Proposal shape', desk.proposal]] },
@@ -328,13 +328,39 @@ export function onepage(c, v) {
   return doc;
 }
 
-export const STAGES = { note, email, onepage, concept, brief, proposal, project, itinerary, ops, desk };
-export const CLIENT_STAGES = ['email', 'onepage', 'concept', 'brief', 'proposal', 'itinerary', 'desk'];
+// ---------------------------------------------------------------- Master brief (client): 2-3 pages with NOYA library imagery
+// Page one: NOYA × client, a title for this client, one strong image, the positioning and why Egypt, why now (cited facts only).
+// Page two: the concept and where NOYA fits (formats, places, an example evening). Page three: what each side handles, why it
+// works commercially, the next step and the contact. Two pages when two are stronger; never padded. It replaces the form-based
+// brief for a case that sets "master", and carries the brief's slug so its versions continue the brief's history.
+export function master(c, v) {
+  const m = c.master;
+  need(m?.title && m?.positioning && m?.hero?.img && m?.pages?.length, `${c.slug}: a master brief needs title, positioning, hero image and pages`);
+  need(m.pages.length <= 2, `${c.slug}: a master brief is two or three pages; it has ${m.pages.length + 1}`);
+  need((m.why || []).length >= 2, `${c.slug}: a master brief needs at least two cited why-now rows`);
+  const last = m.pages[m.pages.length - 1];
+  need(last.next?.title && last.next?.text, `${c.slug}: the last page of a master brief carries the next step`);
+  const doc = base(c, v, 'master', {
+    slug: `${c.slug}-brief`, running: `${c.party} × NOYA · ${m.running || 'Egypt'}`, eyebrow: m.eyebrow || `NOYA × ${c.party} · Egypt`,
+    title: m.title, positioning: m.positioning, party_mark: m.party_mark || c.party.toUpperCase(), type_label: 'Brief',
+  });
+  doc.pages = [
+    { kind: 'm-hero', img: m.hero.img, pos: m.hero.pos, why_label: m.why_label, why: whyRows(c, m.why) },
+    ...m.pages.map((p, i) => ({ kind: i === m.pages.length - 1 ? 'm-close' : 'm-body', running: p.running, blocks: p.blocks,
+      ...(i === m.pages.length - 1 ? { next: p.next, contact: CONTACT } : {}) })),
+  ];
+  doc.sources = sourcesOf(c);
+  doc.review = [...(c.review || []), ...(m.review || [])];
+  return doc;
+}
+
+export const STAGES = { note, email, onepage, concept, brief, master, proposal, project, itinerary, ops, desk };
+export const CLIENT_STAGES = ['email', 'onepage', 'concept', 'brief', 'master', 'proposal', 'itinerary', 'desk'];
 
 // ---------------------------------------------------------------- Output levels: produce only what the relationship has earned
 // Level 1 email idea (any prospect) · Level 2 one-page concept (strong or warm) · Level 3 full concept, brief, proposal and
 // delivery documents (after demonstrated interest, a meeting or an actual brief). Internal notes are level 0.
-export const LEVEL = { note: 0, email: 1, onepage: 2, concept: 3, brief: 3, proposal: 3, itinerary: 3, desk: 3, project: 3, ops: 3 };
+export const LEVEL = { note: 0, email: 1, onepage: 2, concept: 3, brief: 3, master: 3, proposal: 3, itinerary: 3, desk: 3, project: 3, ops: 3 };
 const STATE_LEVEL = { declined: 0, cold: 1, warm: 2, engaged: 3 };
 export const LEVEL_NAME = { 0: 'Internal', 1: 'Level 1 · email idea', 2: 'Level 2 · one-page concept', 3: 'Level 3 · full brief / proposal' };
 

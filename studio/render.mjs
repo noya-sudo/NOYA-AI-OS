@@ -15,6 +15,33 @@ export const OUT = join(HERE, 'out');
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const { chromium } = createRequire(join(HERE, '..', 'hq', 'package.json'))('playwright-core');
 
+// NOYA library photos: a block or page names an image by its key in brand/images.json ("img"); the renderer embeds the cached
+// file as "src". A key missing from the manifest, a photo on its "never" list, or a file not in the cache stops the render.
+const IMAGES = join(BRAND, 'images');
+export function imageManifest() { return JSON.parse(readFileSync(join(BRAND, 'images.json'), 'utf8')); }
+export function resolveImages(doc) {
+  const m = imageManifest();
+  const used = [];
+  const walk = (o) => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== 'object') return;
+    if (typeof o.img === 'string') {
+      if (m.never[o.img]) throw new Error(`${doc.slug}: image "${o.img}" is never used (${m.never[o.img]})`);
+      const e = m.images[o.img];
+      if (!e) throw new Error(`${doc.slug}: image "${o.img}" is not in brand/images.json`);
+      // A print copy (<name>.print.jpg: long edge 1800 px, JPEG) keeps a PDF small enough to email; the web file is the fallback.
+      const print = join(IMAGES, e.file.replace(/\.\w+$/, '.print.jpg'));
+      const f = existsSync(print) ? print : join(IMAGES, e.file);
+      if (!existsSync(f)) throw new Error(`${doc.slug}: image "${o.img}" is not in the cache (brand/images/${e.file}); download Drive ${e.drive_id} first`);
+      o.src = `data:image/${f === print ? 'jpeg' : 'webp'};base64,${readFileSync(f).toString('base64')}`;
+      used.push({ key: o.img, drive_id: e.drive_id, library: m.library, low_res: !!e.low_res, h: o.h ?? null });
+    }
+    Object.values(o).forEach(walk);
+  };
+  walk(doc.pages);
+  return used;
+}
+
 // One central logo: brand/logo.svg (single colour, fill="currentColor") replaces the typeset wordmark in every document.
 export function brand() {
   const css = readFileSync(join(BRAND, 'brand.css'), 'utf8').replace(/url\((fonts\/[^)]+)\)/g, (_, f) =>
@@ -32,7 +59,7 @@ function paginate() {
       const pages = [...docEl.querySelectorAll(':scope > .page')];
       if (i >= pages.length) break;
       const p = pages[i];
-      if (p.classList.contains('one')) { i++; continue; }  // a one-page concept never spills onto a second page
+      if (p.classList.contains('one') || p.classList.contains('master')) { i++; continue; }  // fixed pages never spill over
       const body = p.querySelector('.body');
       let guard = 0;
       while (body && body.scrollHeight > body.clientHeight + 1 && guard++ < 200) {
@@ -98,13 +125,15 @@ async function print(browser, html, slug, { shots = true } = {}) {
 
 export async function renderDoc(doc, browser, opts) {
   const b = brand();
-  return { ...(await print(browser, renderDocument(doc, b), doc.slug, opts)), logo: b.logo ? 'brand/logo.svg' : 'typeset wordmark (logo.svg not yet supplied)' };
+  const view = structuredClone(doc);  // the document JSON keeps image keys; only the rendered copy carries the embedded files
+  const images = resolveImages(view);
+  return { ...(await print(browser, renderDocument(view, b), doc.slug, opts)), images, logo: b.logo ? 'brand/logo.svg' : 'typeset wordmark (logo.svg not yet supplied)' };
 }
 
 // Several documents bound into one PDF (each keeps its own cover and page numbers).
 export async function renderPack(docs, slug, title, browser, opts) {
   const b = brand();
-  const body = docs.map((d) => `<div class="doc">${documentPages(d, b.logo)}</div>`).join('\n');
+  const body = docs.map((d) => { const v = structuredClone(d); resolveImages(v); return `<div class="doc">${documentPages(v, b.logo)}</div>`; }).join('\n');
   return print(browser, shell(title, b.css, body), slug, opts);
 }
 

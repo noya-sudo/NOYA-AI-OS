@@ -1,1 +1,3 @@
 out/
+# Image cache: NOYA library photos downloaded from Drive (brand/images.json says which). The repository is public, so photos stay out of git.
+brand/images/

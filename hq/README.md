@@ -28,6 +28,9 @@ A static site for `hq.noyaconcierge.com`. The browser holds only the Supabase **
 | `hq_import_linkedin_messages(rows)` | LinkedIn data download: up to 1,000 parsed messages a call (400 from HQ); a message already imported is never added twice |
 | `hq_linkedin_archive(step, stats)` | LinkedIn data download: `start` before the upload, then `self`, `people`, `history`, `match`, `states` (one short call each); no step reads the report |
 | `hq_linkedin_history(connection)` | A person's last twelve LinkedIn messages with Adam, newest first, read-only (their drawer) |
+| `hq_next_move(company, opportunity, contact, connection)` | Recommended next action panel in the opportunity, company, contact and connection drawers: what happened, what they need, value, why now, the one recommended action and its message or material, from the operator's assessment (`commercial_next_moves`) or a rule-based baseline over the whole relationship |
+| `hq_next_move_action(action, move, company, opportunity, connection, note, until, key, kind)` | Adam's choice in the panel: a Studio action queues a Studio request; SCHEDULE_FOLLOWUP adds a task; HOLD / CLOSE are recorded; a prepared draft or message is returned to open or copy; otherwise a Gmail draft is requested through the existing approval path. Never sends |
+| `hq_reopen_list(limit)` | Relationships → Past conversations: Gmail and LinkedIn conversations worth reopening, with who wrote last and the recency band; declines, do-not-contact, closed and irrelevant threads left out |
 
 Each function:
 - checks that the signed-in user is in `hq_admins`, matching both the user id and the email;

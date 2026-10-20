@@ -7,6 +7,7 @@ import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { withMorning } from './morning_fixture.mjs';
+import { REOPEN } from './next_move_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -46,11 +47,13 @@ const READS = {
     { key: 'directors', built_at: new Date().toISOString(), age_s: 120, build_ms: 18686, last_error: 'canceling statement due to statement timeout', last_error_at: new Date().toISOString() }],
     jobs: [{ job: 'hq-cache-core', schedule: '*/5 * * * *', active: true, last_status: 'succeeded', last_run: new Date().toISOString() }] }),
   hq_director: (b) => DET[b?.p_key] || { key: b?.p_key, sections: [] }, hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
+  hq_reopen_list: () => REOPEN,
 };
 const WRITES = { hq_approve_draft: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a1' },
   hq_approve_email: { ok: true, mode: 'DRAFT', dispatched: true, outbound_id: '00000000-0000-0000-0000-0000000000a2' },
   hq_outreach_action: { ok: true }, hq_outreach_edit: { ok: true }, hq_save_draft: { ok: true, version: 2 }, hq_task_action: { ok: true }, hq_task_dismiss: { ok: true },
   hq_club_person: { ok: true, id: '00000000-0000-0000-0000-0000000000c1' }, hq_redispatch: { ok: true }, hq_record_meeting: { ok: true }, hq_advisor_seen: { ok: true },
+  hq_next_move_action: { ok: true, id: '00000000-0000-0000-0000-00000000b009', action: 'HOLD', result: { recorded: true } },
   hq_linkedin_action: { ok: true, state: 'SENT', words: 60 }, hq_linkedin_reply: { ok: true, class: 'MEETING_INTENT', response: 'Thank you.', meeting_task: '00000000-0000-0000-0000-0000000000m1' } };
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
@@ -284,7 +287,8 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await page.fill('#li-text', 'Happy to chat, could you send a couple of times next week?'); await page.click('#m-ok'); await page.waitForTimeout(250);
   const liRp = last(calls, 'hq_linkedin_reply')?.body || {};
   check('Log reply: Adam pastes the reply; classified server-side (or by his choice), nothing assumed from a notification', liRp.p_id === liSent.id && /couple of times/.test(liRp.p_text) && liRp.p_class === null, JSON.stringify(liRp));
-  check('Log reply: a meeting intent says Meeting Assist proposes two times from the calendar', /Meeting Assist proposes two times/.test(await page.locator('main .banner').first().innerText()));
+  { await page.waitForFunction(() => [...document.querySelectorAll('main .banner')].some((b) => /Meeting Assist proposes two times/.test(b.innerText)), null, { timeout: 4000 }).catch(() => {});
+  const bn = await page.locator('main .banner').allInnerTexts(); check('Log reply: a meeting intent says Meeting Assist proposes two times from the calendar', bn.some((t) => /Meeting Assist proposes two times/.test(t)), bn.join(' | ').slice(0, 300)); }
   const liRep = D.linkedin.find((a) => a.state === 'REPLIED');
   check('Replied: their words, the class, and Copy response & open LinkedIn', (await page.locator(`#li-${liRep.id}`).innerText()).includes(liRep.reply_text) && (await page.locator(`#li-${liRep.id} a[data-copy]`).getAttribute('data-copy')) === liRep.response_draft);
   await shot(page, 'outreach-linkedin-1440');
@@ -363,12 +367,26 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   await page.click('.side [data-tab=relations]');
   await page.waitForSelector('main .nrow');
   const rt = (await tc(page, 'main .tabs button')).map((t) => t.replace(/\s*\d+$/, ''));
-  check('Relationships: Important people · Companies · Warm relationships · Pipeline · Opportunities · Going cold', rt.join('|') === 'Important people|Companies|Warm relationships|Pipeline|Opportunities|Going cold', rt.join(' | '));
+  check('Relationships: Important people · Past conversations · Companies · Warm relationships · Pipeline · Opportunities · Going cold', rt.join('|') === 'Important people|Past conversations|Companies|Warm relationships|Pipeline|Opportunities|Going cold', rt.join(' | '));
   check('Relationships: one row per important relationship from hq_network()', (await page.locator('main .nrow').count()) === NET.important.length);
   check('Relationships: multipliers are marked', (await page.locator('main .nrow.mult').count()) === NET.important.filter((x) => x.multiplier).length);
   const nr = await tc(page, 'main .nrow');
   check('Relationships: each row says who, company, why important, last interaction and owner', nr.every((t) => /owner /.test(t)) && NET.important.every((x, i) => nr[i].includes(x.company) && (!x.last_at || /last interaction/.test(nr[i]))));
   await shot(page, 'relationships-1440');
+  // PAST CONVERSATION — OPPORTUNITY TO REOPEN: read before any cold outreach; a relationship not in the CRM can only be held or closed.
+  await page.click('main [data-rel-tab=REOPEN]');
+  await page.waitForSelector('main article.card.reopen');
+  const ro = await page.locator('main').innerText();
+  check('Past conversations: one card each, last date, who wrote last, the recency rule, Gmail thread', (await page.locator('main article.card.reopen').count()) === REOPEN.gmail.length
+    && /they wrote last/i.test(ro) && /NOYA wrote last/i.test(ro) && /Only with a credible new reason/.test(ro) && (await page.locator('main article.card.reopen a[href*="mail.google.com"]').count()) === REOPEN.gmail.length);
+  const crmCard = page.locator('main article.card.reopen').nth(0); const outCard = page.locator('main article.card.reopen').nth(1);
+  check('Past conversations: a CRM company gets Draft reconnect · Build concept · Ask for meeting · Hold · Close; an address not in the CRM gets Add to CRM, Hold, Close',
+    (await crmCard.locator('[data-nm-act]').count()) === 5 && (await outCard.locator('[data-nm-act]').count()) === 2 && (await outCard.locator('[data-modal=history-add]').count()) === 1);
+  await outCard.locator('[data-nm-act=HOLD]').click();
+  await page.waitForTimeout(300);
+  const rh = calls.filter((c) => c.fn === 'hq_next_move_action').pop();
+  check('Hold on a past conversation → hq_next_move_action with its Gmail key, marked REOPEN; nothing sent', rh && rh.body.p_action === 'HOLD' && rh.body.p_key === 'e:someone@example.com' && rh.body.p_kind === 'REOPEN', JSON.stringify(rh?.body).slice(0, 160));
+  await shot(page, 'past-conversations-1440');
   for (const t of ['COMPANIES', 'WARM', 'PIPELINE', 'OPPORTUNITIES', 'COLD']) { await page.click(`main [data-rel-tab=${t}]`); await page.waitForTimeout(80); }
   check('Relationships: going cold lists hq_network().going_cold', (await page.locator('main .nrow').count()) === NET.going_cold.length);
   check('Relationships: every tab renders', errors.length === 0, errors.join(' | '));
@@ -459,6 +477,7 @@ const DIRECTOR_SHOTS = [['BRANDS', 'Brands & Production', 'brands'], ['WEDDINGS'
   check('phone Outreach: review buttons are thumb-sized', ab && ab.height >= 30, `${ab?.height}`);
   await o('Outreach · Email review'); await shot(page, 'outreach-email-review-390');
   await page.click('.bnav [data-tab=relations]'); await page.waitForSelector('main .nrow'); await o('Relationships'); await shot(page, 'relationships-390');
+  await page.click('main [data-rel-tab=REOPEN]'); await page.waitForSelector('main article.card.reopen'); await o('Relationships · Past conversations'); await shot(page, 'past-conversations-390');
   await page.click('#bmenu'); await page.click('.sheet [data-tab=club]'); await page.waitForSelector('[data-club-tab]'); await o('Club'); await shot(page, 'club-390');
   await page.click('#bmenu'); await page.click('.sheet [data-tab=ops]'); await o('Operations'); await shot(page, 'operations-390');
   check('phone: no JavaScript errors', errors.length === 0, errors.join(' | '));

@@ -13,6 +13,7 @@ const TYPE = {
   ops: { label: 'Operations itinerary' },
   desk: { label: 'Private services' },
   onepage: { label: 'One-page concept' },
+  master: { label: 'Brief' },
 };
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -54,6 +55,13 @@ const BLOCKS = {
   itinerary: (b) => b.days.map((d, i) => `<div class="day"><div class="dl"><span class="n">${esc(d.n || String(i + 1).padStart(2, '0'))}</span><span class="label">${esc(d.label || '')}</span>${d.date ? `<span class="dt">${esc(d.date)}</span>` : ''}</div><div class="items">${d.items.map((it) => `<div class="it"><span class="tm">${esc(it.time || '')}</span><div><h4>${fmt(it.title)}</h4>${it.text ? `<p>${fmt(it.text)}</p>` : ''}</div></div>`).join('')}</div></div>`).join(''),
   // One-page concept: the next step and the contact on one line at the foot of the page.
   strip: (b) => `<div class="strip"><div><span class="label">${esc(b.label)}</span><h3>${fmt(b.title)}</h3><p>${fmt(b.text)}</p></div><div class="who">${esc(b.contact.name)}<span class="role">${esc(b.contact.role)}</span><span class="ways">${b.contact.lines.map(esc).join('<br>')}</span></div></div>`,
+  // Imagery (master brief): every image comes from brand/images.json (NOYA's approved library); render.mjs resolves "img" to "src".
+  gallery: (b) => `<div class="gallery" style="--gh:${b.h || 58}mm;--gcols:${b.items.length}">${b.items.map((i) => `<figure><div class="ph" style="background-image:url(${i.src});background-position:${i.pos || 'center'}"></div>${i.caption ? `<figcaption class="label">${esc(i.caption)}</figcaption>` : ''}</figure>`).join('')}</div>`,
+  formats: (b) => `<div class="formats">${b.items.map((f) => `<div class="fm"><h3>${fmt(f.title)}</h3><p>${fmt(f.text)}</p></div>`).join('')}</div>`,
+  // Dinner / experience creator: the setting and the guest's evening as direction, beside one image. Never a confirmed menu.
+  evening: (b) => `<div class="evening"><div class="ph" style="background-image:url(${b.src});background-position:${b.pos || 'center'}"></div><div><span class="label">${esc(b.label)}</span><h3>${fmt(b.title)}</h3><div class="ledger">${b.rows.map(([k, v]) => `<div class="k"><span class="label">${esc(k)}</span></div><div class="v">${fmt(v)}</div>`).join('')}</div>${b.note ? `<div class="note">${fmt(b.note)}</div>` : ''}</div></div>`,
+  value: (b) => `<div class="value">${b.items.map((v) => `<div class="vi"><h3>${fmt(v.title)}</h3><p>${fmt(v.text)}</p></div>`).join('')}</div>`,
+  places: (b) => `${b.label ? `<span class="label places-label">${esc(b.label)}</span>` : ''}<div class="places">${b.items.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`,
   check: (b) => `<div class="check">${b.items.map((c) => `<div class="c"><div>${fmt(c.text)}${c.note ? `<span class="n">${fmt(c.note)}</span>` : ''}</div><span class="cls ${slugCls(c.status)}">${esc(c.status || 'To confirm')}</span></div>`).join('')}</div>`,
 };
 
@@ -111,10 +119,43 @@ function onePage(doc, logo) {
 </section>`;
 }
 
+// Master brief (2-3 pages, Level 3): page one is the cover, the positioning and why now over one strong image; the pages that
+// follow are fixed (they never paginate), so anything that does not fit fails the render instead of growing the document.
+function lockup(doc, logo) {
+  return `<div class="lockup">${mark(logo)}${doc.party_mark ? `<span class="x">×</span><span class="pm">${esc(doc.party_mark)}</span>` : ''}</div>`;
+}
+function masterPages(doc, logo) {
+  const n = doc.pages.length;
+  const foot = (i) => `<div class="foot"><span class="pn">${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}</span><span class="label">NOYA Concierge · Private &amp; confidential</span></div>`;
+  return doc.pages.map((p, i) => {
+    if (p.kind === 'm-hero') {
+      return `<section class="page master hero navy" data-kind="m-hero">
+  <div class="hero-img" style="background-image:url(${p.src});background-position:${p.pos || 'center'}"></div>
+  <div class="hero-top">${lockup(doc, logo)}<div class="meta"><span class="label">${esc(doc.eyebrow)}</span><span class="label">${esc(doc.date)}</span></div></div>
+  <div class="body hero-text">
+    <h1>${fmt(doc.title)}</h1>
+    <div class="pos">${fmt(doc.positioning)}</div>
+    ${p.why?.length ? `<div class="why"><span class="label">${esc(p.why_label || 'Why Egypt, why now')}</span><div class="why-grid">${p.why.map(([k, v]) => `<div><h3>${fmt(k)}</h3><p>${fmt(v)}</p></div>`).join('')}</div></div>` : ''}
+    <div class="for"><span class="label">Prepared for</span>${fmt(doc.prepared_for)}</div>
+  </div>
+  ${foot(i)}
+</section>`;
+    }
+    const close = p.kind === 'm-close';
+    return `<section class="page master fixed${close ? ' close' : ''}" data-kind="${esc(p.kind)}">
+  <div class="head">${mark(logo, true)}<span class="label">${esc(p.running || doc.running || '')}</span></div>
+  <div class="body">${blocks(p.blocks)}</div>
+  ${close ? `<div class="band"><div class="nx"><span class="label">${esc(p.next.label || 'Next step')}</span><h2>${fmt(p.next.title)}</h2><p>${fmt(p.next.text)}</p></div><div class="who">${esc(p.contact.name)}<span class="role">${esc(p.contact.role)}</span><span class="ways">${p.contact.lines.map(esc).join('<br>')}</span></div></div>` : ''}
+  ${foot(i)}
+</section>`;
+  }).join('\n');
+}
+
 // The pages of one document, without the HTML shell (used to bind several documents into one pack).
 export function documentPages(doc, logo) {
   if (!TYPE[doc.type]) throw new Error(`Unknown document type: ${doc.type}`);
   if (doc.type === 'onepage') return onePage(doc, logo);
+  if (doc.type === 'master') return masterPages(doc, logo);
   return [cover(doc, logo), ...doc.pages.map((p, i) => contentPage(doc, p, i + 2, logo))].join('\n');
 }
 

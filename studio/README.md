@@ -15,7 +15,7 @@ stands, and the build produces only what that relationship has earned:
 |---|---|---|
 | 1 · Email idea | `email`: a short concept inside the email itself (under 150 words), no attachment | Any prospect, including cold |
 | 2 · One-page concept | `onepage`: the idea, three options, why now, next step and contact on one A4 page | Warm (they replied), or cold but strong (a dated public trigger) |
-| 3 · Full brief / proposal | `concept`, `brief`, `proposal`, `itinerary`, `desk`, `project`, `ops` | After demonstrated interest, a meeting or an actual brief |
+| 3 · Full brief / proposal | `master` (the 2–3 page brief), `concept`, `brief`, `proposal`, `itinerary`, `desk`, `project`, `ops` | After demonstrated interest, a meeting or an actual brief; a proposal only when earned |
 
 `relationship.state` is `cold`, `warm`, `engaged` or `declined`. Warm, engaged and declined cite a VERIFIED fact (the reply, the
 meeting, the decline); a strong cold opportunity cites its trigger in `strong`. A document above the earned level builds only when the
@@ -40,14 +40,18 @@ opportunity's CRM next action name the file. Only APPROVED documents are attache
 studio/cases/<slug>.json          one live opportunity: facts (with provenance), people, timeline, status, and the idea per stage
 studio/masters/verticals.mjs      the master systems: Brand · Campaign · Production, Weddings, Media / Podcast, NOYA Private,
                                   Travel / Concierge, Corporate / White-label, Founder retreats (each on its CRM product desk)
-studio/masters/stages.mjs         stage builders (note, email, onepage, concept, brief, proposal, project, itinerary, ops, desk)
-                                  and the level gate
+studio/masters/stages.mjs         stage builders (note, email, onepage, concept, brief, master, proposal, project, itinerary, ops,
+                                  desk) and the level gate
+studio/masters/reviewer.mjs       the Brand & Quality Reviewer: the last gate before a client document can read READY TO SEND
 studio/masters/library.mjs        NOYA's approved wording (Partner Guide, Brands Proposal, NOYA Private) and the contact block
 studio/templates.mjs              A4 page and block templates; cover variants navy / paper / split
 studio/brand/brand.css            navy #061422, off-white #F7F7F7, hairlines; Cormorant Garamond + Jost (local, OFL)
+studio/brand/images.json          NOYA's approved photo library (Drive IDs, subjects, never-list); photos cached in brand/images/
+                                  (not committed: the repository is public)
 studio/brand/logo.svg             the central logo (not yet supplied; the typeset NOYA wordmark is used until it is)
 studio/render.mjs                 JSON -> HTML -> PDF (Chromium); pages paginate themselves; fails on overflow or missing fonts
-studio/build.mjs                  case -> stage documents -> PDFs (+ an internal pack when a case has several internal documents)
+studio/build.mjs                  case -> stage documents -> PDFs (+ an internal pack when a case has several internal documents),
+                                  then the reviewer on every client document (studio/out/<slug>.review.json)
 studio/record.mjs                 prints the SQL that records a case's documents in Supabase studio_documents
 studio/tests/acceptance.mjs       the QA gate: builds every case and preview and checks the rules below
 studio/documents/                 generated document JSON for live cases (committed: the record of what Adam reviewed)
@@ -67,6 +71,7 @@ Run the gate: `node studio/tests/acceptance.mjs`.
 | `onepage` | Client | Level 2: the concept on one page (never paginates; overflow fails the build) |
 | `concept` | Client | The idea: three options, why now (cited facts only), who leads / what NOYA delivers, an example journey, next step |
 | `brief` | Client | The brief we need, pre-filled with what we know (from the conversation, or from our concept, and it says which) |
+| `master` | Client | Level 3 master brief, two or three pages with NOYA photos (below). The default Level 3 document after a meeting |
 | `proposal` | Client | Understanding, scope, programme, fees, assumptions. Marked *Draft · fees not approved · not for client* until Adam approves fees |
 | `project` | Internal | Project book: workstreams, milestones, suppliers (named only once confirmed), approvals, risks |
 | `itinerary` | Client | Day-by-day programme, marked indicative |
@@ -97,11 +102,56 @@ PUBLIC or NOYA MATERIAL facts can print in a client document; INFERRED and UNVER
 - Studio code makes no network or mail calls.
 - The level gate: nothing above the earned level unless held; a one-page concept is one page; an email idea stays under 150 words.
 
+## Master brief (Level 3)
+
+A tailored two or three page brief (`master` in the case; file `<case>-brief.json`, label *Brief*):
+
+1. **NOYA × CLIENT**: the title, a full-bleed photo, the positioning in one paragraph, *why Egypt / why now* (at least two cited
+   rows) and who it is prepared for.
+2. **The idea**: concept, formats, journey, places, hospitality, production and one example (for instance an evening), as blocks.
+3. **What NOYA handles**: roles, commercial value, places, and a navy band with the next step and the contact.
+
+The builder stops without a title, positioning, hero photo, at least two why rows and a next step on the last page; it never runs
+past three pages. **Agency mode** (YKONE and similar): the agency brings the vision and the client brief; NOYA brings the Egypt side
+to life under the agency's name. The brief never tells an agency how to do its own creative work and never quotes savings. An
+experience such as a dinner describes the setting, the movement and the hospitality; it never presents a chef or a menu as
+confirmed, and every venue carries the permits note.
+
+**Photos.** Any block or page with `"img": "<key>"` takes a photo from `brand/images.json` (NOYA's website library). Keys on the
+never-list (rights or relevance) and keys missing from the manifest stop the render. Captions name places, never past client work.
+Photos marked `low_res` go only in small slots (height 45 mm or less). For print, each cached photo has a `<name>.print.jpg` copy
+(long edge 1800 px, JPEG quality 80) that the renderer prefers, so a three-page brief stays around 1.5 MB.
+
+## Brand & Quality Reviewer
+
+`studio/masters/reviewer.mjs` reads each rendered client document as the client would and records a check list in
+`studio/out/<slug>.review.json`, then in `studio_documents.qa.reviewer`:
+
+factual accuracy (no INFERRED or UNVERIFIED fact printed) · correct client (no other case's names) · correct relationship stage
+(level earned, not held) · no internal notes · no fabricated claims (past work, client lists, guarantees, savings or percentages,
+exclusivity, access or permits, confirmed menus, "attached") · no generic luxury wording · British spelling and no repeated words
+· correct imagery (a master carries at least three library photos; low-resolution photos only in small slots) · NOYA branding (fonts
+and mark) · layout and pagination (no overflow; a master two or three pages; a one-page one page) · file size (8 MB or less, so it
+can be emailed) · contact details · commercially useful (names the client and asks for one next step).
+
 ## Records
 
 `studio_documents` (Supabase) holds one row per document version: type, vertical, stage, audience (CLIENT / INTERNAL), status
 (DRAFT, FOR_REVIEW, APPROVED, SENT, SUPERSEDED; Adam sets APPROVED and SENT), the JSON's hash and path, sources and review notes.
 A changed document becomes the next version and supersedes earlier unapproved versions; APPROVED and SENT rows are never touched.
+
+**Readiness** (`ready_class`, `ready_reason`, `ready_checked_at`, set by `record.mjs`) says whether Adam could send a document now:
+
+| Class | Meaning |
+|---|---|
+| READY TO SEND | A client document that passed every reviewer check; Adam approves (if not yet) and sends |
+| NEEDS UPDATE | A client document that failed a check (the reason names it), is still a draft, or has not been reviewed |
+| INTERNAL ONLY | Notes, project books, operations itineraries |
+| SUPERSEDED | Replaced by a later version; kept for history |
+| HOLD | Prepared ahead of the relationship (above the earned level) or parked |
+
+The Dashboard's *Studio ready* list (`studio_ready_board()`) shows only READY TO SEND documents not yet sent, each with its cover
+email draft. Nothing is deleted: a replaced version stays as SUPERSEDED with its reason.
 
 ## Logo
 
@@ -113,5 +163,6 @@ noyaconcierge.com, so its logo could not be extracted here.
 ## Blocks
 
 `section`, `lead`, `p`, `h3`, `note`, `quote`, `gap`, `rule`, `roles`, `ledger`, `options`, `feature`, `journey`, `form`, `steps`,
-`fees`, `kv`, `facts`, `timeline`, `callout`, `table`, `itinerary`, `check`. A page with `"kind": "closing"` is navy and can carry
+`fees`, `kv`, `facts`, `timeline`, `callout`, `table`, `itinerary`, `check`, and for the master brief `gallery` (photos with
+captions), `formats` (tiles), `evening` (photo, ledger and note), `value` and `places`. A page with `"kind": "closing"` is navy and can carry
 a `contact`.

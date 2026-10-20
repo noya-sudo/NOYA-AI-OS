@@ -1,0 +1,54 @@
+{
+  "note": "NOYA's approved photo library for Studio documents: Drive 'Noya Website/_web' (folder 1dTs14VQuSKQXGbDsUKRzpuh1_QL6_L_C), the web copies of the photos on noyaconcierge.com. Files are cached in brand/images/ (git-ignored: the repository is public). Captions name places only; no photo is presented as past client work. low_res photos go only in small slots. For print, each cached photo also gets a copy named <name>.print.jpg (long edge 1800 px, JPEG quality 80), which the renderer prefers so a PDF stays small enough to email.",
+  "library": "Noya Website/_web",
+  "images": {
+    "pyramids-khufu-14": {
+      "file": "pyramids-khufu-14.webp",
+      "drive_id": "1neXUyXHEbn3Ly6Dusxq2HSu3F8eE1yxz",
+      "folder": "pyramids-khufu",
+      "size": "1920x2400",
+      "subject": "Evening terrace tables facing the illuminated Pyramid of Khafre, Giza"
+    },
+    "grand-egyptian-museum-04": {
+      "file": "grand-egyptian-museum-04.webp",
+      "drive_id": "1mURBp_MHkCGFmgc1sZqzZZYdrh-oe-9_",
+      "folder": "grand-egyptian-museum",
+      "size": "1920x2400",
+      "subject": "Grand Egyptian Museum entrance façade lit at night"
+    },
+    "v-class-pyramids": {
+      "file": "v-class-pyramids.webp",
+      "drive_id": "1AHjmG0emkreuQH06EHND9GjcV0x4103l",
+      "folder": "services",
+      "size": "1920x2400",
+      "subject": "Chauffeured Mercedes V-Class at the Giza plateau"
+    },
+    "branded-content-14": {
+      "file": "branded-content-14.webp",
+      "drive_id": "1em3JIyzCEW1rFwoITnqZnxebQMK7BJIQ",
+      "folder": "branded-content",
+      "size": "1920x2400",
+      "subject": "NOYA towel on a deck chair over the Red Sea (NOYA's own brand shoot)"
+    },
+    "sage-06": {
+      "file": "sage-06.webp",
+      "drive_id": "1lafPKzgzrDhqBPZOGQc-RAUXpCjwmNKX",
+      "folder": "sage",
+      "size": "1920x2400",
+      "subject": "A long dinner table set with shared plates"
+    },
+    "pyramids-04": {
+      "file": "pyramids-04.webp",
+      "drive_id": "11eA57I5HDTg6nNlsNr2jDXtonOM8NTlq",
+      "folder": "pyramids",
+      "size": "674x848",
+      "low_res": true,
+      "subject": "Pyramid of Khafre against a clear sky"
+    }
+  },
+  "never": {
+    "egypt-private-event-vogue-arabia": "A third party's event: using it would imply NOYA produced it",
+    "luxor-aswan-04": "Carries another company's logo",
+    "grand-egyptian-museum-01": "A phone screenshot"
+  }
+}

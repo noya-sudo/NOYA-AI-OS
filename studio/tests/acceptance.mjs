@@ -30,13 +30,14 @@ const FORBIDDEN = [
 const BROKEN = [/\bundefined\b/, /\bnull\b/, /\[object Object\]/, /\{party\}/, /\bNaN\b/];
 
 const failures = [];
+const reviewNeeds = [];
 const check = (ok, where, msg) => { if (!ok) failures.push(`${where}: ${msg}`); };
 
 const text = (html) => html.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ')
   .replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/\s+/g, ' ');
 const pagesOf = (html) => html.split(/<section class="page/).slice(1);
-const blocksOf = (doc) => doc.pages.flatMap((p) => p.blocks);
+const blocksOf = (doc) => doc.pages.flatMap((p) => p.blocks || []);
 
 const allPeople = new Map();
 for (const f of CASES) for (const p of JSON.parse(readFileSync(f, 'utf8')).people || []) allPeople.set(p.name, f);
@@ -82,7 +83,7 @@ for (const f of CASES) {
   const preview = c.slug.startsWith('preview-');
   const own = new Set((c.people || []).map((p) => p.name));
   const max = allowedLevel(c);
-  for (const { doc, render } of results) {
+  for (const { doc, render, review: rv } of results) {
     const w = doc.slug;
     const isEmail = doc.type === 'email';
     const html = readFileSync(join(OUT, `${w}.${isEmail ? 'txt' : 'html'}`), 'utf8');
@@ -112,7 +113,7 @@ for (const f of CASES) {
       for (const re of FORBIDDEN) check(!re.test(body), w, `forbidden claim ${re}`);
       if (!doc.draft) check(!body.includes('To confirm') && !body.includes('Not recorded'), w, 'a client document without a draft flag shows unconfirmed values');
       if (!isEmail) check(body.includes(CONTACT.lines[0]), w, 'closing contact missing');
-      if (['onepage', 'concept', 'brief', 'itinerary'].includes(doc.stage)) check(body.includes(PERMITS) || body.includes(INDICATIVE), w, 'permits / indicative note missing');
+      if (['onepage', 'concept', 'brief', 'master', 'itinerary'].includes(doc.stage)) check(body.includes(PERMITS) || body.includes(INDICATIVE), w, 'permits / indicative note missing');
       check(preview ? doc.prepared_for === 'Template preview · no client' : [c.company, c.party, ...own].some((n) => n && doc.prepared_for.includes(n)), w, `prepared for "${doc.prepared_for}" is not a known party`);
       for (const r of (isEmail ? [] : blocksOf(doc)).filter((b) => b.t === 'ledger')) for (const [label] of r.rows) {
         const src = [c.concept?.why, c.desk?.why].flat().filter(Boolean).find((x) => x.label === label);
@@ -128,12 +129,19 @@ for (const f of CASES) {
       check(open ? doc.draft === DRAFT_FLAG : !!c.proposal.fees_approved_by, w, 'fees and draft flag disagree');
       if (open) check(pages.every((p) => p.includes(DRAFT_FLAG)), w, 'draft flag missing on a page');
     }
-    rows.push(`${render.ok ? 'OK  ' : 'FAIL'} ${w.padEnd(34)} L${doc.level} ${doc.audience.padEnd(8)} ${isEmail ? `${doc.words} words` : `${String(render.pages).padStart(2)} pp`}${doc.draft ? '  [draft]' : ''}${doc.hold ? '  [held]' : ''}`);
+    // The Brand & Quality Reviewer runs on every client document; its verdict decides READY TO SEND or NEEDS UPDATE in HQ.
+    if (client && !preview) {
+      check(!!rv, w, 'Brand & Quality Reviewer did not run');
+      if (doc.stage === 'master') check(rv?.ok, w, `master brief fails the Brand & Quality Reviewer: ${rv?.failed.join('; ')}`);
+      if (rv && !rv.ok) reviewNeeds.push(`${w}: ${rv.failed.join('; ')}`);
+    }
+    rows.push(`${render.ok ? 'OK  ' : 'FAIL'} ${w.padEnd(34)} L${doc.level} ${doc.audience.padEnd(8)} ${isEmail ? `${doc.words} words` : `${String(render.pages).padStart(2)} pp`}${doc.draft ? '  [draft]' : ''}${doc.hold ? '  [held]' : ''}${rv ? (rv.ok ? '  [reviewer: ready]' : '  [reviewer: needs update]') : ''}`);
   }
   if (pack) { check(pack.ok, pack.slug, 'internal pack render'); rows.push(`PACK ${pack.slug.padEnd(34)} internal ${String(pack.pages).padStart(2)} pp`); }
 }
 await browser.close();
 
 console.log(rows.join('\n'));
+if (reviewNeeds.length) console.log(`\nNeeds update (Brand & Quality Reviewer; recorded, not a build failure):\n${reviewNeeds.map((x) => `  - ${x}`).join('\n')}`);
 if (failures.length) { console.log(`\n${failures.length} failure(s):\n${failures.map((x) => `  - ${x}`).join('\n')}`); process.exit(1); }
 console.log(`\nAcceptance passed: ${rows.length} outputs from ${CASES.length} cases.`);

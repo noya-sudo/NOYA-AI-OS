@@ -12,6 +12,7 @@ import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { CONNECTIONS_CSV, MESSAGES_CSV, ARCHIVE_ZIP, ARCHIVE_EMPTY, ARCHIVE_REPORT, HISTORY } from './linkedin_archive_fixture.mjs';
+import { NEXT_MOVE, NEXT_MOVE_BASE } from './next_move_fixture.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -141,7 +142,7 @@ const WRITES = ['hq_task_dismiss', 'hq_opportunity_update', 'hq_add_note', 'hq_l
   'hq_project_update', 'hq_project_item', 'hq_edge_add', 'hq_role_route', 'hq_outreach_action', 'hq_outreach_edit', 'hq_club_person', 'hq_redispatch',
   'hq_advisor_seen'];
 const ALLOWED = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_commercial', 'hq_execution', 'hq_account', 'hq_task_action', 'hq_approve_draft', 'hq_save_draft', 'hq_hold', 'hq_reject',
-  'hq_create_opportunity', 'hq_import_connections', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
+  'hq_create_opportunity', 'hq_import_connections', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history', 'hq_next_move', 'hq_next_move_action', 'hq_agents', 'hq_agent', 'hq_email_review', 'hq_approve_email', ...Object.keys(V3), ...WRITES];
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`); };
 
@@ -199,6 +200,9 @@ async function runScenario({ viewport, meta = {}, data = snapshot, label }) {
         return route.fulfill({ json: liImported ? ARCHIVE_REPORT : ARCHIVE_EMPTY });
       }
       if (m[1] === 'hq_linkedin_history') return route.fulfill({ json: HISTORY });
+      if (m[1] === 'hq_next_move') return route.fulfill({ json: body?.p_opportunity ? NEXT_MOVE : NEXT_MOVE_BASE });
+      if (m[1] === 'hq_next_move_action') return route.fulfill({ json: { ok: true, id: body?.p_move || '00000000-0000-0000-0000-00000000b009', action: body?.p_action,
+        result: body?.p_action === 'BUILD_BRIEF' ? { ok: true, id: '00000000-0000-0000-0000-00000000c001', level: 3 } : { recorded: true } } });
       if (WRITES.includes(m[1])) return route.fulfill({ json: { ok: true, id: '00000000-0000-0000-0000-000000000009' } });
       return route.fulfill({ status: 404, json: { message: 'not allowed in test' } });
     }
@@ -279,6 +283,21 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     /YKONE Middle East/.test(drawer) && /Magali Rady/.test(drawer) && /verified/i.test(drawer) && /→/.test(drawer) && /Open tasks/i.test(drawer) && /Timeline stub/.test(drawer)
       && calls.some((c) => c.fn === 'hq_timeline' && c.body.p_kind === 'opportunity'), drawer.replace(/\n/g, ' | ').slice(0, 240));
   await page.screenshot({ path: 'tests/out/record.png' });
+  // Recommended next action (Commercial Creative Operator): what happened, what they need, value, why now, what goes with it, nine choices.
+  await page.waitForSelector('.drawer .nm .nm-act');
+  const nm = await page.locator('.drawer .nm').innerText();
+  check('Next action panel: the operator recommendation with what happened, need, value, why now and the asset',
+    /Recommended next action/i.test(nm) && /Operator/.test(nm) && /Approve the brief, then send the follow-up with it/.test(nm) && /What happened/i.test(nm)
+      && /What they need/i.test(nm) && /How valuable/i.test(nm) && /Why now/i.test(nm) && /Send with it/i.test(nm) && /Ready to send/i.test(nm)
+      && calls.some((c) => c.fn === 'hq_next_move' && c.body?.p_opportunity), nm.replace(/\n/g, ' | ').slice(0, 260));
+  check('Next action panel: nine choices, the draft opens in Gmail, nothing sends', (await page.locator('.drawer .nm [data-nm-act]').count()) === 9
+    && (await page.locator('.drawer .nm a[href*="mail.google.com"]').count()) >= 1 && /Nothing is sent from here/.test(nm));
+  await page.locator('.drawer .nm').screenshot({ path: 'tests/out/next-action.png' });
+  await page.click('.drawer .nm [data-nm-act=BUILD_BRIEF]');
+  await page.waitForTimeout(400);
+  const na = last(calls, 'hq_next_move_action');
+  check('Build tailored brief → hq_next_move_action on the operator move; the Studio takes it, nothing is sent',
+    na && na.body.p_action === 'BUILD_BRIEF' && na.body.p_move === NEXT_MOVE.operator.id && /Studio/.test(await page.locator('.banner.ok').innerText().catch(() => '')) && !calls.some((c) => /send/.test(c.fn)), JSON.stringify(na?.body).slice(0, 160));
   // Change stage from the record.
   await page.click('.drawer [data-modal=stage]');
   await page.selectOption('#f-stage', 'CALL_REQUIRED');
@@ -915,6 +934,10 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.click('#m-ok');
   await page.waitForSelector('.drawer');
   await step('10 + New opportunity from the phone opens the new record', !!last(calls, 'hq_create_opportunity'));
+  await page.waitForSelector('.drawer .nm .nm-act');
+  const nmOver = await page.evaluate(() => { const d = document.querySelector('.drawer'); return d.scrollWidth - d.clientWidth; });
+  await step('10b Recommended next action fits the phone drawer (no sideways scroll)', nmOver <= 1, `${nmOver}px`);
+  await page.locator('.drawer .nm').screenshot({ path: 'tests/out/mobile-next-action.png' });
   if (agentsFx) {
     await closeDrawer(page);
     await sheet(page, 'agentfloor');

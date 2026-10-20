@@ -1,244 +1,222 @@
 {
   "slug": "ykone-egypt-brief",
-  "type": "brief",
-  "stage": "brief",
+  "type": "master",
+  "stage": "master",
   "vertical": "brand",
   "master_label": "Brand · Campaign · Production",
   "company": "YKONE Middle East",
   "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
   "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
-  "date": "17 October 2026",
+  "date": "20 October 2026",
   "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
   "cover": {
     "style": "navy"
   },
-  "running": "Egypt brief",
+  "running": "YKONE × NOYA · Egypt for YKONE’s clients",
   "audience": "client",
-  "eyebrow": "Egypt · Brief",
-  "title": "Egypt, under your *creative lead.*",
-  "subtitle": "How NOYA runs the Egypt side of a YKONE brief, and what we need from you to propose.",
+  "eyebrow": "NOYA × YKONE · Egypt",
+  "title": "Your brief. *Egypt, brought to life.*",
+  "positioning": "YKONE brings the vision and the client brief. NOYA brings the Egypt side to life: the places, the hospitality and the people on the ground, under YKONE’s name.",
+  "party_mark": "YKONE",
+  "type_label": "Brief",
   "pages": [
     {
+      "kind": "m-hero",
+      "img": "pyramids-khufu-14",
+      "pos": "center 28%",
+      "why_label": "Why Egypt, why now",
+      "why": [
+        [
+          "Giza, this autumn",
+          "The Longines Global Champions Tour opens a five-year run at the Pyramids (22–24 October), Forever Is Now returns to the plateau (4–28 November) and Shakira plays Giza on 28 November."
+        ],
+        [
+          "The Grand Egyptian Museum",
+          "The museum marks its first year on 5 November with Gala de Danza, the company’s first performance in the Middle East."
+        ],
+        [
+          "Cairo in November",
+          "The Cairo International Film Festival (11–20 November) draws film talent and press to the city."
+        ]
+      ]
+    },
+    {
+      "kind": "m-body",
+      "running": "Where NOYA fits",
       "blocks": [
         {
           "t": "section",
           "n": "01",
-          "label": "Where we are",
-          "title": "A shared view of Egypt."
+          "label": "Where NOYA fits",
+          "title": "One partner on the ground, *for every format.*"
         },
         {
-          "t": "lead",
-          "text": "YKONE is looking at the Egypt market. NOYA is a UK-based concierge and destination management company specialising in Egypt. This brief turns our conversation of 8 October into a working method, so the next YKONE brief that points to Egypt can move straight to a proposal."
+          "t": "formats",
+          "items": [
+            {
+              "title": "Brand campaigns and shoots",
+              "text": "Locations, permits with our local partners, crew coordination and hospitality from recce to wrap."
+            },
+            {
+              "title": "Creator trips",
+              "text": "Arrivals, stays, movement and hosting for creators, with content windows planned around the light."
+            },
+            {
+              "title": "Dinners and experiences",
+              "text": "Venues, tables, hospitality and service at Giza, the Grand Egyptian Museum, Cairo, Luxor or the Red Sea."
+            },
+            {
+              "title": "Launches and press trips",
+              "text": "Guest programmes, transfers, dining and on-the-ground management for press and clients."
+            },
+            {
+              "title": "VIP and talent movement",
+              "text": "Airport reception, chauffeurs and security for talent and principals."
+            },
+            {
+              "title": "Boats, beaches and villas",
+              "text": "Yachts, beach settings and private villas on the Red Sea and the North Coast."
+            }
+          ]
         },
         {
-          "t": "quote",
-          "text": "YKONE leads the creative vision and brand relationships, while NOYA brings together the right people, places and experiences to make it happen.",
-          "by": "Adam Elshazly · 8 October 2026"
+          "t": "gallery",
+          "h": 40,
+          "items": [
+            {
+              "img": "grand-egyptian-museum-04",
+              "caption": "Grand Egyptian Museum",
+              "pos": "center 45%",
+              "h": 40
+            },
+            {
+              "img": "v-class-pyramids",
+              "caption": "Arrivals at Giza",
+              "pos": "center 60%",
+              "h": 40
+            },
+            {
+              "img": "branded-content-14",
+              "caption": "The Red Sea",
+              "pos": "center 50%",
+              "h": 40
+            }
+          ]
         },
+        {
+          "t": "evening",
+          "img": "sage-06",
+          "pos": "center",
+          "label": "An example evening",
+          "title": "A brand dinner at Giza",
+          "rows": [
+            [
+              "Setting",
+              "A terrace facing the Pyramids, or an evening at the Grand Egyptian Museum."
+            ],
+            [
+              "Arrival",
+              "Guests collected from their hotels at sunset and met by a NOYA host."
+            ],
+            [
+              "The table",
+              "One long table in low light, dressed to YKONE’s creative direction."
+            ],
+            [
+              "Cultural moment",
+              "A short private introduction to the site by an Egyptologist before dinner."
+            ],
+            [
+              "Menu direction",
+              "Modern Egyptian, served to share; the menu is created with the chef once the venue is set."
+            ],
+            [
+              "Gifting",
+              "A keepsake chosen with the brand at each place."
+            ],
+            [
+              "After dinner",
+              "Chauffeured returns, or a late drink at the hotel."
+            ]
+          ],
+          "note": "An illustration of what NOYA prepares on the ground, not a confirmed programme. Venues, access and dates are subject to permits, approvals and availability. NOYA confirms each before anything is presented to a client."
+        }
+      ]
+    },
+    {
+      "kind": "m-close",
+      "running": "Working together",
+      "blocks": [
         {
           "t": "section",
           "n": "02",
           "label": "How we work together",
-          "title": "One brief, two clear roles."
+          "title": "YKONE leads. *NOYA delivers in Egypt.*"
         },
         {
           "t": "roles",
           "left": {
-            "title": "YKONE leads",
+            "title": "YKONE keeps",
             "items": [
-              "Client relationship and brand access",
-              "Creative concept and direction",
+              "The client relationship and the brief",
+              "Strategy and creative direction",
               "Talent and creator strategy",
-              "Content deliverables and reporting"
+              "Content, deliverables and reporting"
             ]
           },
           "right": {
-            "title": "NOYA delivers in Egypt",
+            "title": "NOYA handles in Egypt",
             "items": [
-              "Locations, venues and permits, with our local production partners",
+              "Locations, venues and permits, with our local partners",
               "Hotels, villas and residences for talent, guests and crew",
               "VIP arrivals, chauffeurs and security",
-              "Dining, catering and production teams",
-              "On-ground management, under YKONE's name"
+              "Creator and talent hosting, dinners and experiences",
+              "Production logistics, boats and local coordination",
+              "One NOYA lead on the ground, under YKONE’s name"
             ]
           }
         },
         {
-          "t": "p",
-          "text": "The client relationship stays with YKONE. NOYA works behind your brand, as the Egypt team you can call on for any brief."
-        }
-      ]
-    },
-    {
-      "blocks": [
-        {
           "t": "section",
           "n": "03",
-          "label": "Where Egypt fits",
-          "title": "Formats and places."
+          "label": "Why it works",
+          "title": "Simple for YKONE to sell."
         },
         {
-          "t": "ledger",
-          "rows": [
-            [
-              "Formats",
-              "Creator trips · campaign and editorial shoots · brand dinners and activations · product launches · press trips · brand retreats."
-            ],
-            [
-              "Places",
-              "Pyramids of Giza · Grand Egyptian Museum · Cairo · El Gouna and the Red Sea · North Coast · Luxor and Aswan."
-            ],
-            [
-              "Why now",
-              "The opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a growing calendar of international events."
-            ],
-            [
-              "Production",
-              "Location sourcing and permits through our local partners, with crew coordination from concept to wrap."
-            ]
-          ]
-        },
-        {
-          "t": "section",
-          "n": "04",
-          "label": "A starting idea",
-          "title": "One idea to start."
-        },
-        {
-          "t": "feature",
-          "label": "For a YKONE client",
-          "big": "A private brand dinner at the Pyramids or the Grand Egyptian Museum.",
-          "paras": [
-            "Talent arrivals, stays and guest hosting handled end to end by NOYA, under YKONE's creative lead.",
-            "The evening becomes the content: creators arrive the day before, the dinner is the centrepiece, and a private guided visit the next morning gives a second story."
-          ]
-        },
-        {
-          "t": "journey",
+          "t": "value",
           "items": [
             {
-              "when": "Day one",
-              "text": "VIP airport reception, private transfers and check-in. A quiet welcome dinner for talent."
+              "title": "One call for Egypt",
+              "text": "Venues, permits, hospitality and movement through one NOYA lead, so YKONE needs no team of its own on the ground."
             },
             {
-              "when": "Evening two",
-              "text": "The brand dinner. Venue, permits, catering, staging partners and guest hosting managed by NOYA."
+              "title": "Your client stays yours",
+              "text": "NOYA works behind YKONE. The relationship, the creative and the presentation remain with you."
             },
             {
-              "when": "Morning three",
-              "text": "A private guided visit for content, then departures."
+              "title": "Clear numbers first",
+              "text": "One costed proposal per brief. Third-party costs at the rates NOYA secures, approved by YKONE before anything is booked."
             }
           ]
         },
         {
-          "t": "note",
-          "text": "Indicative only. Timings, venues and access are confirmed with permits and availability once the programme is agreed."
-        }
-      ]
-    },
-    {
-      "blocks": [
-        {
-          "t": "section",
-          "n": "05",
-          "label": "The brief we need",
-          "title": "Everything we need to propose."
-        },
-        {
-          "t": "lead",
-          "text": "Share what you can. The client's name can stay confidential until there is a fit."
-        },
-        {
-          "t": "form",
-          "fields": [
-            {
-              "label": "Brand or client",
-              "hint": "Confidential is fine",
-              "value": null
-            },
-            {
-              "label": "Format",
-              "hint": "Shoot, creator trip, dinner, launch, press trip",
-              "value": null
-            },
-            {
-              "label": "Dates or window",
-              "value": null
-            },
-            {
-              "label": "Cities in Egypt",
-              "value": null
-            },
-            {
-              "label": "Talent and guests",
-              "hint": "Numbers, and any names already attached",
-              "value": null
-            },
-            {
-              "label": "Deliverables",
-              "hint": "Content, event, or both",
-              "value": null
-            },
-            {
-              "label": "Creative references",
-              "hint": "Mood, references, the feeling the brand wants",
-              "wide": true,
-              "lines": 2,
-              "value": null
-            },
-            {
-              "label": "Hospitality level",
-              "hint": "Hotels, villas, private residences",
-              "value": null
-            },
-            {
-              "label": "Budget range",
-              "hint": "So we propose within it",
-              "value": null
-            },
-            {
-              "label": "Decision date",
-              "value": null
-            },
-            {
-              "label": "Main contact",
-              "value": null
-            }
-          ]
-        },
-        {
-          "t": "note",
-          "text": "Return to noya@noyaconcierge.com, or reply to our email with whatever is known today. We will come back with questions only where they change the proposal."
-        }
-      ]
-    },
-    {
-      "kind": "closing",
-      "blocks": [
-        {
-          "t": "section",
-          "n": "06",
-          "label": "Next steps",
-          "title": "From brief to proposal."
-        },
-        {
-          "t": "steps",
+          "t": "places",
+          "label": "Across Egypt",
           "items": [
-            {
-              "title": "Share a live or upcoming brief",
-              "text": "Any brief where Egypt could fit, this quarter or next."
-            },
-            {
-              "title": "NOYA returns a concept and a costed proposal",
-              "text": "Locations, hospitality and logistics with a clear budget, ready for YKONE to present to its client."
-            },
-            {
-              "title": "Holds and permits",
-              "text": "Once approved, NOYA holds venues and begins permits with our local partners."
-            }
+            "Giza",
+            "Grand Egyptian Museum",
+            "Cairo",
+            "Luxor and Aswan",
+            "El Gouna and the Red Sea",
+            "North Coast"
           ]
         }
       ],
+      "next": {
+        "label": "Next step",
+        "title": "Share one brief where *Egypt could fit.*",
+        "text": "This quarter or next, even in outline. NOYA returns a concept and a costed proposal for YKONE to present to its client."
+      },
       "contact": {
         "name": "Adam Elshazly",
         "role": "Founder, NOYA Concierge",
@@ -280,11 +258,43 @@
       "fact": "No reply from YKONE since 8 Oct.",
       "source": "CRM Gmail history, checked 15 Oct 2026",
       "class": "VERIFIED"
+    },
+    {
+      "fact": "The Longines Global Champions Tour holds its first Egypt event at the Pyramids of Giza, 22–24 October 2026, the first year of a five-year agreement.",
+      "source": "gcglobalchampions.com/news/lgct-2026 (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Forever Is Now 06, Art D’Égypte’s open-air exhibition on the Giza plateau, runs 4–28 November 2026.",
+      "source": "artdegypte.org/event/forever-is-now-06 (HQ calendar)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Shakira performs at the Pyramids of Giza on 28 November 2026.",
+      "source": "Ticket Egypt, official ticketing for Venture Lifestyle (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The Grand Egyptian Museum marks its first anniversary on 5 November 2026 with Gala de Danza, the company’s first performance in the Middle East.",
+      "source": "Ticketsmarche, official ticketing presented by GEM Experience (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The 47th Cairo International Film Festival runs 11–20 November 2026.",
+      "source": "ciff.org.eg (HQ calendar)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct (12 days). Adam edited the follow-up draft in Gmail on 19 Oct; it is unsent.",
+      "source": "Gmail thread 1a11c1544306c7b1 and draft r3413834542155918452, checked 20 Oct 2026",
+      "class": "VERIFIED"
     }
   ],
   "review": [
     "Amal's surname is not on file, so the cover names Magali Rady, Jad Chbeir and 'the YKONE Middle East team'.",
-    "No fee, budget, timeline or access is promised. Venues and access are marked as subject to permits."
+    "No fee, budget, timeline or access is promised. Venues and access are marked as subject to permits.",
+    "Supersedes brief v3 (text only, approved 18 Oct): same positioning, now two clear roles, the formats YKONE can sell, an example evening and imagery from NOYA's library.",
+    "Why-now rows cite the HQ calendar (public sources); no fees, savings, exclusivity or confirmed access."
   ],
   "level": 3,
   "hold": null

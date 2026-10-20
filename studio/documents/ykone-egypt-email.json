@@ -6,7 +6,7 @@
   "company": "YKONE Middle East",
   "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
   "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
-  "date": "17 October 2026",
+  "date": "20 October 2026",
   "prepared_for": "Magali Rady, Jad Chbeir and the YKONE Middle East team",
   "audience": "client",
   "title": "Re: NOYA Concierge × YKONE | Egypt & Beyond",
@@ -16,11 +16,11 @@
     "magali@ykone.com"
   ],
   "reply_to_message_id": "1a11c3b78af9793b",
-  "attach": "brief",
-  "attach_action": "ATTACH APPROVED PDF: ykone-egypt-brief",
+  "attach": "master",
+  "attach_action": "ATTACH APPROVED PDF: ykone-egypt-master",
   "subject": "Re: NOYA Concierge × YKONE | Egypt & Beyond",
-  "body": "Hi Jad and Amal,\n\nFollowing our call on 8 October, I have put our conversation into a short Egypt brief for YKONE.\n\nIt sets out how we would work together: YKONE leads the creative vision and the brand relationship, and NOYA handles everything on the ground in Egypt, under your name. It includes one idea to start, a private brand dinner at the Pyramids or the Grand Egyptian Museum, and a single page for your next brief that points to Egypt.\n\nIf anything is live this quarter or next, share whatever is known and we will come back with a concept and a costed proposal.\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
-  "words": 101,
+  "body": "Hi Jad and Amal,\n\nFollowing our call on 8 October, I have prepared a short Egypt brief for YKONE.\n\nIt sets out how we would work together: YKONE brings the vision and the client brief, and NOYA brings the Egypt side to life, on the ground and under your name. It covers the formats we can support, from campaigns and creator trips to private dinners, with one example evening at Giza.\n\nGiza is busy this autumn and the Grand Egyptian Museum marks its first year on 5 November. If anything is planned for this quarter or next, share whatever is known and we will come back with a concept and a costed proposal.\n\nBest,\nAdam Elshazly\nFounder, NOYA Concierge\nnoyaconcierge.com",
+  "words": 109,
   "sources": [
     {
       "fact": "YKONE is looking at the Egypt market and asked for a call.",
@@ -51,10 +51,40 @@
       "fact": "No reply from YKONE since 8 Oct.",
       "source": "CRM Gmail history, checked 15 Oct 2026",
       "class": "VERIFIED"
+    },
+    {
+      "fact": "The Longines Global Champions Tour holds its first Egypt event at the Pyramids of Giza, 22–24 October 2026, the first year of a five-year agreement.",
+      "source": "gcglobalchampions.com/news/lgct-2026 (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Forever Is Now 06, Art D’Égypte’s open-air exhibition on the Giza plateau, runs 4–28 November 2026.",
+      "source": "artdegypte.org/event/forever-is-now-06 (HQ calendar)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Shakira performs at the Pyramids of Giza on 28 November 2026.",
+      "source": "Ticket Egypt, official ticketing for Venture Lifestyle (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The Grand Egyptian Museum marks its first anniversary on 5 November 2026 with Gala de Danza, the company’s first performance in the Middle East.",
+      "source": "Ticketsmarche, official ticketing presented by GEM Experience (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The 47th Cairo International Film Festival runs 11–20 November 2026.",
+      "source": "ciff.org.eg (HQ calendar)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct (12 days). Adam edited the follow-up draft in Gmail on 19 Oct; it is unsent.",
+      "source": "Gmail thread 1a11c1544306c7b1 and draft r3413834542155918452, checked 20 Oct 2026",
+      "class": "VERIFIED"
     }
   ],
   "review": [
-    "Replies in the thread of Adam's 8 Oct follow-up to Jad, Amal and Magali. The text stands without the PDF: ATTACH APPROVED PDF before sending."
+    "Replaces the text of Adam's own 19 Oct edit of the draft (kept in studio_outputs evidence). Same opening and close in his words; the middle now matches the master brief v4. ATTACH APPROVED PDF before sending."
   ],
   "level": 1,
   "hold": null

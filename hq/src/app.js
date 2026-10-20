@@ -92,7 +92,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' }, liHist: {},
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
-  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {},
+  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, nextMove: {}, reopen: null,
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
@@ -256,6 +256,8 @@ function explain(r) {
     SUMMARY_REQUIRED: 'Say briefly what happened.',
     NOTE_REQUIRED: 'Write the note first.',
     RECORD_REQUIRED: 'This must be attached to a person, company or opportunity.',
+    ADD_TO_CRM_FIRST: 'Not in the CRM yet: add it to the CRM first, then a reply, concept or call can be prepared.',
+    UNKNOWN_ACTION: 'That action is not available.',
     COMPANY_REQUIRED: 'Company name is required.',
     OPPORTUNITY_TYPE_REQUIRED: 'Describe the opportunity.',
     INVALID_EMAIL: 'That email address is not valid.',
@@ -1544,6 +1546,106 @@ function meetingPrep(o, f, r) {
     ${isClient(f.company_id) ? '<li><b>Client:</b> handle personally; no templates.</li>' : ''}
   </ul>${reply?.thread_id ? `<div class="small">${gmailLink(reply.thread_id, 'Open the conversation in Gmail')}</div>` : ''}</div>`;
 }
+// ---------------------------------------------------------------- COMMERCIAL CREATIVE OPERATOR (20 Oct): the recommended next action
+// REPLY / MEETING → UNDERSTAND → RECOMMEND → CREATE → ADAM APPROVES → SEND → MEASURE. One read per drawer (hq_next_move): the
+// operator's written recommendation when there is one, the rule-based baseline otherwise, with the whole relationship and dated
+// Egypt events behind it. Each button records Adam's choice (hq_next_move_action) and hands the work to the Studio, the drafter
+// or a task. Nothing is sent: Adam sends from Gmail or LinkedIn himself.
+const NM_ACTIONS = [['DRAFT_REPLY', 'Draft reply'], ['ASK_FOR_CALL', 'Ask for a call'], ['SEND_ONE_PAGE', 'Send one-page idea'], ['BUILD_BRIEF', 'Build tailored brief'],
+  ['BUILD_CONCEPT', 'Build concept'], ['BUILD_PROPOSAL', 'Build proposal'], ['BUILD_ITINERARY', 'Build itinerary'], ['SCHEDULE_FOLLOWUP', 'Schedule follow-up'], ['HOLD', 'Hold / park']];
+const NM_LABEL = { ...Object.fromEntries(NM_ACTIONS), SEND_PREPARED: 'Send what is prepared', RECONNECT: 'Reconnect personally', CLOSE: 'Close', NONE: 'No conversation yet' };
+const BAND_RULE = { '0-30': 'within 30 days: a normal follow-up', '31-90': '31–90 days: reconnect with context', '3-12M': '3–12 months: only with a credible new reason',
+  '12M+': 'over a year: dormant, a personal note only' };
+const BAND_SHORT = { '0-30': 'under 30 days', '31-90': '31–90 days', '3-12M': '3–12 months', '12M+': '12 months+' };
+const STAGE_DOC = { master: 'Brief', brief: 'Brief', onepage: 'One-page concept', concept: 'Concept', email: 'Email idea', proposal: 'Proposal', itinerary: 'Itinerary', desk: 'Private services' };
+const READY_CLASS = { READY_TO_SEND: ['Ready to send', 'ok'], NEEDS_UPDATE: ['Needs update', 'warn'], INTERNAL_ONLY: ['Internal only', ''], SUPERSEDED: ['Superseded', ''], HOLD: ['Hold', 'warn'] };
+const readyPill = (c) => (c && READY_CLASS[c] ? pill(...READY_CLASS[c]) : '');
+const NM_ARGS = { opp: 'p_opportunity', company: 'p_company', contact: 'p_contact', connection: 'p_connection' };
+async function loadNextMove(kind, id) {
+  const key = `${kind}:${id}`; if (state.busy[`nm:${key}`] || state.nextMove[key]) return;
+  state.busy[`nm:${key}`] = true;
+  const { data, error } = await sb.rpc('hq_next_move', { [NM_ARGS[kind]]: id });
+  state.busy[`nm:${key}`] = false; state.nextMove[key] = error ? { error: error.message } : data;
+  render();
+}
+// The data attributes a next-move button carries: the move when the operator wrote one, otherwise the record it belongs to.
+const nmTarget = (o) => Object.entries(o).filter(([, v]) => v).map(([k, v]) => ` data-nm-${k}="${esc(v)}"`).join('');
+function nextMovePanel(kind, id) {
+  const N = state.nextMove[`${kind}:${id}`];
+  const shell = (inner, cls = '') => `<section class="nm${cls}"><div class="nm-h"><span class="label">Recommended next action</span>${inner}`;
+  if (!N) { loadNextMove(kind, id); return `${shell('</div><p class="muted small">Reading the whole relationship…</p>')}</section>`; }
+  if (N.error || N.ok === false) return N.reason === 'RECORD_REQUIRED' ? '' : `${shell(`</div><p class="small warn-text">${esc(N.error ? friendly(N.error) : explain(N))}</p>`)}</section>`;
+  const op = N.operator; const b = N.baseline || {}; const c = N.context || {};
+  const action = op ? op.action : b.action; const last = op?.last_contact_at || b.last_at; const by = op?.last_by || b.last_by; const band = op?.recency_band || b.band;
+  const thread = op?.gmail_thread_id || c.thread; const liUrl = op?.linkedin_url || c.linkedin?.url;
+  const asset = op?.asset_slug ? (c.docs || []).find((x) => x.slug === op.asset_slug) : b.asset;
+  const target = op ? { move: op.id } : { company: N.company_id, connection: N.company_id ? null : N.connection_id, opp: kind === 'opp' ? id : null };
+  const btn = ([k, l]) => `<button class="btn small${k === action ? ' primary' : ''}" data-nm-act="${k}"${nmTarget(target)}>${esc(l)}</button>`;
+  const r = (k, v) => (v ? `<div class="nm-r"><span class="label">${esc(k)}</span><div>${v}</div></div>` : '');
+  const msg = op?.recommended_message;
+  const status = op?.status === 'HELD' ? `<p class="small warn-text">Parked until ${esc(fmtDay(op.hold_until))}.</p>`
+    : op?.status === 'CHOSEN' ? `<p class="small ok-text">You chose: ${esc(NM_LABEL[op.chosen_action] || op.chosen_action)} · ${esc(shortDay(op.decided_at))}</p>` : '';
+  const timing = (N.timing || []);
+  return `${shell(`${op ? pill('Operator', 'ok') : `<span class="pill ghost" title="${esc(b.reason || '')}">Rule-based</span>`}</div>`)}
+    <div class="nm-act">${esc(op?.action_label || NM_LABEL[action] || action || '')}</div>
+    ${op?.situation || b.situation ? r('What happened', esc(op?.situation || b.situation)) : ''}
+    ${r('What they need', esc(op?.need || ''))}${r('How valuable', esc(op?.value_note || ''))}
+    ${op ? '' : r('What NOYA should do', esc(b.reason))}
+    ${r('Why now', esc(op?.why_now || ''))}
+    ${asset || op?.asset_note ? r('Send with it', `${esc(op?.asset_note || asset?.title || '')} ${readyPill(asset?.ready_class)}`) : ''}
+    <div class="small faint">${last ? `Last contact ${esc(shortDay(last))}${by ? ` · ${by === 'THEM' ? 'they wrote last' : 'NOYA wrote last'}` : ''}${band ? ` · ${esc(BAND_RULE[band] || band)}` : ''}` : 'No conversation yet'}</div>
+    ${status}
+    ${msg ? `<details class="nm-msg"><summary>Prepared message${op.message_subject ? `: ${esc(op.message_subject)}` : ''}</summary><div class="email"><pre>${esc(msg)}</pre></div></details>` : ''}
+    <div class="btn-row mt6">${thread && (op?.gmail_draft_id || op?.channel !== 'LINKEDIN') ? btnLink(`${GMAIL_THREAD_URL}${thread}`, op?.gmail_draft_id ? 'Open the draft in Gmail' : 'Open thread') : ''}
+      ${msg && op?.channel === 'LINKEDIN' ? liCopyOpen(msg, liUrl, 'Copy & open LinkedIn') : msg ? `<button class="btn small" data-copy="${esc(msg)}">Copy message</button>` : ''}</div>
+    <div class="btn-row nm-acts">${NM_ACTIONS.map(btn).join('')}</div>
+    ${(c.docs || []).filter((d) => d.audience === 'CLIENT' && d.ready_class !== 'SUPERSEDED').length ? `<details class="small"><summary>Studio documents for this relationship</summary>${(c.docs || []).filter((d) => d.audience === 'CLIENT' && d.ready_class !== 'SUPERSEDED')
+      .map((d) => `<div class="adv-row">${esc(d.title || d.slug)} <span class="faint">· ${esc(STAGE_DOC[d.stage] || d.stage || '')} v${esc(d.version)}</span> ${readyPill(d.ready_class)}${d.sent_at ? ` ${pill('sent', 'ok')}` : ''}</div>`).join('')}</details>` : ''}
+    ${timing.length ? `<details class="small"><summary>Dates in Egypt, next four months</summary><p class="faint">Use one only when it genuinely fits this client.</p>${timing.map((t) => `<div class="adv-row">${esc(shortDay(t.date))}${t.end && t.end !== t.date ? `–${esc(shortDay(t.end))}` : ''} · ${esc(t.title)}${t.linked ? ` ${pill('linked to them', 'ok')}` : ''}</div>`).join('')}</details>` : ''}
+    <p class="src">Nothing is sent from here. ${op ? `Written by the ${esc(op.created_by)} ${esc(shortDay(op.created_at))}.` : 'Rule-based until the operator reviews this relationship.'}</p></section>`;
+}
+function nmDone(r) {
+  const x = r.result || {};
+  if (['HOLD'].includes(r.action)) return 'Parked for two weeks. It comes back on its own. Nothing was sent.';
+  if (r.action === 'CLOSE') return 'Closed: HQ will not suggest reopening it. Nothing was sent.';
+  if (r.action === 'SCHEDULE_FOLLOWUP') return `Follow-up task due ${shortDay(x.due)}. Nothing was sent.`;
+  if (x.prepared) return `Ready: ${x.gmail_draft_id ? 'open the draft in Gmail' : 'copy the message'}${x.asset ? ', attach the approved PDF' : ''}, and send it yourself. Nothing was sent.`;
+  if (x.level != null || x.reason === 'ALREADY_REQUESTED') return 'With the Studio: it prepares the document for your review (Studio → Needs brief). Nothing is sent.';
+  return 'The drafter is writing it in your voice; it appears with your drafts. Nothing is sent.';
+}
+// PAST CONVERSATION — OPPORTUNITY TO REOPEN (Relationships → Past conversations): two-way Gmail and LinkedIn conversations older than
+// three weeks, read before any cold outreach. The operator's assessment shows first; the rest carry the recency rule.
+function reopenCard(x, op) {
+  const name = op ? (op.person || op.company || 'Relationship') : (x.name || x.person || x.email || '—');
+  const company = op ? op.company : x.company; const last = op ? op.last_contact_at : x.last_at; const band = op ? op.recency_band : x.band;
+  const by = op ? op.last_by : x.last_by; const thread = op ? op.gmail_thread_id : x.thread;
+  const target = op ? { move: op.id } : { company: x.company_id, connection: x.connection_id, key: x.company_id || x.connection_id ? null : x.key, kind: 'REOPEN' };
+  const can = !!(op?.company_id || op?.connection_id || x?.company_id || x?.connection_id);
+  const btns = [['RECONNECT', 'Draft reconnect'], ['BUILD_CONCEPT', 'Build concept'], ['ASK_FOR_CALL', 'Ask for meeting'], ['HOLD', 'Hold'], ['CLOSE', 'Close']]
+    .filter(([k]) => can || ['HOLD', 'CLOSE'].includes(k))
+    .map(([k, l]) => `<button class="btn small${k === (op?.action || x?.recommended) ? ' primary' : ''}" data-nm-act="${k}"${nmTarget(target)}>${esc(l)}</button>`).join('');
+  return `<article class="card rel reopen"><div class="card-head"><div><div class="co">${esc(name)}</div>${company && company !== name ? `<div class="muted small">${esc(company)}</div>` : ''}</div>
+      <div class="pills">${op ? pill('Operator', 'ok') : ''}${band ? pill(BAND_SHORT[band] || band, band === '12M+' ? 'warn' : '') : ''}${x?.state ? liRel(x.state) : ''}${x?.owes_reply ? pill('they wrote last', 'warn') : ''}</div></div>
+    <div class="small"><b>Last</b> ${esc(last ? shortDay(last) : '—')}${by ? ` · ${by === 'THEM' ? 'they wrote last' : 'NOYA wrote last'}` : ''}${x?.threads ? ` · ${x.threads} thread${x.threads > 1 ? 's' : ''}, ${x.received} from them` : ''}${x?.messages ? ` · ${x.messages} LinkedIn messages` : ''}</div>
+    ${op ? `<div class="small mt6"><b>What was discussed:</b> ${esc(op.situation)}</div>${op.why_now ? `<div class="small mt6"><b>Why reopen now:</b> ${esc(op.why_now)}</div>` : ''}
+      ${op.asset_note ? `<div class="small mt6"><b>Studio asset:</b> ${esc(op.asset_note)}</div>` : ''}
+      ${op.recommended_message ? `<details class="nm-msg"><summary>Recommended message</summary><div class="email"><pre>${esc(op.recommended_message)}</pre></div></details>` : ''}`
+    : `${x.subject ? `<div class="small mt6"><b>Subject:</b> ${esc(x.subject)}</div>` : ''}${x.summary ? `<div class="ai small"><div class="faint">What was discussed (summary from subjects and previews; read the thread before writing)</div>${esc(x.summary)}${x.their_position ? `<div class="mt6"><b>Their position:</b> ${esc(x.their_position)}</div>` : ''}</div>` : ''}
+      <div class="small faint mt6">${esc(x.rule || '')}${!x.company_id && !x.connection_id ? ' Not in the CRM: add it first to prepare a message.' : ''}</div>`}
+    <div class="btn-row mt6">${thread ? btnLink(`${GMAIL_THREAD_URL}${thread}`, 'Open thread', false) : ''}${(op?.linkedin_url || x?.url) ? `<a class="btn small" href="${esc(op?.linkedin_url || x.url)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ''}
+      ${op?.recommended_message && op?.channel === 'LINKEDIN' ? liCopyOpen(op.recommended_message, op.linkedin_url, 'Copy & open LinkedIn') : ''}
+      ${!op && x.key && !x.company_id && !x.connection_id ? `<button class="btn small" data-modal="history-add" data-id="${esc(x.key)}">Add to CRM</button>` : ''}
+      ${(op?.company_id || x?.company_id) ? `<button class="btn small" data-open="company" data-id="${esc(op?.company_id || x.company_id)}">Record</button>` : ''}</div>
+    <div class="btn-row nm-acts">${btns}</div></article>`;
+}
+function viewReopen() {
+  const R = state.reopen; if (!R) { loadV3('reopen', 'hq_reopen_list', { p_limit: 30 }); return waitFor('reopen', 'past conversations'); }
+  const ops = R.operator || []; const C = R.counts || {};
+  return `<p class="muted small">Past conversations worth reopening before any cold outreach: two-way Gmail threads and LinkedIn messages older than three weeks. Declines, do-not-contact and closed conversations never appear. An old conversation is reopened personally, with a new reason, never with a generic follow-up. ${n0(C.gmail)} Gmail relationships${C.owes_reply ? ` (${n0(C.owes_reply)} where they wrote last)` : ''} · ${n0(C.linkedin)} LinkedIn conversations.</p>
+    ${ops.length ? `<h3 class="grp">Assessed by the operator · ${ops.length}</h3>${ops.map((o) => reopenCard(null, o)).join('')}` : ''}
+    <h3 class="grp">From NOYA Gmail · ${(R.gmail || []).length}</h3>${(R.gmail || []).map((x) => reopenCard(x)).join('') || '<div class="empty">No past Gmail conversation waiting.</div>'}
+    <h3 class="grp">From your LinkedIn download · ${(R.linkedin || []).length}</h3>${(R.linkedin || []).map((x) => reopenCard({ ...x, name: x.person, state: x.state })).join('') || '<div class="empty">None yet. They appear once your LinkedIn download is imported (Relationships → LinkedIn).</div>'}`;
+}
 function drawerShell(title, inner) {
   return `<div class="drawer-bg" data-close-drawer></div><aside class="drawer"><button class="btn small close" data-close-drawer>Close</button>${title}${inner}</aside>`;
 }
@@ -1556,6 +1658,7 @@ function renderDrawer(dr) {
     const openT = d.tasks.filter((t) => t.opportunity_id === o.id && openStatuses.includes(t.status));
     const cq = (state.com?.queue || []).find((x) => x.id === o.id);
     return drawerShell(`<h2>${cq ? scoreBadge(cq.score) + ' ' : ''}${esc(o.company_name)}</h2><div class="pills">${pill(S(o.status))}${f.vertical ? pill(V(f.vertical)) : ''}${pill(`${M(f.origin_market)} → ${M(f.opportunity_market)}`)}${stale(o) ? pill('stale', 'warn') : ''}</div>`, `
+      ${nextMovePanel('opp', o.id)}
       <div class="btn-row"><button class="btn small primary" data-modal="stage" data-opp="${o.id}">Change stage</button><button class="btn small" data-modal="meeting" data-opp="${o.id}">Record meeting</button>
         <button class="btn small" data-modal="touch" data-channel="PHONE" data-opp="${o.id}">Log call / message</button><button class="btn small" data-modal="note" data-opp="${o.id}">Add note</button>
         <button class="btn small" data-modal="draft-request" data-channel="LINKEDIN" data-opp="${o.id}">Draft message</button><button class="btn small" data-modal="channel" data-opp="${o.id}">Change channel</button>
@@ -1592,6 +1695,7 @@ function renderDrawer(dr) {
     const people = dir.contacts.filter((k) => k.company_id === c.id);
     const net = dir.connections.filter((k) => k.matched_company_id === c.id);
     return drawerShell(`<h2>${esc(c.name)}</h2><div class="pills">${pill(V(c.vertical))}${pill(M(c.market))}${c.relationship_status ? pill(c.relationship_status, c.relationship_status === 'client' ? 'bad' : '') : ''}${c.relationship_status === 'client' ? pill('handle personally', 'bad') : ''}</div>`, `
+      ${nextMovePanel('company', c.id)}
       ${prevRel(c.id, null)}
       <div class="btn-row"><button class="btn small" data-modal="vertical" data-company="${c.id}">Edit details</button><button class="btn small" data-modal="draft-request" data-channel="EMAIL" data-company="${c.id}">Draft message</button><button class="btn small" data-modal="note" data-company="${c.id}">Add note</button>
         <button class="btn small" data-modal="finance" data-company="${c.id}">Add finance record</button></div>
@@ -1608,6 +1712,7 @@ function renderDrawer(dr) {
     const k = dir.contacts.find((x) => x.id === dr.id); if (!k) return drawerShell('', '<p class="muted">Contact not found.</p>');
     const opps = d.approvals.filter((a) => a.contact_id === k.id);
     return drawerShell(`<h2>${esc(k.name || k.email || 'Contact')}</h2><div class="pills">${emailPill(k.email_status, k.email_kind)}${k.do_not_contact ? pill('do not contact', 'bad') : ''}</div>`, `
+      ${k.company_id ? nextMovePanel('contact', k.id) : ''}
       ${prevRel(k.company_id, k.id)}
       <div class="btn-row"><button class="btn small" data-modal="touch" data-channel="PHONE" data-contact="${k.id}">Log call / message</button><button class="btn small" data-modal="note" data-contact="${k.id}">Add note</button>
         <button class="btn small" data-modal="draft-request" data-channel="LINKEDIN" data-contact="${k.id}">Draft message</button></div>
@@ -1634,6 +1739,7 @@ function renderDrawer(dr) {
         ${kv('How you know them', esc(c.how_we_know || '—'))}${kv('Last contacted', esc(c.last_contacted_at ? fmtDate(c.last_contacted_at) : 'never (in HQ)'))}
         ${kv('Next follow-up', esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—'))}${kv('Active opportunities at company', esc(c.active_opps))}</div>
       ${c.review_reason ? `<p class="small warn-text">${esc(c.review_reason)}</p>` : ''}
+      ${c.li_messages > 0 || c.matched_company_id ? nextMovePanel('connection', c.id) : ''}
       ${hist}
       ${drafts.length ? `<h3>Drafts</h3>${drafts.map(draftRow).join('')}` : ''}`);
   }
@@ -2702,6 +2808,14 @@ function bind() {
   });
   on('input[data-rf]', 'change', (el) => { state.relF.q = el.value; render(); });
   on('[data-copy]', 'click', (b, e) => { e.stopPropagation(); copyText(b.dataset.copy); });
+  // Recommended next action / past conversations: record Adam's choice and hand the work on. Nothing is sent.
+  on('[data-nm-act]', 'click', async (b, e) => {
+    e.stopPropagation(); const x = b.dataset; b.disabled = true;
+    const r = await call('hq_next_move_action', { p_action: x.nmAct, p_move: x.nmMove || null, p_company: x.nmCompany || null, p_opportunity: x.nmOpp || null,
+      p_connection: x.nmConnection || null, p_note: null, p_until: null, p_key: x.nmKey || null, p_kind: x.nmKind || null }, 'Recorded. Nothing was sent.');
+    if (r && r.ok) state.notice = { err: false, text: nmDone(r) };
+    state.nextMove = {}; state.reopen = null; render();
+  });
   on('[data-draft-act]', 'click', (b) => call('hq_draft_action', { p_draft: b.dataset.id, p_action: b.dataset.draftAct, p_text: null }, b.dataset.draftAct === 'RETRY' ? 'Draft re-requested.' : 'Draft discarded.'));
   on('[data-confirm-task]', 'click', (b) => confirmTask(b.dataset.confirmTask));
   $('#m-ok')?.addEventListener('click', submitModal);
@@ -3275,10 +3389,11 @@ function needsRows(d) {
       cta: a ? `${liCopyOpen(a.message, a.linkedin, 'Copy & open LinkedIn')}<button class="btn small" data-modal="li-sent" data-id="${a.id}">Mark sent</button>`
         : `<button class="btn small primary" data-go="desk" data-desk-tab="TOP5">Review</button>` });
   });
+  // READY means Adam could genuinely send it now: it passed the Brand & Quality Reviewer and the relationship has earned it.
   studioReady().slice(0, 3).forEach((s) => rows.push({ g: 'studio', r: 4, who: s.title || 'Studio document', co: s.company || '', dir: null,
-    why: s.status === 'APPROVED' ? 'Approved: ready to go with its email' : `Prepared by the Studio${s.level ? ` (level ${s.level})` : ''}: ready for your review`,
-    next: s.status === 'APPROVED' ? 'Attach it to the email it belongs to' : 'Review, then approve or ask for changes', when: s.created_at,
-    cta: '<button class="btn small primary" data-go="studio">Open Studio</button>' }));
+    why: s.ready_reason || (s.status === 'APPROVED' ? 'Approved: ready to go with its email' : 'Passed review: ready for your approval'),
+    next: s.cover?.draft ? `${s.status === 'APPROVED' ? '' : 'Approve it, then '}attach ${s.file || 'the PDF'} to the Gmail draft and send it yourself` : s.status === 'APPROVED' ? 'Attach it to the email it belongs to' : 'Review, then approve or ask for changes',
+    when: s.created_at, cta: `${s.cover?.thread ? btnLink(`${GMAIL_THREAD_URL}${s.cover.thread}`, 'Open the draft in Gmail', false) : ''}<button class="btn small primary" data-go="studio">Open Studio</button>` }));
   rows.sort((a, b) => a.r - b.r);
   return rows;
 }
@@ -4020,7 +4135,7 @@ async function submitDeskModal() {
 
 // ---------------------------------------------------------------- RELATIONSHIPS: build the network
 // Ranked by what a relationship can repeatedly create (one agency with 30 players matters more than 30 names).
-const REL_TABS = [['IMPORTANT', 'Important people'], ['COMPANIES', 'Companies'], ['WARM', 'Warm relationships'], ['PIPELINE', 'Pipeline'], ['OPPORTUNITIES', 'Opportunities'], ['COLD', 'Going cold']];
+const REL_TABS = [['IMPORTANT', 'Important people'], ['REOPEN', 'Past conversations'], ['COMPANIES', 'Companies'], ['WARM', 'Warm relationships'], ['PIPELINE', 'Pipeline'], ['OPPORTUNITIES', 'Opportunities'], ['COLD', 'Going cold']];
 const stripH2 = (html) => String(html).replace(/^\s*<h2>[\s\S]*?<\/h2>/, '');
 function netRow(x) {
   const o = x.opportunity;
@@ -4039,7 +4154,8 @@ function viewRelations(d) {
   } else if (t === 'COLD') {
     body = !N ? waitFor('net', 'the network') : `<p class="muted small">Real two-way relationships with no interaction for 30+ days and no next step. Restart them personally, never with a cold introduction.</p>
       <div class="dlist">${(N.going_cold || []).map((x) => netRow({ ...x, going_cold: true })).join('') || '<div class="empty">Nothing is going cold.</div>'}</div>`;
-  } else if (t === 'COMPANIES') body = stripH2(viewCompanies());
+  } else if (t === 'REOPEN') body = viewReopen();
+  else if (t === 'COMPANIES') body = stripH2(viewCompanies());
   else if (t === 'WARM') {
     const w = warmOpportunities(100);
     body = `<p class="muted small">Existing relationships with real evidence: NOYA Gmail threads, CRM records, matched LinkedIn connections. Use the relationship, never a cold introduction.</p>
@@ -4061,7 +4177,7 @@ function viewRelations(d) {
       <p class="src">Prospect → Outreach → Replied → Qualified conversation → Meeting → Concept / brief → Proposal → Negotiation → Won → Project active → Completed. An account does not have to pass every stage. "Stuck" means no open task and no movement for 7 days. ${n0((P.find((s) => s.stage === 'LOST_PARKED') || {}).n)} lost or parked. Full table: More → Pipeline.</p>`;
   }
   return `${head('Relationships', 'Build the network')}
-    <div class="tabs">${REL_TABS.map(([k, l]) => `<button data-rel-tab="${k}" class="${t === k ? 'on' : ''}">${l}${k === 'COLD' && N ? ` <span class="n">${n0(N.counts?.going_cold)}</span>` : k === 'IMPORTANT' && N ? ` <span class="n">${n0((N.important || []).length)}</span>` : ''}</button>`).join('')}</div>${body}`;
+    <div class="tabs">${REL_TABS.map(([k, l]) => `<button data-rel-tab="${k}" class="${t === k ? 'on' : ''}">${l}${k === 'REOPEN' && state.reopen ? ` <span class="n">${n0((state.reopen.operator || []).length + (state.reopen.gmail || []).length + (state.reopen.linkedin || []).length)}</span>` : k === 'COLD' && N ? ` <span class="n">${n0(N.counts?.going_cold)}</span>` : k === 'IMPORTANT' && N ? ` <span class="n">${n0((N.important || []).length)}</span>` : ''}</button>`).join('')}</div>${body}`;
 }
 
 // ---------------------------------------------------------------- CLUB: the private network, lightweight. Real people only.
@@ -4159,7 +4275,7 @@ function studioDoc(x) {
   return `<div class="sd"><div class="sd-t">${esc(x.title || x.slug)}</div>
     <div class="sd-m">${coLink(x.company_id, x.company)}</div>
     <div class="sd-m">${esc(DOC_TYPE[x.doc_type] || x.doc_type || '')}${x.level ? ` · Level ${esc(x.level)}` : ''}${x.version > 1 ? ` · v${esc(x.version)}` : ''} · <span class="faint">${esc(shortDay(x.sent_at || x.approved_at || x.created_at))}</span></div>
-    ${x.hold_reason ? `<div class="sd-m warn-text">${esc(x.hold_reason)}</div>` : ''}</div>`;
+    ${x.ready_class && !x.sent_at ? `<div class="sd-m">${readyPill(x.ready_class)}${x.ready_reason && x.ready_class !== 'SUPERSEDED' ? ` <span class="faint">${esc(x.ready_reason)}</span>` : ''}</div>` : x.hold_reason ? `<div class="sd-m warn-text">${esc(x.hold_reason)}</div>` : ''}</div>`;
 }
 function studioCol(key, label, S) {
   const C = S.columns || {}; const all = state.studioAll[key];
@@ -4181,12 +4297,20 @@ function studioCol(key, label, S) {
     ${shown.join('') || `<div class="sd-m faint kempty">${key === 'SENT' ? 'Nothing sent yet. You send; Studio never does.' : 'Empty'}</div>`}
     ${items.length > 6 ? `<button class="linkish" data-studio-all="${key}">${all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}${extra}</div>`;
 }
+// Readiness across the latest version of every document: what Adam could send now, and why the rest waits.
+function studioReadyLine() {
+  const docs = Object.values(state.studio?.columns || {}).flatMap((c) => (Array.isArray(c) ? c : c?.recent || []));
+  const n = Object.fromEntries(Object.keys(READY_CLASS).map((k) => [k, docs.filter((d) => d.ready_class === k && !d.sent_at).length]));
+  const ready = studioReady().length;
+  return `<div class="pills mt6"><span class="small"><b>${n0(ready)}</b> ready to send now</span> ${['NEEDS_UPDATE', 'HOLD', 'INTERNAL_ONLY'].map((k) => (n[k] ? `${readyPill(k)} <span class="small">${n0(n[k])}</span>` : '')).join(' ')}</div>`;
+}
 function viewStudio() {
   const S = state.studio; if (!S) { loadV3('studio', 'hq_studio'); return head('Studio') + waitFor('studio', 'the Studio'); }
   const out = S.outputs || [];
   return `${head('Studio', esc(['Ideas, concepts, briefs and proposals · Studio prepares, you approve and send', S.generated_at ? `updated ${new Date(S.generated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' })}` : ''].filter(Boolean).join(' · ')))}
     <div class="lvls">${(S.levels || []).map((l) => `<div class="lvl"><b>${esc(l.label)}</b><span>${esc(l.when)}</span></div>`).join('')}</div>
     <div class="sacts">${(S.actions || []).map((a) => `<button class="btn small ${a.level === 1 ? 'primary' : ''}" data-modal="studio-new" data-type="${a.kind}">${esc(a.label)}</button>`).join('')}</div>
+    ${studioReadyLine()}
     <div class="kanban">${STUDIO_COLS.map(([k, l]) => studioCol(k, l, S)).join('')}</div>
     ${out.length ? `<section class="dsec mt8"><header><h2>Prepared for a conversation</h2><span class="faint small">From prepared to sent, reply, meeting</span></header><div class="tbl-wrap"><table class="stack"><thead><tr><th>Company</th><th>Level</th><th>Status</th><th>Next step</th><th>Sent</th><th>Reply</th><th>Meeting</th></tr></thead><tbody>
       ${out.map((o) => `<tr><td>${esc(o.company || '')}</td><td data-l="Level" class="small">${esc(o.level_label || `Level ${o.level}`)}</td><td data-l="Status">${pill(sentence(String(o.status || '').toLowerCase()), o.status === 'HELD' ? 'warn' : o.status === 'SENT' ? 'ok' : '')}</td>
@@ -4266,6 +4390,7 @@ async function retry(k) {
   if (k === 'agents') { delete state.errors.agents; render(); return loadAgents(true); }
   if (k === 'weekly') { delete state.errors.weekly; render(); return loadV3('weekly', 'hq_weekly_review', {}, true); }
   if (k === 'liArch') { delete state.errors.liArch; render(); return loadV3('liArch', 'hq_linkedin_archive', {}, true); }
+  if (k === 'reopen') { delete state.errors.reopen; render(); return loadV3('reopen', 'hq_reopen_list', { p_limit: 30 }, true); }
   delete state.errors[errKey(k)]; render(); await readKey(k); render();
 }
 function bindV3(on) {

@@ -7,7 +7,7 @@
   "company": "YKONE Middle East",
   "company_id": "70b2d127-6704-4bf5-86cb-852e783c8d05",
   "opportunity_id": "ea415161-6e57-47a8-ac6b-1c8184b52eea",
-  "date": "17 October 2026",
+  "date": "20 October 2026",
   "prepared_for": "Adam Elshazly",
   "cover": {
     "style": "paper",
@@ -51,7 +51,7 @@
             ],
             [
               "Next action",
-              "Send the Egypt brief (Gmail draft ready, reply to the 8 Oct follow-up)"
+              "Approve the master brief (v4), then send the follow-up in the 8 Oct thread with the PDF"
             ],
             [
               "Value",
@@ -122,6 +122,16 @@
               "date": "15 Oct",
               "who": "NOYA",
               "text": "No reply since. Follow-up drafted in Gmail (unsent) with one Egypt idea."
+            },
+            {
+              "date": "19 Oct",
+              "who": "NOYA",
+              "text": "Adam edited the follow-up draft in Gmail (unsent)."
+            },
+            {
+              "date": "20 Oct",
+              "who": "Studio",
+              "text": "Brief v3 (text only) superseded by the master brief v4 with imagery; follow-up text updated to match."
             }
           ]
         }
@@ -177,6 +187,47 @@
           ]
         },
         {
+          "t": "facts",
+          "items": [
+            {
+              "id": "lgct",
+              "text": "The Longines Global Champions Tour holds its first Egypt event at the Pyramids of Giza, 22–24 October 2026, the first year of a five-year agreement.",
+              "source": "gcglobalchampions.com/news/lgct-2026 (HQ calendar, verified)",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "fin",
+              "text": "Forever Is Now 06, Art D’Égypte’s open-air exhibition on the Giza plateau, runs 4–28 November 2026.",
+              "source": "artdegypte.org/event/forever-is-now-06 (HQ calendar)",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "shakira",
+              "text": "Shakira performs at the Pyramids of Giza on 28 November 2026.",
+              "source": "Ticket Egypt, official ticketing for Venture Lifestyle (HQ calendar, verified)",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "gem_year",
+              "text": "The Grand Egyptian Museum marks its first anniversary on 5 November 2026 with Gala de Danza, the company’s first performance in the Middle East.",
+              "source": "Ticketsmarche, official ticketing presented by GEM Experience (HQ calendar, verified)",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "ciff",
+              "text": "The 47th Cairo International Film Festival runs 11–20 November 2026.",
+              "source": "ciff.org.eg (HQ calendar)",
+              "class": "PUBLIC"
+            },
+            {
+              "id": "silence_20",
+              "text": "No reply from YKONE since 8 Oct (12 days). Adam edited the follow-up draft in Gmail on 19 Oct; it is unsent.",
+              "source": "Gmail thread 1a11c1544306c7b1 and draft r3413834542155918452, checked 20 Oct 2026",
+              "class": "VERIFIED"
+            }
+          ]
+        },
+        {
           "t": "section",
           "n": "04",
           "label": "What they need",
@@ -217,9 +268,9 @@
         },
         {
           "t": "callout",
-          "label": "Recommended · Brief",
-          "big": "YKONE met us but has not briefed us. The brief gives them a one-page way to hand over their next Egypt request.",
-          "text": "Attach to the follow-up already in Gmail drafts. The draft proposal and project book stay internal until YKONE shares a live brief."
+          "label": "Recommended · Master brief (2–3 pages)",
+          "big": "YKONE met us and is looking at Egypt, but has not briefed us. A short visual brief shows what YKONE can sell in Egypt and asks for one brief.",
+          "text": "Send with the follow-up in the 8 Oct thread once Adam approves it. Proposal and project book stay internal until YKONE shares a live brief."
         },
         {
           "t": "section",
@@ -322,6 +373,36 @@
     {
       "fact": "No reply from YKONE since 8 Oct.",
       "source": "CRM Gmail history, checked 15 Oct 2026",
+      "class": "VERIFIED"
+    },
+    {
+      "fact": "The Longines Global Champions Tour holds its first Egypt event at the Pyramids of Giza, 22–24 October 2026, the first year of a five-year agreement.",
+      "source": "gcglobalchampions.com/news/lgct-2026 (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Forever Is Now 06, Art D’Égypte’s open-air exhibition on the Giza plateau, runs 4–28 November 2026.",
+      "source": "artdegypte.org/event/forever-is-now-06 (HQ calendar)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "Shakira performs at the Pyramids of Giza on 28 November 2026.",
+      "source": "Ticket Egypt, official ticketing for Venture Lifestyle (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The Grand Egyptian Museum marks its first anniversary on 5 November 2026 with Gala de Danza, the company’s first performance in the Middle East.",
+      "source": "Ticketsmarche, official ticketing presented by GEM Experience (HQ calendar, verified)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "The 47th Cairo International Film Festival runs 11–20 November 2026.",
+      "source": "ciff.org.eg (HQ calendar)",
+      "class": "PUBLIC"
+    },
+    {
+      "fact": "No reply from YKONE since 8 Oct (12 days). Adam edited the follow-up draft in Gmail on 19 Oct; it is unsent.",
+      "source": "Gmail thread 1a11c1544306c7b1 and draft r3413834542155918452, checked 20 Oct 2026",
       "class": "VERIFIED"
     }
   ],

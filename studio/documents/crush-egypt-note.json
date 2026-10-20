@@ -160,7 +160,12 @@
               "text": "The Grand Egyptian Museum has opened near the Pyramids of Giza, giving Cairo a cultural landmark of global scale.",
               "source": "NOYA Partner Guide; public record",
               "class": "PUBLIC"
-            },
+            }
+          ]
+        },
+        {
+          "t": "facts",
+          "items": [
             {
               "id": "dior",
               "text": "Dior presented its Men's Fall 2023 show at the Pyramids of Giza, a first for a luxury house at the site.",

@@ -1742,3 +1742,63 @@ connection, a person seen only in messages kept separate, no CRM person or compa
 spam and bad dates skipped, the warm-route text, the report lists, the board, the directory filter, the audit row), and a load test
 at 60,000 messages. Browser tests: Connections.csv alone, the .zip, both CSVs together, a broken zip, the report, the drawer
 history, phone width, and the agent card for a connection with an old conversation.
+
+## Commercial Creative Operator: from reply to the right next move (20 Oct 2026)
+
+Adam, 20 Oct: **REPLY / MEETING → UNDERSTAND → RECOMMEND → CREATE → ADAM APPROVES → SEND → MEASURE.** No redesign, no new CRM,
+no new major subsystem: one panel inside the existing drawers, one tab inside Relationships, one table of recommendations, and the
+Studio upgraded with a 2–3 page master brief and a quality gate. Adam chooses; nothing sends automatically. Migration
+`20261020120000_commercial_next_moves.sql`.
+
+**Recommended next action panel** (opportunity, company, contact, and LinkedIn connection drawers; `hq_next_move`). It reads the
+whole relationship (Gmail history, interactions, LinkedIn messages, the open opportunity, Studio documents and outputs,
+do-not-contact, relationship reviews) and shows: what happened, what they need, how valuable it is, why now (only a verified or
+approved signal in the next 120 days that genuinely fits), the one recommended action, the message and the material that goes with
+it. The recommendation is the operator's (`commercial_next_moves`, written by the daily check after reading the thread) or, when
+none exists, a rule-based baseline marked as such. An existing relationship is never treated as a cold lead.
+
+| Action | What happens when Adam presses it (`hq_next_move_action`) |
+|---|---|
+| Draft reply / Send prepared | Opens the prepared Gmail draft in the thread, or copies the message; otherwise requests a draft through the existing approval path |
+| Ask for call | Requests a short draft in Adam's voice asking for a call around one idea (times come from Meeting Assist once they agree) |
+| Send one-page idea · Build tailored brief · Build concept · Build proposal · Build itinerary | Queues a Studio request at that level (a proposal only when the relationship has earned it) |
+| Schedule follow-up | A task on the chosen date, 09:00 London |
+| Reconnect | Requests a reconnection draft with a credible new reason, or copies the operator's prepared note |
+| Hold / Park · Close | Recorded with the reason; the relationship leaves the lists |
+
+**Past conversations** (Relationships → Past conversations; `hq_reopen_list`). Gmail conversations where they replied at some
+point and nothing has happened for three weeks, and LinkedIn conversations once the archive is imported. Each card shows who wrote
+last, the date and the recency band; the operator's assessment is on top. Recency rules: **0–30 days** normal follow-up; **31–90**
+contextual reconnect; **3–12 months** only with a credible new reason; **12+ months** dormant, personal reconnect only. Never revived:
+explicit declines, do-not-contact, clearly closed conversations, irrelevant threads (suppliers, client operations, bookings). Actions:
+Draft reconnect, Build concept, Ask for meeting, Hold, Close. Gmail replies go inside the existing thread; LinkedIn is COPY & OPEN
+LINKEDIN and Adam sends it.
+
+**Studio.** Level 1 the idea in the email; Level 2 a one-page; Level 3 the master brief (page 1 NOYA × CLIENT with a photo,
+positioning and why Egypt / why now; page 2 the idea, formats, journey and one example; page 3 what NOYA handles, value, next step,
+contact); a proposal only when earned. No PDF is made because the system can. Agency mode: the agency brings the vision and the
+client brief, NOYA brings the Egypt side to life; NOYA never tells an agency how to do its creative work and never quotes savings
+without evidence. Photos come only from NOYA's library manifest (`studio/brand/images.json`); nothing claims past NOYA work, access,
+permits or exclusivity that is not confirmed, and no chef menu is ever presented as confirmed.
+
+**Brand & Quality Reviewer** (`studio/masters/reviewer.mjs`): every client document is checked before it can read READY TO SEND
+(facts, client, stage, internal notes, fabricated claims, generic wording, spelling, imagery, branding, layout, file size, contact,
+commercial use). **Readiness** on every Studio document: READY TO SEND (Adam could genuinely send it now), NEEDS UPDATE (with the
+reason), INTERNAL ONLY, SUPERSEDED, HOLD. History is kept: replaced versions stay as SUPERSEDED. The Dashboard's Studio ready list
+shows only READY TO SEND documents with their cover drafts.
+
+**First run (20 Oct).**
+- *YKONE*: SUPERSEDE. Brief v3 (text only, approved 18 Oct) is kept as SUPERSEDED; v4 is a three-page master brief with five
+  library photos (1.5 MB), passing every reviewer check, FOR REVIEW and READY TO SEND once Adam approves. The follow-up draft in the
+  8 Oct thread was rewritten to 109 words (Adam's 19 Oct wording is kept in the output's draft history); the panel recommends
+  sending it with the brief.
+- *Studio cleanup*: 2 documents READY TO SEND (YKONE brief v4 with its cover; Nado's one-page with its cover). Holds, internal
+  documents and superseded versions classified; CRUSH's 19 Oct send reconciled into interactions and its output marked SENT.
+- *Next moves*: YKONE (send prepared), Greycoat (one of two drafts in the thread), CRUSH (follow-up 26 Oct), Nado's (send
+  prepared).
+- *Past conversations*: 34 Gmail candidates, 11 assessed in the first pass. Purple Ski (10% commission agreed; the 21 Sep price grid never answered) and NM Agency
+  (Chiara asked twice) have replies drafted in their threads; AP Studios gets a reconnect with the GEM first anniversary as the
+  reason; 8 threads closed (suppliers, client operations, two declines); 23 remain for the daily check.
+
+**Daily check duties** are in the scheduled task, section 10: refresh next moves for relationships that moved, keep readiness
+current, reconcile sent mail into interactions, work a few past conversations a day, flag stale drafts (never delete them).
