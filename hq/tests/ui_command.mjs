@@ -120,8 +120,8 @@ const C = F.command;
   // 3b. The morning (Adam, 19 Oct; 21 Oct adds past relationships worth reopening): the lists in order; the five best new outreach
   // items, never the whole queue.
   const groups = (await page.locator('#needs .ngrp-h h3').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim());
-  const want = ['Replies to answer', 'Meetings to schedule', 'Follow-ups due', 'Past relationships worth reopening', 'Top 5 new outreach to approve', 'Studio documents ready'];
-  check('Morning: lists in order (replies, meetings, follow-ups, past relationships worth reopening, top 5 new outreach, Studio documents)', JSON.stringify(groups.filter((g) => g !== 'Clients and proposals')) === JSON.stringify(want), groups.join(' | '));
+  const want = ['Replies owed', 'Meetings to schedule', 'Follow-ups due', 'Past relationships worth reopening', 'Top 5 new outreach to approve', 'Studio documents ready'];
+  check('Morning: lists in order (replies owed, meetings to schedule, follow-ups due, past relationships worth reopening, top 5 new outreach, Studio documents ready)', JSON.stringify(groups.filter((g) => g !== 'Clients and proposals')) === JSON.stringify(want), groups.join(' | '));
   const topRows = await page.locator('#needs [data-need="outreach"] .act', { hasText: /\d of \d · / }).count();
   check('Morning: new outreach shows the ranked five from hq_outreach_desk, not the whole queue', topRows === F.desk.top5.length && topRows <= 5 && F.desk.needs_review.length > 5, `${topRows} of ${F.desk.needs_review.length} waiting`);
   check('Morning: "N waiting in Outreach" links to the rest', /waiting in Outreach/.test(await txt(page, '#needs [data-need="outreach"] .ngrp-h')));
@@ -131,7 +131,7 @@ const C = F.command;
     check('Morning: a LinkedIn item has Copy & open LinkedIn (copies the message, opens the profile; Adam sends)', (await lnk.count()) === 1 && (await lnk.getAttribute('data-copy')) === liTop.message && (await lnk.getAttribute('target')) === '_blank');
   }
   const liRep = F.desk.linkedin.find((a) => a.state === 'REPLIED');
-  check('Morning: a LinkedIn reply is under Replies to answer with the suggested response to copy', (await page.locator(`#needs [data-need="replies"] [data-copy="${liRep.response_draft}"]`).count()) === 1);
+  check('Morning: a LinkedIn reply is under Replies owed with the suggested response to copy', (await page.locator(`#needs [data-need="replies"] [data-copy="${liRep.response_draft}"]`).count()) === 1);
   const ma = F.desk.meeting_assist[0];
   check('Morning: Meeting Assist under Meetings to schedule, with the two times from the calendar', /Offered Thu 22 Oct.* or Fri 23 Oct.*\(UK\)/.test(await txt(page, `#needs [data-need="meetings"] .act:has([data-id="${ma.task_id}"])`)));
   check('Morning: Studio documents ready, one tap to the Studio', (await page.locator('#needs [data-need="studio"] .act').count()) === F.desk.studio_ready.length);

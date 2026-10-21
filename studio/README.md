@@ -144,14 +144,16 @@ A changed document becomes the next version and supersedes earlier unapproved ve
 
 | Class | Meaning |
 |---|---|
-| READY TO SEND | A client document that passed every reviewer check; Adam approves (if not yet) and sends |
+| READY TO SEND | A client document that passed every reviewer check and, when it travels as a PDF on a Gmail draft, whose PDF is verified on that draft; Adam sends |
+| READY FOR ATTACHMENT | Passed every check, but its PDF is not yet verified on its Gmail draft (and that draft's cover email). Never READY TO SEND before the attachment is there; a database guard enforces it |
 | NEEDS UPDATE | A client document that failed a check (the reason names it), is still a draft, or has not been reviewed |
 | INTERNAL ONLY | Notes, project books, operations itineraries |
 | SUPERSEDED | Replaced by a later version; kept for history |
 | HOLD | Prepared ahead of the relationship (above the earned level) or parked |
 
-The Dashboard's *Studio ready* list (`studio_ready_board()`) shows only READY TO SEND documents not yet sent, each with its cover
-email draft. Nothing is deleted: a replaced version stays as SUPERSEDED with its reason.
+The Dashboard's *Studio documents ready* list (`studio_ready_board()`) shows READY TO SEND and READY FOR ATTACHMENT documents not yet
+sent, each with its cover email draft and its state. `studio/record.mjs` records READY FOR ATTACHMENT, with the PDF's fingerprint
+(`content.pdf_sha256`, `pdf_bytes`), for a document the case's email attaches. Nothing is deleted: a replaced version stays as SUPERSEDED with its reason.
 
 ## Logo
 

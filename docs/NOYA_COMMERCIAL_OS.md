@@ -1861,9 +1861,32 @@ Buttons (`hq_follow_up_action`):
 A relationship only in NOYA Gmail (not in the CRM) can be scheduled, held or closed; drafting needs it added to the CRM first.
 Do-not-contact allows only Hold or Close.
 
-**The morning** (`hq_follow_up_board`, the Dashboard's "What needs you today" and the daily check). Only four kinds of item, each
-with the same analysis: follow-ups due (re-checked: a reply since, a decline or a hold changes the answer), replies owed, past
+**The morning CEO board** (corrected 21 Oct: Follow up / Reopen ADDS intelligence, it never removes existing commercial actions).
+The Dashboard's "What needs you today" and the daily check, in this order: **Replies owed · Meetings to schedule · Follow-ups due ·
+Past relationships worth reopening · Top 5 new outreach · Studio documents ready.** Only commercially meaningful items. The first
+four carry the follow-up analysis (`hq_follow_up_board`), alongside the replies, Meeting Assist and follow-up tasks HQ already
+had: follow-ups due (re-checked: a reply since, a decline or a hold changes the answer), replies owed, past
 relationships worth reopening (only with a 2+ reason, a dormant real relationship, material ready or a meeting to ask for), and
 meetings to schedule. First live run (20 Oct): 5 replies owed (including a Madrid v Barcelona request from yesterday, Sporting
 Founders' Egypt retreat and Encore Lifestyle), 2 past relationships worth reopening (Nouva Group: ask for a meeting; Hotel &
 Chalet Aurelio: the operator's prepared note), 1 meeting to schedule (Greycoat). Of the 40 strongest past conversations, 38 were not surfaced to reopen: no real reason yet, or a reply is owed instead.
+
+**Frozen (21 Oct).** Follow up / Reopen is frozen after the 21 Oct patch: operate it; change it only for a real production defect.
+
+## Studio PDF attachments: never READY TO SEND without the PDF on the draft (21 Oct 2026)
+
+Adam, 21 Oct: **Build brief → Quality review → Approved → Gmail draft → PDF attached → READY TO SEND.** Migration
+`20261021120000_studio_ready_for_attachment.sql`.
+
+- **READY FOR ATTACHMENT** is a Studio readiness class: the document passed every check, but its PDF is not yet verified on its Gmail
+  draft. Its cover email carries the same class. Only a verified attachment (`content.attachment_verified_at`) allows READY TO
+  SEND. A database guard (`studio_ready_guard`, re-checked when an output gets a draft) turns any other READY TO SEND write into
+  READY FOR ATTACHMENT, and `studio/record.mjs` records the class with the PDF's fingerprint.
+- **Corrected on 21 Oct** (each draft checked in Gmail: no attachment): YKONE brief v5 and its cover email, CRUSH brief v3 and its
+  cover email (both briefs still waiting for Adam's approval), and Nado's approved one-page with its cover email. They stay on the
+  morning's Studio documents ready list, labelled Ready for attachment.
+- **Automatic attachment** waits for Adam's approval of one network permission: outbound HTTPS from this Claude environment to
+  `noyaprivate.app.n8n.cloud`, used only to post an approved PDF to one n8n webhook. n8n (which already holds the NOYA Gmail and
+  Supabase credentials) checks that the document is approved and that the file's fingerprint matches its record, attaches it to
+  that document's own recorded Gmail draft, re-reads the draft to verify the attachment, and only then sets READY TO SEND. Until
+  then Adam attaches the PDF himself.

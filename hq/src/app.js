@@ -1560,7 +1560,7 @@ const BAND_RULE = { '0-30': 'within 30 days: a normal follow-up', '31-90': '31�
   '12M+': 'over a year: dormant, a personal note only' };
 const BAND_SHORT = { '0-30': 'under 30 days', '31-90': '31–90 days', '3-12M': '3–12 months', '12M+': '12 months+' };
 const STAGE_DOC = { master: 'Brief', brief: 'Brief', onepage: 'One-page concept', concept: 'Concept', email: 'Email idea', proposal: 'Proposal', itinerary: 'Itinerary', desk: 'Private services' };
-const READY_CLASS = { READY_TO_SEND: ['Ready to send', 'ok'], NEEDS_UPDATE: ['Needs update', 'warn'], INTERNAL_ONLY: ['Internal only', ''], SUPERSEDED: ['Superseded', ''], HOLD: ['Hold', 'warn'] };
+const READY_CLASS = { READY_TO_SEND: ['Ready to send', 'ok'], READY_FOR_ATTACHMENT: ['Ready for attachment', 'warn'], NEEDS_UPDATE: ['Needs update', 'warn'], INTERNAL_ONLY: ['Internal only', ''], SUPERSEDED: ['Superseded', ''], HOLD: ['Hold', 'warn'] };
 const readyPill = (c) => (c && READY_CLASS[c] ? pill(...READY_CLASS[c]) : '');
 const NM_ARGS = { opp: 'p_opportunity', company: 'p_company', contact: 'p_contact', connection: 'p_connection' };
 async function loadNextMove(kind, id) {
@@ -1650,7 +1650,7 @@ function fuModal(m) {
   const prep = p.message === 'READY' ? `${pill('Message ready', 'ok')} ${p.gmail_draft_id ? 'in Gmail' : 'in HQ, with your drafts'}`
     : p.message === 'DRAFTING' ? pill('Message being drafted') : `<span class="faint">${crm ? 'No message yet: Schedule + Draft prepares one now.' : 'Not in the CRM: add it first to prepare a message.'}</span>`;
   const doc = p.material || p.concept;
-  const docLine = doc ? `${esc(doc.title)} <span class="faint">· ${esc(STAGE_DOC[doc.stage] || doc.stage || '')}${doc.version ? ` v${esc(doc.version)}` : ''}</span> ${p.material ? pill('Ready to send', 'ok') : readyPill(doc.ready_class)}${p.concept_optional ? ' <span class="faint">· optional</span>' : ''}`
+  const docLine = doc ? `${esc(doc.title)} <span class="faint">· ${esc(STAGE_DOC[doc.stage] || doc.stage || '')}${doc.version ? ` v${esc(doc.version)}` : ''}</span> ${readyPill(doc.ready_class)}${p.concept_optional ? ' <span class="faint">· optional</span>' : ''}`
     : `<span class="faint">${crm ? 'No concept yet. Build concept asks the Studio for one (optional).' : 'None.'}</span>`;
   return shell(`<h3>${esc(A.name || A.person || 'Relationship')}${A.person && A.person !== A.name ? ` <span class="faint small">· ${esc(A.person)}</span>` : ''}</h3>
     <div class="pills">${A.type_label ? pill(A.type_label) : ''}${A.director_name ? pill(A.director_name) : ''}${A.source === 'OPERATOR' ? pill('Operator', 'ok') : ''}</div>
@@ -3414,7 +3414,7 @@ function dashStrip(d) {
 
 // WHAT NEEDS YOU TODAY (Adam, 19 Oct): five lists every morning: replies to answer, meetings to schedule, follow-ups due, the
 // five best new outreach items, Studio documents ready. Clients and proposals sit on top only when they exist. One button each.
-const NEED_GROUPS = [['clients', 'Clients and proposals'], ['replies', 'Replies to answer'], ['meetings', 'Meetings to schedule'], ['followups', 'Follow-ups due'],
+const NEED_GROUPS = [['clients', 'Clients and proposals'], ['replies', 'Replies owed'], ['meetings', 'Meetings to schedule'], ['followups', 'Follow-ups due'],
   ['reopen', 'Past relationships worth reopening'], ['outreach', 'Top 5 new outreach to approve'], ['studio', 'Studio documents ready']];
 const NEED_EMPTY = { replies: 'No reply waiting.', meetings: 'No meeting to schedule.', followups: 'No follow-up due today.',
   reopen: 'None today: no past relationship has a real reason to reopen yet.',
@@ -3477,10 +3477,12 @@ function needsRows(d) {
       cta: a ? `${liCopyOpen(a.message, a.linkedin, 'Copy & open LinkedIn')}<button class="btn small" data-modal="li-sent" data-id="${a.id}">Mark sent</button>`
         : `<button class="btn small primary" data-go="desk" data-desk-tab="TOP5">Review</button>` });
   });
-  // READY means Adam could genuinely send it now: it passed the Brand & Quality Reviewer and the relationship has earned it.
+  // READY means Adam could genuinely send it now: it passed the Brand & Quality Reviewer, the relationship has earned it and, when it
+  // travels as a PDF on a Gmail draft, the PDF is verified on that draft (21 Oct). Until then it is READY FOR ATTACHMENT.
   studioReady().slice(0, 3).forEach((s) => rows.push({ g: 'studio', r: 4, who: s.title || 'Studio document', co: s.company || '', dir: null,
     why: s.ready_reason || (s.status === 'APPROVED' ? 'Approved: ready to go with its email' : 'Passed review: ready for your approval'),
-    next: s.cover?.draft ? `${s.status === 'APPROVED' ? '' : 'Approve it, then '}attach ${s.file || 'the PDF'} to the Gmail draft and send it yourself` : s.status === 'APPROVED' ? 'Attach it to the email it belongs to' : 'Review, then approve or ask for changes',
+    next: s.ready_class === 'READY_FOR_ATTACHMENT' ? `${s.status === 'APPROVED' ? 'Approved' : 'Approve it'}: ${s.file || 'the PDF'} still has to go onto the Gmail draft; READY TO SEND only once it is there`
+      : s.cover?.draft ? 'The PDF is on the Gmail draft: open it and send it yourself' : s.status === 'APPROVED' ? 'Attach it to the email it belongs to' : 'Review, then approve or ask for changes',
     when: s.created_at, cta: `${s.cover?.thread ? btnLink(`${GMAIL_THREAD_URL}${s.cover.thread}`, 'Open the draft in Gmail', false) : ''}<button class="btn small primary" data-go="studio">Open Studio</button>` }));
   rows.sort((a, b) => a.r - b.r);
   return rows;
