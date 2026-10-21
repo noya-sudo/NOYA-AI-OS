@@ -1885,8 +1885,20 @@ Adam, 21 Oct: **Build brief → Quality review → Approved → Gmail draft → 
 - **Corrected on 21 Oct** (each draft checked in Gmail: no attachment): YKONE brief v5 and its cover email, CRUSH brief v3 and its
   cover email (both briefs still waiting for Adam's approval), and Nado's approved one-page with its cover email. They stay on the
   morning's Studio documents ready list, labelled Ready for attachment.
-- **Automatic attachment** waits for Adam's approval of one network permission: outbound HTTPS from this Claude environment to
-  `noyaprivate.app.n8n.cloud`, used only to post an approved PDF to one n8n webhook. n8n (which already holds the NOYA Gmail and
-  Supabase credentials) checks that the document is approved and that the file's fingerprint matches its record, attaches it to
-  that document's own recorded Gmail draft, re-reads the draft to verify the attachment, and only then sets READY TO SEND. Until
-  then Adam attaches the PDF himself.
+- **Automatic attachment** (Adam approved 1A on 21 Oct; migration `20261021150000_studio_attach_verified.sql`, workflow 26
+  `n8n/26_studio_attach_pdf.sdk.ts`, client `n8n/attach_pdf.mjs`). The Claude environment's only extra permission is outbound HTTPS
+  to `noyaprivate.app.n8n.cloud`, used to post an approved PDF (file, slug, version) to workflow 26's webhook. The webhook path is
+  random and kept out of this public repo; the caller holds no credential. Workflow 26:
+  1. fingerprints the file and asks Supabase (`studio_attachment_target`, service role only) whether it may be attached: the latest
+     version, APPROVED, unsent, exactly the approved PDF (its exact `pdf_sha256`, or its render-proof `pdf_fingerprint`, the
+     SHA-256 with only the render timestamp blanked, so a re-render of the same document still matches), and exactly one unsent
+     Gmail draft recorded for that document. The caller never chooses a draft.
+  2. adds the PDF to that same draft with the NOYA Gmail credential. Recipients, text and thread stay as they are. It never sends.
+  3. re-reads the draft, downloads the attachment back from Gmail and matches it byte for byte to the file that was posted.
+  4. only then calls `studio_attachment_verified` (service role only), which writes `content.attachment_verified_at` on the document
+     and its cover email, sets both to READY TO SEND (with the send-after date when there is one) and records the evidence on the
+     output (`evidence.attachment.state = ATTACHED_VERIFIED`).
+  Any refusal or failed step answers with its reason; the class stays READY FOR ATTACHMENT. Run data is not stored in n8n
+  (success and error executions are not saved), so the PDF does not stay there.
+- **Approvals recorded 21 Oct**: YKONE brief v5 (2A) and CRUSH brief v3 (3A) are APPROVED. Nado's one-page carries the fingerprint of
+  the file Adam approved on 17 Oct (its earlier record held a later, identical re-render).

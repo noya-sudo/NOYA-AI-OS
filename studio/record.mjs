@@ -16,6 +16,9 @@ const FILE_LABEL = { master: 'Egypt Brief', note: 'Opportunity note (internal)',
 
 const q = (s) => (s == null ? 'null' : `'${String(s).replace(/'/g, "''")}'`);
 const j = (o) => `$json$${JSON.stringify(o)}$json$::jsonb`;
+// Render-proof fingerprint: the PDF's SHA-256 with its render timestamps blanked, so a re-render of the same document matches.
+// Workflow 26 computes the same value on the file it is given.
+export const pdfFingerprint = (buf) => createHash('sha256').update(buf.toString('latin1').replace(/\(D:\d{14}[^)]*\)/g, '(D:)'), 'latin1').digest('hex');
 
 export function recordSql(casePath) {
   const c = JSON.parse(readFileSync(casePath, 'utf8'));
@@ -47,14 +50,14 @@ export function recordSql(casePath) {
     const [readyClass, readyReason] = ready[0] === 'READY_TO_SEND' && attached
       ? ['READY_FOR_ATTACHMENT', email ? 'Cover email: READY TO SEND once its PDF is verified on the Gmail draft' : 'Passed the Brand & Quality Reviewer; READY TO SEND once the PDF is verified on the Gmail draft']
       : ready;
-    // The PDF's fingerprint: only this exact file may be attached to the draft.
+    // The PDF's fingerprints: only this exact file (or a re-render of it, the same but for its timestamp) may go on the draft.
     const pdfPath = join(HERE, 'out', `${doc.slug}.pdf`);
     const pdf = !email && existsSync(pdfPath) ? readFileSync(pdfPath) : null;
     const file = email ? `${doc.slug}.txt` : `${c.party} x NOYA - ${FILE_LABEL[stage]}${doc.draft ? ' (draft)' : ''}.pdf`;
     out.push(`with prev as (select max(version) as v, coalesce(bool_or(content->>'sha256' = ${q(sha)}), false) as same from public.studio_documents where slug = ${q(doc.slug)})
 insert into public.studio_documents (slug, version, doc_type, title, company_id, opportunity_id, prepared_for, status, content, sources, review_notes, source_path, file_name, file_location, logo, qa, vertical, stage, audience, level, hold_reason, ready_class, ready_reason, ready_checked_at)
 select ${q(doc.slug)}, coalesce(prev.v, 0) + 1, ${q(DOC_TYPE[stage])}, ${q(doc.title.replace(/\*/g, ''))}, ${q(c.company_id)}, ${q(c.opportunity_id)}, ${q(doc.prepared_for)}, ${q(status)},
-  ${j({ sha256: sha, path: relative(ROOT, path), case: relative(ROOT, casePath), title: doc.title.replace(/\*/g, ''), draft: doc.draft || null, ...(email ? { subject: doc.subject, words: doc.words } : {}), ...(pdf ? { pdf_sha256: createHash('sha256').update(pdf).digest('hex'), pdf_bytes: pdf.length } : {}) })}, ${j(email || doc.audience === 'internal' ? [] : doc.sources || [])}, ${j(doc.review || [])},
+  ${j({ sha256: sha, path: relative(ROOT, path), case: relative(ROOT, casePath), title: doc.title.replace(/\*/g, ''), draft: doc.draft || null, ...(email ? { subject: doc.subject, words: doc.words } : {}), ...(pdf ? { pdf_sha256: createHash('sha256').update(pdf).digest('hex'), pdf_fingerprint: pdfFingerprint(pdf), pdf_bytes: pdf.length } : {}) })}, ${j(email || doc.audience === 'internal' ? [] : doc.sources || [])}, ${j(doc.review || [])},
   ${q(relative(ROOT, path))}, ${q(file)}, ${q(email ? `studio/out/${doc.slug}.txt` : `studio/out/${doc.slug}.pdf (re-render from the JSON)`)}, ${q(email ? null : logo)}, ${j({ ...(email ? { words: doc.words } : { pages }), reviewer })}, ${q(c.vertical)}, ${q(stage)}, ${q(doc.audience.toUpperCase())}, ${doc.level ?? 'null'}, ${q(doc.hold)},
   ${q(readyClass)}, ${q(readyReason)}, now()
 from prev where not prev.same;`);
