@@ -1873,6 +1873,10 @@ Chalet Aurelio: the operator's prepared note), 1 meeting to schedule (Greycoat).
 
 **Frozen (21 Oct).** Follow up / Reopen is frozen after the 21 Oct patch: operate it; change it only for a real production defect.
 
+Production defect fixed on 21 Oct (migration `20261021160000_follow_up_close_after_reply.sql`): a close in `commercial_next_moves`, or a
+not-relevant mark in `relationship_reviews`, recorded after their last message now takes the relationship off Replies owed (a
+supplier's one-off answer, an emoji reaction after a decline). If they write again, the reply owed comes back.
+
 ## Studio PDF attachments: never READY TO SEND without the PDF on the draft (21 Oct 2026)
 
 Adam, 21 Oct: **Build brief → Quality review → Approved → Gmail draft → PDF attached → READY TO SEND.** Migration
