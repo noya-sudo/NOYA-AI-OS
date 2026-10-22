@@ -154,8 +154,11 @@ A changed document becomes the next version and supersedes earlier unapproved ve
 The Dashboard's *Studio documents ready* list (`studio_ready_board()`) shows READY TO SEND and READY FOR ATTACHMENT documents not yet
 sent, each with its cover email draft and its state. `studio/record.mjs` records READY FOR ATTACHMENT, with the PDF's fingerprint
 (`content.pdf_sha256`, `pdf_fingerprint`, `pdf_bytes`), for a document the case's email attaches. `pdf_fingerprint` is the SHA-256 with the
-render timestamp blanked, so a re-render of the same document matches. Once a document is APPROVED, `n8n/attach_pdf.mjs` posts its PDF to
-workflow 26, which attaches it to the document's own Gmail draft, downloads it back and matches it, and only then marks READY TO SEND. Nothing is deleted: a replaced version stays as SUPERSEDED with its reason.
+render timestamp blanked, so a re-render of the same document matches. Once a document is APPROVED, its card in HQ Studio carries the
+whole handoff (21 Oct): **Preview** the stored PDF (`studio-pdfs/<slug>/v<version>.pdf`, private; chosen once on the first press if it
+is not stored yet), **Open Gmail draft** (the document's own recorded draft) and **Attach to email**, which asks workflow 26 to attach it
+to that same draft, download it back and match it; only then READY TO SEND, and the card shows **Open Gmail & send**. `n8n/attach_pdf.mjs`
+stores a PDF from the command line once the environment can reach n8n. Nothing is deleted: a replaced version stays as SUPERSEDED with its reason.
 
 ## Logo
 

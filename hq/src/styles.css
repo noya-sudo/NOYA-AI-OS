@@ -748,6 +748,12 @@ table.sc td, table.sc th { white-space: nowrap; }
 .sd-t { font-size: 13px; font-weight: 500; }
 .sd-m { font-size: 11.5px; color: var(--muted); }
 .sd.warm .sd-t a { font-weight: 600; }
+/* The handoff on every Studio card (21 Oct): PDF → Gmail draft → attached → sent, and the card's own buttons. */
+.sd-acts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.sd-acts .btn.small { padding: 2px 7px; font-size: 11.5px; }
+.hchain { display: flex; flex-wrap: wrap; gap: 1px 8px; font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+.hchain .done { color: var(--ok); }
+.sready { gap: 14px; }
 .kempty { padding: 8px 0; }
 .studio-role.main { box-shadow: 0 0 0 1px var(--navy); }
 @media (max-width: 1280px) { .kanban { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

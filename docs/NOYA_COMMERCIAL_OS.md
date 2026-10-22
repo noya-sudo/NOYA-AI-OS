@@ -1906,3 +1906,43 @@ Adam, 21 Oct: **Build brief → Quality review → Approved → Gmail draft → 
   (success and error executions are not saved), so the PDF does not stay there.
 - **Approvals recorded 21 Oct**: YKONE brief v5 (2A) and CRUSH brief v3 (3A) are APPROVED. Nado's one-page carries the fingerprint of
   the file Adam approved on 17 Oct (its earlier record held a later, identical re-render).
+
+## The Studio card handoff: RELATIONSHIP → DOCUMENT → PDF → EMAIL DRAFT → ATTACHMENT → SEND (21–22 Oct 2026)
+
+Adam, 21 Oct: every external Studio card carries its real actions, so nobody searches Studio records or Gmail. There are no new
+systems: the PDF lives in Supabase Storage, the attach request goes through pg_net and the vault (the pattern workflow 14 uses), and
+the 20261021150000 checks are unchanged. Migration `20261021170000_studio_card_handoff.sql`; workflow 26 v2; HQ `viewStudio`.
+
+- **The PDF** has one private home: the bucket `studio-pdfs/<slug>/v<version>.pdf` (private, PDF only, 8 MB). Only HQ admins
+  (`hq_is_admin()` policies) and the service role (workflow 26) can read it. **Preview** opens it through a 10-minute private link.
+  The first time a card needs a PDF that is not stored yet, HQ asks Adam to choose the file once. The browser checks it against the
+  record (exact SHA-256, or the render-proof fingerprint, and the size) before anything is uploaded; a wrong file is refused. It is
+  uploaded and recorded (`hq_studio_pdf_stored`, which checks it again). Workflow 26 can also store a posted file
+  (`n8n/attach_pdf.mjs`, STORE) once the environment can reach n8n.
+- **The email draft**: `studio_handoff(id)` on every `hq_studio` item gives the document's own recorded draft (`studio_outputs`), its
+  recipients, send-after date, the link that opens that exact draft in Gmail (Gmail's own link, recorded from Gmail), and the thread
+  link once sent.
+- **Attach to email** (`hq_studio_attach`) repeats the checks (approved, latest version, unsent, the approved PDF stored, exactly one
+  recorded unsent draft) and asks workflow 26 through pg_net (address and token in the vault; a 2-minute guard against double
+  presses). Workflow 26 v2 (`ihScTxpYRw0qgLFW`, replacing `Xqj1ymzQIuphWIEb`, now archived; same random path) fetches the stored PDF,
+  then runs the unchanged chain: fingerprint, `studio_attachment_target`, add to the same draft, re-read, download back, byte-for-byte
+  match, `studio_attachment_verified` → READY TO SEND. Calls without the token are refused (403). Failures answer 424 with the step
+  that failed (the n8n gateway hides 502 bodies). The card watches the answer every 5 seconds: *Attaching… checking Gmail*, then
+  *Attached and checked in Gmail* or *Not attached: <reason>*. Nothing is ever sent; HQ never creates a second draft.
+- **Primary action per state**: Needs brief → Create brief / concept; Drafting → Continue (opens the relationship); Needs review →
+  Review (preview, Approve, or Request changes with a note: `hq_studio_document_action`); Approved / Ready for attachment → Attach to
+  <company> email (*Attach now* and *Scheduled: <date>* when a send-after date is ahead); Ready to send → Open Gmail & send; Sent →
+  View sent email · History; Internal only → View; Superseded → View history. A cover email card shows Open email draft and points to
+  the card that carries its PDF. The same rules serve briefs, proposals, one-page concepts, brand-campaign / wedding / retreat /
+  media concepts and client itineraries (the card reads the document, not its type).
+- **Honest counts**: the Studio header shows *ready for attachment* (approved, PDF not yet verified on the draft) and *ready to send*
+  apart. The Dashboard's *Emails to send* no longer counts a Studio draft whose PDF is not verified (`studio_drafts_to_attach`,
+  shown as "to attach first").
+- **Connected on 21–22 Oct**: YKONE brief v5 (draft r3413834542155918452), CRUSH brief v3 (draft r-7941037991870327689, send after
+  26 Oct, only if Sophie has not replied), Nado's one-page v1 (draft r-8776625469132144549). Each draft was re-read in Gmail. Workflow
+  26's attach step was run offline against each draft's real MIME with the approved PDF: recipients, subject, threading and body are
+  unchanged, and the attachment is byte-identical. Their PDFs are stored on the first Preview or Attach press (the environment
+  cannot reach Supabase Storage or n8n directly).
+- Tests: `hq/tests/ui_command.mjs` §11 covers every state, preview, the wrong-file refusal, store → attach → verified, a failed step,
+  review and history, with nothing sent (95/95). `security-scan.mjs` allowlists the three RPCs and allows Storage access only to
+  `studio-pdfs`.

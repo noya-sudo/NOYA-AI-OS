@@ -1,6 +1,7 @@
-// NOYA 26 client: post an approved Studio PDF to workflow 26, which attaches it to that document's own Gmail draft, downloads
-// it back, matches it byte for byte and only then records READY TO SEND. Nothing is sent. Supabase decides what may be
-// attached (approved, latest version, this exact PDF, the document's recorded draft); this script holds no credential.
+// NOYA 26 client (STORE): post a Studio PDF to workflow 26, which stores it in the private studio-pdfs bucket only if it is
+// exactly that document's PDF (its fingerprint and size, checked by Supabase). The Studio card in HQ then previews it, and its
+// Attach to email button has workflow 26 put it on the document's own Gmail draft, download it back, match it byte for byte and
+// only then record READY TO SEND. Nothing is sent. This script holds no credential.
 // The webhook URL is not in this public repo: pass it in NOYA_ATTACH_URL (n8n shows it on workflow 26's webhook node).
 //   NOYA_ATTACH_URL=... node n8n/attach_pdf.mjs <slug> <version> <file.pdf>
 import { readFileSync } from 'node:fs';

@@ -3,10 +3,12 @@
 // scorecards, revenue and its reconciliation, and Admin → System health. Reads are live captures (tests/fixtures, git-ignored);
 // every write is recorded to prove exactly what each button sends. Nothing here can send an email.
 import http from 'node:http';
-import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { withMorning } from './morning_fixture.mjs';
+import { createHash } from 'node:crypto';
+import { pdfFingerprint } from '../../studio/record.mjs';
 
 const SUPA = 'https://gagbhykzmtstekpqujyl.supabase.co';
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -26,7 +28,7 @@ const READS = {
   hq_follow_up_board: () => ({ due: [], replies_owed: [], reopen: [], meetings: [], counts: {} }),
   hq_dashboard: () => F.snapshot, hq_overview: () => F.overview, hq_directory: () => F.directory, hq_insight: () => F.insight, hq_relationships: () => F.relationships,
   hq_commercial: () => ({ generated_at: new Date().toISOString(), team: { members: [], routing: {} }, weights: {}, products: [], playbooks: [], signals: [], queue: [], partners: [], projects: [], supply_partners: {} }),
-  hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_club: () => F.club, hq_weekly_review: () => F.weekly, hq_studio: () => F.studio,
+  hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_club: () => F.club, hq_weekly_review: () => F.weekly, hq_studio: () => STUDIO || F.studio,
   hq_cached: (b) => { const v = SNAP[b?.p_key] || (String(b?.p_key).startsWith('director:') ? { key: b.p_key.slice(9), sections: [] } : null);
     return v ? { ...v, _cache: { built_at: new Date(Date.now() - 120000).toISOString(), age_s: 120 } } : { ok: false, reason: 'UNKNOWN_KEY' }; },
   hq_cache_status: () => ({ generated_at: new Date().toISOString(), items: [], jobs: [] }), hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
@@ -45,7 +47,10 @@ const WRITES = { hq_work_order: { ok: true, id: '00000000-0000-0000-0000-0000000
   hq_recommendation_action: { ok: true, state: 'APPLIED' }, hq_advisor_seen: { ok: true },
   hq_studio_request: { ok: true, id: '00000000-0000-0000-0000-0000000000s1', level: 2 }, hq_studio_request_action: { ok: true },
   hq_linkedin_action: { ok: true, state: 'SENT', words: 60 }, hq_linkedin_reply: { ok: true, class: 'QUESTION', response: 'Thank you.', meeting_task: null },
-  hq_meeting_confirm: { ok: true, meeting_task: '00000000-0000-0000-0000-0000000000m2', briefing: {} } };
+  hq_meeting_confirm: { ok: true, meeting_task: '00000000-0000-0000-0000-0000000000m2', briefing: {} },
+  hq_studio_pdf_stored: { ok: true }, hq_studio_attach: { ok: true, request_id: 77, draft_id: 'r-test-draft-1' }, hq_studio_document_action: { ok: true } };
+// The Studio read can be swapped by a test (the handoff states), and a write can move it on (as workflow 26 would).
+let STUDIO = null; const ON_WRITE = {};
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const server = http.createServer((req, res) => {
@@ -72,10 +77,14 @@ async function open(viewport) {
     const url = route.request().url();
     if (url.includes('/auth/v1/token')) return route.fulfill({ json: session() });
     if (url.includes('/auth/v1/user')) return route.fulfill({ json: session().user });
+    // Supabase Storage (the private studio-pdfs bucket): a short-lived link to a stored PDF, and the one-time upload.
+    const st = url.match(/\/storage\/v1\/object\/(sign\/)?studio-pdfs\/([^?]+)/);
+    if (st) { calls.push({ fn: st[1] ? 'storage.sign' : 'storage.upload', path: decodeURIComponent(st[2]) });
+      return route.fulfill({ json: st[1] ? { signedURL: `/object/sign/studio-pdfs/${st[2]}?token=test` } : { Key: `studio-pdfs/${st[2]}`, Id: 'test' } }); }
     const m = url.match(/\/rest\/v1\/rpc\/([a-z_]+)/);
     if (m) { const body = route.request().postDataJSON?.() ?? null; calls.push({ fn: m[1], body });
       if (READS[m[1]]) return route.fulfill({ json: READS[m[1]](body) });
-      if (WRITES[m[1]]) return route.fulfill({ json: WRITES[m[1]] });
+      if (WRITES[m[1]]) { ON_WRITE[m[1]]?.(body); return route.fulfill({ json: WRITES[m[1]] }); }
       return route.fulfill({ status: 404, json: { message: 'not allowed in test' } }); }
     return route.fulfill({ status: 404, body: '' });
   });
@@ -277,6 +286,129 @@ const C = F.command;
   await page.screenshot({ path: 'tests/out/command/studio-390.png', fullPage: true });
   check('No browser errors (390)', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
+}
+// 11. The handoff on every Studio card (Adam, 21 Oct): RELATIONSHIP → DOCUMENT → PDF → EMAIL DRAFT → ATTACHMENT → SEND. A Studio
+// with every state (fictional companies and example.com addresses): the buttons per state, the split header counts, Preview of
+// the stored PDF, the one-time PDF check (a wrong file is refused before anything is uploaded), Attach → workflow 26 → verified
+// → Open Gmail & send, Review (approve / request changes), history. Nothing is ever sent.
+{
+  const pdfA = Buffer.from('%PDF-1.4\n1 0 obj << /Title (Lumen brief) /CreationDate (D:20261021120000Z) >> endobj\n%%EOF\n', 'latin1');
+  const pdfRerender = Buffer.from(pdfA.toString('latin1').replace('D:20261021120000Z', 'D:20261022093000Z'), 'latin1');
+  const pdfWrong = Buffer.from('%PDF-1.4\n1 0 obj << /Title (Someone else) /CreationDate (D:20261021120000Z) >> endobj\n%%EOF\n', 'latin1');
+  mkdirSync('tests/out/command/pdf', { recursive: true });
+  const files = { right: 'tests/out/command/pdf/Lumen brief (re-rendered).pdf', wrong: 'tests/out/command/pdf/Other.pdf' };
+  writeFileSync(files.right, pdfRerender); writeFileSync(files.wrong, pdfWrong);
+  const sha = (b) => createHash('sha256').update(b).digest('hex');
+  const iso = (days) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+  const G = 'https://mail.google.com/mail/?authuser=noya@noyaconcierge.com';
+  const pdf = (slug, v, file, stored, b = pdfA) => ({ file_name: file, bytes: b.length, sha256: sha(b), fingerprint: pdfFingerprint(b), path: `${slug}/v${v}.pdf`, stored, stored_at: stored ? new Date().toISOString() : null });
+  const draft = (id, thread, to, extra = {}) => ({ id, thread_id: thread, status: 'PREPARED', send_after: null, sent_at: null, to, url: `${G}#all?compose=${id}`, thread_url: `${G}#all/${thread}`, ...extra });
+  const attach = (extra = {}) => ({ verified_at: null, requested_at: null, status_code: null, result: null, error: null, ...extra });
+  const doc = (id, o) => ({ id, version: 1, level: 3, stage: 'master', doc_type: 'BRIEF', vertical: 'brand', created_at: '2026-10-20T19:00:00Z', approved_at: '2026-10-21T00:39:00Z', sent_at: null, hold_reason: null, ...o });
+  const CO = { lumen: 'c0000000-0000-0000-0000-00000000000a', orbit: 'c0000000-0000-0000-0000-00000000000b', sable: 'c0000000-0000-0000-0000-00000000000c', vela: 'c0000000-0000-0000-0000-00000000000d' };
+  const lumen = doc('d0000000-0000-0000-0000-000000000001', { slug: 'lumen-egypt-brief', version: 5, title: 'Egypt, under your creative lead.', company: 'Lumen Middle East', company_id: CO.lumen, status: 'APPROVED',
+    file: 'Lumen x NOYA - Egypt Brief.pdf', ready_class: 'READY_FOR_ATTACHMENT', ready_reason: 'Approved by Adam, 21 Oct. Press Attach to Lumen email.',
+    handoff: { external: true, email: false, pdf: pdf('lumen-egypt-brief', 5, 'Lumen x NOYA - Egypt Brief.pdf', false), draft: draft('r-test-draft-1', 't1', ['jad@example.com', 'amal@example.com', 'magali@example.com']), attach: attach() } });
+  const orbit = doc('d0000000-0000-0000-0000-000000000002', { slug: 'orbit-egypt-brief', version: 3, title: 'Egypt as a stage.', company: 'Orbit Agency', company_id: CO.orbit, status: 'APPROVED', file: 'Orbit x NOYA - Egypt Brief.pdf',
+    ready_class: 'READY_FOR_ATTACHMENT', ready_reason: 'Approved. For later, only if they have not replied.',
+    handoff: { external: true, email: false, pdf: pdf('orbit-egypt-brief', 3, 'Orbit x NOYA - Egypt Brief.pdf', false), draft: draft('r-test-draft-2', 't2', ['sophie@example.com'], { send_after: iso(5) }), attach: attach() } });
+  const sable = doc('d0000000-0000-0000-0000-000000000003', { slug: 'sable-onepage', title: 'A launch worth the journey.', company: "Sable's Jewellery", company_id: CO.sable, status: 'APPROVED', stage: 'onepage', doc_type: 'ONE_PAGE_CONCEPT', level: 2,
+    file: "Sable's x NOYA - One-page concept.pdf", ready_class: 'READY_FOR_ATTACHMENT', ready_reason: 'Approved.',
+    handoff: { external: true, email: false, pdf: pdf('sable-onepage', 1, "Sable's x NOYA - One-page concept.pdf", true), draft: draft('r-test-draft-3', 't3', ['raymond@example.com'], { send_after: iso(-2) }), attach: attach() } });
+  const vela = doc('d0000000-0000-0000-0000-000000000004', { slug: 'vela-proposal', title: 'The Vela weekend.', company: 'Vela', company_id: CO.vela, status: 'APPROVED', doc_type: 'PROPOSAL', stage: 'proposal', file: 'Vela x NOYA - Proposal.pdf',
+    ready_class: 'READY_TO_SEND', ready_reason: 'The PDF is on the Gmail draft, checked byte for byte.',
+    handoff: { external: true, email: false, pdf: pdf('vela-proposal', 1, 'Vela x NOYA - Proposal.pdf', true), draft: draft('r-test-draft-4', 't4', ['events@example.com']), attach: attach({ verified_at: '2026-10-21T22:00:00Z' }) } });
+  const cover = doc('d0000000-0000-0000-0000-000000000005', { slug: 'lumen-egypt-email', version: 4, title: 'Lumen cover email', company: 'Lumen Middle East', company_id: CO.lumen, status: 'FOR_REVIEW', stage: 'email', doc_type: 'EMAIL_IDEA',
+    ready_class: 'READY_FOR_ATTACHMENT', ready_reason: 'Cover email for brief v5.', handoff: { external: false, email: true, pdf: null, draft: draft('r-test-draft-1', 't1', ['jad@example.com']), attach: attach() } });
+  const review = doc('d0000000-0000-0000-0000-000000000006', { slug: 'vela-itinerary', title: 'Three days on the Nile.', company: 'Vela', company_id: CO.vela, status: 'FOR_REVIEW', doc_type: 'ITINERARY', stage: 'itinerary', approved_at: null,
+    ready_class: 'READY_FOR_ATTACHMENT', ready_reason: 'Passed the quality review.', handoff: { external: true, email: false, pdf: pdf('vela-itinerary', 1, 'Vela x NOYA - Itinerary.pdf', true), draft: null, attach: attach() } });
+  const note = doc('d0000000-0000-0000-0000-000000000007', { slug: 'lumen-egypt-note', title: 'Lumen opportunity note', company: 'Lumen Middle East', company_id: CO.lumen, status: 'FOR_REVIEW', doc_type: 'OPPORTUNITY_NOTE', stage: 'note',
+    ready_class: 'INTERNAL_ONLY', ready_reason: 'Internal.', handoff: { external: false, email: false, pdf: null, draft: null, attach: attach() } });
+  const drafting = doc('d0000000-0000-0000-0000-000000000008', { slug: 'lumen-egypt-proposal', title: 'Lumen proposal', company: 'Lumen Middle East', company_id: CO.lumen, status: 'DRAFT', doc_type: 'PROPOSAL', stage: 'proposal',
+    ready_class: 'HOLD', ready_reason: 'Held until they ask for numbers.', handoff: { external: true, email: false, pdf: null, draft: null, attach: attach() } });
+  const sent = doc('d0000000-0000-0000-0000-000000000009', { slug: 'orbit-egypt-email-v2', title: 'Orbit first email', company: 'Orbit Agency', company_id: CO.orbit, status: 'SENT', stage: 'email', doc_type: 'EMAIL_IDEA', sent_at: '2026-10-19T20:48:00Z',
+    ready_class: null, handoff: { external: false, email: true, pdf: null, draft: draft('r-test-draft-0', 't2', ['sophie@example.com'], { status: 'SENT', sent_at: '2026-10-19T20:48:00Z' }), attach: attach() } });
+  const old = doc('d0000000-0000-0000-0000-000000000010', { slug: 'lumen-egypt-brief', version: 4, title: 'Egypt, under your creative lead.', company: 'Lumen Middle East', company_id: CO.lumen, status: 'SUPERSEDED',
+    ready_class: 'SUPERSEDED', ready_reason: 'Replaced by v5.', handoff: { external: true, email: false, pdf: null, draft: null, attach: attach() } });
+  const base = { ...F.studio, columns: { NEEDS_BRIEF: F.studio.columns?.NEEDS_BRIEF || { requests: [], warmed: [] }, DRAFTING: [drafting], NEEDS_REVIEW: [cover, review, note],
+    APPROVED: [lumen, orbit, sable, vela], SENT: [sent], SUPERSEDED: { count: 1, recent: [old] } } };
+  const withLumen = (h) => ({ ...base, columns: { ...base.columns, APPROVED: [{ ...lumen, ...h(lumen) }, orbit, sable, vela] } });
+  STUDIO = base;
+  const { browser, page, errors, calls } = await open({ width: 1440, height: 900 });
+  await page.click('.nav-primary [data-tab="studio"]'); await page.waitForSelector('.kanban .sd-acts'); await page.waitForTimeout(150);
+  const card = (id) => page.locator(`.sd[data-sd="${id}"]`);
+  const labels = async (id) => (await card(id).locator('.sd-acts .btn').allTextContents()).map((t) => t.trim());
+  const head = await txt(page, '.sready');
+  check('Studio header: READY FOR ATTACHMENT and READY TO SEND counted apart (3 · 1), never “ready to send now”', /3 ready for attachment/.test(head) && /1 ready to send/.test(head) && !/ready to send now/.test(await txt(page, 'main')), head);
+  check('Approved brief (not yet attached): Preview brief · Attach to Lumen email · Open Gmail draft', JSON.stringify(await labels(lumen.id)) === JSON.stringify(['Preview brief', 'Attach to Lumen email', 'Open Gmail draft']), (await labels(lumen.id)).join(' | '));
+  check('Open Gmail draft opens the exact recorded draft', await card(lumen.id).locator('a.btn', { hasText: 'Open Gmail draft' }).getAttribute('href') === lumen.handoff.draft.url);
+  check('The card connects relationship → PDF → Gmail draft → attached → sent, and says who the draft is to', /PDF/.test(await txt(page, `.sd[data-sd="${lumen.id}"] .hchain`)) && /Gmail draft/.test(await txt(page, `.sd[data-sd="${lumen.id}"] .hchain`))
+    && /Draft to jad@example.com \+2/.test(await txt(page, `.sd[data-sd="${lumen.id}"]`)) && await card(lumen.id).locator('[data-open="company"]').count() === 1);
+  const orbitText = await txt(page, `.sd[data-sd="${orbit.id}"]`);
+  check('Scheduled brief: Preview brief · Attach now · Open draft · Scheduled: <date>', JSON.stringify(await labels(orbit.id)) === JSON.stringify(['Preview brief', 'Attach now', 'Open draft']) && /Scheduled: \d{1,2} [A-Z][a-z]{2}/i.test(orbitText), `${(await labels(orbit.id)).join(' | ')} — ${orbitText.slice(-60)}`);
+  check('One-page concept: Preview concept · Attach to Sable’s email · Open Gmail draft', JSON.stringify(await labels(sable.id)) === JSON.stringify(['Preview concept', "Attach to Sable's email", 'Open Gmail draft']), (await labels(sable.id)).join(' | '));
+  check('Ready to send: Open Gmail & send (the exact draft), and it says the PDF was checked in Gmail', JSON.stringify(await labels(vela.id)) === JSON.stringify(['Preview proposal', 'Open Gmail & send'])
+    && await card(vela.id).locator('a.btn', { hasText: 'Open Gmail & send' }).getAttribute('href') === vela.handoff.draft.url && /Attached and checked in Gmail/.test(await txt(page, `.sd[data-sd="${vela.id}"]`)));
+  check('Cover email: Open email draft, and it points to the card that carries its PDF', JSON.stringify(await labels(cover.id)) === JSON.stringify(['Open email draft']) && /Carries Lumen x NOYA - Egypt Brief\.pdf: attach it on the “Egypt, under your creative lead\.” card/.test(await txt(page, `.sd[data-sd="${cover.id}"]`)));
+  check('Needs review → Review · Internal only → View · Drafting → Continue', (await labels(review.id))[0] === 'Review' && JSON.stringify(await labels(note.id)) === JSON.stringify(['View']) && JSON.stringify(await labels(drafting.id)) === JSON.stringify(['Continue']));
+  check('Sent → View sent email · History · Superseded → View history', JSON.stringify(await labels(sent.id)) === JSON.stringify(['View sent email', 'History']) && JSON.stringify(await labels(old.id)) === JSON.stringify(['View history']));
+  await page.screenshot({ path: 'tests/out/command/studio-handoff-1440.png', fullPage: true });
+
+  // Preview of a stored PDF: a short-lived private link, opened in a new tab.
+  await page.context().route('**/storage/v1/object/sign/**', (r) => r.fulfill({ contentType: 'application/pdf', body: pdfA }));
+  const [pop] = await Promise.all([page.waitForEvent('popup'), card(sable.id).locator('[data-studio-preview]').click()]);
+  await pop.waitForURL(/storage\/v1\/object\/sign\/studio-pdfs\/sable-onepage\/v1\.pdf/, { timeout: 5000 }).catch(() => {});
+  check('Preview concept opens the stored PDF (a private 10-minute link) in a new tab', /studio-pdfs\/sable-onepage\/v1\.pdf/.test(pop.url()) && calls.some((c) => c.fn === 'storage.sign' && c.path === 'sable-onepage/v1.pdf'), pop.url());
+  await pop.close();
+
+  // Attach with no stored PDF yet: HQ asks for the file once. A wrong file is refused before anything is uploaded or attached.
+  let [chooser] = await Promise.all([page.waitForEvent('filechooser'), card(lumen.id).locator('[data-studio-attach]').click()]);
+  await chooser.setFiles(files.wrong); await page.waitForTimeout(400);
+  check('Attach: a wrong file is refused before anything is uploaded or attached', /That is not the approved PDF for this card\. Choose “Lumen x NOYA - Egypt Brief\.pdf”/.test(await txt(page, '.banner'))
+    && !calls.some((c) => c.fn === 'storage.upload' || c.fn === 'hq_studio_attach' || c.fn === 'hq_studio_pdf_stored'), await txt(page, '.banner'));
+  ON_WRITE.hq_studio_attach = () => { STUDIO = withLumen(() => ({ handoff: { ...lumen.handoff, pdf: { ...lumen.handoff.pdf, stored: true }, attach: attach({ requested_at: new Date().toISOString() }) } })); };
+  [chooser] = await Promise.all([page.waitForEvent('filechooser'), card(lumen.id).locator('[data-studio-attach]').click()]);
+  await chooser.setFiles(files.right); await page.waitForTimeout(700);
+  const up = calls.find((c) => c.fn === 'storage.upload'); const stored = last(calls, 'hq_studio_pdf_stored')?.body || {}; const att = last(calls, 'hq_studio_attach')?.body || {};
+  check('Attach: the approved PDF (a re-render with only new timestamps) is saved once to its own place', up?.path === 'lumen-egypt-brief/v5.pdf'
+    && stored.p_slug === 'lumen-egypt-brief' && stored.p_version === 5 && stored.p_bytes === pdfRerender.length && stored.p_fingerprint === pdfFingerprint(pdfA) && stored.p_sha256 === sha(pdfRerender), JSON.stringify(stored).slice(0, 160));
+  check('Attach: then one call to attach this document version to its recorded draft (HQ never chooses a draft)', JSON.stringify(att) === JSON.stringify({ p_slug: 'lumen-egypt-brief', p_version: 5 }), JSON.stringify(att));
+  check('Attach: the card shows it is attaching and checking Gmail; the notice says nothing is sent', /Attaching… checking Gmail/.test(await txt(page, `.sd[data-sd="${lumen.id}"]`)) && /Nothing is sent/.test(await txt(page, '.banner')), await txt(page, '.banner'));
+  STUDIO = withLumen(() => ({ ready_class: 'READY_TO_SEND', handoff: { ...lumen.handoff, pdf: { ...lumen.handoff.pdf, stored: true }, attach: attach({ requested_at: new Date().toISOString(), verified_at: new Date().toISOString(), status_code: 200, result: { ok: true } }) } }));
+  await page.waitForFunction(() => /Attached and checked in Gmail/.test(document.querySelector('.banner')?.textContent || ''), null, { timeout: 12000 }).catch(() => {});
+  check('Verified: READY TO SEND only after Gmail is checked; the card now offers Open Gmail & send (the same draft)', /Attached and checked in Gmail/.test(await txt(page, '.banner'))
+    && JSON.stringify(await labels(lumen.id)) === JSON.stringify(['Preview brief', 'Open Gmail & send']) && await card(lumen.id).locator('a.btn', { hasText: 'Open Gmail & send' }).getAttribute('href') === lumen.handoff.draft.url
+    && /2 ready for attachment/.test(await txt(page, '.sready')) && /2 ready to send/.test(await txt(page, '.sready')), (await labels(lumen.id)).join(' | '));
+  STUDIO = withLumen(() => ({ handoff: { ...lumen.handoff, pdf: { ...lumen.handoff.pdf, stored: true }, attach: attach({ requested_at: '2026-10-21T22:00:00Z', status_code: 424, result: { ok: false, reason: 'STEP_FAILED', step: 'Read the Gmail draft', message: 'Not found' } }) } }));
+  await page.click('#refresh'); await page.waitForTimeout(150); await page.click('.nav-primary [data-tab="dashboard"]'); await page.click('.nav-primary [data-tab="studio"]'); await page.waitForSelector('.kanban .sd-acts'); await page.waitForTimeout(400);
+  check('A failed attachment says which step failed and keeps Attach available; nothing is marked READY TO SEND', /Not attached: the step “Read the Gmail draft” failed \(Not found\)/.test(await txt(page, `.sd[data-sd="${lumen.id}"]`)) && (await labels(lumen.id)).includes('Attach to Lumen email'));
+  STUDIO = base;
+
+  // Review on the card: Approve, or Request changes with a note (refused without one).
+  await page.click('#refresh'); await page.waitForTimeout(300);
+  await card(review.id).locator('[data-modal="studio-review"]').click(); await page.waitForSelector('.modal #sr-note');
+  check('Review: the document, its PDF and its relationship, with Approve and Request changes', /Three days on the Nile\./i.test(await txt(page, '.modal')) && await page.locator('.modal [data-studio-preview]').count() === 1 && await page.locator('.modal #sr-changes').count() === 1);
+  await page.click('#sr-changes'); await page.waitForTimeout(150);
+  check('Request changes without a note is refused before anything is recorded', !calls.some((c) => c.fn === 'hq_studio_document_action'));
+  await page.fill('#sr-note', 'Lead with the boat, not the hotel.'); await page.click('#sr-changes'); await page.waitForTimeout(300);
+  const ch = last(calls, 'hq_studio_document_action')?.body || {};
+  check('Request changes: one call with the document version, CHANGES and the note', ch.p_slug === 'vela-itinerary' && ch.p_version === 1 && ch.p_action === 'CHANGES' && ch.p_note === 'Lead with the boat, not the hotel.', JSON.stringify(ch));
+  await card(review.id).locator('[data-modal="studio-review"]').click(); await page.waitForSelector('.modal #m-ok'); await page.click('.modal #m-ok'); await page.waitForTimeout(300);
+  const ap = last(calls, 'hq_studio_document_action')?.body || {};
+  check('Approve: one call with the document version and APPROVE; it says nothing was sent', ap.p_slug === 'vela-itinerary' && ap.p_action === 'APPROVE' && /Nothing was sent/.test(await txt(page, '.banner')), JSON.stringify(ap));
+  await card(old.id).locator('[data-modal="studio-history"]').click(); await page.waitForSelector('.modal');
+  const hist = await txt(page, '.modal');
+  check('View history: every Studio document for the relationship (versions, cover email, note, proposal)', /Lumen Middle East · Studio history/i.test(hist) && (hist.match(/Egypt, under your creative lead\./g) || []).length === 2 && /Lumen opportunity note/.test(hist) && /Lumen proposal/.test(hist), hist.slice(0, 160));
+  await page.click('.modal [data-close]');
+  check('Studio handoff: nothing is ever sent (no send, approve-draft or approve-email call)', !calls.some((c) => /send|approve_draft|approve_email/.test(c.fn)));
+  check('No browser errors (Studio handoff, 1440)', errors.length === 0, errors.slice(0, 3).join(' | '));
+  await browser.close();
+  const phone = await open({ width: 390, height: 844 });
+  await phone.page.click('#bmenu'); await phone.page.click('.sheet [data-tab="studio"]'); await phone.page.waitForSelector('.kanban .sd-acts'); await phone.page.waitForTimeout(150);
+  check('Phone 390: the card buttons fit the screen', (await overflow(phone.page)) <= 1, `${await overflow(phone.page)}px`);
+  await phone.page.screenshot({ path: 'tests/out/command/studio-handoff-390.png', fullPage: true });
+  await phone.browser.close();
+  STUDIO = null;
 }
 server.close();
 const failed = results.filter((r) => !r.ok);

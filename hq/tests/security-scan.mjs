@@ -20,6 +20,8 @@ for (const f of files) {
   for (const m of s.matchAll(/(?:\.rpc|\brpc|\bcall|\bdone)\(\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
   for (const m of s.matchAll(/\bloadV3\(\s*['"][A-Za-z]+['"]\s*,\s*['"]([a-z_]+)['"]/g)) writeRpcs.add(m[1]);
   if (/\.from\(\s*['"](opportunities|contacts|tasks|outbound_emails|companies|approval_audit|hq_admins)['"]\s*\)/.test(s)) problems.push(`${f}: direct table access`);
+  // Storage: only the private Studio PDF bucket (admin-only by policy), never any other bucket.
+  for (const m of s.matchAll(/\.storage\.from\(\s*['"]([^'"]+)['"]/g)) if (m[1] !== 'studio-pdfs') problems.push(`${f}: storage bucket ${m[1]}`);
 }
 const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'hq_timeline', 'hq_relationships', 'hq_history_action', 'hq_add_contact',
   'hq_save_draft', 'hq_approve_draft', 'hq_hold', 'hq_reject', 'hq_redispatch', 'hq_task_action', 'hq_task_dismiss',
@@ -43,7 +45,10 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_linkedin_action', 'hq_linkedin_reply', 'hq_meeting_confirm', 'hq_import_linkedin_messages', 'hq_linkedin_archive', 'hq_linkedin_history',
   'hq_next_move', 'hq_next_move_action', 'hq_reopen_list',
   // FOLLOW UP / REOPEN (21 Oct): admin-gated analysis, the morning board and Adam's choice; schedules and drafts, never sends
-  'hq_follow_up', 'hq_follow_up_action', 'hq_follow_up_board'];
+  'hq_follow_up', 'hq_follow_up_action', 'hq_follow_up_board',
+  // The Studio card handoff (21 Oct): admin-gated review on the card, record a stored PDF, ask workflow 26 to attach it to the
+  // document's own recorded draft (it verifies in Gmail before READY TO SEND). Nothing here sends.
+  'hq_studio_document_action', 'hq_studio_pdf_stored', 'hq_studio_attach'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

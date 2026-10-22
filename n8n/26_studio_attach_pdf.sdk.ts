@@ -1,17 +1,23 @@
-// NOYA 26 — Studio: attach an approved PDF to its Gmail draft, verify it, then READY TO SEND (Adam, 21 Oct: 1A 2A 3A).
-// Build brief → Quality review → Approved → Gmail draft → PDF attached → READY TO SEND. A Claude Studio session posts the PDF
-// (multipart: file, slug, version) with n8n/attach_pdf.mjs. Supabase decides whether it may be attached
-// (studio_attachment_target): the latest version, APPROVED, unsent, exactly the approved PDF (its exact fingerprint, or its
-// render-proof fingerprint, which ignores only the render timestamp), and the one unsent Gmail draft recorded for that
-// document; the caller never chooses a draft. n8n uses the existing NOYA Gmail and Supabase credentials; the caller holds none.
-// The draft is never sent. After the upload the draft is re-read, the attachment is downloaded back from Gmail and matched byte
-// for byte to the file that was posted; only then does studio_attachment_verified write READY TO SEND.
-// Run data is not stored (settings: no saved executions), so the PDF does not stay in n8n. The live webhook path is random and
-// kept out of this public repo.
+// NOYA 26 — Studio: store an approved PDF, attach it to its Gmail draft, verify it, then READY TO SEND (Adam, 21 Oct).
+// Build brief → Quality review → Approved → Gmail draft → PDF attached → READY TO SEND, from the Studio card in HQ.
+// Two ways in, one webhook:
+//  STORE  — a file is posted (multipart: file, slug, version; n8n/attach_pdf.mjs). If it is exactly this document's PDF
+//           (studio_pdf_match: exact fingerprint or the render-proof one, and its size) it is stored in the private Storage
+//           bucket studio-pdfs/<slug>/v<version>.pdf, so the card can preview it. Nothing is attached or sent.
+//  ATTACH — Attach to email on the card: HQ → hq_studio_attach → pg_net posts {slug, version} with the x-noya-attach token
+//           (vault). The stored PDF is fetched, fingerprinted and checked by Supabase (studio_attachment_target: the latest
+//           version, APPROVED, unsent, exactly the approved PDF, the one unsent Gmail draft recorded for that document; the caller
+//           never chooses a draft). It is added to that same draft with the NOYA Gmail credential; the draft is re-read, the
+//           attachment downloaded back from Gmail and matched byte for byte; only then does studio_attachment_verified write
+//           READY TO SEND. Its answer lands in pg_net's response table and shows on the card.
+// The draft is never sent. Run data is not stored (no saved executions), so the PDF does not stay in n8n. The live webhook path
+// and the token are random and kept out of this public repo.
 import { workflow, node, trigger, ifElse, expr } from '@n8n/workflow-sdk';
 
 const SUPABASE = 'https://gagbhykzmtstekpqujyl.supabase.co/rest/v1/rpc';
 const GMAIL = 'https://gmail.googleapis.com';
+const STORAGE = 'https://gagbhykzmtstekpqujyl.supabase.co/storage/v1/object/studio-pdfs';
+const TOKEN = '<attach-token>';
 const gmail = { gmailOAuth2: { id: 'OMGm2CkcvDKbJTr3', name: 'NOYA Gmail' } };
 const supabase = { supabaseApi: { id: 'EkLYXHBGqNUjAGKP', name: 'Supabase account' } };
 
@@ -19,6 +25,177 @@ const receive = trigger({
   type: 'n8n-nodes-base.webhook',
   version: 2.2,
   config: { name: 'Receive the approved PDF', parameters: { httpMethod: 'POST', path: 'noya-studio-attach-<secret-path>', responseMode: 'responseNode', options: {} } },
+});
+
+// STORE: a file was posted.
+const filePosted = ifElse({
+  version: 2.2,
+  config: {
+    name: 'A file was posted?',
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+        conditions: [{ leftValue: expr('{{ Object.keys($input.item.binary || {}).length > 0 }}'), operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+    },
+  },
+});
+
+const printPosted = node({
+  type: 'n8n-nodes-base.code',
+  version: 2,
+  config: {
+    name: 'Fingerprint the posted PDF',
+    onError: 'continueErrorOutput',
+    parameters: {
+      mode: 'runOnceForAllItems',
+      jsCode: `const crypto = require('crypto');
+const item = $input.first();
+const body = item.json.body || {};
+const key = Object.keys(item.binary || {})[0];
+const slug = String(body.slug || ''); const version = parseInt(body.version, 10);
+if (!/^[a-z0-9-]{3,80}$/.test(slug) || !(version > 0)) return [{ json: { ok: false, reason: 'SLUG_AND_VERSION_REQUIRED' } }];
+const buf = await this.helpers.getBinaryDataBuffer(0, key);
+if (buf.length > 8 * 1024 * 1024 || buf.slice(0, 5).toString('latin1') !== '%PDF-') return [{ json: { ok: false, reason: 'NOT_A_PDF_UNDER_8MB' } }];
+const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
+const fp = crypto.createHash('sha256').update(buf.toString('latin1').replace(/\\(D:\\d{14}[^)]*\\)/g, '(D:)'), 'latin1').digest('hex');
+return [{ json: { ok: true, slug, version, sha256, fingerprint: fp, bytes: buf.length }, binary: { data: item.binary[key] } }];`,
+    },
+  },
+});
+
+const postedIsPdf = ifElse({
+  version: 2.2,
+  config: {
+    name: 'A posted PDF under 8 MB?',
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+        conditions: [{ leftValue: expr('{{ $json.ok }}'), operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+    },
+  },
+});
+
+const matchPosted = node({
+  type: 'n8n-nodes-base.httpRequest',
+  version: 4.5,
+  config: {
+    name: 'Check the posted PDF',
+    onError: 'continueErrorOutput',
+    parameters: {
+      method: 'POST', url: `${SUPABASE}/studio_pdf_match`, authentication: 'predefinedCredentialType', nodeCredentialType: 'supabaseApi',
+      sendBody: true, contentType: 'json', specifyBody: 'json',
+      jsonBody: expr('{{ JSON.stringify({ p_slug: $json.slug, p_version: $json.version, p_sha256: $json.sha256, p_fingerprint: $json.fingerprint, p_bytes: $json.bytes }) }}'),
+      options: {},
+    },
+    credentials: supabase,
+  },
+});
+
+const postedMatches = ifElse({
+  version: 2.2,
+  config: {
+    name: 'Matches the record?',
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+        conditions: [{ leftValue: expr('{{ $json.ok }}'), operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+    },
+  },
+});
+
+const keepFile = node({
+  type: 'n8n-nodes-base.code',
+  version: 2,
+  config: {
+    name: 'Keep the file',
+    parameters: {
+      mode: 'runOnceForAllItems',
+      jsCode: `const posted = $('Fingerprint the posted PDF').first();
+return [{ json: Object.assign({}, posted.json, { path: $input.first().json.path }), binary: posted.binary }];`,
+    },
+  },
+});
+
+const storePdf = node({
+  type: 'n8n-nodes-base.httpRequest',
+  version: 4.5,
+  config: {
+    name: 'Store the PDF',
+    onError: 'continueErrorOutput',
+    parameters: {
+      method: 'POST', url: expr(`{{ '${STORAGE}/' + $json.path }}`), authentication: 'predefinedCredentialType', nodeCredentialType: 'supabaseApi',
+      sendHeaders: true, headerParameters: { parameters: [{ name: 'x-upsert', value: 'true' }, { name: 'Content-Type', value: 'application/pdf' }] },
+      sendBody: true, contentType: 'binaryData', inputDataFieldName: 'data',
+      options: { timeout: 60000 },
+    },
+    credentials: supabase,
+  },
+});
+
+const recordStored = node({
+  type: 'n8n-nodes-base.httpRequest',
+  version: 4.5,
+  config: {
+    name: 'Record it stored',
+    onError: 'continueErrorOutput',
+    parameters: {
+      method: 'POST', url: `${SUPABASE}/studio_pdf_stored`, authentication: 'predefinedCredentialType', nodeCredentialType: 'supabaseApi',
+      sendBody: true, contentType: 'json', specifyBody: 'json',
+      jsonBody: expr("{{ JSON.stringify({ p_slug: $('Keep the file').first().json.slug, p_version: $('Keep the file').first().json.version, p_sha256: $('Keep the file').first().json.sha256, p_fingerprint: $('Keep the file').first().json.fingerprint, p_bytes: $('Keep the file').first().json.bytes, p_by: 'workflow 26' }) }}"),
+      options: {},
+    },
+    credentials: supabase,
+  },
+});
+
+const storedOk = ifElse({
+  version: 2.2,
+  config: {
+    name: 'Stored?',
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+        conditions: [{ leftValue: expr('{{ $json.ok }}'), operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+    },
+  },
+});
+
+// ATTACH: Attach to email on the Studio card (HQ → hq_studio_attach → pg_net), with the token from the vault.
+const fromHq = ifElse({
+  version: 2.2,
+  config: {
+    name: 'From HQ, with the token?',
+    parameters: {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+        conditions: [{ leftValue: expr(`{{ ($json.headers || {})['x-noya-attach'] === '${TOKEN}' && !!(($json.body || {}).slug) }}`), operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+    },
+  },
+});
+
+const fetchStored = node({
+  type: 'n8n-nodes-base.httpRequest',
+  version: 4.5,
+  config: {
+    name: 'Fetch the stored PDF',
+    onError: 'continueErrorOutput',
+    parameters: {
+      method: 'GET', url: expr(`{{ '${STORAGE}/' + $json.body.slug + '/v' + $json.body.version + '.pdf' }}`),
+      authentication: 'predefinedCredentialType', nodeCredentialType: 'supabaseApi',
+      options: { timeout: 60000, response: { response: { responseFormat: 'file', outputPropertyName: 'data' } } },
+    },
+    credentials: supabase,
+  },
 });
 
 const fingerprint = node({
@@ -31,7 +208,7 @@ const fingerprint = node({
       mode: 'runOnceForAllItems',
       jsCode: `const crypto = require('crypto');
 const item = $input.first();
-const body = item.json.body || {};
+const body = $('Receive the approved PDF').first().json.body || {};
 const key = Object.keys(item.binary || {})[0];
 if (!key) return [{ json: { ok: false, reason: 'NO_FILE' } }];
 const slug = String(body.slug || ''); const version = parseInt(body.version, 10);
@@ -312,12 +489,34 @@ const notVerified = node({
 const failed = node({
   type: 'n8n-nodes-base.respondToWebhook',
   version: 1.5,
-  config: { name: 'A step failed', parameters: { respondWith: 'json', responseBody: expr("{{ JSON.stringify({ ok: false, reason: 'STEP_FAILED', step: $prevNode.name, message: String(typeof $json.error === 'string' ? $json.error : (($json.error && ($json.error.message || $json.error.description)) || $json.message || '')).slice(0, 400) }) }}"), options: { responseCode: 502 } } },
+  config: { name: 'A step failed', parameters: { respondWith: 'json', responseBody: expr("{{ JSON.stringify({ ok: false, reason: 'STEP_FAILED', step: $prevNode.name, message: String(typeof $json.error === 'string' ? $json.error : (($json.error && ($json.error.message || $json.error.description)) || $json.message || '')).slice(0, 400) }) }}"), options: { responseCode: 424 } } },
 });
 
-export default workflow('noya-26-studio-attach-pdf', 'NOYA 26 — Studio: attach approved PDF to its Gmail draft')
+const stored = node({
+  type: 'n8n-nodes-base.respondToWebhook',
+  version: 1.5,
+  config: { name: 'Stored', parameters: { respondWith: 'json', responseBody: expr("{{ JSON.stringify({ ok: true, stored: true, path: $('Keep the file').first().json.path, sha256: $('Keep the file').first().json.sha256, bytes: $('Keep the file').first().json.bytes }) }}"), options: { responseCode: 200 } } },
+});
+const noToken = node({
+  type: 'n8n-nodes-base.respondToWebhook',
+  version: 1.5,
+  config: { name: 'Refused: not from HQ', parameters: { respondWith: 'json', responseBody: expr("{{ JSON.stringify({ ok: false, reason: 'NOT_FROM_HQ' }) }}"), options: { responseCode: 403 } } },
+});
+
+export default workflow('noya-26-studio-attach-pdf', 'NOYA 26 — Studio: store and attach the approved PDF')
   .add(receive)
-  .to(fingerprint)
+  .to(filePosted
+    .onTrue(printPosted.to(postedIsPdf
+      .onTrue(matchPosted.to(postedMatches
+        .onTrue(keepFile.to(storePdf).to(recordStored).to(storedOk
+          .onTrue(stored)
+          .onFalse(refused)))
+        .onFalse(refused)))
+      .onFalse(notPdf)))
+    .onFalse(fromHq
+      .onTrue(fetchStored.to(fingerprint))
+      .onFalse(noToken)))
+  .add(fingerprint)
   .to(isPdf
     .onTrue(checkDocument.to(allowed
       .onTrue(getDraft.to(addPdf).to(needsUpload
@@ -334,6 +533,11 @@ export default workflow('noya-26-studio-attach-pdf', 'NOYA 26 — Studio: attach
         .onFalse(refused)))
       .onFalse(notVerified)))
     .onFalse(notVerified))
+  .add(printPosted.onError(failed))
+  .add(matchPosted.onError(failed))
+  .add(storePdf.onError(failed))
+  .add(recordStored.onError(failed))
+  .add(fetchStored.onError(failed))
   .add(fingerprint.onError(failed))
   .add(checkDocument.onError(failed))
   .add(getDraft.onError(failed))

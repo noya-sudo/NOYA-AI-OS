@@ -92,7 +92,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' }, liHist: {},
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
-  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, nextMove: {}, reopen: null, fu: {}, fuBoard: null,
+  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, studioWatch: null, nextMove: {}, reopen: null, fu: {}, fuBoard: null,
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
@@ -276,6 +276,24 @@ function explain(r) {
     NOT_AN_EMAIL: 'This is not an email draft.',
     UNKNOWN_KIND: 'Unknown Studio request.',
     ALREADY_REQUESTED: 'This is already requested for that company. It is in Studio under Needs brief.',
+    PDF_NOT_STORED: 'The approved PDF is not on file yet: press Preview or Attach and choose the file once.',
+    NOT_THIS_DOCUMENTS_PDF: 'That file is not the approved PDF for this document. Nothing was uploaded or attached.',
+    PDF_NOT_IN_STORAGE: 'The upload did not finish. Try again; nothing was attached.',
+    NO_PDF_FOR_THIS_DOCUMENT: 'This document has no rendered PDF yet.',
+    ATTACH_NOT_CONFIGURED: 'Automatic attachment is not switched on yet. Nothing was attached.',
+    NOT_APPROVED: 'Approve it first (Review on the card), then attach.',
+    NOT_IN_REVIEW: 'This document is not waiting for review any more. Refresh.',
+    NOT_THE_LATEST_VERSION: 'A newer version of this document exists: use its card.',
+    NO_SUCH_DOCUMENT_VERSION: 'This document version no longer exists. Refresh.',
+    ALREADY_SENT: 'Already sent. Nothing was attached.',
+    NOT_READY_FOR_ATTACHMENT: 'Not ready for attachment: it is held or needs an update (the reason is on the card).',
+    NOT_THE_APPROVED_PDF: 'The stored file is not the approved PDF, so nothing was attached.',
+    NO_UNSENT_DRAFT_RECORDED: 'No unsent Gmail draft is recorded for this document, so nothing was attached (HQ never creates a second draft).',
+    MORE_THAN_ONE_DRAFT_RECORDED: 'More than one Gmail draft is recorded for this document, so nothing was attached until that is resolved.',
+    NOT_ON_THE_DRAFT: 'Gmail did not show the PDF on the draft after attaching, so it is not marked READY TO SEND.',
+    SAME_FILE_ATTACHED_TWICE: 'The PDF is on the draft twice: remove one copy in Gmail, then press Attach again.',
+    ATTACHMENT_DOES_NOT_MATCH: 'The file Gmail holds does not match the approved PDF byte for byte, so it is not marked READY TO SEND.',
+    NOT_FROM_HQ: 'The attach workflow refused the request. Nothing was attached.',
   };
   if (reason.startsWith('EMAIL_NOT_VERIFIED')) return `Blocked: the email is ${String(reason.split(':')[1] || 'not verified').toLowerCase().replace('_', ' ')}, not SMTP-verified. Only verified emails become Gmail drafts.`;
   if (reason === 'DO_NOT_CONTACT') return 'Blocked: this contact is marked do-not-contact.';
@@ -388,7 +406,7 @@ function render() {
           </div>
         </div>
         <main>
-          ${state.notice ? `<div class="banner ${state.notice.err ? 'err' : 'ok'}">${esc(state.notice.text)}</div>` : ''}
+          ${state.notice ? `<div class="banner ${state.notice.err ? 'err' : 'ok'}">${esc(state.notice.text)}${state.notice.href ? ` <a href="${esc(state.notice.href)}" target="_blank" rel="noopener noreferrer">${esc(state.notice.label || 'Open')}</a>` : ''}</div>` : ''}
           ${state.errors.main && /not authorised/i.test(state.errors.main) ? '<div class="banner err">This account is not authorised for NOYA HQ.</div>' : ''}
           ${staleErr && d ? `<div class="unavail top"><span>Some figures may be out of date: the last refresh did not complete.</span><button class="btn small" data-retry="all">Retry</button></div>` : ''}
           ${d && view ? view(d) : state.loading || !state.errors.main ? '<p class="muted">Loading HQ…</p>' : /not authorised/i.test(state.errors.main) ? '' : unavailable('all')}
@@ -2464,6 +2482,8 @@ function renderAnyModal(m) {
     }
     case 'studio-new': return studioNewModal(m);
     case 'studio-role': return studioRoleModal(m);
+    case 'studio-review': return studioReviewModal(m);
+    case 'studio-history': return studioHistoryModal(m);
     case 'revenue-import': {
       const P = m.preview;
       return `<div class="modal-bg"><div class="modal wide"><h3>Import historical revenue</h3>
@@ -2642,6 +2662,12 @@ async function submitModal() {
       const co = studioCompanyId(val('sn-company')); if (!need(co, 'Pick the company from the list (type to search).')) return;
       const r = await done('hq_studio_request', { p_kind: m.type, p_company: co, p_opportunity: m.opp || null, p_note: val('sn-note') },
         'Requested. The Studio prepares it for your review under Needs review. Nothing is sent.');
+      loadV3('studio', 'hq_studio', {}, true);
+      return r; }
+    case 'studio-review': {
+      const x = studioById(m.id); if (!need(x, 'This document is no longer in the Studio. Refresh.')) return;
+      const r = await done('hq_studio_document_action', { p_slug: x.slug, p_version: x.version, p_action: 'APPROVE', p_note: val('sr-note') },
+        x.ready_class === 'HOLD' ? 'Approved. It stays held until the relationship has earned this level. Nothing was sent.' : 'Approved. Nothing was sent. Next on the card: Attach to email.');
       loadV3('studio', 'hq_studio', {}, true);
       return r; }
     case 'revenue-import': {
@@ -3408,7 +3434,7 @@ function dashStrip(d) {
     ${k(C ? n0(K.open_proposals) : '—', 'Open proposals', 'data-scroll="pipeline"')}
     ${k(C ? n0(K.meetings_30) : '—', 'Meetings', 'data-scroll="pipeline"', 'booked or held · 30 days')}
     ${k(C ? n0(K.positive_30) : '—', 'Positive replies', 'data-scroll="pipeline"', 'companies · 30 days')}
-    ${k(send == null ? '—' : n0(send), 'Emails to send', 'data-go="desk" data-desk-tab="APPROVED"', C ? `${n0(K.gmail_drafts_to_send)} Gmail · ${n0(K.studio_drafts_to_send)} Studio${Number(K.studio_drafts_later) ? ` · ${n0(K.studio_drafts_later)} later` : ''}` : '')}
+    ${k(send == null ? '—' : n0(send), 'Emails to send', 'data-go="desk" data-desk-tab="APPROVED"', C ? `${n0(K.gmail_drafts_to_send)} Gmail · ${n0(K.studio_drafts_to_send)} Studio${Number(K.studio_drafts_to_attach) ? ` · ${n0(K.studio_drafts_to_attach)} to attach first` : ''}${Number(K.studio_drafts_later) ? ` · ${n0(K.studio_drafts_later)} later` : ''}` : '')}
     ${k(n0(rows.length), 'Actions needing you', 'data-scroll="needs"')}</section>`;
 }
 
@@ -3483,7 +3509,8 @@ function needsRows(d) {
     why: s.ready_reason || (s.status === 'APPROVED' ? 'Approved: ready to go with its email' : 'Passed review: ready for your approval'),
     next: s.ready_class === 'READY_FOR_ATTACHMENT' ? `${s.status === 'APPROVED' ? 'Approved' : 'Approve it'}: ${s.file || 'the PDF'} still has to go onto the Gmail draft; READY TO SEND only once it is there`
       : s.cover?.draft ? 'The PDF is on the Gmail draft: open it and send it yourself' : s.status === 'APPROVED' ? 'Attach it to the email it belongs to' : 'Review, then approve or ask for changes',
-    when: s.created_at, cta: `${s.cover?.thread ? btnLink(`${GMAIL_THREAD_URL}${s.cover.thread}`, 'Open the draft in Gmail', false) : ''}<button class="btn small primary" data-go="studio">Open Studio</button>` }));
+    when: s.created_at, cta: s.ready_class === 'READY_TO_SEND' && s.cover?.thread ? `${btnLink(studioById(s.id)?.handoff?.draft?.url || `${GMAIL_THREAD_URL}${s.cover.thread}`, 'Open Gmail & send')}<button class="btn small" data-go="studio">Studio</button>`
+      : `${s.cover?.thread ? btnLink(`${GMAIL_THREAD_URL}${s.cover.thread}`, 'Open the draft in Gmail', false) : ''}<button class="btn small primary" data-go="studio">${s.ready_class === 'READY_FOR_ATTACHMENT' ? 'Attach in Studio' : 'Open Studio'}</button>` }));
   rows.sort((a, b) => a.r - b.r);
   return rows;
 }
@@ -4362,11 +4389,134 @@ const DOC_TYPE = { EMAIL_IDEA: 'Email idea', OPPORTUNITY_NOTE: 'Opportunity note
 const REQ_KIND = { IDEA: 'Idea', ONE_PAGE_CONCEPT: 'One-page concept', BRIEF: 'Brief', PROPOSAL: 'Proposal', ITINERARY: 'Itinerary', RETREAT_CONCEPT: 'Retreat concept',
   WEDDING_CONCEPT: 'Wedding concept', BRAND_CAMPAIGN_CONCEPT: 'Brand campaign concept', MEDIA_CONCEPT: 'Media concept' };
 const coLink = (id, name) => (id ? `<a class="clickable" data-open="company" data-id="${id}">${esc(name || '')}</a>` : esc(name || ''));
+// THE HANDOFF ON EVERY CARD (Adam, 21 Oct): RELATIONSHIP → DOCUMENT → PDF → EMAIL DRAFT → ATTACHMENT → SEND. Each external card
+// carries its real actions: Preview (the exact rendered PDF, from the private studio-pdfs bucket), Open Gmail draft (the
+// document's own recorded draft), Attach to email (workflow 26 attaches this exact approved PDF to that draft, re-reads Gmail and
+// checks it byte for byte; only then READY TO SEND) and Open Gmail & send. Nothing is ever sent from here: Adam presses Send.
+const STUDIO_NOUN = { BRIEF: 'brief', PROPOSAL: 'proposal', ONE_PAGE_CONCEPT: 'concept', CONCEPT: 'concept', ITINERARY: 'itinerary', OPS_ITINERARY: 'itinerary',
+  PROJECT: 'plan', DESK_BRIEF: 'brief', OPPORTUNITY_NOTE: 'note' };
+const coShort = (n) => { const s = String(n || ''); return s.length > 14 ? s.split(/\s+/)[0] : s; };
+const dayMonth = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Cairo' });
+const studioDocs = () => { const C = state.studio?.columns || {}; return [...(C.DRAFTING || []), ...(C.NEEDS_REVIEW || []), ...(C.APPROVED || []), ...(C.SENT || []), ...(C.SUPERSEDED?.recent || [])]; };
+const studioById = (id) => studioDocs().find((d) => d.id === id);
+function studioState(x) {
+  const h = x.handoff || {}; const a = h.attach || {}; const d = h.draft || null;
+  const verified = !!a.verified_at || x.ready_class === 'READY_TO_SEND';
+  const pending = !verified && !!a.requested_at && a.status_code == null && !a.error && Date.now() - new Date(a.requested_at).getTime() < 180000;
+  const failed = !verified && !pending && !!a.requested_at && (!!a.error || (a.status_code != null && a.status_code !== 200) || a.result?.ok === false);
+  return { h, a, d, verified, pending, failed, later: !!(d?.send_after && !d.sent_at && d.send_after > todayKey()), sent: !!(x.sent_at || x.status === 'SENT') };
+}
+function studioWhy(a) {
+  const r = a.result || {};
+  if (r.reason === 'STEP_FAILED') return `the step “${r.step || 'unknown'}” failed${r.message ? ` (${r.message})` : ''}. Nothing was sent; press Attach again.`;
+  if (r.reason) return explain(r);
+  return a.error ? `no answer from the attach workflow (${a.error}). Nothing was sent; press Attach again.` : `the attach workflow answered ${a.status_code}. Nothing was sent.`;
+}
+const toLine = (d) => (d?.to?.length ? `${d.sent_at ? 'Sent to' : 'Draft to'} ${d.to[0]}${d.to.length > 1 ? ` +${d.to.length - 1}` : ''}` : '');
+function studioActs(x) {
+  if (!x.handoff) return x.status === 'SENT' && x.company_id ? `<div class="sd-acts"><button class="btn small" data-modal="studio-history" data-company="${x.company_id}">History</button></div>` : '';
+  const s = studioState(x); const { h, d } = s; const pdf = h.pdf; const noun = STUDIO_NOUN[x.doc_type] || 'PDF';
+  const preview = (label = `Preview ${noun}`) => (pdf ? `<button class="btn small" data-studio-preview="${x.id}">${label}</button>` : '');
+  const draft = (label, primary = false) => (d?.url && !d.sent_at ? btnLink(d.url, label, primary) : '');
+  const sentMail = (primary = false) => (d?.sent_at && d.thread_url ? btnLink(d.thread_url, 'View sent email', primary) : '');
+  const hist = (label) => (x.company_id ? `<button class="btn small" data-modal="studio-history" data-company="${x.company_id}">${label}</button>` : '');
+  let acts = []; const notes = [];
+  if (s.sent) acts = [d?.thread_url ? btnLink(d.thread_url, 'View sent email') : '', hist('History')];
+  else if (x.status === 'SUPERSEDED' || x.ready_class === 'SUPERSEDED') acts = [`<button class="btn small primary" data-modal="studio-history" data-company="${x.company_id || ''}">View history</button>`, sentMail()];
+  else if (h.email) {
+    // The cover email is the Gmail draft itself; its PDF is attached from the document's own card.
+    const doc = studioDocs().find((o) => !o.handoff?.email && o.handoff?.draft?.id && o.handoff.draft.id === d?.id);
+    acts = [draft('Open email draft', true)];
+    if (doc) notes.push(studioState(doc).verified ? `<span class="ok-text">${esc(doc.file || 'The PDF')} is attached and checked</span>` : `Carries ${esc(doc.file || 'the PDF')}: attach it on the “${esc(doc.title || doc.slug)}” card`);
+  } else if (!h.external || x.ready_class === 'INTERNAL_ONLY') acts = [`<button class="btn small primary" data-modal="studio-review" data-id="${x.id}">View</button>`];
+  else if (x.status === 'DRAFT') acts = [x.company_id ? `<button class="btn small primary" data-open="company" data-id="${x.company_id}">Continue</button>` : '', preview()];
+  else if (x.status === 'FOR_REVIEW') acts = [`<button class="btn small primary" data-modal="studio-review" data-id="${x.id}">Review</button>`, preview()];
+  else if (s.verified) acts = [preview(), draft('Open Gmail & send', true)];
+  else if (x.ready_class === 'READY_FOR_ATTACHMENT') {
+    acts = [preview(), s.pending ? '<button class="btn small primary" disabled>Attaching… checking Gmail</button>'
+      : `<button class="btn small primary" data-studio-attach="${x.id}">${s.later ? 'Attach now' : `Attach to ${esc(coShort(x.company))} email`}</button>`, draft(s.later ? 'Open draft' : 'Open Gmail draft')];
+    if (pdf && !pdf.stored && !s.pending) notes.push(`First time only: HQ asks you to choose ${esc(pdf.file_name)}`);
+  } else acts = [preview(), draft('Open Gmail draft')];
+  if (s.later) notes.unshift(`<span class="pill warn">Scheduled: ${esc(dayMonth(d.send_after))}</span>`);
+  if (s.verified && !s.sent && !h.email) notes.push(`<span class="ok-text">Attached and checked in Gmail${s.a.verified_at ? ` · ${esc(shortDay(s.a.verified_at))}` : ''}</span>`);
+  if (s.failed && !h.email) notes.push(`<span class="bad-text">Not attached: ${esc(studioWhy(s.a))}</span>`);
+  if (h.external && !h.email && !d && !s.sent && x.status === 'APPROVED') notes.push('No Gmail draft recorded yet');
+  const step = (label, ok) => `<span class="${ok ? 'done' : 'todo'}">${ok ? '✓' : '○'} ${label}</span>`;
+  const chain = h.external && !h.email && (pdf || d) && x.status !== 'SUPERSEDED' && x.ready_class !== 'SUPERSEDED'
+    ? `<div class="hchain">${step(pdf?.stored ? 'PDF on file' : 'PDF', !!pdf?.stored)}${step('Gmail draft', !!d)}${step('Attached', s.verified)}${step('Sent', s.sent || !!d?.sent_at)}</div>` : '';
+  const to = toLine(d);
+  return `${chain}${to && !s.sent ? `<div class="sd-m faint">${esc(to)}</div>` : ''}<div class="sd-acts">${acts.filter(Boolean).join('')}</div>${notes.length ? `<div class="sd-m">${notes.join(' · ')}</div>` : ''}`;
+}
 function studioDoc(x) {
-  return `<div class="sd"><div class="sd-t">${esc(x.title || x.slug)}</div>
+  return `<div class="sd" data-sd="${esc(x.id || '')}"><div class="sd-t">${esc(x.title || x.slug)}</div>
     <div class="sd-m">${coLink(x.company_id, x.company)}</div>
     <div class="sd-m">${esc(DOC_TYPE[x.doc_type] || x.doc_type || '')}${x.level ? ` · Level ${esc(x.level)}` : ''}${x.version > 1 ? ` · v${esc(x.version)}` : ''} · <span class="faint">${esc(shortDay(x.sent_at || x.approved_at || x.created_at))}</span></div>
-    ${x.ready_class && !x.sent_at ? `<div class="sd-m">${readyPill(x.ready_class)}${x.ready_reason && x.ready_class !== 'SUPERSEDED' ? ` <span class="faint">${esc(x.ready_reason)}</span>` : ''}</div>` : x.hold_reason ? `<div class="sd-m warn-text">${esc(x.hold_reason)}</div>` : ''}</div>`;
+    ${x.ready_class && !x.sent_at ? `<div class="sd-m">${readyPill(x.ready_class)}${x.ready_reason && x.ready_class !== 'SUPERSEDED' ? ` <span class="faint">${esc(x.ready_reason)}</span>` : ''}</div>` : x.hold_reason ? `<div class="sd-m warn-text">${esc(x.hold_reason)}</div>` : ''}
+    ${studioActs(x)}</div>`;
+}
+// The approved PDF, checked in the browser against the record (exact SHA-256, or the render-proof fingerprint that ignores the
+// renderer's timestamps, and the size) before it is uploaded; Supabase checks it again, and workflow 26 checks it a third time.
+async function pdfPrints(buf) {
+  const hex = async (b) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', b))].map((v) => v.toString(16).padStart(2, '0')).join('');
+  let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  const t = s.replace(/\(D:\d{14}[^)]*\)/g, '(D:)'); const out = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) out[i] = t.charCodeAt(i);
+  return { sha256: await hex(buf), fingerprint: await hex(out), bytes: buf.length };
+}
+const pickPdf = () => new Promise((resolve) => {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'application/pdf,.pdf';
+  i.addEventListener('change', () => resolve(i.files?.[0] || null)); i.addEventListener('cancel', () => resolve(null)); i.click();
+});
+const mbOf = (n) => `${(Number(n) / 1048576).toFixed(1)} MB`;
+async function studioStorePdf(x) {
+  const pdf = x.handoff.pdf; const file = await pickPdf(); if (!file) return false;
+  const p = await pdfPrints(new Uint8Array(await file.arrayBuffer()));
+  if (p.bytes !== Number(pdf.bytes) || !(p.sha256 === pdf.sha256 || p.fingerprint === pdf.fingerprint)) {
+    state.notice = { err: true, text: `That is not the approved PDF for this card. Choose “${pdf.file_name}” (${mbOf(pdf.bytes)}). Nothing was uploaded or attached.` }; render(); return false; }
+  state.notice = { err: false, text: `Checked: this is the approved ${pdf.file_name}. Saving it to the Studio…` }; render();
+  const up = await sb.storage.from('studio-pdfs').upload(pdf.path, file, { upsert: true, contentType: 'application/pdf' });
+  if (up.error) { state.notice = { err: true, text: `The PDF could not be saved: ${friendly(up.error.message)} Nothing was attached.` }; render(); return false; }
+  const { data, error } = await sb.rpc('hq_studio_pdf_stored', { p_slug: x.slug, p_version: x.version, p_sha256: p.sha256, p_fingerprint: p.fingerprint, p_bytes: p.bytes });
+  if (error || data?.ok === false) { state.notice = { err: true, text: error ? friendly(error.message) : explain(data) }; render(); return false; }
+  await readKey('studio'); render(); return true;
+}
+// A short-lived private link (10 minutes) to the stored PDF. The tab is opened on the click itself so no pop-up blocker stops it.
+async function studioOpenPdf(x, w) {
+  const { data, error } = await sb.storage.from('studio-pdfs').createSignedUrl(x.handoff.pdf.path, 600);
+  if (error || !data?.signedUrl) { if (w) w.close(); state.notice = { err: true, text: `The PDF could not be opened: ${friendly(error?.message || 'no link was returned')}` }; render(); return; }
+  if (w) { w.opener = null; w.location.href = data.signedUrl; return; }
+  const v = window.open(data.signedUrl, '_blank'); if (v) { v.opener = null; return; }
+  state.notice = { err: false, text: `${x.handoff.pdf.file_name} is on file.`, href: data.signedUrl, label: 'Open the PDF' }; render();
+}
+async function studioPreview(id) {
+  const x = studioById(id); if (!x?.handoff?.pdf) return;
+  if (x.handoff.pdf.stored) return studioOpenPdf(x, window.open('', '_blank'));
+  if (await studioStorePdf(x)) studioOpenPdf(studioById(id) || x, null);
+}
+async function studioAttach(id) {
+  const x = studioById(id); if (!x || state.busy[`att:${id}`]) return;
+  state.busy[`att:${id}`] = true; state.notice = null;
+  try {
+    if (x.handoff?.pdf && !x.handoff.pdf.stored && !(await studioStorePdf(x))) return;
+    const { data, error } = await sb.rpc('hq_studio_attach', { p_slug: x.slug, p_version: x.version });
+    if (error) { state.notice = { err: true, text: friendly(error.message) }; return; }
+    if (data?.ok === false) { state.notice = { err: true, text: explain(data) }; return; }
+    const to = toLine(x.handoff?.draft);
+    state.notice = data?.already ? { err: false, text: 'Already attached and checked in Gmail: press Open Gmail & send.' }
+      : { err: false, text: `Attaching ${x.handoff?.pdf?.file_name || 'the PDF'} to its Gmail draft${to ? ` (${to.toLowerCase()})` : ''}. Workflow 26 adds it, re-reads Gmail and checks it byte for byte; READY TO SEND only after that. Nothing is sent.` };
+    if (!data?.already) state.studioWatch = { id, until: Date.now() + 180000 };
+    await readKey('studio');
+  } finally { state.busy[`att:${id}`] = false; render(); }
+}
+// While an attachment is in flight the card re-reads the Studio every 5 seconds until Gmail has been checked (or 3 minutes pass).
+async function studioWatchTick() {
+  const w = state.studioWatch; if (!w || state.busy.studio) return;
+  await readKey('studio'); const x = studioById(w.id); const s = x && studioState(x);
+  if (s && s.pending && Date.now() < w.until) { render(); return; }
+  state.studioWatch = null;
+  if (s?.verified) state.notice = { err: false, text: `Attached and checked in Gmail: ${x.handoff.pdf?.file_name || 'the PDF'} is on the draft, byte for byte. READY TO SEND: press Open Gmail & send, then Send in Gmail.` };
+  else if (s?.failed) state.notice = { err: true, text: `Not attached: ${studioWhy(s.a)}` };
+  else if (s?.pending) state.notice = { err: true, text: 'No answer from Gmail yet. Refresh in a minute; nothing was sent.' };
+  load(true, 'desk'); render();
 }
 function studioCol(key, label, S) {
   const C = S.columns || {}; const all = state.studioAll[key];
@@ -4378,7 +4528,7 @@ function studioCol(key, label, S) {
         <div class="sd-m">${coLink(r.company_id, r.company)}</div>${r.note ? `<div class="sd-m faint">${esc(r.note)}</div>` : ''}
         <div class="sd-m faint">Level ${esc(r.level)} · ${esc(shortDay(r.created_at))} <button class="linkish" data-studio-cancel="${r.id}">Cancel</button></div></div>`),
       ...warm.map((w) => `<div class="sd warm"><div class="sd-t">${coLink(w.company_id, w.company)}</div><div class="sd-m">${esc(w.next_output || '')}</div>
-        <div class="sd-m faint">Warm since ${esc(shortDay(w.warmed_at))} <button class="linkish" data-modal="studio-new" data-type="${Number(w.earned_level) >= 3 ? 'BRIEF' : 'ONE_PAGE_CONCEPT'}" data-company="${w.company_id}">Create ${Number(w.earned_level) >= 3 ? 'brief' : 'concept'}</button></div></div>`)];
+        <div class="sd-m faint">Warm since ${esc(shortDay(w.warmed_at))}</div><div class="sd-acts"><button class="btn small primary" data-modal="studio-new" data-type="${Number(w.earned_level) >= 3 ? 'BRIEF' : 'ONE_PAGE_CONCEPT'}" data-company="${w.company_id}">Create ${Number(w.earned_level) >= 3 ? 'brief' : 'concept'}</button></div></div>`)];
   } else if (key === 'SUPERSEDED') {
     count = Number(C.SUPERSEDED?.count || 0); items = (C.SUPERSEDED?.recent || []).map(studioDoc);
     if (count > items.length) extra = `<div class="sd-m faint">${count - items.length} older versions kept</div>`;
@@ -4388,12 +4538,14 @@ function studioCol(key, label, S) {
     ${shown.join('') || `<div class="sd-m faint kempty">${key === 'SENT' ? 'Nothing sent yet. You send; Studio never does.' : 'Empty'}</div>`}
     ${items.length > 6 ? `<button class="linkish" data-studio-all="${key}">${all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}${extra}</div>`;
 }
-// Readiness across the latest version of every document: what Adam could send now, and why the rest waits.
+// Readiness across the latest version of every document (the documents, not their cover emails): READY FOR ATTACHMENT and READY
+// TO SEND are counted apart (21 Oct): a document is ready to send only once its PDF is verified on its Gmail draft.
 function studioReadyLine() {
-  const docs = Object.values(state.studio?.columns || {}).flatMap((c) => (Array.isArray(c) ? c : c?.recent || []));
-  const n = Object.fromEntries(Object.keys(READY_CLASS).map((k) => [k, docs.filter((d) => d.ready_class === k && !d.sent_at).length]));
-  const ready = studioReady().length;
-  return `<div class="pills mt6"><span class="small"><b>${n0(ready)}</b> ready to send now</span> ${['NEEDS_UPDATE', 'HOLD', 'INTERNAL_ONLY'].map((k) => (n[k] ? `${readyPill(k)} <span class="small">${n0(n[k])}</span>` : '')).join(' ')}</div>`;
+  const docs = studioDocs().filter((d) => !d.sent_at && d.stage !== 'email');
+  // Ready for attachment means approved and waiting only for its PDF to go onto the draft; one still in review is not counted.
+  const n = Object.fromEntries(Object.keys(READY_CLASS).map((k) => [k, docs.filter((d) => d.ready_class === k && (k !== 'READY_FOR_ATTACHMENT' || d.status === 'APPROVED')).length]));
+  return `<div class="pills mt6 sready"><span class="small"><b>${n0(n.READY_FOR_ATTACHMENT)}</b> ready for attachment</span><span class="small"><b>${n0(n.READY_TO_SEND)}</b> ready to send</span>
+    ${['NEEDS_UPDATE', 'HOLD', 'INTERNAL_ONLY'].map((k) => (n[k] ? `${readyPill(k)} <span class="small">${n0(n[k])}</span>` : '')).join(' ')}</div>`;
 }
 function viewStudio() {
   const S = state.studio; if (!S) { loadV3('studio', 'hq_studio'); return head('Studio') + waitFor('studio', 'the Studio'); }
@@ -4435,6 +4587,31 @@ function studioRoleModal(m) {
   } else body = `${list('Current work', t.current, 'Nothing in progress.')}${t.last ? `<h6 class="mt8">Last output</h6>${row(t.last)}` : ''}`;
   return `<div class="modal-bg"><div class="modal wide"><h3>${esc(t.name || 'Studio')}</h3><p class="small muted">${esc(t.does || '')}</p>${body}
     <div class="btn-row mt8"><button class="btn primary" data-go="studio">Open Studio</button><button class="btn ghost" data-close>Close</button></div></div></div>`;
+}
+// Review on the card: the document, its PDF and why it is where it is; Approve or Request changes (a note). Never sends.
+function studioReviewModal(m) {
+  const x = studioById(m.id) || {}; const s = studioState(x); const noun = STUDIO_NOUN[x.doc_type] || 'PDF';
+  const canReview = x.status === 'FOR_REVIEW' && s.h.external && !s.h.email;
+  return `<div class="modal-bg"><div class="modal"><h3>${esc(x.title || x.slug || 'Studio document')}</h3>
+    <p class="small muted">${esc(x.company || '')} · ${esc(DOC_TYPE[x.doc_type] || x.doc_type || '')}${x.version ? ` v${esc(x.version)}` : ''}${x.level ? ` · Level ${esc(x.level)}` : ''}</p>
+    ${x.ready_class ? `<p class="small">${readyPill(x.ready_class)} ${esc(x.ready_reason || '')}</p>` : ''}${x.hold_reason ? `<p class="small warn-text">${esc(x.hold_reason)}</p>` : ''}
+    <div class="btn-row">${s.h.pdf ? `<button class="btn" data-studio-preview="${esc(x.id)}">Preview ${noun}</button>` : '<span class="small faint">No PDF rendered for this one yet.</span>'}
+      ${x.company_id ? `<button class="btn ghost" data-open="company" data-id="${esc(x.company_id)}" data-close>Open the relationship</button>` : ''}</div>
+    ${canReview ? `${area('What should change (only for Request changes)', 'sr-note', '', 'rows="3" maxlength="600"')}
+      <p class="small muted">Approve records your approval; nothing is sent. ${x.ready_class === 'HOLD' ? 'It stays held until the relationship has earned this level.' : 'The card then shows Attach to email.'}</p>
+      <div class="btn-row"><button class="btn primary" id="m-ok">Approve</button><button class="btn" id="sr-changes">Request changes</button><button class="btn" data-close>Cancel</button></div>`
+      : '<div class="btn-row"><button class="btn" data-close>Close</button></div>'}</div></div>`;
+}
+// View history: every Studio document for this relationship (versions, approvals, what was sent), newest first.
+function studioHistoryModal(m) {
+  const seen = new Set(); const docs = studioDocs().filter((d) => d.company_id === m.company && !seen.has(d.id) && seen.add(d.id))
+    .sort((a, b) => String(b.sent_at || b.created_at || '').localeCompare(String(a.sent_at || a.created_at || '')));
+  const name = docs.find((d) => d.company)?.company || company(m.company)?.name || 'This relationship';
+  const row = (d) => { const s = studioState(d); return `<div class="adv-row"><b>${esc(d.title || d.slug || 'Sent')}</b> <span class="faint">· ${esc(DOC_TYPE[d.doc_type] || (d.doc_type ? d.doc_type : 'Output'))}${d.version ? ` v${esc(d.version)}` : ''}</span>
+    ${pill(sentence(String(d.status || '').replace(/_/g, ' ').toLowerCase()), d.status === 'SENT' ? 'ok' : '')} ${d.sent_at || d.ready_class === d.status ? '' : readyPill(d.ready_class)} <span class="faint">${esc(shortDay(d.sent_at || d.approved_at || d.created_at))}</span>
+    ${s.h.pdf?.stored ? `<button class="linkish" data-studio-preview="${esc(d.id)}">PDF</button>` : ''}${s.d?.thread_url ? ` <a class="small" href="${esc(s.d.thread_url)}" target="_blank" rel="noopener noreferrer">Gmail thread</a>` : ''}</div>`; };
+  return `<div class="modal-bg"><div class="modal wide"><h3>${esc(name)} · Studio history</h3>${docs.map(row).join('') || '<div class="adv-row faint">No Studio document recorded.</div>'}
+    <div class="btn-row mt8">${m.company ? `<button class="btn primary" data-open="company" data-id="${esc(m.company)}" data-close>Open the relationship</button>` : ''}<button class="btn ghost" data-close>Close</button></div></div></div>`;
 }
 // Companies Adam can request Studio work for: the CRM directory plus the warm queue and mission accounts (deduplicated by id).
 function studioCompanies() {
@@ -4526,6 +4703,15 @@ function bindV3(on) {
   on('[data-studio-cancel]', 'click', async (b, e) => { e.stopPropagation(); await call('hq_studio_request_action', { p_id: b.dataset.studioCancel, p_action: 'CANCEL' }, 'Request cancelled. It is kept in the history.'); loadV3('studio', 'hq_studio', {}, true); });
   on('[data-mission-all]', 'click', () => { state.missionAll = !state.missionAll; render(); });
   on('[data-studio-all]', 'click', (b) => { state.studioAll[b.dataset.studioAll] = !state.studioAll[b.dataset.studioAll]; render(); });
+  on('[data-studio-preview]', 'click', (b, e) => { e.stopPropagation(); studioPreview(b.dataset.studioPreview); });
+  on('[data-studio-attach]', 'click', (b, e) => { e.stopPropagation(); b.disabled = true; studioAttach(b.dataset.studioAttach); });
+  $('#sr-changes')?.addEventListener('click', async () => {
+    const x = studioById(state.modal?.id); const note = val('sr-note'); const el = $('#sr-note');
+    if (!note) { el?.setCustomValidity('Write what should change.'); el?.reportValidity(); el?.addEventListener('input', () => el.setCustomValidity(''), { once: true }); return; }
+    if (!x) return; state.modal = null;
+    await call('hq_studio_document_action', { p_slug: x.slug, p_version: x.version, p_action: 'CHANGES', p_note: note }, 'Changes requested. The note is on the document and the Studio revises it at the next daily check. Nothing was sent.');
+    loadV3('studio', 'hq_studio', {}, true);
+  });
   on('[data-club-add]', 'click', async (b) => { await call('hq_club_person', { p_contact: b.dataset.contact, p_role: b.dataset.clubAdd, p_status: 'PROSPECT', p_note: null }, 'Added to the club structure. Nothing was sent.'); loadV3('club', 'hq_club', {}, true); });
 }
 
@@ -4555,6 +4741,7 @@ setInterval(() => {
   if (state.updateReady && !state.inflight && !document.querySelector('textarea:focus, input:focus')) { location.reload(); return; }
   const tick = Math.floor(Date.now() / 5000);
   if (tick % 120 === 60) checkVersion();
+  if (state.studioWatch) { studioWatchTick(); return; }
   if (Date.now() < state.pollUntil) { if (tick % 3 === 0) load(true, 'desk'); return; }
   if (tick % 120 === 0) load(true, 'full'); else if (tick % 24 === 0) load(true, 'light');
 }, 5000);
