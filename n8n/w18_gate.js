@@ -87,6 +87,21 @@ function evidenceCheck(it, m) {
   });
   return bad;
 }
+// Timing (26 Oct 2026): a window that has already started or passed is never offered (sent on 23 Oct: "a shoot in
+// October 2026 or earlier", "member trips scheduled for October 2026"), and "recently" never describes a year that is over.
+var MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+function staleTiming(low, now) {
+  var cur = now.getFullYear() * 12 + now.getMonth(), m, out = [];
+  var ahead = /\b(scheduled for|planned for|for|by|before|until|ahead of|in time for|(?:shoot|trip|trips|visit|event|programme|production|wedding|retreat|stay)s? in)\s+(?:the\s+|early\s+|late\s+|mid-?\s*)?(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d\d)\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d\d)\s+or earlier\b/g;
+  while ((m = ahead.exec(low))) {
+    if (+(m[3] || m[5]) * 12 + MONTHS.indexOf(m[2] || m[4]) <= cur) out.push('"' + m[0] + '" has started or passed; offer no date or a later one from EVIDENCE');
+  }
+  var recent = /\brecent(?:ly)?\b[^.?!]{0,80}?\b(20\d\d)\b/g;
+  while ((m = recent.exec(low))) {
+    if (+m[1] < now.getFullYear()) out.push('"' + m[0] + '" is not recent; drop "recently" or the old fact');
+  }
+  return out.join('; ');
+}
 function gate(it, d) {
   var m = d.message || '', low = m.toLowerCase().replace(/[’]/g, "'"), issues = [];
   if (!m) { issues.push('EMPTY'); return { issues: issues, evidence_terms: [], unsupported: [] }; }
@@ -107,6 +122,8 @@ function gate(it, d) {
   if (it.channel === 'LINKEDIN' && (m.length < 200 || m.length > 300)) issues.push('LENGTH(' + m.length + ' chars; LinkedIn 220-280)');
   if (it.channel === 'INSTAGRAM' && (m.length < 120 || m.length > 420)) issues.push('LENGTH(' + m.length + ' chars)');
   if (it.channel === 'EMAIL' && (!d.subject || d.subject.length > 60)) issues.push('SUBJECT');
+  var stale = staleTiming(low, new Date());
+  if (stale) issues.push('PAST_TIMING: ' + stale);
   var unsupported = evidenceCheck(it, m);
   if (unsupported.length) issues.push('UNSUPPORTED_TERMS: ' + unsupported.slice(0, 6).join(', '));
   var nameT = tokens(it.company).concat(tokens(it.first_name), tokens(it.last_name));
