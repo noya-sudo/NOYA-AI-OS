@@ -269,11 +269,23 @@ declare src text := pg_get_functiondef('public.contact_email_route(uuid)'::regpr
   end if;
   -- 2 a verified department inbox for their attention$a$;
   a2 text := $a$        v_dom text; v_dom_set boolean := false;$a$;
-  b2 text := $a$        v_dom text; v_dom_set boolean := false; v_pp public_profiles%rowtype;$a$;
+  b2 text := $a$        v_dom text; v_dom_set boolean := false; v_pp public_profiles%rowtype; v_ig_inbox uuid;$a$;
+  -- 4b an inbox published on the company's own verified Instagram (29 Oct, Tuxedo Society): usable for the attention of the named
+  -- decision maker even when its email domain differs from the website on record (the website is kept until verified separately)
+  a3 text := $a$  -- 5 the full email research checklist comes before any fallback$a$;
+  b3 text := $a$  -- 4b an inbox the company publishes on its own verified Instagram profile, for the attention of the named decision maker
+  select o.contact_id into v_ig_inbox from email_official_inboxes o join contacts i on i.id = o.contact_id
+   where o.company_id = k.company_id and o.source_domain = 'instagram.com' and o.revoked_at is null and lower(btrim(i.email)) = o.email
+     and not coalesce(i.do_not_contact, false)
+   order by o.found_at desc limit 1;
+  if v_ig_inbox is not null and v_name is not null and official_inbox_usable(v_ig_inbox, k.id) then
+    return official_inbox_route(v_ig_inbox, v_name, true);
+  end if;
+  -- 5 the full email research checklist comes before any fallback$a$;
 begin
   if strpos(src, 'PUBLIC_NAMED_EMAIL') > 0 then return; end if;
-  if strpos(src, a1) = 0 or strpos(src, a2) = 0 then raise exception 'contact_email_route changed: anchors not found'; end if;
-  execute replace(replace(src, a1, b1), a2, b2);
+  if strpos(src, a1) = 0 or strpos(src, a2) = 0 or strpos(src, a3) = 0 then raise exception 'contact_email_route changed: anchors not found'; end if;
+  execute replace(replace(replace(src, a1, b1), a2, b2), a3, b3);
 end $patch$;
 
 -- The official inbox label says where it was published.
