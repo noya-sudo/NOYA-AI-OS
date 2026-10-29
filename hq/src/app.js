@@ -92,7 +92,7 @@ const state = {
   rel: null, relF: { tab: 'REVIEW', q: '', i: 0 }, oneByOne: (() => { try { return !!localStorage.getItem('hq.oneByOne'); } catch { return false; } })(), oIdx: 0, outreachTab: 'EMAIL REVIEW', pipeView: 'table', pipeF: { stage: '', vertical: '', market: '', q: '', stale: false },
   contactF: { q: '', email: '' }, companyF: { q: '', vertical: '', market: '' }, netF: { q: '', only: 'known' }, liHist: {},
   taskFilter: { when: 'all', dept: '', prio: '', owner: '', status: '' }, pollUntil: 0,
-  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, studioWatch: null, nextMove: {}, reopen: null, fu: {}, fuBoard: null,
+  cmd: null, health: null, integ: null, scWin: 'd7', studio: null, studioAll: {}, studioWatch: null, nextMove: {}, leadCard: {}, reopen: null, fu: {}, fuBoard: null,
   agents: null, agentsLoading: false, agentDetail: {}, agentSec: {}, agentKey: null, emailF: { s: 'ALL', v: '' }, emailN: 30, emailOpen: null, gapOpen: null, radarAg: '', feedAg: '',
 };
 
@@ -1257,6 +1257,9 @@ const LI_OPTIONS = [
 const LI_REL = { ACTIVE: ['Active', 'ok'], WARM: ['Warm', 'ok'], DORMANT: ['Dormant', 'warn'], REPLIED_BEFORE: ['Replied before', ''], MESSAGED_BEFORE: ['Messaged before', ''],
   CONNECTED: ['Connected', ''], DO_NOT_CONTACT: ['Do not contact', 'bad'] };
 const liRel = (s) => (s ? pill(...(LI_REL[s] || [sentence(String(s).replace(/_/g, ' ')), ''])) : '');
+// LinkedIn requests from Invitations.csv (29 Oct): a pending request Adam sent is never sent again; one he received is a warm route.
+const LI_INVITE = { SENT_PENDING: ['Request pending', 'warn'], RECEIVED_PENDING: ['Request received', 'gold'] };
+const liInvite = (s) => (s && LI_INVITE[s] ? pill(...LI_INVITE[s]) : '');
 const liRank = (s) => ['ACTIVE', 'WARM', 'DORMANT', 'REPLIED_BEFORE', 'MESSAGED_BEFORE', 'CONNECTED'].indexOf(s) + 1 || 9;
 function liArchivePanel() {
   const A = state.liArch;
@@ -1324,7 +1327,7 @@ function viewLinkedin() {
         <div class="tbl-wrap"><table><thead><tr><th>Person</th><th>Company</th><th>LinkedIn history</th><th>Status</th><th>Next follow-up</th></tr></thead><tbody>
         ${rows.slice(0, 200).map((c) => `<tr class="clickable" data-open="connection" data-id="${c.id}"><td>${esc(c.name || '—')}<div class="muted small">${esc(c.position || '')}</div>${(c.evidence || []).length ? `<div class="small evidence">${(c.evidence || []).map((e) => `<div>✓ ${esc(e)}</div>`).join('')}</div>` : ''}${c.review_reason ? `<div class="small warn-text">${esc(c.review_reason)}</div>` : ''}</td>
           <td>${esc(c.company || '—')}${c.active_opps ? ` ${pill(`${c.active_opps} active opp${c.active_opps > 1 ? 's' : ''}`, 'info')}` : ''}${c.email_history ? ` ${pill('emailed before', 'ok')}` : ''}${c.matched_contact_id ? ` ${pill('in CRM')}` : ''}</td>
-          <td class="small">${c.li_state ? `${liRel(c.li_state)}${c.li_last_at ? `<div class="faint">last ${esc(fmtDay(c.li_last_at))}</div>` : ''}` : '<span class="faint">—</span>'}</td>
+          <td class="small">${c.li_state || c.li_invite ? `${liRel(c.li_state)}${liInvite(c.li_invite)}${c.li_last_at ? `<div class="faint">last ${esc(fmtDay(c.li_last_at))}</div>` : ''}` : `<span class="faint">${c.connected === false ? 'Not connected' : '—'}</span>`}</td>
           <td>${pill(sentence(c.status.replace(/_/g, ' ')))}${c.how_we_know ? `<div class="small faint">${esc(c.how_we_know)}</div>` : ''}</td>
           <td class="small">${esc(c.next_follow_up_at ? fmtDay(c.next_follow_up_at) : '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No connections match.</td></tr>'}</tbody></table></div>
         ${rows.length > 200 ? `<p class="small faint">Showing 200 of ${rows.length}. Narrow with the filter.</p>` : ''}`
@@ -1588,6 +1591,38 @@ async function loadNextMove(kind, id) {
   state.busy[`nm:${key}`] = false; state.nextMove[key] = error ? { error: error.message } : data;
   render();
 }
+// WHY THIS LEAD (29 Oct): the evidence behind a recommended account, from hq_lead_card. Read-only; no technical IDs.
+const LC_CHANNEL = { EMAIL_FIRST: 'Email first', LINKEDIN_FIRST: 'LinkedIn first (email exhausted)', WARM_RECONNECT: 'Warm reconnect: use the existing relationship',
+  INTRODUCTION_ROUTE: 'Ask for an introduction', HOLD: 'Hold' };
+const LC_ASSET = { NONE: 'Nothing attached: a plain founder email with one idea', NOYA_BROCHURE: 'NOYA brochure', ONE_PAGE: 'One tailored page',
+  BRIEF: 'Tailored 2-3 page brief', PROPOSAL: 'Proposal', WEDDING_CONCEPT: 'Wedding concept', STUDIO_DOCUMENT: 'Approved Studio document' };
+async function loadLeadCard(id) {
+  if (!id || state.busy[`lc:${id}`] || state.leadCard[id]) return;
+  state.busy[`lc:${id}`] = true;
+  const { data, error } = await sb.rpc('hq_lead_card', { p_opp: id });
+  state.busy[`lc:${id}`] = false; state.leadCard[id] = error ? { error: error.message } : data;
+  render();
+}
+function leadCardPanel(id) {
+  if (!id) return '';
+  const L = state.leadCard[id];
+  const shell = (inner) => `<section class="lc"><div class="nm-h"><span class="label">Why this lead</span></div>${inner}</section>`;
+  if (!L) { loadLeadCard(id); return shell('<p class="muted small">Reading the evidence…</p>'); }
+  if (L.error || L.ok === false) return shell(`<p class="small warn-text">${esc(L.error ? friendly(L.error) : explain(L))}</p>`);
+  const R = L.readiness || {}; const A = L.supporting_asset || {};
+  const row = (k, v) => (v ? `<div class="lc-row"><span class="lc-k">${esc(k)}</span><span class="lc-v">${v}</span></div>` : '');
+  const t = (v) => (v ? esc(v) : '');
+  const missing = (R.missing || []).length ? `<p class="small warn-text">Not ready for outreach: ${esc(R.missing.join('; '))}.</p>` : '<p class="small ok-text">Ready: all seven questions answered.</p>';
+  const asset = `${esc(LC_ASSET[A.asset] || A.asset || '')}${A.title ? ` (${esc(A.title)})` : ''}${A.reason ? ` <span class="faint">· ${esc(A.reason)}</span>` : ''}`;
+  const chan = `${esc(LC_CHANNEL[L.channel] || L.channel || '')}${(L.channel_reasons || []).length ? ` <span class="faint">· ${esc(L.channel_reasons.join('; '))}</span>` : ''}`;
+  return shell(`${missing}
+    ${row('Company', t(L.company))}${row('Person', t(L.person))}${row('Role', t(L.role))}${row('Source', t(L.source))}
+    ${row('Why they qualified', t(L.why_qualified))}${row('Why now', t(L.why_now))}${row('Project idea', t(L.project_idea))}
+    ${row('Channel', chan)}${row('Relationship', t(sentence(String(L.relationship_state || '').replace(/_/g, ' ').toLowerCase())))}
+    ${row('Contact confidence', t(L.contact_confidence))}${row('Email', t(L.email_state))}${row('LinkedIn', t(L.linkedin_state ? sentence(String(L.linkedin_state).replace(/_/g, ' ').toLowerCase()) : ''))}
+    ${L.recommended_message ? `<div class="lc-row"><span class="lc-k">Recommended message${L.message_subject ? ` · ${esc(L.message_subject)}` : ''}</span><pre class="lc-msg">${esc(L.recommended_message)}</pre></div>` : ''}
+    ${row('Supporting asset', asset)}${row('Next action', t(L.next_action))}${row('If they respond', t(L.if_they_respond))}`);
+}
 // The data attributes a next-move button carries: the move when the operator wrote one, otherwise the record it belongs to.
 const nmTarget = (o) => Object.entries(o).filter(([, v]) => v).map(([k, v]) => ` data-nm-${k}="${esc(v)}"`).join('');
 function nextMovePanel(kind, id) {
@@ -1744,6 +1779,7 @@ function renderDrawer(dr) {
     const cq = (state.com?.queue || []).find((x) => x.id === o.id);
     return drawerShell(`<h2>${cq ? scoreBadge(cq.score) + ' ' : ''}${esc(o.company_name)}</h2><div class="pills">${pill(S(o.status))}${f.vertical ? pill(V(f.vertical)) : ''}${pill(`${M(f.origin_market)} → ${M(f.opportunity_market)}`)}${stale(o) ? pill('stale', 'warn') : ''}</div>`, `
       ${nextMovePanel('opp', o.id)}
+      ${leadCardPanel(o.id)}
       <div class="btn-row"><button class="btn small primary" data-modal="stage" data-opp="${o.id}">Change stage</button><button class="btn small" data-modal="meeting" data-opp="${o.id}">Record meeting</button>
         <button class="btn small" data-modal="touch" data-channel="PHONE" data-opp="${o.id}">Log call / message</button><button class="btn small" data-modal="note" data-opp="${o.id}">Add note</button>
         <button class="btn small" data-modal="draft-request" data-channel="LINKEDIN" data-opp="${o.id}">Draft message</button><button class="btn small" data-modal="channel" data-opp="${o.id}">Change channel</button>
@@ -1814,7 +1850,7 @@ function renderDrawer(dr) {
     if (c.li_messages > 0 && !H) loadLinkedInHistory(c.id);
     const hist = !(c.li_messages > 0) ? '' : `<h3>LinkedIn messages</h3><p class="small muted">From your LinkedIn download, read-only, newest first. Check the date before writing: an old conversation is not a live lead.</p>
       ${!H ? '<p class="muted small">Loading…</p>' : H.error ? `<p class="small warn-text">${esc(friendly(H.error))}</p>` : H.map((x) => `<div class="li-msg ${x.out ? 'out' : ''}"><div class="small faint">${esc(fmtDate(x.at))} · ${x.out ? 'You' : esc(x.who || 'They')}${x.group ? ' · group conversation' : ''}${x.title ? ` · ${esc(x.title)}` : ''}</div><div>${esc(x.text || '')}</div></div>`).join('')}`;
-    return drawerShell(`<h2>${esc(c.name || 'Connection')}</h2><div class="pills">${pill(sentence(c.status.replace(/_/g, ' ')))}${c.vertical ? pill(V(c.vertical)) : ''}${liRel(c.li_state)}${c.connected === false ? pill('not a connection') : ''}</div>`, `
+    return drawerShell(`<h2>${esc(c.name || 'Connection')}</h2><div class="pills">${pill(sentence(c.status.replace(/_/g, ' ')))}${c.vertical ? pill(V(c.vertical)) : ''}${liRel(c.li_state)}${liInvite(c.li_invite)}${c.connected === false ? pill('not a connection') : ''}</div>`, `
       <div class="btn-row"><a class="btn small" href="${esc(c.profile_url)}" target="_blank" rel="noopener noreferrer">Open in LinkedIn</a>
         <button class="btn small primary" data-modal="draft-request" data-channel="LINKEDIN" data-conn="${c.id}">Draft message</button>
         <button class="btn small" data-modal="touch" data-channel="LINKEDIN" data-conn="${c.id}">Mark sent</button>
@@ -2446,10 +2482,10 @@ function renderAnyModal(m) {
         <div class="quick"><button class="btn" id="acct-pw">Change password</button><button class="btn danger" id="acct-out">Sign out</button></div>
         <div class="btn-row"><button class="btn" data-close>Close</button></div></div></div>`;
     case 'li-archive': {
-      const C = m.conns; const M = m.msgs;
+      const C = m.conns; const M = m.msgs; const IV = m.invs;
       const left = [C?.skipped && `${C.skipped} without a profile link`, C?.dups && `${C.dups} repeated connections`, M?.drafts && `${M.drafts} unsent drafts`, M?.spam && `${M.spam} spam`,
         M?.bad && `${M.bad} unreadable lines`, M?.dups && `${M.dups} repeated messages`].filter(Boolean);
-      return form('Import your LinkedIn history', `<p>${C ? `<b>${n0(C.rows.length)}</b> connections` : 'No Connections.csv'} · ${M ? `<b>${n0(M.rows.length)}</b> messages in <b>${n0(M.conversations)}</b> conversations${M.first ? ` (${esc(fmtDay(M.first))} to ${esc(fmtDay(M.last))})` : ''}` : 'no messages.csv'}</p>
+      return form('Import your LinkedIn history', `<p>${C ? `<b>${n0(C.rows.length)}</b> connections` : 'No Connections.csv'} · ${M ? `<b>${n0(M.rows.length)}</b> messages in <b>${n0(M.conversations)}</b> conversations${M.first ? ` (${esc(fmtDay(M.first))} to ${esc(fmtDay(M.last))})` : ''}` : 'no messages.csv'}${IV ? ` · <b>${n0(IV.rows.length)}</b> pending requests` : ''}</p>
         ${left.length ? `<p class="small">Left out: ${esc(left.join(', '))}.</p>` : ''}
         ${M && M.rows.length && !M.self_hint ? '<p class="small warn-text">HQ could not tell which profile is yours in the messages. They will be stored, and linked to people once your own profile is clear.</p>' : ''}
         <p class="small muted">Read in your browser. Saved to NOYA's private database: for people, name, company, position, profile link and connected date${C?.rows.some((r) => r.email) ? ' (email only where the person shared it with you)' : ''}; for messages, the date, who wrote to whom and the text (up to 4,000 characters each), as read-only history. Nothing is sent, no CRM person or company is created, and LinkedIn is never contacted. Uploading again adds only what is new.</p>`,
@@ -2484,6 +2520,7 @@ function renderAnyModal(m) {
     case 'studio-role': return studioRoleModal(m);
     case 'studio-review': return studioReviewModal(m);
     case 'studio-history': return studioHistoryModal(m);
+    case 'lead-card': return `<div class="modal-bg"><div class="modal wide"><h3>Why this lead</h3>${leadCardPanel(m.opp)}<div class="btn-row mt8"><button class="btn ghost" data-close>Close</button></div></div></div>`;
     case 'revenue-import': {
       const P = m.preview;
       return `<div class="modal-bg"><div class="modal wide"><h3>Import historical revenue</h3>
@@ -2641,7 +2678,7 @@ async function submitModal() {
       if (r?.ok) { state.notice = { err: false, text: r.company_reused ? 'Opportunity created under the existing company (no duplicate).' : 'Opportunity and company created.' }; openDrawer('opp', r.opportunity_id); }
       return r; }
     case 'li-archive': {
-      state.modal = null; const r = await importLinkedIn(m.conns, m.msgs);
+      state.modal = null; const r = await importLinkedIn(m.conns, m.msgs, m.invs);
       state.netF.only = r.ok && m.msgs?.rows.length ? 'history' : 'known';
       await load(true); return null; }
     case 'work-order': {
@@ -2752,6 +2789,33 @@ function parseMessages(text) {
   return { rows: good, drafts, spam, bad, dups, conversations: convs.size, first: dates[0] || null, last: dates[dates.length - 1] || null,
     self_hint: self && most >= convs.size * 0.6 ? `https://www.linkedin.com/in/${self}` : null };
 }
+// LinkedIn "Invitations.csv": requests still pending, both ways (From, To, Sent At, Message, Direction, inviter / invitee profile URLs).
+// The other person's profile is kept: the invitee for OUTGOING, the inviter for INCOMING.
+function liSentAt(s) {
+  const t = String(s || '').trim(); let m = t.match(/^(\d{4}-\d{2}-\d{2})/); if (m) return m[1];
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/); if (m) return `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+  return liDate(t.replace(/,.*$/, ''));
+}
+function parseInvitations(text) {
+  const rows = parseCsv(String(text).replace(/^\ufeff/, ''));
+  const h = rows.findIndex((r) => r.some((c) => /^direction$/i.test(c.trim())) && r.some((c) => /^sent at$/i.test(c.trim())));
+  if (h < 0) return { error: 'This does not look like LinkedIn\'s Invitations.csv (no "Direction" / "Sent At" header).' };
+  const idx = (n) => rows[h].findIndex((c) => c.trim().toLowerCase() === n);
+  const I = { from: idx('from'), to: idx('to'), at: idx('sent at'), msg: idx('message'), dir: idx('direction'), inviter: idx('inviterprofileurl'), invitee: idx('inviteeprofileurl') };
+  const cell = (r, i) => (i >= 0 ? String(r[i] ?? '').trim() : '');
+  const good = []; let skipped = 0; const seen = new Set();
+  rows.slice(h + 1).forEach((r) => {
+    if (r.every((c) => !String(c).trim())) return;
+    const dir = cell(r, I.dir).toUpperCase(); const out = dir === 'OUTGOING';
+    const slug = liSlug(cell(r, out ? I.invitee : I.inviter)); const name = cell(r, out ? I.to : I.from);
+    if (!slug || !['OUTGOING', 'INCOMING'].includes(dir) || seen.has(slug)) { skipped += 1; return; }
+    seen.add(slug);
+    const parts = name.split(/\s+/);
+    good.push({ direction: dir, url: `https://www.linkedin.com/in/${slug}`, first_name: parts[0] || null, last_name: parts.slice(1).join(' ') || null,
+      sent_at: liSentAt(cell(r, I.at)), message: liText(cell(r, I.msg)).slice(0, 600) || null });
+  });
+  return { rows: good, skipped };
+}
 // LinkedIn's download is a .zip. Only Connections.csv and messages.csv are read from it, in the browser, from the zip's own index.
 async function unzipLinkedIn(buf) {
   const v = new DataView(buf); const u8 = new Uint8Array(buf); const dec = new TextDecoder('utf-8'); let e = -1;
@@ -2763,7 +2827,8 @@ async function unzipLinkedIn(buf) {
     const method = v.getUint16(p + 10, true); const size = v.getUint32(p + 20, true); const nl = v.getUint16(p + 28, true); const off = v.getUint32(p + 42, true);
     const name = dec.decode(u8.subarray(p + 46, p + 46 + nl));
     p += 46 + nl + v.getUint16(p + 30, true) + v.getUint16(p + 32, true);
-    const key = /(^|\/)connections\.csv$/i.test(name) ? 'connections' : /(^|\/)messages\.csv$/i.test(name) ? 'messages' : null;
+    const key = /(^|\/)connections\.csv$/i.test(name) ? 'connections' : /(^|\/)messages\.csv$/i.test(name) ? 'messages'
+      : /(^|\/)invitations\.csv$/i.test(name) ? 'invitations' : null;
     if (!key || out[key] != null) continue;
     const at = off + 30 + v.getUint16(off + 26, true) + v.getUint16(off + 28, true); const data = u8.subarray(at, at + size);
     if (method === 0) out[key] = dec.decode(data);
@@ -2780,20 +2845,22 @@ async function readLinkedInFiles(files) {
       Object.assign(txt, await unzipLinkedIn(await file.arrayBuffer()));
     } else if (file.size > 150 * 1024 * 1024) throw new Error(`${file.name} is larger than 150 MB.`);
     else if (/messages\.csv$/i.test(file.name)) txt.messages = await file.text();
+    else if (/invitations\.csv$/i.test(file.name)) txt.invitations = await file.text();
     else txt.connections = await file.text();
   }
   if (txt.connections == null && txt.messages == null) throw new Error('No Connections.csv or messages.csv found. Choose the LinkedIn download (.zip) or those two files.');
   const conns = txt.connections != null ? parseConnections(txt.connections) : null;
   const msgs = txt.messages != null ? parseMessages(txt.messages) : null;
+  const invs = txt.invitations != null ? parseInvitations(txt.invitations) : null;
   // A file chosen by another name is tried as the other kind before giving up.
-  if (conns?.error && !msgs) { const asM = parseMessages(txt.connections); if (!asM.error) return { conns: null, msgs: asM }; }
+  if (conns?.error && !msgs) { const asM = parseMessages(txt.connections); if (!asM.error) return { conns: null, msgs: asM, invs: invs?.error ? null : invs }; }
   if (conns?.error) throw new Error(conns.error);
   if (msgs?.error) throw new Error(msgs.error);
-  return { conns, msgs };
+  return { conns, msgs, invs: invs?.error ? null : invs };
 }
 // Each call is its own short request (people 500 at a time, messages 400 at a time, then the linking steps), so a large archive never
 // hits the request time limit. A stop is safe: uploading again adds only what is missing.
-async function importLinkedIn(C, M) {
+async function importLinkedIn(C, M, I = null) {
   const say = (text) => { state.notice = { err: false, text }; render(); };
   const rpc = async (fn, args) => { const { data, error } = await sb.rpc(fn, args); if (error || data?.ok === false) throw new Error(error?.message || explain(data)); return data; };
   const st = { file_duplicates: (C?.dups || 0) + (M?.dups || 0), connections_new: 0, connections_updated: 0, connections_skipped: C?.skipped || 0,
@@ -2806,6 +2873,12 @@ async function importLinkedIn(C, M) {
       say(`Importing connections… ${n0(Math.min(i + 500, cr.length))} of ${n0(cr.length)}`);
       const d = await rpc('hq_import_connections', { p_rows: cr.slice(i, i + 500) });
       st.connections_new += d.new ?? 0; st.connections_updated += d.updated ?? 0; st.file_duplicates += d.duplicates ?? 0; st.connections_skipped += d.skipped ?? 0;
+    }
+    const ir = I?.rows || []; stage = 'requests';
+    for (let i = 0; i < ir.length; i += 500) {
+      say(`Importing pending requests… ${n0(Math.min(i + 500, ir.length))} of ${n0(ir.length)}`);
+      // Requests are extra context: if this step fails, connections and messages still import.
+      try { await rpc('hq_import_linkedin_invitations', { p_rows: ir.slice(i, i + 500), p_reset: i === 0 }); } catch { st.requests_skipped = ir.length; break; }
     }
     const mr = M?.rows || []; stage = 'messages';
     for (let i = 0; i < mr.length; i += 400) {
@@ -2965,8 +3038,8 @@ function bind() {
     const files = [...(e.target.files || [])]; if (!files.length) return;
     state.notice = { err: false, text: 'Reading the LinkedIn download in your browser…' }; render();
     try {
-      const { conns, msgs } = await readLinkedInFiles(files);
-      state.notice = null; state.modal = { kind: 'li-archive', conns, msgs }; render();
+      const { conns, msgs, invs } = await readLinkedInFiles(files);
+      state.notice = null; state.modal = { kind: 'li-archive', conns, msgs, invs }; render();
     } catch (err) { state.notice = { err: true, text: friendly(err.message) }; render(); }
   });
 }
@@ -3542,7 +3615,7 @@ function dashActions(d) {
 function dashAdvisor() {
   const A = state.advisor;
   if (!A) return state.errors.advisor ? `<section class="dsec"><header><h2>HQ Advisor</h2></header>${unavailable('advisor')}</section>` : '<section class="dsec advisor"><p class="muted small">HQ Advisor is reading the Directors…</p></section>';
-  const obs = (A.observations || []).slice(0, 5).map((o) => `<li class="adv-obs ${o.kind === 'BOTTLENECK' || o.kind === 'STOP' ? 'bottleneck' : o.kind === 'ATTENTION' || o.kind === 'CORRECTION' ? 'attention' : ''}">
+  const obs = (A.observations || []).slice(0, 6).map((o) => `<li class="adv-obs ${o.kind === 'BOTTLENECK' || o.kind === 'STOP' ? 'bottleneck' : o.kind === 'ATTENTION' || o.kind === 'CORRECTION' ? 'attention' : ''}">
       ${o.title ? `<div class="adv-k">${esc(o.title)}</div>` : ''}
       <div class="adv-s"><span class="adv-l">Situation</span>${esc(o.situation)}</div><div class="adv-m"><span class="adv-l">Meaning</span>${esc(o.meaning)}</div>
       <div class="adv-a"><span class="adv-l">Recommended action</span>${esc(o.action)}</div></li>`).join('');
@@ -4188,7 +4261,7 @@ function viewDesk() {
   let body = '';
   if (t === 'TOP5') {
     const top = (D.top5 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
-      return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 1}</span><span class="small">${esc(p.why)}</span></div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
+      return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 1}</span><span class="small">${esc(p.why)}</span>${x.opportunity_id ? `<button class="btn small ghost" data-modal="lead-card" data-opp="${esc(x.opportunity_id)}">Why this lead</button>` : ''}</div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
     const rest = Math.max(0, c.needs_review.total - (D.top5 || []).length);
     body = `<div class="dlist">${top || '<div class="calm"><div class="calm-t">Nothing strong enough today.</div><div class="t-sub">Fewer is fine: replies, meetings and follow-ups come first.</div></div>'}</div>
       ${rest ? `<p class="src">${plural(rest, 'more item waits', 'more items wait')} under <button class="linkish" data-desk-tab="NEEDS_REVIEW">Needs review</button>. They are not lost; they are simply not today's best five.</p>` : ''}`;

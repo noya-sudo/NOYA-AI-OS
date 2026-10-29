@@ -31,7 +31,15 @@ const READS = {
   hq_outreach_desk: () => F.desk, hq_operations: () => F.operations, hq_club: () => F.club, hq_weekly_review: () => F.weekly, hq_studio: () => STUDIO || F.studio,
   hq_cached: (b) => { const v = SNAP[b?.p_key] || (String(b?.p_key).startsWith('director:') ? { key: b.p_key.slice(9), sections: [] } : null);
     return v ? { ...v, _cache: { built_at: new Date(Date.now() - 120000).toISOString(), age_s: 120 } } : { ok: false, reason: 'UNKNOWN_KEY' }; },
-  hq_cache_status: () => ({ generated_at: new Date().toISOString(), items: [], jobs: [] }), hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
+  hq_cache_status: () => ({ generated_at: new Date().toISOString(), items: [], jobs: [] }),
+  // Why this lead (29 Oct): fictional evidence for one Top 5 opportunity.
+  hq_lead_card: () => ({ ok: true, company: 'Orbit Weddings', person: 'Ana Test', role: 'Founder', source: 'PRESS · https://example.com/orbit',
+    why_qualified: 'Plans multi-day weddings abroad.', why_now: 'Planning 2027 seasons now.', project_idea: 'An Egypt wedding option for their clients',
+    channel: 'EMAIL_FIRST', channel_reasons: ['Email route: verified'], relationship_state: 'COLD', contact_confidence: 'Confirmed from a source',
+    email_state: 'Verified personal address', linkedin_state: null, recommended_message: 'Hi Ana, one idea for Egypt.', message_subject: 'Egypt for your 2027 couples',
+    message_status: 'READY', supporting_asset: { asset: 'NONE', format: 'PLAIN', reason: 'First touch: a plain founder email with one idea; no attachment' },
+    next_action: 'Approve the email', if_they_respond: 'Offer a 20-minute call, then a one-page Egypt wedding outline',
+    readiness: { ready: true, missing: [], answers: {} } }), hq_timeline: () => ({ events: [], notes: [] }), hq_account: () => null,
   // dry-run import: the server's own rules (a row needs client, date, gross, currency, payment status and evidence)
   hq_revenue_import: (b) => {
     const rows = b?.p_rows || []; const valid = []; const errors = [];
@@ -409,6 +417,23 @@ const C = F.command;
   await phone.page.screenshot({ path: 'tests/out/command/studio-handoff-390.png', fullPage: true });
   await phone.browser.close();
   STUDIO = null;
+}
+// 12. Why this lead (29 Oct): every Top 5 item opens its evidence (company, person, source, why now, project, channel, asset,
+// what happens if they respond), with no technical IDs and nothing sent.
+{
+  const { browser, page, errors, calls } = await open({ width: 1440, height: 900 });
+  await page.click('[data-tab="desk"]'); await page.waitForTimeout(200);
+  const tab = page.locator('[data-desk-tab="TOP5"]'); if (await tab.count()) { await tab.first().click(); await page.waitForTimeout(150); }
+  const btns = page.locator('[data-modal="lead-card"]');
+  check('Why this lead: a button on the Top 5 rows', (await btns.count()) >= 1, `${await btns.count()} buttons`);
+  await btns.first().click(); await page.waitForSelector('.modal .lc .lc-row'); await page.waitForTimeout(150);
+  const t = await txt(page, '.modal');
+  check('Why this lead: company, person, source, why now, project, channel, asset and next step', ['Orbit Weddings', 'Ana Test', 'Source', 'Why now', 'Project idea', 'Email first', 'Nothing attached', 'If they respond'].every((w) => t.includes(w)), t.slice(0, 160));
+  check('Why this lead: ready line, and no technical IDs on screen', /Ready: all seven questions answered/.test(t) && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(t));
+  check('Why this lead: one read, nothing written or sent', calls.some((c) => c.fn === 'hq_lead_card') && !calls.some((c) => /send|approve/.test(c.fn)));
+  await page.screenshot({ path: 'tests/out/command/lead-card-1440.png' });
+  check('No browser errors (Why this lead)', errors.length === 0, errors.slice(0, 3).join(' | '));
+  await browser.close();
 }
 server.close();
 const failed = results.filter((r) => !r.ok);

@@ -48,7 +48,11 @@ const allowed = ['hq_dashboard', 'hq_overview', 'hq_directory', 'hq_insight', 'h
   'hq_follow_up', 'hq_follow_up_action', 'hq_follow_up_board',
   // The Studio card handoff (21 Oct): admin-gated review on the card, record a stored PDF, ask workflow 26 to attach it to the
   // document's own recorded draft (it verifies in Gmail before READY TO SEND). Nothing here sends.
-  'hq_studio_document_action', 'hq_studio_pdf_stored', 'hq_studio_attach'];
+  'hq_studio_document_action', 'hq_studio_pdf_stored', 'hq_studio_attach',
+  // Why this lead (29 Oct): admin-gated, read-only evidence for one opportunity.
+  'hq_lead_card',
+  // LinkedIn requests from Adam's own data download (Invitations.csv, 29 Oct): admin-gated import, read-only history.
+  'hq_import_linkedin_invitations'];
 for (const r of writeRpcs) if (!allowed.includes(r)) problems.push(`calls non-allowlisted RPC ${r}`);
 if ([...writeRpcs].some((r) => /send/i.test(r))) problems.push('a send RPC is referenced');
 console.log('RPCs referenced by the client:', [...writeRpcs].sort().join(', '));

@@ -1946,3 +1946,66 @@ the 20261021150000 checks are unchanged. Migration `20261021170000_studio_card_h
 - Tests: `hq/tests/ui_command.mjs` §11 covers every state, preview, the wrong-file refusal, store → attach → verified, a failed step,
   review and history, with nothing sent (95/95). `security-scan.mjs` allowlists the three RPCs and allows Storage access only to
   `studio-pdfs`.
+
+## Final commercial intelligence pass (29 Oct 2026) — then operate
+
+Adam, 29 Oct: no new CRM, page, agent or architecture layer. Supabase / NOYA HQ stays the single source of truth; nothing cold
+sends automatically; Adam is the only external sender. The flow: DISCOVER → RIGHT PERSON → WHY NOW → EXISTING RELATIONSHIP →
+CHANNEL → OUTREACH → ADAM APPROVES → SEND → FOLLOW UP → MEETING → STUDIO → PROPOSAL → PROJECT → REVENUE. After this pass, product
+work stops except genuine production defects.
+
+Migration `20261029090000_commercial_intelligence_wrapup.sql` (live, applied in four parts on 29 Oct); `20261029100000_linkedin_invitations.sql`
+(written; applied once Adam approves the database step).
+
+- **Tool capability registry** (`tool_capabilities`, internal, RLS on, no client grants): for each capability (company discovery,
+  people, email finding and verification, web, social signals, Gmail, LinkedIn history / connections / requests / messages,
+  calendar, Studio, images, PDF, attachments) the approved tools, their status (AVAILABLE / LIMITED / NOT_CONNECTED /
+  PENDING_APPROVAL / NOT_PERMITTED), strength, cost and rule. `capability_tool()` names today's strongest; `capability_advice()`
+  lists a stronger tool that is not connected. The Advisor proposes an adoption; it never changes a commercial workflow by itself.
+  No technical names reach CEO screens. Clay is registered NOT_CONNECTED (strongest people source once connected; used selectively:
+  only after company and role qualify, at most two decision makers per company, source recorded, never a duplicate CRM person).
+  Hunter is used only when verification is needed. The LinkedIn API is NOT_PERMITTED (see `docs/LINKEDIN_OFFICIAL_ACCESS.md`).
+- **Commercial class** (`companies.commercial_class`): BUYER / DISTRIBUTION_PARTNER / LOCAL_PARTNER / SUPPLIER / TALENT_AMPLIFIER
+  / COMPETITOR / NOT_RELEVANT. `outreach_spend_ok()` lets a cold first touch, a Hunter verification or a Finder lookup spend only on
+  buyers and distribution partners (an unclassified account counts as a buyer, as before) and never on a sprint HOLD account. It is
+  in `commercial_director_plan`, `email_finder_queue` and `email_verification_queue`. Credit discipline: company first, then the
+  person, then the contact details.
+- **Project generation, not vanity**: `destination_egypt_score` adds the researched audience score (a club of 5,000 members who
+  travel together beats a creator with a million followers).
+- **Seven questions** (`lead_readiness`): who, why they matter, right person, why Egypt / NOYA, why now, the exact project, the best
+  channel. A lead with a missing answer is not ready for outreach and the card says which answer is missing.
+- **Warm-route check** (`warm_route_check`) before every first message: relationship state, Gmail history, LinkedIn connection and
+  message history, pending requests both ways, completed meetings, other people at the company who wrote, relationship edges and
+  the email route. Outcome: WARM RECONNECT / EMAIL FIRST / LINKEDIN FIRST / INTRODUCTION ROUTE / HOLD, with the reasons.
+- **Outreach ladder and assets** (`asset_recommendation`): a cold first touch is plain text, founder-led, 70–130 words, nothing
+  attached. A one-page concept, brief, wedding concept, Studio document or proposal is recommended by stage, and stays behind the
+  existing attachment checks (never READY TO SEND before the PDF is verified on the draft). The branded email
+  (`studio/email/branded.mjs`: navy and off-white, the typeset wordmark, one 600 px column that narrows on a phone, the plain text
+  always sent as the fallback) is refused for a cold touch; it is for a reply, a meeting, a concept or proposal delivery, or a
+  formal introduction. Test: `node studio/tests/branded-email.mjs`.
+- **Lead card** (`hq_lead_card`, admin): in the opportunity drawer, and behind **Why this lead** on each Top 5 row. It shows the
+  company, person, role, source, why qualified, why now, project idea, channel and its reasons, relationship state, contact
+  confidence, email state, LinkedIn state, the recommended message, the supporting asset, the next action and what happens if they
+  respond. It shows no technical IDs. The CEO board keeps the same six lists.
+- **LinkedIn requests**: the archive upload also reads *Invitations.csv*. REQUEST PENDING means Adam sent the request, so it is
+  never sent again. REQUEST RECEIVED means they asked Adam, so it is a warm route: accept first. The step is optional, so
+  connections and messages still import if it fails.
+- **Learning** (`commercial_learning_proposals`, Advisor slot 6 "Adam to decide"): EXPAND / REDUCE / REVIEW / ROUTE proposals from
+  outcomes. A segment needs at least 8 companies contacted before it supports any conclusion. Nothing is applied silently: Adam
+  decides. First live proposal: *Expand Private: 4 of 9 contacted replied (44%)*.
+- **New discovery lanes** (n8n 02, 04, 06, 07; `n8n/live_code_2026_10_29/`):
+  - private clubs whose members travel: automotive / rally, wine and dining, polo and golf, family-office and founder clubs;
+  - travel clubs and concierge-and-events firms;
+  - South Asian and Middle East wedding planners;
+  - creator, PR and experiential agencies;
+  - incentive trips and executive retreats.
+
+  Search volume per run is unchanged. The 19 Oct lookalike searches had been saved but never published; they are live now.
+- **Seeds from Adam's examples**, researched and classified, with outcome QUALIFY / HOLD / PARTNER / SUPPLIER / OUTREACH:
+  - Loaded with a right person and an Egypt angle: Sonal J. Shah Event Consultants, Musly and Little Emperors (distribution partner).
+  - Lookalikes, still being researched: Destination Snob, Naureen Khan Events, Karishma Manwani Events and BAQAA.
+  - Partners: Maison Pyramide (local partner), EGO & EAST (talent / amplifier) and Gaia Concierge (distribution partner).
+  - Parked: Verve Rally, CheChic! Weddings and DW Events.
+  - Held for Adam's call: Tuxedo Society.
+  - Already in the CRM: Beyond Members Club, YKONE and CRUSH.
+  - Not identifiable without a handle: Le Jour du Oui, Office Veza and Lauren Isabel.

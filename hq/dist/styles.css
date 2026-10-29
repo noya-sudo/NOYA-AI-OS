@@ -787,3 +787,11 @@ table.sc td, table.sc th { white-space: nowrap; }
 .fu-date { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .fu-date .field { margin: 0; }
 .oc-fu { margin-top: 8px; }
+/* Why this lead (29 Oct): the evidence block in the opportunity drawer and the Top 5 modal. */
+.lc { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0 14px; background: #fff; }
+.lc-row { display: grid; grid-template-columns: 150px 1fr; gap: 10px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.lc-row:first-of-type { border-top: 0; }
+.lc-k { color: var(--muted, #5b6573); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.lc-msg { white-space: pre-wrap; font: inherit; margin: 4px 0 0; padding: 8px 10px; background: var(--paper, #f7f5f0); border-radius: 8px; }
+.t5-h .btn { margin-left: auto; }
+@media (max-width: 600px) { .lc-row { grid-template-columns: 1fr; gap: 2px; } }
