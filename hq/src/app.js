@@ -3587,6 +3587,16 @@ function needsRows(d) {
   rows.sort((a, b) => a.r - b.r);
   return rows;
 }
+// Under the Top 5 (29 Oct): how much pipeline the agents have built underneath, so Adam sees it grow without reviewing it.
+// Visibility, not a cap: the five come from the ready pool; Next 20 waits in Outreach.
+function pipeLine() {
+  const P = state.ceo?.pipeline; if (!P) return '';
+  const nx = (state.desk?.next20 || []).length;
+  return `<div class="pipe-line">
+      <button class="pl-i" data-go="desk" data-desk-tab="NEXT20"><span class="pl-n">${n0(nx)}</span><span class="pl-l">Next 20</span></button>
+      <div class="pl-i"><span class="pl-n">${n0(P.ready_pool)}</span><span class="pl-l">Ready pool · qualified, email route ready</span></div>
+      <div class="pl-i"><span class="pl-n">${n0(P.contact_research)}</span><span class="pl-l">Contact research · being enriched</span></div></div>`;
+}
 function dashActions(d) {
   const t = todayItems(d); const rows = needsRows(d); const desk = state.desk || {};
   const overdue = t.followups.filter((f) => new Date(f.due_at) < new Date()); const waiting = desk.counts?.needs_review?.total || 0; const sr = studioReady().length;
@@ -3606,7 +3616,7 @@ function dashActions(d) {
     const l = rows.filter((x) => x.g === g); if (!l.length && g === 'clients') return '';
     const n = g === 'outreach' ? l.filter((x) => x.sub === 'top').length : l.length;
     return `<div class="ngrp" data-need="${g}"><div class="ngrp-h"><h3>${esc(label)}${n ? ` <span class="n">${n}</span>` : ''}</h3>${extra[g] || ''}</div>
-      ${list(g, l) || `<div class="ngrp-none">${esc(NEED_EMPTY[g])}</div>`}</div>`;
+      ${list(g, l) || `<div class="ngrp-none">${esc(NEED_EMPTY[g])}</div>`}${g === 'outreach' ? pipeLine() : ''}</div>`;
   }).join('');
   return `<section class="dsec" id="needs"><header><h2>What needs you today</h2><span class="faint small">${rows.length ? plural(rows.length, 'action', 'actions') : 'nothing waiting'}</span></header>${body}</section>`;
 }
@@ -4103,7 +4113,7 @@ function growthBody(g) {
 }
 
 // ---------------------------------------------------------------- OUTREACH: approve communication. Email first.
-const DESK_TABS = [['TOP5', "Today's five"], ['NEEDS_REVIEW', 'Needs review'], ['LINKEDIN', 'LinkedIn'], ['APPROVED', 'Gmail drafts'], ['FOLLOWUPS', 'Follow-ups'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Researching / held']];
+const DESK_TABS = [['TOP5', "Today's five"], ['NEXT20', 'Next 20'], ['NEEDS_REVIEW', 'Needs review'], ['LINKEDIN', 'LinkedIn'], ['APPROVED', 'Gmail drafts'], ['FOLLOWUPS', 'Follow-ups'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Researching / held']];
 const DESK_PAGE = 25;
 const PROJECT_FILTERS = [['', 'All projects'], ['BRAND', 'Brand shoot / campaign'], ['WEDDING', 'Wedding'], ['TRAVEL', 'Travel partner'], ['PRIVATE', 'NOYA Private'], ['MEDIA', 'Media / podcast'], ['HOSPITALITY', 'Hospitality partnership'], ['CORPORATE', 'Corporate / white-label']];
 const projectGroup = (p) => (!p ? '' : /^(BRAND_SHOOT|FASHION_CAMPAIGN|JEWELLERY_CAMPAIGN|CREATOR_TRIP|PRESS_TRIP|BRAND_ACTIVATION|PRODUCT_LAUNCH|AUTOMOTIVE_SHOOT|CONTENT_PRODUCTION)$/.test(p) ? 'BRAND'
@@ -4241,7 +4251,7 @@ function viewDesk() {
   const D = state.desk; if (!D) return head('Outreach') + waitFor('desk', 'the outreach desk');
   const c = D.counts; const t = DESK_TABS.some(([k]) => k === state.deskTab) ? state.deskTab : (state.deskTab === 'RESEARCHING' ? 'HELD' : 'NEEDS_REVIEW');
   const L = D.linkedin || [];
-  const n = { TOP5: (D.top5 || []).length, NEEDS_REVIEW: c.needs_review.total, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
+  const n = { TOP5: (D.top5 || []).length, NEXT20: (D.next20 || []).length, NEEDS_REVIEW: c.needs_review.total, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
   const filt = (list, withCh) => {
     let l = list;
     if (state.deskDir) l = l.filter((x) => x.director === state.deskDir);
@@ -4265,6 +4275,12 @@ function viewDesk() {
     const rest = Math.max(0, c.needs_review.total - (D.top5 || []).length);
     body = `<div class="dlist">${top || '<div class="calm"><div class="calm-t">Nothing strong enough today.</div><div class="t-sub">Fewer is fine: replies, meetings and follow-ups come first.</div></div>'}</div>
       ${rest ? `<p class="src">${plural(rest, 'more item waits', 'more items wait')} under <button class="linkish" data-desk-tab="NEEDS_REVIEW">Needs review</button>. They are not lost; they are simply not today's best five.</p>` : ''}`;
+  } else if (t === 'NEXT20') {
+    const nx = (D.next20 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
+      return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 6}</span><span class="small">${esc(p.why)}</span>${x.opportunity_id ? `<button class="btn small ghost" data-modal="lead-card" data-opp="${esc(x.opportunity_id)}">Why this lead</button>` : ''}</div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
+    const P = state.ceo?.pipeline;
+    body = `<div class="dlist">${nx || '<div class="empty">Nothing beyond today\'s five yet: new drafts arrive after the nightly run.</div>'}</div>
+      ${P ? `<p class="src">Underneath: ${plural(P.ready_pool, 'qualified company', 'qualified companies')} with an email route ready, ${n0(P.contact_research)} still being enriched. The agents keep adding to both.</p>` : ''}`;
   } else if (t === 'LINKEDIN') {
     body = LI_SECTIONS.map(([st, l]) => { const it = L.filter((a) => a.state === st); return it.length ? `<h3 class="grp">${esc(l)} · ${it.length}</h3><div class="dlist">${it.map(liRow).join('')}</div>` : ''; }).join('')
       || '<div class="empty">No LinkedIn item yet. Items arrive when email is exhausted for a strong person, or when a relationship is better on LinkedIn.</div>';
@@ -4284,13 +4300,14 @@ function viewDesk() {
       <p class="src">Follow-up 1 is due 4 days after the real send; follow-up 2 six days after follow-up 1 is sent; never more than two. A reply, meeting, proposal, decline or do-not-contact cancels them automatically.</p>`;
   else if (t === 'SENT') body = `<div class="dlist">${list.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}</div><div class="t-sub">${esc(CH_LABEL[x.channel] || x.channel)} · ${esc(x.subject || x.summary || '')} · ${esc(fmtDate(x.sent_at))}</div></div></div>`).join('') || '<div class="empty">Nothing sent in the last 60 days.</div>'}</div>`;
   else if (t === 'REPLIED') body = `<div class="dlist">${list.map((x) => `<div class="t-row clickable" ${x.company_id ? `data-open="company" data-id="${x.company_id}"` : ''}><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}${x.classification ? ` · ${esc(REPLY_GROUP[x.classification] || x.classification)}` : ''}</div><div class="t-sub">${esc(x.summary || x.subject || '')} · ${esc(fmtDate(x.received_at))}</div></div></div>`).join('') || '<div class="empty">No replies in the last 60 days.</div>'}</div>`;
-  const intro = { TOP5: "The five strongest new conversations today, ranked by project potential, relationship warmth, timing, the decision maker, the Egypt opportunity and repeat business. At most two per Director; accounts you put on hold are left out. Nothing is sent automatically.",
+  const intro = { NEXT20: 'The next twenty, ranked the same way. When you clear one of today\'s five, the strongest of these moves up at once. Nothing is sent automatically.',
+    TOP5: "The five strongest new conversations today, ranked by project potential, relationship warmth, timing, the decision maker, the Egypt opportunity and repeat business. At most two per Director; accounts you put on hold are left out. Nothing is sent automatically.",
     LINKEDIN: 'Relationship messages, never mass outreach. Copy & open LinkedIn copies the message and opens their profile: you send it yourself, then press Mark sent. When they reply, paste what they wrote with Log reply. HQ never logs in to LinkedIn and never sends.',
     NEEDS_REVIEW: 'Approve re-checks the address and creates one unsent Gmail draft. LinkedIn and Instagram are sent by you, then marked sent. Nothing is ever sent automatically.',
     HELD: 'Not ready yet: the person, role or a verified route is missing, you held it, or a draft failed the quality check. The agents keep working on these.' }[t];
   return `${head('Outreach', 'Approve communication · email first')}
     <div class="tabs">${DESK_TABS.map(([k, l]) => `<button data-desk-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k])}</span></button>`).join('')}</div>
-    ${['TOP5', 'LINKEDIN'].includes(t) ? '' : filters}${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
+    ${['TOP5', 'NEXT20', 'LINKEDIN'].includes(t) ? '' : filters}${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
 }
 
 function deskModal(m) {

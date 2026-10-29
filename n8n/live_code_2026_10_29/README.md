@@ -13,3 +13,11 @@ unchanged (02: 35, 04: 28, 06: 20, 07: 35 queries).
 
 Found while doing this: the 19 Oct "Destination Egypt lookalike" searches in 02, 04 and 07 had been saved as drafts but never
 published, so they never ran. They are published now, inside the same versions.
+
+## Merge & Cap Candidates (29 Oct, evening): Instagram-first prospects
+
+`0X_merge_and_cap_candidates.js` for 02 (`6b276467`), 04 (`cbb2743a`), 06 (`9e1c163d`) and 07 (`b0451630`), each compared byte for
+byte with the saved node before publishing. Prospects from `discovery_context.instagram_prospects` for the department's lanes join the
+direct list (02, 04) or the quality-ranked pool with a medium-signal weight (06, 07), at most 4 a run. With no prospects each node
+returns exactly what it returned before (checked offline against mock runs). 07 also gained a `Read Discovery Context` node (the same
+RPC call as the other departments, fails open) and researches 8 a run instead of 6.

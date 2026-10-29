@@ -2009,3 +2009,86 @@ Migration `20261029090000_commercial_intelligence_wrapup.sql` (live, applied in 
   - Held for Adam's call: Tuxedo Society.
   - Already in the CRM: Beyond Members Club, YKONE and CRUSH.
   - Not identifiable without a handle: Le Jour du Oui, Office Veza and Lauren Isabel.
+
+## Instagram contact intelligence and a priority queue instead of caps (29 Oct 2026, evening)
+
+Adam, 29 Oct: Firecrawl is connected with an indexed Instagram source. Remove hard caps, keep the quality gates, keep human approval,
+keep sending controlled, and discover aggressively. No rebuild: the change sits inside Contact Intelligence, the discovery departments
+and the existing desk. Migrations `20261029110000_instagram_contact_intelligence.sql` and `20261029120000_priority_queue_not_caps.sql`.
+
+**Contact order** (`system_config.contact_order`). Each qualified or promising account goes through these steps in order:
+1. Its public Instagram profile.
+2. Its official website or link-in-bio.
+3. Right-person research.
+4. Clay.
+5. Hunter, and only when a direct email is still missing or needs verification.
+
+The right person is one of: Founder, Co-Founder, CEO, Managing Director, Creative Director, Events Director, Partnerships Director,
+Head of Experiences, Membership Director, Brand Partnerships, Commercial Director, Client Services Director or Production Director.
+
+**Firecrawl Instagram index** (Oriane provider). It is registered in `tool_capabilities` as five capabilities:
+- PUBLIC_WEB_RESEARCH
+- INSTAGRAM_PROFILE_SEARCH
+- INSTAGRAM_PROFILE_LOOKUP
+- INSTAGRAM_POST_SEARCH
+- INSTAGRAM_PUBLIC_CONTACT
+
+Prices are 35, 50 or 65 credits a non-empty call (basic, default or full detail), and an empty result is free. A full bio search
+returns up to 100 profiles, with their published emails, for 65 credits. A full lookup of one profile also costs 65 credits, so
+lookups are only for qualified or promising targets. It is an index, not a live feed: a missing profile proves nothing. Every call
+is logged in `public_profile_calls`, and `instagram_budget()` holds each day to `contact_order.instagram.daily_credit_budget`
+(650 credits until Adam sets another figure).
+
+**Public profiles** (`public_profiles`). Each row keeps:
+- the handle, profile URL, display name and bio
+- the bio link and the published email
+- followers and whether the account is verified
+- the date it was seen
+- the company, the person and their role, and the lane
+- the status: OBSERVED, MATCHED, PROSPECT, QUALIFIED or REJECTED
+- the confidence (HIGH, MEDIUM or LOW) and the reason for it
+
+`public_profile_record()` matches an account to a company in one of three ways: the handle is already on the company, the bio link
+is the company's own domain, or the caller names the company. It then classifies any published email on the company's domain:
+- **Shared inbox** (info@, events@): OFFICIAL_PUBLISHED_INBOX. A company inbox contact is created, with an `email_official_inboxes`
+  row whose source domain is instagram.com. The label reads "(company Instagram)".
+- **Named person's own address**: PUBLIC_NAMED_EMAIL. It is a new route state, checked just after a provider-verified address,
+  that counts as email-ready across the planner, the desk, Director health, EMAIL READY and the warm-route check. It is never
+  labelled VERIFIED, and a provider result other than valid revokes it. Hunter is never spent rediscovering a published address.
+
+An address on another domain, or from an account we are not sure of, is kept as NOT_USABLE.
+
+**Inside the existing agents**
+- The discovery departments (02, 04, 06 and 07) have a new step in Merge & Cap. Prospects from Instagram bio searches
+  (`discovery_context.instagram_prospects`) join each department's own lanes, at most 4 a run, in the same shape as a search result.
+  Research, scoring and qualification decide as before. Department 07 now reads the discovery context like the others and researches
+  8 a run instead of 6. With no prospects every department behaves exactly as before (published 29 Oct, code in
+  `n8n/live_code_2026_10_29/`).
+- `public_profiles_link()` runs every 30 minutes. It links a prospect that a department has saved as a company and classifies its
+  published email. A parked or excluded company takes the prospect off the list.
+- Contact Intelligence (workflow 23) and the daily check use the same three functions:
+  - `instagram_lookup_queue()`: qualified, cold, spend-allowed accounts with a known handle and no usable route, strongest first,
+    within the budget.
+  - `instagram_lookup_save()`: saves a batch of lookups.
+  - `instagram_prospect_plan()` and `instagram_prospect_save()`: a rotating bank of 30 bio searches across weddings, agencies,
+    clubs, travel, corporate and talent, up to 4 a day. A search is not repeated within 30 days, and a profile is kept only if it is
+    public and has its own website or business email.
+
+  The n8n key is the older Firecrawl account. Until it can reach the index, the daily check runs the lookups and searches through
+  the connected Firecrawl account.
+
+**Priority queue, not caps**
+- **Draft supply.** The reserve caps are gone: before, the planner discarded anything beyond 10 unsent emails and 5 open
+  LinkedIn / Instagram items. The planner keeps its nightly throughput, which is what workflow 18 can draft in three runs (about
+  30). A draft also needs an open opportunity with a reason now, on top of the existing gates: qualified, cold, spend allowed,
+  not on hold, right person or department, a usable route, one active route per company, and no do-not-contact.
+- **Discovery never waits.** The backlog throttle stays off, and each run researches 12 (it was 10).
+- **The desk ranks four tiers.** Each item belongs to one of:
+  - TOP 5: send or review today
+  - NEXT 20: the same score; a new Outreach tab, with "Why this lead" on each row
+  - READY POOL: every other qualified company with a usable email route
+  - CONTACT RESEARCH: still being enriched, or HOLD
+
+  When Adam clears an item from the Top 5, the desk reloads and the next one moves up at once.
+- **Dashboard.** Under "Today's best five" there is one line: Next 20 · Ready pool · Contact research. It reads
+  `commercial_pipeline()` in the Dashboard snapshot (rebuilt every 5 minutes, about 5 seconds to compute). It is visibility, not a cap.

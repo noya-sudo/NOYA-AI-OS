@@ -795,3 +795,11 @@ table.sc td, table.sc th { white-space: nowrap; }
 .lc-msg { white-space: pre-wrap; font: inherit; margin: 4px 0 0; padding: 8px 10px; background: var(--paper, #f7f5f0); border-radius: 8px; }
 .t5-h .btn { margin-left: auto; }
 @media (max-width: 600px) { .lc-row { grid-template-columns: 1fr; gap: 2px; } }
+
+/* Pipeline under the Top 5 (29 Oct): visibility, not a cap */
+.pipe-line { display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 10px 0 2px; border-top: 1px dashed var(--line); margin-top: 8px; }
+.pipe-line .pl-i { display: flex; align-items: baseline; gap: 6px; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; }
+.pipe-line button.pl-i { cursor: pointer; }
+.pipe-line button.pl-i:hover .pl-l { color: var(--navy); text-decoration: underline; }
+.pipe-line .pl-n { font-size: 15px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+.pipe-line .pl-l { font-size: 11.5px; color: var(--muted); }
