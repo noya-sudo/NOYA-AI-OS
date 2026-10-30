@@ -3513,7 +3513,8 @@ function dashStrip(d) {
 
 // WHAT NEEDS YOU TODAY (Adam, 19 Oct): five lists every morning: replies to answer, meetings to schedule, follow-ups due, the
 // five best new outreach items, Studio documents ready. Clients and proposals sit on top only when they exist. One button each.
-const NEED_GROUPS = [['clients', 'Clients and proposals'], ['replies', 'Replies owed'], ['meetings', 'Meetings to schedule'], ['followups', 'Follow-ups due'],
+// Warm always beats cold (Adam, 30 Oct): replies and calls owed, meetings, follow-ups and live opportunities come before any new outreach.
+const NEED_GROUPS = [['replies', 'Replies and calls owed'], ['meetings', 'Meetings to schedule'], ['followups', 'Follow-ups due'], ['clients', 'Active opportunities'],
   ['reopen', 'Past relationships worth reopening'], ['outreach', 'Top 5 new outreach to approve'], ['studio', 'Studio documents ready']];
 const NEED_EMPTY = { replies: 'No reply waiting.', meetings: 'No meeting to schedule.', followups: 'No follow-up due today.',
   reopen: 'None today: no past relationship has a real reason to reopen yet.',
@@ -3591,11 +3592,38 @@ function needsRows(d) {
 // Visibility, not a cap: the five come from the ready pool; Next 20 waits in Outreach.
 function pipeLine() {
   const P = state.ceo?.pipeline; if (!P) return '';
-  const nx = (state.desk?.next20 || []).length;
+  const nx = (state.desk?.next20 || []).length; const ap = state.ceo?.funnel?.active_projects;
   return `<div class="pipe-line">
       <button class="pl-i" data-go="desk" data-desk-tab="NEXT20"><span class="pl-n">${n0(nx)}</span><span class="pl-l">Next 20</span></button>
-      <div class="pl-i"><span class="pl-n">${n0(P.ready_pool)}</span><span class="pl-l">Ready pool · qualified, email route ready</span></div>
-      <div class="pl-i"><span class="pl-n">${n0(P.contact_research)}</span><span class="pl-l">Contact research · being enriched</span></div></div>`;
+      <button class="pl-i" data-go="desk" data-desk-tab="POOL"><span class="pl-n">${n0(P.ready_pool)}</span><span class="pl-l">Ready pool · qualified, email route ready</span></button>
+      <div class="pl-i"><span class="pl-n">${n0(P.contact_research)}</span><span class="pl-l">Contact research · being enriched</span></div>
+      <div class="pl-i"><span class="pl-n">${n0(ap)}</span><span class="pl-l">Active projects</span></div></div>`;
+}
+// Degraded mode (30 Oct): when n8n is paused HQ says so plainly. Gmail stays the truth; the daily check reconciles it and the first
+// sync after automation resumes catches up from the last successful run, so no email history is lost.
+function autoBanner() {
+  const S = state.desk?.status; if (!S || S.automation !== 'PAUSED') return '';
+  return `<div class="banner err"><b>AUTOMATION PAUSED — LIVE GMAIL DATA</b> · Last Gmail sync ${esc(fmtDate(S.gmail_synced_at))}${S.writer_ran_at ? ` · last nightly drafting ${esc(fmtDate(S.writer_ran_at))}` : ''}.
+    Drafts, sends and replies since then are in Gmail and are reconciled in the daily check; the first sync after automation resumes catches up from that point. Nothing is lost and nothing is sent automatically.</div>`;
+}
+// Why Today's five or Next 20 is short: the real counts behind it, never a bare "nothing waiting".
+function queueWhy() {
+  const S = state.desk?.status || {}; const R = S.research_by_state || {}; const parts = [];
+  if (S.ready_undrafted) parts.push(`${plural(S.ready_undrafted, 'ready account has', 'ready accounts have')} no draft yet (under Ready pool)`);
+  if (S.planned_queued) parts.push(`${n0(S.planned_queued)} queued for the nightly drafting`);
+  if (S.waiting_verification) parts.push(`${n0(S.waiting_verification)} drafted and waiting for email verification`);
+  if (R.NEEDS_VERIFICATION) parts.push(`${plural(R.NEEDS_VERIFICATION, 'found address waits', 'found addresses wait')} for verification`);
+  if (R.NO_PERSON) parts.push(`${plural(R.NO_PERSON, 'account still needs', 'accounts still need')} the right person`);
+  if (S.gmail_drafts_unsent) parts.push(`${plural(S.gmail_drafts_unsent, 'approved Gmail draft is', 'approved Gmail drafts are')} not sent yet`);
+  if (S.automation === 'PAUSED') parts.push('automation is paused, so nothing new is drafted until it resumes');
+  return parts.length ? `${parts.join('; ')}.` : '';
+}
+// The ready accounts themselves (Dashboard snapshot): cold, qualified, a usable route, no draft yet. A named person outranks a shared inbox.
+function readyRow(r) {
+  return `<div class="t-row"><div><div class="t-main">${esc(r.person || r.company)}${r.person ? ` · <span class="faint">${esc(r.company)}</span>` : ''}${r.role ? ` <span class="faint">· ${esc(r.role)}</span>` : ''}</div>
+      <div class="t-sub">${esc(r.route_label || '')}${r.shared_inbox ? ' · <span class="warn-text">shared inbox</span>' : ''}${r.project ? ` · ${esc(projectName(r.project))}` : ''}${r.country ? ` · ${esc(r.country)}` : ''}</div>
+      ${r.why_now ? `<div class="t-sub">${esc(plainText(r.why_now))}</div>` : ''}</div>
+    <div class="t-btns"><button class="btn small" data-open="company" data-id="${r.company_id}">Open</button></div></div>`;
 }
 function dashActions(d) {
   const t = todayItems(d); const rows = needsRows(d); const desk = state.desk || {};
@@ -3616,9 +3644,9 @@ function dashActions(d) {
     const l = rows.filter((x) => x.g === g); if (!l.length && g === 'clients') return '';
     const n = g === 'outreach' ? l.filter((x) => x.sub === 'top').length : l.length;
     return `<div class="ngrp" data-need="${g}"><div class="ngrp-h"><h3>${esc(label)}${n ? ` <span class="n">${n}</span>` : ''}</h3>${extra[g] || ''}</div>
-      ${list(g, l) || `<div class="ngrp-none">${esc(NEED_EMPTY[g])}</div>`}${g === 'outreach' ? pipeLine() : ''}</div>`;
+      ${list(g, l) || `<div class="ngrp-none">${esc(g === 'outreach' && queueWhy() ? `No draft is waiting: ${queueWhy()}` : NEED_EMPTY[g])}</div>`}${g === 'outreach' ? pipeLine() : ''}</div>`;
   }).join('');
-  return `<section class="dsec" id="needs"><header><h2>What needs you today</h2><span class="faint small">${rows.length ? plural(rows.length, 'action', 'actions') : 'nothing waiting'}</span></header>${body}</section>`;
+  return `<section class="dsec" id="needs"><header><h2>What needs you today</h2><span class="faint small">${rows.length ? plural(rows.length, 'action', 'actions') : 'nothing waiting'}</span></header>${autoBanner()}${body}</section>`;
 }
 
 // HQ ADVISOR: 3-5 observations, each situation -> meaning -> recommended action. A Chief of Staff, not an analytics bot.
@@ -4113,7 +4141,11 @@ function growthBody(g) {
 }
 
 // ---------------------------------------------------------------- OUTREACH: approve communication. Email first.
-const DESK_TABS = [['TOP5', "Today's five"], ['NEXT20', 'Next 20'], ['NEEDS_REVIEW', 'Needs review'], ['LINKEDIN', 'LinkedIn'], ['APPROVED', 'Gmail drafts'], ['FOLLOWUPS', 'Follow-ups'], ['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Researching / held']];
+// Outreach in three rows (Adam, 30 Oct): what needs acting on, what is ready, and the history. Warm items first.
+const DESK_GROUPS = [['Actions', [['REPLIES', 'Replies & meetings'], ['FOLLOWUPS', 'Follow-ups'], ['TOP5', "Today's five"], ['NEXT20', 'Next 20']]],
+  ['Ready', [['NEEDS_REVIEW', 'Email ready'], ['LINKEDIN', 'LinkedIn ready'], ['APPROVED', 'Gmail drafts'], ['POOL', 'Ready pool'], ['STUDIO', 'Studio ready']]],
+  ['History', [['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Held / closed']]]];
+const DESK_TABS = DESK_GROUPS.flatMap(([, tabs]) => tabs);
 const DESK_PAGE = 25;
 const PROJECT_FILTERS = [['', 'All projects'], ['BRAND', 'Brand shoot / campaign'], ['WEDDING', 'Wedding'], ['TRAVEL', 'Travel partner'], ['PRIVATE', 'NOYA Private'], ['MEDIA', 'Media / podcast'], ['HOSPITALITY', 'Hospitality partnership'], ['CORPORATE', 'Corporate / white-label']];
 const projectGroup = (p) => (!p ? '' : /^(BRAND_SHOOT|FASHION_CAMPAIGN|JEWELLERY_CAMPAIGN|CREATOR_TRIP|PRESS_TRIP|BRAND_ACTIVATION|PRODUCT_LAUNCH|AUTOMOTIVE_SHOOT|CONTENT_PRODUCTION)$/.test(p) ? 'BRAND'
@@ -4251,7 +4283,10 @@ function viewDesk() {
   const D = state.desk; if (!D) return head('Outreach') + waitFor('desk', 'the outreach desk');
   const c = D.counts; const t = DESK_TABS.some(([k]) => k === state.deskTab) ? state.deskTab : (state.deskTab === 'RESEARCHING' ? 'HELD' : 'NEEDS_REVIEW');
   const L = D.linkedin || [];
-  const n = { TOP5: (D.top5 || []).length, NEXT20: (D.next20 || []).length, NEEDS_REVIEW: c.needs_review.total, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
+  const warm = state.data ? needsRows(state.data).filter((x) => x.g === 'replies' || x.g === 'meetings') : [];
+  const pool = state.ceo?.pipeline?.ready_list || [];
+  const n = { REPLIES: warm.length, TOP5: (D.top5 || []).length, NEXT20: (D.next20 || []).length, NEEDS_REVIEW: c.needs_review.total, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, POOL: state.ceo?.pipeline?.ready_pool ?? pool.length, STUDIO: studioReady().length, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
+  const why = queueWhy();
   const filt = (list, withCh) => {
     let l = list;
     if (state.deskDir) l = l.filter((x) => x.director === state.deskDir);
@@ -4273,14 +4308,28 @@ function viewDesk() {
     const top = (D.top5 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
       return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 1}</span><span class="small">${esc(p.why)}</span>${x.opportunity_id ? `<button class="btn small ghost" data-modal="lead-card" data-opp="${esc(x.opportunity_id)}">Why this lead</button>` : ''}</div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
     const rest = Math.max(0, c.needs_review.total - (D.top5 || []).length);
-    body = `<div class="dlist">${top || '<div class="calm"><div class="calm-t">Nothing strong enough today.</div><div class="t-sub">Fewer is fine: replies, meetings and follow-ups come first.</div></div>'}</div>
+    body = `<div class="dlist">${top || `<div class="calm"><div class="calm-t">No draft is waiting for you yet.</div><div class="t-sub">${esc(why || 'Fewer is fine: replies, meetings and follow-ups come first.')}</div>${pool.length ? '<div class="btn-row mt8 center"><button class="btn small primary" data-desk-tab="POOL">See the ready accounts</button></div>' : ''}</div>`}</div>
       ${rest ? `<p class="src">${plural(rest, 'more item waits', 'more items wait')} under <button class="linkish" data-desk-tab="NEEDS_REVIEW">Needs review</button>. They are not lost; they are simply not today's best five.</p>` : ''}`;
   } else if (t === 'NEXT20') {
     const nx = (D.next20 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
       return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 6}</span><span class="small">${esc(p.why)}</span>${x.opportunity_id ? `<button class="btn small ghost" data-modal="lead-card" data-opp="${esc(x.opportunity_id)}">Why this lead</button>` : ''}</div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
     const P = state.ceo?.pipeline;
-    body = `<div class="dlist">${nx || '<div class="empty">Nothing beyond today\'s five yet: new drafts arrive after the nightly run.</div>'}</div>
+    body = `<div class="dlist">${nx || `<div class="empty">Nothing drafted beyond today's five. ${esc(why)}</div>`}</div>
       ${P ? `<p class="src">Underneath: ${plural(P.ready_pool, 'qualified company', 'qualified companies')} with an email route ready, ${n0(P.contact_research)} still being enriched. The agents keep adding to both.</p>` : ''}`;
+  } else if (t === 'REPLIES') {
+    body = `<div class="dlist">${warm.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.who || '')}${x.co ? ` · <span class="faint">${esc(x.co)}</span>` : ''}</div>
+        <div class="t-sub">${esc(x.why)}${x.when ? ` · ${esc(ageOf(x.when))}` : ''}</div><div class="t-sub">${esc(x.next || '')}</div></div><div class="t-btns">${x.cta || ''}</div></div>`).join('')
+      || '<div class="empty">No reply or meeting is waiting on you.</div>'}</div>
+      <p class="src">Positive replies and call requests are surfaced at once; a meeting request is a same-day action, any other positive reply the same business day, a normal reply within 24 hours. These always rank above new outreach.</p>`;
+  } else if (t === 'POOL') {
+    const P = state.ceo?.pipeline || {};
+    body = `<div class="dlist">${pool.map(readyRow).join('') || '<div class="empty">No ready account without a draft.</div>'}</div>
+      <p class="src">${n0(P.ready_pool)} qualified accounts have a usable route; the ${n0(pool.length)} strongest without a draft are listed. A named person's own address outranks a shared inbox, and a shared inbox at a large organisation is used only when you approve it. ${n0(P.contact_research)} more are still being researched for the right person or a verified address.</p>`;
+  } else if (t === 'STUDIO') {
+    const sr = studioReady();
+    body = `<div class="dlist">${sr.map((s) => `<div class="t-row"><div><div class="t-main">${esc(s.title || 'Studio document')}${s.company ? ` · <span class="faint">${esc(s.company)}</span>` : ''}</div>
+        <div class="t-sub">${esc(s.ready_class === 'READY_FOR_ATTACHMENT' ? `${s.file || 'The PDF'} still has to go onto its Gmail draft` : s.ready_reason || 'Ready')}</div></div>
+        <div class="t-btns"><button class="btn small primary" data-go="studio">${s.ready_class === 'READY_FOR_ATTACHMENT' ? 'Attach in Studio' : 'Open Studio'}</button></div></div>`).join('') || '<div class="empty">No Studio document waiting.</div>'}</div>`;
   } else if (t === 'LINKEDIN') {
     body = LI_SECTIONS.map(([st, l]) => { const it = L.filter((a) => a.state === st); return it.length ? `<h3 class="grp">${esc(l)} · ${it.length}</h3><div class="dlist">${it.map(liRow).join('')}</div>` : ''; }).join('')
       || '<div class="empty">No LinkedIn item yet. Items arrive when email is exhausted for a strong person, or when a relationship is better on LinkedIn.</div>';
@@ -4305,9 +4354,9 @@ function viewDesk() {
     LINKEDIN: 'Relationship messages, never mass outreach. Copy & open LinkedIn copies the message and opens their profile: you send it yourself, then press Mark sent. When they reply, paste what they wrote with Log reply. HQ never logs in to LinkedIn and never sends.',
     NEEDS_REVIEW: 'Approve re-checks the address and creates one unsent Gmail draft. LinkedIn and Instagram are sent by you, then marked sent. Nothing is ever sent automatically.',
     HELD: 'Not ready yet: the person, role or a verified route is missing, you held it, or a draft failed the quality check. The agents keep working on these.' }[t];
-  return `${head('Outreach', 'Approve communication · email first')}
-    <div class="tabs">${DESK_TABS.map(([k, l]) => `<button data-desk-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k])}</span></button>`).join('')}</div>
-    ${['TOP5', 'NEXT20', 'LINKEDIN'].includes(t) ? '' : filters}${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
+  return `${head('Outreach', 'Approve communication · email first')}${autoBanner()}
+    ${DESK_GROUPS.map(([g, tabs]) => `<div class="tabs"><span class="tabs-l">${esc(g)}</span>${tabs.map(([k, l]) => `<button data-desk-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k] ?? 0)}</span></button>`).join('')}</div>`).join('')}
+    ${['TOP5', 'NEXT20', 'LINKEDIN', 'REPLIES', 'POOL', 'STUDIO'].includes(t) ? '' : filters}${intro ? `<p class="muted small">${esc(intro)}</p>` : ''}${body}`;
 }
 
 function deskModal(m) {

@@ -189,7 +189,7 @@ begin
       if v_contact is not null then
         update contacts set email = v_email, email_status = 'UNVERIFIED', email_source_url = 'https://www.instagram.com/' || v_h || '/',
                email_found_at = now(), email_source_type = 'INSTAGRAM_PROFILE', route_type = coalesce(route_type, 'PERSON_EMAIL'),
-               notes = coalesce(notes, '') || chr(10) || 'Email published on the company''s Instagram profile @' || v_h || ', seen ' || to_char(now(), 'DD Mon YYYY') || '.'
+               notes = coalesce(notes, '') || chr(10) || 'Email published on the company’s Instagram profile @' || v_h || ', seen ' || to_char(now(), 'DD Mon YYYY') || '.'
          where id = v_contact;
       end if;
     end if;
@@ -203,9 +203,9 @@ begin
       insert into contacts (company_id, position, email, email_status, email_source_url, email_found_at, email_source_type, source, source_url, source_type,
                             route_type, email_tier, relationship_owner, status, confidence, notes)
       values (v_co.id, 'Company inbox (Instagram)', v_email, 'UNVERIFIED', 'https://www.instagram.com/' || v_h || '/', now(), 'INSTAGRAM_PROFILE',
-              'Instagram profile (Firecrawl index)', 'https://www.instagram.com/' || v_h || '/', 'INSTAGRAM_PROFILE', 'COMPANY_INBOX',
+              'Instagram profile (Firecrawl index)', 'https://www.instagram.com/' || v_h || '/', 'INSTAGRAM', 'COMPANY_INBOX',
               case when email_local_class(v_email) = 'DEPARTMENT' then 2 end, 'Adam Elshazly', 'NEW', 60,
-              'Inbox published on the company''s own Instagram profile @' || v_h || ' (' || coalesce(v_why, '') || '), seen ' || to_char(now(), 'DD Mon YYYY') || '. Not checked by a provider.')
+              'Inbox published on the company’s own Instagram profile @' || v_h || ' (' || coalesce(v_why, '') || '), seen ' || to_char(now(), 'DD Mon YYYY') || '. Not checked by a provider.')
       returning id into v_contact;
     end if;
     insert into email_official_inboxes (contact_id, company_id, email, source_url, source_domain, company_domain, found_at, rule)
@@ -263,7 +263,7 @@ declare src text := pg_get_functiondef('public.contact_email_route(uuid)'::regpr
      order by pp.observed_at desc limit 1;
     if v_pp.id is not null then
       return jsonb_build_object('state', 'PUBLIC_NAMED_EMAIL', 'email', lower(btrim(k.email)), 'source_url', v_pp.profile_url, 'found_at', v_pp.observed_at,
-                                'label', 'Their own address, published on the company''s Instagram (@' || v_pp.handle || ', seen '
+                                'label', 'Their own address, published on the company’s Instagram (@' || v_pp.handle || ', seen '
                                          || to_char(v_pp.observed_at at time zone 'Africa/Cairo', 'DD Mon') || ')');
     end if;
   end if;

@@ -2092,3 +2092,35 @@ An address on another domain, or from an account we are not sure of, is kept as 
   When Adam clears an item from the Top 5, the desk reloads and the next one moves up at once.
 - **Dashboard.** Under "Today's best five" there is one line: Next 20 · Ready pool · Contact research. It reads
   `commercial_pipeline()` in the Dashboard snapshot (rebuilt every 5 minutes, about 5 seconds to compute). It is visibility, not a cap.
+
+## The outreach engine never looks empty (30 Oct 2026) — development frozen after this pass
+
+**Why Outreach showed 0 / 0 / 0.** Today's five and Next 20 rank only drafted emails waiting for review. Workflow 18 (the
+writer) stalled, first on the old reserve cap and then because n8n Cloud reached its monthly execution limit. So 89 Ready Pool
+accounts had a usable route but no draft. Nothing was lost; nothing was being written.
+
+**What changed**
+- `outreach_status()` (in `hq_outreach_desk().status`) explains every count: Gmail last synced, writer last ran, Ready Pool,
+  Ready Pool without a draft, contact research by state, unsent Gmail drafts. When the Gmail sync is more than 3 hours old the
+  status is `PAUSED` and HQ shows **AUTOMATION PAUSED — LIVE GMAIL DATA** with the last sync time. Gmail stays the source of
+  truth. When n8n is back, the sync reads every tracked thread since go-live, so no history is lost.
+- `commercial_pipeline().ready_list` gives the top 60 Ready Pool accounts without an active draft. Each one has its person, role,
+  route label, project and score. A personal address ranks above a shared inbox.
+- `outbound_recipient_block_reason()` accepts a `PUBLIC_NAMED_EMAIL`: the person's own address, published on the company's own
+  Instagram. It is never labelled Hunter-verified, and any provider result other than valid revokes it.
+- HQ Outreach has three groups:
+  - **Actions:** Replies & meetings, Follow-ups, Today's five, Next 20.
+  - **Ready:** Email ready, LinkedIn ready, Gmail drafts, Ready pool, Studio ready.
+  - **History:** Sent, Replied, Held / closed.
+
+  The Dashboard order is replies and calls owed, meetings, overdue follow-ups, active opportunities, Today's five, then Studio.
+  An empty tab says why it is empty.
+- When the writer is offline, the daily check writes the drafts. It uses the same `outreach_candidate_save()` path and the same
+  gates. Nothing is ever sent: Adam approves a draft and sends it from Gmail.
+
+**n8n.** Executions were cut to about 59 a day (about 1,780 a month):
+- Gmail sync: hourly.
+- Weekly: 16, 20 and 21.
+- Daily: 22.
+
+Legacy workflows stay off. Hunter verification runs through n8n, so it resumes when the quota resets.

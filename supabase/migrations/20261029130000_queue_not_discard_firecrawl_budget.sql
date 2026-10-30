@@ -13,7 +13,7 @@
 update public.system_config
    set value = value || jsonb_build_object('nightly_draft_throughput', 30, 'email_topup_per_day', 10,
                  'previous_email_topup_per_day', value->'email_topup_per_day',
-                 'note', 'Adam, 29 Oct 2026: about 30 a night is the writer''s throughput, not a cap. The rest stay queued by score; planned items carry over.'),
+                 'note', 'Adam, 29 Oct 2026: about 30 a night is the writer’s throughput, not a cap. The rest stay queued by score; planned items carry over.'),
        updated_at = now()
  where key = 'planner_options';
 
@@ -47,7 +47,7 @@ end $patch$;
 
 -- 2. Firecrawl: a weekly budget on the connected account, and its remaining credits ------------------------------------------
 update public.system_config
-   set value = jsonb_set(value, '{instagram}', (value->'instagram' - 'daily_credit_budget' - 'prospect_searches_per_day') || jsonb_build_object(
+   set value = jsonb_set(value, '{instagram}', ((value->'instagram') - 'daily_credit_budget' - 'prospect_searches_per_day') || jsonb_build_object(
          'weekly_credit_budget', 195, 'prospect_searches_per_week', 2, 'lookups_per_week', 1,
          'order', jsonb_build_array('Public web search (free)', 'Instagram profile search: one call, many accounts', 'Full profile lookup: high-value qualified targets only'),
          'runs_in', 'Daily operating check, on the connected Firecrawl account (Adam, 29 Oct: decision A). The n8n credential is not changed.',

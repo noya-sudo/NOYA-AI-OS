@@ -271,6 +271,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 10px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .tabs button.on { color: var(--text); border-bottom-color: var(--navy); font-weight: 600; }
 .tabs .n { font-size: 11px; color: var(--faint); margin-left: 2px; }
+.tabs-l { flex: none; align-self: center; min-width: 64px; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.tabs + .tabs { margin-top: -6px; }
 .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 8px; overflow-x: auto; padding-bottom: 8px; }
 .bcol { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; min-height: 80px; }
 .bcol h4 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); display: flex; justify-content: space-between; }
