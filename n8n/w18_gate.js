@@ -89,12 +89,16 @@ function evidenceCheck(it, m) {
 }
 // Timing (26 Oct 2026): a window that has already started or passed is never offered (sent on 23 Oct: "a shoot in
 // October 2026 or earlier", "member trips scheduled for October 2026"), and "recently" never describes a year that is over.
+// 2 Nov: a day or day range before the month counts too ("scheduled for 19 October 2026", "for 15 to 23 October 2026"):
+// with a day the date itself must be in the future; without one the month must not have started.
 var MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 function staleTiming(low, now) {
   var cur = now.getFullYear() * 12 + now.getMonth(), m, out = [];
-  var ahead = /\b(scheduled for|planned for|for|by|before|until|ahead of|in time for|(?:shoot|trip|trips|visit|event|programme|production|wedding|retreat|stay)s? in)\s+(?:the\s+|early\s+|late\s+|mid-?\s*)?(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d\d)\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d\d)\s+or earlier\b/g;
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var ahead = /\b(scheduled for|planned for|for|on|by|before|until|ahead of|in time for|(?:shoot|trip|trips|visit|event|programme|production|wedding|retreat|stay)s? in)\s+(?:the\s+|early\s+|late\s+|mid-?\s*)?(?:(\d{1,2})(?:st|nd|rd|th)?\s*(?:(?:to|and|-|–)\s*(\d{1,2})(?:st|nd|rd|th)?\s+)?(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d\d)\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d\d)\s+or earlier\b/g;
   while ((m = ahead.exec(low))) {
-    if (+(m[3] || m[5]) * 12 + MONTHS.indexOf(m[2] || m[4]) <= cur) out.push('"' + m[0] + '" has started or passed; offer no date or a later one from EVIDENCE');
+    var mon = MONTHS.indexOf(m[4] || m[6]), yr = +(m[5] || m[7]), day = +(m[3] || m[2] || 0);
+    if (day ? new Date(yr, mon, day) < today : yr * 12 + mon <= cur) out.push('"' + m[0] + '" has started or passed; offer no date or a later one from EVIDENCE');
   }
   var recent = /\brecent(?:ly)?\b[^.?!]{0,80}?\b(20\d\d)\b/g;
   while ((m = recent.exec(low))) {
