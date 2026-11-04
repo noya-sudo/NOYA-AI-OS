@@ -3465,7 +3465,7 @@ function todayItems(d) {
       .map((o) => ({ kind: 'CALL', company: o.company_name, person: o.contact_name, opportunity_id: o.id, next_action: o.next_action }))];
   const gmail = (desk.approved || []).filter((x) => x.gmail_confirmed);
   const failed = (desk.approved || []).filter((x) => x.status === 'FAILED' || (x.status === 'PROCESSING' && x.can_retry));
-  const followups = (desk.followups || []).filter((f) => f.due_at && new Date(f.due_at) <= end);
+  const followups = (desk.followups || []).filter((f) => f.due_at && new Date(f.due_at) <= end && !['LOW_VALUE', 'CLOSE_HOLD'].includes(f.tier));
   const proposals = d.opportunities.filter((o) => ['PROPOSAL', 'NEGOTIATION'].includes(o.status));
   const issues = state.ops?.issues || [];
   const review = desk.counts?.needs_review?.total || 0;
@@ -3558,7 +3558,7 @@ function needsRows(d) {
   (B.due || []).forEach((x) => fuRow('followups', x, 2));
   (B.reopen || []).forEach((x) => fuRow('reopen', x, 3));
   t.followups.slice(0, 4).forEach((f) => rows.push({ g: 'followups', r: f.overdue ? 3 : 4, who: f.person || f.company, co: f.person ? f.company : '', dir: f.director,
-    why: 'No answer yet: one short follow-up keeps it alive', next: `Follow-up ${f.step} by ${CH_LABEL[f.channel] || f.channel}`, when: f.due_at, overdue: f.overdue,
+    why: f.tier ? `${(FU_TIER[f.tier] || [f.tier])[0]}: ${f.tier_why || ''}` : 'No answer yet: one short follow-up keeps it alive', next: `Follow-up ${f.step} by ${CH_LABEL[f.channel] || f.channel}`, when: f.due_at, overdue: f.overdue,
     cta: fuBtn({ company: f.company_id, opp: f.opportunity_id }) + (f.thread_id ? btnLink(`${GMAIL_THREAD_URL}${f.thread_id}`, 'Open thread', false) + `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Done</button>`
       : `<button class="btn small" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button>`) }));
   // New outreach: what is approved and only needs Send, then the five strongest new items (never the whole queue).
@@ -3595,7 +3595,8 @@ function pipeLine() {
   const nx = (state.desk?.next20 || []).length; const ap = state.ceo?.funnel?.active_projects;
   return `<div class="pipe-line">
       <button class="pl-i" data-go="desk" data-desk-tab="NEXT20"><span class="pl-n">${n0(nx)}</span><span class="pl-l">Next 20</span></button>
-      <button class="pl-i" data-go="desk" data-desk-tab="POOL"><span class="pl-n">${n0(P.ready_pool)}</span><span class="pl-l">Ready pool · qualified, email route ready</span></button>
+      <button class="pl-i" data-go="desk" data-desk-tab="POOL"><span class="pl-n">${n0(P.ready_pool)}</span><span class="pl-l">Ready pool · qualified, verified route</span></button>
+      <button class="pl-i" data-go="desk" data-desk-tab="INBOX"><span class="pl-n">${n0(P.contact_ready)}</span><span class="pl-l">Contact ready · official inbox only</span></button>
       <div class="pl-i"><span class="pl-n">${n0(P.contact_research)}</span><span class="pl-l">Contact research · being enriched</span></div>
       <div class="pl-i"><span class="pl-n">${n0(ap)}</span><span class="pl-l">Active projects</span></div></div>`;
 }
@@ -3840,15 +3841,18 @@ function scorePanel() {
   const w = state.scWin || 'd7'; const min = S.min_sample || 20;
   const tabs = [['d7', '7 days'], ['d30', '30 days'], ['all', 'All time']].map(([k, l]) => `<button class="${w === k ? 'on' : ''}" data-sc-win="${k}">${l}</button>`).join('');
   const rows = (S.directors || []).map((x) => { const s = x[w] || {}; const cv = x.coverage || {};
-    return `<tr class="clickable" data-director="${x.key}"><td><b>${esc(x.name)}</b></td><td class="num" data-l="Qualified">${n0(s.qualified)}</td>
-      <td class="num" data-l="Email coverage">${cv.coverage_pct != null ? `${esc(cv.coverage_pct)}%` : '—'}</td><td class="num" data-l="Sent">${n0(s.sent)}</td>
-      <td class="num" data-l="Reply rate">${s.sample === 'OK' ? `${esc(s.reply_rate_pct)}%` : `<span class="faint" title="Fewer than ${min} first messages">n=${n0(s.sent)}</span>`}</td>
-      <td class="num" data-l="Replies">${n0(s.replies)}</td><td class="num" data-l="Positive">${n0(s.positive)}</td><td class="num" data-l="Meetings">${n0(s.meetings)}</td>
+    return `<tr class="clickable" data-director="${x.key}"><td><b>${esc(x.name)}</b></td><td class="num" data-l="Live projects"><b>${n0(x.projects?.count)}</b></td>
+      <td class="num" data-l="Positive">${n0(s.positive)}</td><td class="num" data-l="Meetings">${n0(s.meetings)}</td>
       <td class="num" data-l="Briefs">${n0(s.briefs)}</td><td class="num" data-l="Proposals">${n0(s.proposals)}</td><td class="num" data-l="Wins">${n0(s.wins)}</td>
-      <td class="num" data-l="Revenue">${esc(Object.entries(s.revenue || {}).map(([c, a]) => cash(a, c)).join(' + ') || '—')}</td></tr>`; }).join('');
+      <td class="num" data-l="Revenue">${esc(Object.entries(s.revenue || {}).map(([c, a]) => cash(a, c)).join(' + ') || '—')}</td>
+      <td class="num faint" data-l="Replies">${n0(s.replies)}</td><td class="num faint" data-l="Reply rate">${s.sample === 'OK' ? `${esc(s.reply_rate_pct)}%` : `<span title="Fewer than ${min} first messages">n=${n0(s.sent)}</span>`}</td>
+      <td class="num faint" data-l="Qualified">${n0(s.qualified)}</td><td class="num faint" data-l="Email coverage">${cv.coverage_pct != null ? `${esc(cv.coverage_pct)}%` : '—'}</td><td class="num faint" data-l="Sent">${n0(s.sent)}</td></tr>`; }).join('');
   const rank = (S.ranking_d30 || []);
+  const proj = (S.directors || []).filter((x) => (x.projects?.top || []).length).map((x) => `<div class="adv-row"><b>${esc(x.name)}</b> · ${x.projects.top.map((p) => `<button class="linkish" ${p.company_id ? `data-open="company" data-id="${esc(p.company_id)}"` : ''}>${esc(p.company)}</button> <span class="faint">${esc(p.project || '')}${p.confidence ? ` · ${esc(sentence(String(p.confidence).toLowerCase()))}` : ''}</span>`).join(' · ')}</div>`).join('');
   return `<section class="dsec"><header><h2>Director scorecards</h2><div class="tabs sm">${tabs}</div></header>
-    <div class="tbl-wrap"><table class="stack sc"><thead><tr><th>Director</th><th class="num">Qualified</th><th class="num">Email coverage</th><th class="num">Sent</th><th class="num">Reply rate</th><th class="num">Replies</th><th class="num">Positive</th><th class="num">Meetings</th><th class="num">Briefs</th><th class="num">Proposals</th><th class="num">Wins</th><th class="num">Revenue</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${proj ? `<h3 class="grp">Top live project opportunities by Director</h3>${proj}` : ''}
+    <div class="tbl-wrap"><table class="stack sc"><thead><tr><th>Director</th><th class="num">Live projects</th><th class="num">Positive</th><th class="num">Meetings</th><th class="num">Briefs</th><th class="num">Proposals</th><th class="num">Wins</th><th class="num">Revenue</th><th class="num faint">Replies</th><th class="num faint">Reply rate</th><th class="num faint">Qualified</th><th class="num faint">Email coverage</th><th class="num faint">Sent</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="small muted">Judged on live projects, positive replies, meetings, briefs, proposals, wins and revenue. Research volume (the faint columns) is supporting evidence only.</p>
     <p class="small">${rank.length ? `<b>Ranking (30 days, reply rate):</b> ${rank.map((r) => `${esc(dirName(r.key))} ${esc(r.reply_rate_pct)}% of ${esc(r.sent)}`).join(' · ')}` : `<b>No ranking yet:</b> no Director has ${min} first messages in the last 30 days, so a rate would mislead. “n=” is the number of first messages sent.`}</p>
     <p class="src">${esc(S.method || '')}</p></section>`;
 }
@@ -4143,9 +4147,16 @@ function growthBody(g) {
 // ---------------------------------------------------------------- OUTREACH: approve communication. Email first.
 // Outreach in three rows (Adam, 30 Oct): what needs acting on, what is ready, and the history. Warm items first.
 const DESK_GROUPS = [['Actions', [['REPLIES', 'Replies & meetings'], ['FOLLOWUPS', 'Follow-ups'], ['TOP5', "Today's five"], ['NEXT20', 'Next 20']]],
-  ['Ready', [['NEEDS_REVIEW', 'Email ready'], ['LINKEDIN', 'LinkedIn ready'], ['APPROVED', 'Gmail drafts'], ['POOL', 'Ready pool'], ['STUDIO', 'Studio ready']]],
+  ['Ready', [['NEEDS_REVIEW', 'Email ready'], ['LINKEDIN', 'LinkedIn ready'], ['INBOX', 'Official inbox'], ['APPROVED', 'Gmail drafts'], ['POOL', 'Ready pool'], ['STUDIO', 'Studio ready']]],
   ['History', [['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Held / closed']]]];
 const DESK_TABS = DESK_GROUPS.flatMap(([, tabs]) => tabs);
+// Contact gate (Adam, 4 Nov): Email ready means a verified address (or LinkedIn ready). An official or self-published inbox that is
+// not verified is only contact ready: it waits under Official inbox until Adam chooses to use it, and never sits beside verified emails.
+const VERIFIED_ROUTES = ['VALID_VERIFIED', 'VERIFIED', 'VERIFIED_INBOX', 'VERIFIED_GENERAL'];
+const routeVerified = (x) => (x.channel || 'EMAIL') !== 'EMAIL' || VERIFIED_ROUTES.includes(x.route?.email_state);
+// Follow-up tiers (follow_up_tier in the database): who deserves Adam's time first.
+const FU_TIER = { HOT: ['Hot', 'bad'], WARM: ['Warm', 'warn'], STRATEGIC: ['Strategic', 'ok'], NORMAL: ['Normal', ''], LOW_VALUE: ['Low value', ''], CLOSE_HOLD: ['Close / hold', ''] };
+const FU_TOP = ['HOT', 'WARM', 'STRATEGIC'];
 const DESK_PAGE = 25;
 const PROJECT_FILTERS = [['', 'All projects'], ['BRAND', 'Brand shoot / campaign'], ['WEDDING', 'Wedding'], ['TRAVEL', 'Travel partner'], ['PRIVATE', 'NOYA Private'], ['MEDIA', 'Media / podcast'], ['HOSPITALITY', 'Hospitality partnership'], ['CORPORATE', 'Corporate / white-label']];
 const projectGroup = (p) => (!p ? '' : /^(BRAND_SHOOT|FASHION_CAMPAIGN|JEWELLERY_CAMPAIGN|CREATOR_TRIP|PRESS_TRIP|BRAND_ACTIVATION|PRODUCT_LAUNCH|AUTOMOTIVE_SHOOT|CONTENT_PRODUCTION)$/.test(p) ? 'BRAND'
@@ -4197,7 +4208,7 @@ function deskRow(x, readOnly = false) {
     <div class="dr-top"><div class="dr-who"><b>${esc(x.person || x.company || '—')}</b>${x.role ? ` <span class="faint">· ${esc(x.role)}</span>` : ''}${x.person && x.company ? ` · <a class="clickable" data-open="company" data-id="${x.company_id}">${esc(x.company)}</a>` : ''}</div>
       <span class="dr-age" title="Prepared ${esc(fmtDate(x.created_at))}">${x.age_days != null ? `${esc(x.age_days)} d` : ''}</span></div>
     <div class="dr-meta">${esc(dirName(x.director))}${proj ? ` · ${esc(projectName(proj))}` : ''}${x.qa === 'FLAGGED' ? ' · <span class="warn-text">quality flag</span>' : ''}</div>
-    <div class="dr-line"><span>${x.channel !== 'EMAIL' ? 'Route' : x.route?.email_state === 'OFFICIAL_PUBLISHED_INBOX' ? 'Official inbox' : 'Verified email'}</span>${route}</div>
+    <div class="dr-line"><span>${x.channel !== 'EMAIL' ? 'Route' : routeVerified(x) ? 'Verified email' : x.route?.email_state === 'PUBLIC_NAMED_EMAIL' ? 'Own address · not verified' : 'Official inbox · not verified'}</span>${route}</div>
     ${x.reason ? `<div class="dr-line warn-text">${esc(x.reason)}</div>` : ''}
     ${x.angle ? `<div class="dr-line"><span>Why them</span>${esc(plainText(x.angle).replace(/^Partnership model \(recorded\):\s*/i, ''))}</div>` : ''}
     ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(x.why_now))}</div>` : ''}
@@ -4285,7 +4296,8 @@ function viewDesk() {
   const L = D.linkedin || [];
   const warm = state.data ? needsRows(state.data).filter((x) => x.g === 'replies' || x.g === 'meetings') : [];
   const pool = state.ceo?.pipeline?.ready_list || [];
-  const n = { REPLIES: warm.length, TOP5: (D.top5 || []).length, NEXT20: (D.next20 || []).length, NEEDS_REVIEW: c.needs_review.total, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, POOL: state.ceo?.pipeline?.ready_pool ?? pool.length, STUDIO: studioReady().length, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
+  const nrV = (D.needs_review || []).filter(routeVerified); const nrI = (D.needs_review || []).filter((x) => !routeVerified(x));
+  const n = { REPLIES: warm.length, TOP5: (D.top5 || []).length, NEXT20: (D.next20 || []).length, NEEDS_REVIEW: nrV.length, INBOX: nrI.length, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, POOL: state.ceo?.pipeline?.ready_pool ?? pool.length, STUDIO: studioReady().length, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
   const why = queueWhy();
   const filt = (list, withCh) => {
     let l = list;
@@ -4294,7 +4306,7 @@ function viewDesk() {
     if (withCh && state.deskCh) l = l.filter((x) => (x.channel || 'EMAIL') === state.deskCh);
     return l;
   };
-  const base = { NEEDS_REVIEW: D.needs_review, APPROVED: D.approved, FOLLOWUPS: D.followups, SENT: D.sent, REPLIED: D.replied, HELD: [...D.researching, ...D.held] }[t] || [];
+  const base = { NEEDS_REVIEW: nrV, INBOX: nrI, APPROVED: D.approved, FOLLOWUPS: D.followups, SENT: D.sent, REPLIED: D.replied, HELD: [...D.researching, ...D.held] }[t] || [];
   const dirs = [...new Set(base.map((x) => x.director).filter(Boolean))];
   const pre = filt(base, false); const chCount = (ch) => pre.filter((x) => (x.channel || 'EMAIL') === ch).length;
   const hasCh = ['NEEDS_REVIEW', 'FOLLOWUPS', 'SENT', 'REPLIED', 'HELD'].includes(t);
@@ -4307,9 +4319,9 @@ function viewDesk() {
   if (t === 'TOP5') {
     const top = (D.top5 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
       return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 1}</span><span class="small">${esc(p.why)}</span>${x.opportunity_id ? `<button class="btn small ghost" data-modal="lead-card" data-opp="${esc(x.opportunity_id)}">Why this lead</button>` : ''}</div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
-    const rest = Math.max(0, c.needs_review.total - (D.top5 || []).length);
+    const rest = Math.max(0, nrV.length - (D.top5 || []).length);
     body = `<div class="dlist">${top || `<div class="calm"><div class="calm-t">No draft is waiting for you yet.</div><div class="t-sub">${esc(why || 'Fewer is fine: replies, meetings and follow-ups come first.')}</div>${pool.length ? '<div class="btn-row mt8 center"><button class="btn small primary" data-desk-tab="POOL">See the ready accounts</button></div>' : ''}</div>`}</div>
-      ${rest ? `<p class="src">${plural(rest, 'more item waits', 'more items wait')} under <button class="linkish" data-desk-tab="NEEDS_REVIEW">Needs review</button>. They are not lost; they are simply not today's best five.</p>` : ''}`;
+      ${rest ? `<p class="src">${plural(rest, 'more item waits', 'more items wait')} under <button class="linkish" data-desk-tab="NEEDS_REVIEW">Email ready</button>. They are not lost; they are simply not today's best five.${nrI.length ? ` ${plural(nrI.length, 'draft goes', 'drafts go')} only to an official inbox and ${nrI.length === 1 ? 'waits' : 'wait'} under <button class="linkish" data-desk-tab="INBOX">Official inbox</button> for your decision.` : ''}</p>` : ''}`;
   } else if (t === 'NEXT20') {
     const nx = (D.next20 || []).map((p, i) => { const x = deskItem(p.ref); if (!x) return ''; const a = x.channel === 'LINKEDIN' ? liOf(x) : null;
       return `<div class="t5"><div class="t5-h"><span class="t5-n">${i + 6}</span><span class="small">${esc(p.why)}</span>${x.opportunity_id ? `<button class="btn small ghost" data-modal="lead-card" data-opp="${esc(x.opportunity_id)}">Why this lead</button>` : ''}</div>${a ? liRow(a) : deskRow(x)}</div>`; }).join('');
@@ -4324,7 +4336,7 @@ function viewDesk() {
   } else if (t === 'POOL') {
     const P = state.ceo?.pipeline || {};
     body = `<div class="dlist">${pool.map(readyRow).join('') || '<div class="empty">No ready account without a draft.</div>'}</div>
-      <p class="src">${n0(P.ready_pool)} qualified accounts have a usable route; the ${n0(pool.length)} strongest without a draft are listed. A named person's own address outranks a shared inbox, and a shared inbox at a large organisation is used only when you approve it. ${n0(P.contact_research)} more are still being researched for the right person or a verified address.</p>`;
+      <p class="src">${n0(P.ready_pool)} qualified accounts have a verified route; the ${n0(pool.length)} strongest without a draft are listed. ${n0(P.contact_ready)} more have only an official inbox: contact ready, not email ready, used only when you approve it. ${n0(P.contact_research)} more are still being researched for the right person or a verified address.</p>`;
   } else if (t === 'STUDIO') {
     const sr = studioReady();
     body = `<div class="dlist">${sr.map((s) => `<div class="t-row"><div><div class="t-main">${esc(s.title || 'Studio document')}${s.company ? ` · <span class="faint">${esc(s.company)}</span>` : ''}</div>
@@ -4333,7 +4345,7 @@ function viewDesk() {
   } else if (t === 'LINKEDIN') {
     body = LI_SECTIONS.map(([st, l]) => { const it = L.filter((a) => a.state === st); return it.length ? `<h3 class="grp">${esc(l)} · ${it.length}</h3><div class="dlist">${it.map(liRow).join('')}</div>` : ''; }).join('')
       || '<div class="empty">No LinkedIn item yet. Items arrive when email is exhausted for a strong person, or when a relationship is better on LinkedIn.</div>';
-  } else if (['NEEDS_REVIEW', 'HELD'].includes(t)) {
+  } else if (['NEEDS_REVIEW', 'INBOX', 'HELD'].includes(t)) {
     const pages = Math.max(1, Math.ceil(list.length / DESK_PAGE)); const pg = Math.min(state.deskPage, pages - 1);
     const shown = list.slice(pg * DESK_PAGE, pg * DESK_PAGE + DESK_PAGE);
     const pager = list.length > DESK_PAGE ? `<div class="pager"><span class="small">Showing ${pg * DESK_PAGE + 1}–${pg * DESK_PAGE + shown.length} of ${list.length}</span><span><button class="btn small ghost" data-desk-page="-1" ${pg === 0 ? 'disabled' : ''}>Previous</button><button class="btn small ghost" data-desk-page="1" ${pg >= pages - 1 ? 'disabled' : ''}>Next</button></span></div>` : '';
@@ -4343,16 +4355,25 @@ function viewDesk() {
     body = `${pager}<div class="dlist">${shown.map((x) => deskRow(x)).join('') || emptyEmail || '<div class="empty">Nothing here.</div>'}</div>${shown.length > 4 ? pager : ''}
       ${t === 'HELD' && D.rejected.length ? `<h3>Rejected · ${D.rejected.length}</h3><div class="dlist">${D.rejected.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company)}${x.person ? ` · <span class="faint">${esc(x.company)}</span>` : ''}</div><div class="t-sub">${esc(CH_LABEL[x.channel] || x.channel || '')} · ${esc(x.reason || '')} · rejected ${esc(shortDay(x.rejected_at))}${x.held_until ? ` · not rediscovered until ${esc(shortDay(x.held_until))}` : ''}</div></div></div>`).join('')}</div>` : ''}`;
   } else if (t === 'APPROVED') body = `<div class="dlist">${list.map(approvedRow).join('') || '<div class="empty">Nothing approved yet. Approve an email under Needs review: HQ re-checks the address and creates one unsent Gmail draft.</div>'}</div>`;
-  else if (t === 'FOLLOWUPS') body = `<div class="dlist">${list.map((f) => `<div class="t-row"><div><div class="t-main">${esc(f.person || f.company || '')}${f.person ? ` · <span class="faint">${esc(f.company || '')}</span>` : ''} · follow-up ${esc(f.step)}</div>
-      <div class="t-sub">${esc(CH_LABEL[f.channel] || f.channel)} · ${f.overdue ? `<span class="bad-text">overdue since ${esc(shortDay(f.due_at))}</span>` : `due ${esc(shortDay(f.due_at))}`}${f.director ? ` · ${esc(dirName(f.director))}` : ''}${f.thread_id ? ` · ${gmailLink(f.thread_id, 'thread')}` : ''}</div></div>
-      <div class="t-btns">${fuBtn({ company: f.company_id, opp: f.opportunity_id })}<button class="btn small primary" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${f.task_id}">Not needed</button></div></div>`).join('') || '<div class="empty">No follow-ups open.</div>'}</div>
+  else if (t === 'FOLLOWUPS') {
+    const fuRow = (f) => `<div class="t-row"><div><div class="t-main">${f.tier ? `${pill(...(FU_TIER[f.tier] || [f.tier, '']))} ` : ''}${esc(f.person || f.company || '')}${f.person ? ` · <span class="faint">${esc(f.company || '')}</span>` : ''} · follow-up ${esc(f.step)}</div>
+      <div class="t-sub">${f.tier_why ? `${esc(f.tier_why)} · ` : ''}${esc(CH_LABEL[f.channel] || f.channel)} · ${f.overdue ? `<span class="bad-text">overdue since ${esc(shortDay(f.due_at))}</span>` : `due ${esc(shortDay(f.due_at))}`}${f.director ? ` · ${esc(dirName(f.director))}` : ''}${f.thread_id ? ` · ${gmailLink(f.thread_id, 'thread')}` : ''}</div></div>
+      <div class="t-btns">${fuBtn({ company: f.company_id, opp: f.opportunity_id })}<button class="btn small primary" data-modal="task-done" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Followed up</button><button class="btn small" data-modal="task-snooze" data-id="${f.task_id}" data-title="${esc(`Follow-up ${f.step} — ${f.person || f.company || ''}`)}">Snooze</button><button class="btn small ghost" data-modal="task-dismiss" data-id="${f.task_id}">Not needed</button></div></div>`;
+    const top = list.filter((f) => FU_TOP.includes(f.tier)); const low = list.filter((f) => ['LOW_VALUE', 'CLOSE_HOLD'].includes(f.tier));
+    const rest = list.filter((f) => !top.includes(f) && !low.includes(f));
+    body = `${top.length ? `<h3 class="grp">Top follow-ups today · ${top.length}</h3><p class="small muted">Hot: they wrote last or asked to meet. Warm: they replied. Strategic: a project brief or a strong Egypt project exists.</p><div class="dlist">${top.map(fuRow).join('')}</div>` : ''}
+      ${rest.length ? `<h3 class="grp">Other follow-ups · ${rest.length}</h3><div class="dlist">${rest.map(fuRow).join('')}</div>` : ''}
+      ${low.length ? `<details class="mt8"><summary class="small">Low value or close / hold · ${low.length}</summary><p class="small muted">Suppliers, hotels and aviation, accounts on hold, or three messages without an answer. Close them rather than chase.</p><div class="dlist">${low.map(fuRow).join('')}</div></details>` : ''}
+      ${list.length ? '' : '<div class="empty">No follow-ups open.</div>'}
       <p class="src">Follow-up 1 is due 4 days after the real send; follow-up 2 six days after follow-up 1 is sent; never more than two. A reply, meeting, proposal, decline or do-not-contact cancels them automatically.</p>`;
+  }
   else if (t === 'SENT') body = `<div class="dlist">${list.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}</div><div class="t-sub">${esc(CH_LABEL[x.channel] || x.channel)} · ${esc(x.subject || x.summary || '')} · ${esc(fmtDate(x.sent_at))}</div></div></div>`).join('') || '<div class="empty">Nothing sent in the last 60 days.</div>'}</div>`;
   else if (t === 'REPLIED') body = `<div class="dlist">${list.map((x) => `<div class="t-row clickable" ${x.company_id ? `data-open="company" data-id="${x.company_id}"` : ''}><div><div class="t-main">${esc(x.person || x.company || '')}${x.person ? ` · <span class="faint">${esc(x.company || '')}</span>` : ''}${x.classification ? ` · ${esc(REPLY_GROUP[x.classification] || x.classification)}` : ''}</div><div class="t-sub">${esc(x.summary || x.subject || '')} · ${esc(fmtDate(x.received_at))}</div></div></div>`).join('') || '<div class="empty">No replies in the last 60 days.</div>'}</div>`;
   const intro = { NEXT20: 'The next twenty, ranked the same way. When you clear one of today\'s five, the strongest of these moves up at once. Nothing is sent automatically.',
-    TOP5: "The five strongest new conversations today, ranked by project potential, relationship warmth, timing, the decision maker, the Egypt opportunity and repeat business. At most two per Director; accounts you put on hold are left out. Nothing is sent automatically.",
+    TOP5: "The five strongest new project conversations today, ranked by project potential, a project brief on file, relationship warmth, timing, the decision maker and the Egypt opportunity. At most one per Director, and only a verified email or a LinkedIn-ready person; accounts you put on hold are left out. Nothing is sent automatically.",
     LINKEDIN: 'Relationship messages, never mass outreach. Copy & open LinkedIn copies the message and opens their profile: you send it yourself, then press Mark sent. When they reply, paste what they wrote with Log reply. HQ never logs in to LinkedIn and never sends.',
-    NEEDS_REVIEW: 'Approve re-checks the address and creates one unsent Gmail draft. LinkedIn and Instagram are sent by you, then marked sent. Nothing is ever sent automatically.',
+    NEEDS_REVIEW: 'Verified email only: the right person at a qualified account, with an address that passed verification. Approve re-checks the address and creates one unsent Gmail draft. Nothing is ever sent automatically.',
+    INBOX: 'Contact ready: an inbox the company publishes (info@, hello@) or a named address that is not yet verified. These never count as Email ready. Approve only if you want to use that inbox; otherwise the agents keep looking for the person\'s own verified address.',
     HELD: 'Not ready yet: the person, role or a verified route is missing, you held it, or a draft failed the quality check. The agents keep working on these.' }[t];
   return `${head('Outreach', 'Approve communication · email first')}${autoBanner()}
     ${DESK_GROUPS.map(([g, tabs]) => `<div class="tabs"><span class="tabs-l">${esc(g)}</span>${tabs.map(([k, l]) => `<button data-desk-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k] ?? 0)}</span></button>`).join('')}</div>`).join('')}
@@ -4728,9 +4749,24 @@ function studioRoleModal(m) {
     <div class="btn-row mt8"><button class="btn primary" data-go="studio">Open Studio</button><button class="btn ghost" data-close>Close</button></div></div></div>`;
 }
 // Review on the card: the document, its PDF and why it is where it is; Approve or Request changes (a note). Never sends.
+// Internal opportunity brief (Studio, OPPORTUNITY_NOTE): read-only, never a PDF, never sent.
+const BRIEF_FIELDS = [['company', 'Company'], ['person', 'Right person'], ['route', 'Contact route'], ['signal', 'Current signal'], ['opportunity', 'Opportunity'], ['concept', 'Project concept'],
+  ['why_noya', 'Why NOYA'], ['they_own', 'Partner role'], ['noya_owns', 'NOYA role'], ['components', 'Locations / components'], ['journey', 'Client / guest journey'], ['model', 'Commercial model'],
+  ['potential', 'Commercial potential'], ['risks', 'Risks / unconfirmed'], ['first_subject', 'First subject'], ['first_message', 'First message'], ['next_step', 'Desired next step'], ['next_action', 'Next action']];
+function briefBlock(b) {
+  if (!b) return '';
+  const val = (v) => (Array.isArray(v) ? v.join(' · ') : String(v ?? ''));
+  return `<div class="brief-h small">${b.director ? `${esc(dirName(b.director))} · ` : ''}${esc(b.lane || '')}${b.score != null ? ` · score ${esc(b.score)}` : ''}${b.confidence ? ` · ${esc(sentence(String(b.confidence).toLowerCase()))} confidence` : ''}</div>
+    ${BRIEF_FIELDS.filter(([k]) => val(b[k]).trim()).map(([k, l]) => `<div class="adv-row"><b>${esc(l)}</b><div class="small" style="white-space:pre-wrap">${esc(val(b[k]))}</div></div>`).join('')}
+    <p class="src">Internal only. A client one-pager follows only after a reply, a meeting or a request for information.</p>`;
+}
 function studioReviewModal(m) {
   const x = studioById(m.id) || {}; const s = studioState(x); const noun = STUDIO_NOUN[x.doc_type] || 'PDF';
   const canReview = x.status === 'FOR_REVIEW' && s.h.external && !s.h.email;
+  if (x.brief) {
+    return `<div class="modal-bg"><div class="modal wide"><h3>${esc(x.title || 'Opportunity brief')}</h3>${briefBlock(x.brief)}
+      <div class="btn-row mt8">${x.company_id ? `<button class="btn primary" data-open="company" data-id="${esc(x.company_id)}" data-close>Open the relationship</button>` : ''}<button class="btn ghost" data-close>Close</button></div></div></div>`;
+  }
   return `<div class="modal-bg"><div class="modal"><h3>${esc(x.title || x.slug || 'Studio document')}</h3>
     <p class="small muted">${esc(x.company || '')} · ${esc(DOC_TYPE[x.doc_type] || x.doc_type || '')}${x.version ? ` v${esc(x.version)}` : ''}${x.level ? ` · Level ${esc(x.level)}` : ''}</p>
     ${x.ready_class ? `<p class="small">${readyPill(x.ready_class)} ${esc(x.ready_reason || '')}</p>` : ''}${x.hold_reason ? `<p class="small warn-text">${esc(x.hold_reason)}</p>` : ''}

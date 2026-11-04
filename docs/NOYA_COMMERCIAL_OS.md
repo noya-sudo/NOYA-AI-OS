@@ -2124,3 +2124,54 @@ accounts had a usable route but no draft. Nothing was lost; nothing was being wr
 - Daily: 22.
 
 Legacy workflows stay off. Hunter verification runs through n8n, so it resumes when the quota resets.
+
+## Project engine conversion (4 Nov 2026): development frozen after this pass
+
+The engine is judged on conversations, meetings, briefs, proposals, projects and revenue, not on research volume.
+Migration `20261104100000_project_engine_conversion.sql` was applied live in five parts.
+
+1. **Follow-up tiers.** `follow_up_tier(task)` classes every open follow-up, checking in this order:
+   - CLOSE / HOLD: the account is on hold, the next move is CLOSE or HOLD, or three messages have gone out without an answer.
+   - HOT: they wrote last, or asked to meet in the last 60 days.
+   - WARM: a reply in the last 180 days.
+   - LOW VALUE: a supplier, not relevant or a competitor, or a hotel, aviation or operator account that is not a buyer.
+   - STRATEGIC: a project brief exists, or the Egypt project score is 4 or more.
+   - NORMAL: everything else.
+
+   The desk orders follow-ups by tier. HQ shows "Top follow-ups today" (Hot, Warm, Strategic) first and collapses Low value and Close / hold. The Dashboard leaves those two tiers out.
+2. **Verified contact gate.** Today's five and the Next 20 admit only:
+   - a verified email at the right person, or
+   - a LinkedIn-ready person.
+
+   An official published inbox, or a named address that is not verified, is **Contact ready**. It sits under Outreach → Official inbox and never counts as Email ready. Nothing is deleted; the classification changes.
+
+   Ranking adds +15 when an internal opportunity brief exists. Today's five takes at most one per Director, and the Next 20 at most four per Director.
+3. **Ready pool.** The pool now holds verified routes only. Contact-ready accounts are counted separately (`contact_ready`, `contact_ready_by_route`).
+4. **Internal opportunity brief.** The existing Studio stores the brief as an OPPORTUNITY_NOTE: stage note, audience INTERNAL, level 0, INTERNAL_ONLY, with the brief in `content.brief`. A brief is created when there is:
+   - a high score,
+   - a specific project idea,
+   - the right person, and
+   - a credible why-now.
+
+   Fields:
+   - company, person and contact route
+   - signal, opportunity, project concept and why NOYA
+   - partner role and NOYA role
+   - components and client / guest journey
+   - commercial model, potential, and risks / unconfirmed
+   - first message, next step and next action
+
+   A brief never becomes a PDF and is never sent. The sequence is: internal brief → email → reply / meeting → one-pager → proposal → project. The Studio "View" button opens the brief read-only.
+5. **Director projects.** `director_projects(director)` returns each Director's top three live briefs by score. `director_scorecards()` carries them as `projects`.
+
+   The HQ scorecard leads with Live projects, then:
+   - Positive
+   - Meetings
+   - Briefs
+   - Proposals
+   - Wins
+   - Revenue
+
+   Replies, reply rate, qualified, email coverage and sent are shown faint, as supporting evidence only.
+
+Brief content (people, addresses, messages) lives only in the database, never in this public repository.
