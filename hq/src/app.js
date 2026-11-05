@@ -4541,9 +4541,8 @@ function weeklyMission(L) {
 }
 
 // ---------------------------------------------------------------- STUDIO (primary since 19 Oct): ideas, concepts, briefs, proposals
-// hq_studio(): six columns from studio_documents and Adam's requests, the eight Studio roles and the three levels. Studio prepares,
+// hq_studio(): the columns from studio_documents and Adam's requests (shown as four views since 5 Nov), the eight Studio roles and the three levels. Studio prepares,
 // Adam approves and sends: nothing here sends, and a document above the level the relationship has earned is held, never sent early.
-const STUDIO_COLS = [['NEEDS_BRIEF', 'Needs brief'], ['DRAFTING', 'Drafting'], ['NEEDS_REVIEW', 'Needs review'], ['APPROVED', 'Approved'], ['SENT', 'Sent'], ['SUPERSEDED', 'Superseded']];
 const DOC_TYPE = { EMAIL_IDEA: 'Email idea', OPPORTUNITY_NOTE: 'Opportunity note', CONCEPT: 'Concept', ONE_PAGE_CONCEPT: 'One-page concept', BRIEF: 'Brief', PROPOSAL: 'Proposal',
   ITINERARY: 'Itinerary', OPS_ITINERARY: 'Internal itinerary', PROJECT: 'Project plan', DESK_BRIEF: 'Desk brief' };
 const REQ_KIND = { IDEA: 'Idea', ONE_PAGE_CONCEPT: 'One-page concept', BRIEF: 'Brief', PROPOSAL: 'Proposal', ITINERARY: 'Itinerary', RETREAT_CONCEPT: 'Retreat concept',
@@ -4678,47 +4677,69 @@ async function studioWatchTick() {
   else if (s?.pending) state.notice = { err: true, text: 'No answer from Gmail yet. Refresh in a minute; nothing was sent.' };
   load(true, 'desk'); render();
 }
-function studioCol(key, label, S) {
-  const C = S.columns || {}; const all = state.studioAll[key];
-  let items = []; let count = 0; let extra = '';
-  if (key === 'NEEDS_BRIEF') {
-    const req = C.NEEDS_BRIEF?.requests || []; const warm = C.NEEDS_BRIEF?.warmed || [];
-    count = req.length + warm.length;
-    items = [...req.map((r) => `<div class="sd req"><div class="sd-t">${esc(REQ_KIND[r.kind] || r.kind)} · ${esc(r.status === 'IN_PROGRESS' ? 'in progress' : 'requested')}</div>
-        <div class="sd-m">${coLink(r.company_id, r.company)}</div>${r.note ? `<div class="sd-m faint">${esc(r.note)}</div>` : ''}
-        <div class="sd-m faint">Level ${esc(r.level)} · ${esc(shortDay(r.created_at))} <button class="linkish" data-studio-cancel="${r.id}">Cancel</button></div></div>`),
-      ...warm.map((w) => `<div class="sd warm"><div class="sd-t">${coLink(w.company_id, w.company)}</div><div class="sd-m">${esc(w.next_output || '')}</div>
-        <div class="sd-m faint">Warm since ${esc(shortDay(w.warmed_at))}</div><div class="sd-acts"><button class="btn small primary" data-modal="studio-new" data-type="${Number(w.earned_level) >= 3 ? 'BRIEF' : 'ONE_PAGE_CONCEPT'}" data-company="${w.company_id}">Create ${Number(w.earned_level) >= 3 ? 'brief' : 'concept'}</button></div></div>`)];
-  } else if (key === 'SUPERSEDED') {
-    count = Number(C.SUPERSEDED?.count || 0); items = (C.SUPERSEDED?.recent || []).map(studioDoc);
-    if (count > items.length) extra = `<div class="sd-m faint">${count - items.length} older versions kept</div>`;
-  } else { const list = C[key] || []; count = list.length; items = list.map(studioDoc); }
-  const shown = all ? items : items.slice(0, 6);
-  return `<div class="kcol"><div class="kh"><span>${esc(label)}</span><b>${n0(count)}</b></div>
-    ${shown.join('') || `<div class="sd-m faint kempty">${key === 'SENT' ? 'Nothing sent yet. You send; Studio never does.' : 'Empty'}</div>`}
-    ${items.length > 6 ? `<button class="linkish" data-studio-all="${key}">${all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}${extra}</div>`;
+// STUDIO = NOYA's creative room (Adam, 5 Nov): four views over the same studio_documents, nothing deleted.
+// OPPORTUNITIES internal briefs (never PDFs) · CREATIVE client work being made or reviewed · READY approved work that needs Adam's
+// hand (Attach, Open Gmail & send) · HISTORY sent, superseded, held and old versions, kept out of the working views.
+const STUDIO_TABS = [['READY', 'Ready'], ['CREATIVE', 'Creative'], ['OPPORTUNITIES', 'Opportunities'], ['HISTORY', 'History']];
+function studioSplit(S) {
+  const C = S.columns || {}; const seen = new Set();
+  const live = [...(C.DRAFTING || []), ...(C.NEEDS_REVIEW || []), ...(C.APPROVED || [])].filter((d) => d.id && !seen.has(d.id) && seen.add(d.id));
+  const isOld = (d) => d.status === 'SUPERSEDED' || d.ready_class === 'SUPERSEDED' || d.status === 'SENT' || !!d.sent_at;
+  const held = (d) => d.ready_class === 'HOLD' || !!d.hold_reason;
+  // A cover email travels with its document: its actions are on the document's card, so it does not get a card of its own.
+  const coverOf = (d) => d.handoff?.email && live.some((o) => o !== d && !o.handoff?.email && o.handoff?.draft?.id && o.handoff.draft.id === d.handoff?.draft?.id);
+  const opp = live.filter((d) => d.doc_type === 'OPPORTUNITY_NOTE' && !isOld(d)).sort((a, b) => Number(b.brief?.score || 0) - Number(a.brief?.score || 0));
+  const work = live.filter((d) => d.doc_type !== 'OPPORTUNITY_NOTE' && !isOld(d) && !held(d) && !coverOf(d));
+  const ready = work.filter((d) => d.status === 'APPROVED');
+  const creative = work.filter((d) => d.status !== 'APPROVED');
+  const history = [...live.filter((d) => d.doc_type !== 'OPPORTUNITY_NOTE' && (isOld(d) || held(d))), ...(C.SENT || []), ...(C.SUPERSEDED?.recent || [])]
+    .filter((d, i, a) => a.findIndex((o) => o.id === d.id) === i)
+    .sort((a, b) => String(b.sent_at || b.approved_at || b.created_at || '').localeCompare(String(a.sent_at || a.approved_at || a.created_at || '')));
+  return { opp, creative, ready, history, req: C.NEEDS_BRIEF?.requests || [], warm: C.NEEDS_BRIEF?.warmed || [], older: Math.max(0, Number(C.SUPERSEDED?.count || 0) - (C.SUPERSEDED?.recent || []).length) };
 }
-// Readiness across the latest version of every document (the documents, not their cover emails): READY FOR ATTACHMENT and READY
-// TO SEND are counted apart (21 Oct): a document is ready to send only once its PDF is verified on its Gmail draft.
-function studioReadyLine() {
-  const docs = studioDocs().filter((d) => !d.sent_at && d.stage !== 'email');
-  // Ready for attachment means approved and waiting only for its PDF to go onto the draft; one still in review is not counted.
-  const n = Object.fromEntries(Object.keys(READY_CLASS).map((k) => [k, docs.filter((d) => d.ready_class === k && (k !== 'READY_FOR_ATTACHMENT' || d.status === 'APPROVED')).length]));
-  return `<div class="pills mt6 sready"><span class="small"><b>${n0(n.READY_FOR_ATTACHMENT)}</b> ready for attachment</span><span class="small"><b>${n0(n.READY_TO_SEND)}</b> ready to send</span>
-    ${['NEEDS_UPDATE', 'HOLD', 'INTERNAL_ONLY'].map((k) => (n[k] ? `${readyPill(k)} <span class="small">${n0(n[k])}</span>` : '')).join(' ')}</div>`;
+function briefCard(d) {
+  const b = d.brief || {};
+  return `<div class="sd scard"><div class="sd-t">${coLink(d.company_id, b.company || d.company)}</div>
+    <div class="sd-m">${esc(b.project_short || d.title || '')}</div>
+    <div class="sd-m faint">${b.director ? `${esc(dirName(b.director))} · ` : ''}${b.score != null ? `score ${esc(b.score)}` : ''}${b.confidence ? ` · ${esc(sentence(String(b.confidence).toLowerCase()))}` : ''}</div>
+    ${b.person ? `<div class="sd-m">${esc(b.person)}</div>` : ''}${b.next_action ? `<div class="sd-m faint">Next: ${esc(b.next_action)}</div>` : ''}
+    <div class="sd-acts"><button class="btn small primary" data-modal="studio-review" data-id="${esc(d.id)}">View brief</button></div></div>`;
 }
 function viewStudio() {
   const S = state.studio; if (!S) { loadV3('studio', 'hq_studio'); return head('Studio') + waitFor('studio', 'the Studio'); }
-  const out = S.outputs || [];
-  return `${head('Studio', esc(['Ideas, concepts, briefs and proposals · Studio prepares, you approve and send', S.generated_at ? `updated ${new Date(S.generated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' })}` : ''].filter(Boolean).join(' · ')))}
-    <div class="lvls">${(S.levels || []).map((l) => `<div class="lvl"><b>${esc(l.label)}</b><span>${esc(l.when)}</span></div>`).join('')}</div>
-    <div class="sacts">${(S.actions || []).map((a) => `<button class="btn small ${a.level === 1 ? 'primary' : ''}" data-modal="studio-new" data-type="${a.kind}">${esc(a.label)}</button>`).join('')}</div>
-    ${studioReadyLine()}
-    <div class="kanban">${STUDIO_COLS.map(([k, l]) => studioCol(k, l, S)).join('')}</div>
-    ${out.length ? `<section class="dsec mt8"><header><h2>Prepared for a conversation</h2><span class="faint small">From prepared to sent, reply, meeting</span></header><div class="tbl-wrap"><table class="stack"><thead><tr><th>Company</th><th>Level</th><th>Status</th><th>Next step</th><th>Sent</th><th>Reply</th><th>Meeting</th></tr></thead><tbody>
-      ${out.map((o) => `<tr><td>${esc(o.company || '')}</td><td data-l="Level" class="small">${esc(o.level_label || `Level ${o.level}`)}</td><td data-l="Status">${pill(sentence(String(o.status || '').toLowerCase()), o.status === 'HELD' ? 'warn' : o.status === 'SENT' ? 'ok' : '')}</td>
-        <td data-l="Next step" class="small">${esc(plainText(o.next_step || '—'))}</td><td data-l="Sent" class="small">${o.sent_at ? esc(shortDay(o.sent_at)) : '—'}</td>
-        <td data-l="Reply" class="small">${o.reply_at ? esc(shortDay(o.reply_at)) : '—'}</td><td data-l="Meeting" class="small">${o.meeting_at ? esc(shortDay(o.meeting_at)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+  const V = studioSplit(S); const out = S.outputs || [];
+  const n = { OPPORTUNITIES: V.opp.length, CREATIVE: V.creative.length + V.req.length, READY: V.ready.length, HISTORY: V.history.length + V.older };
+  const t = STUDIO_TABS.some(([k]) => k === state.studioTab) ? state.studioTab : (n.READY ? 'READY' : 'CREATIVE');
+  const grid = (cards, empty) => (cards.length ? `<div class="sgrid">${cards.join('')}</div>` : `<div class="calm"><div class="calm-t">${esc(empty)}</div></div>`);
+  let body = '';
+  if (t === 'READY') {
+    body = `<p class="muted small">Approved work that needs your hand: preview it, attach it to its Gmail draft, then open Gmail and send. Nothing is sent from here.</p>
+      ${grid(V.ready.map(studioDoc), 'Nothing is waiting for you. Approved concepts appear here with Attach and Open Gmail.')}`;
+  } else if (t === 'CREATIVE') {
+    const reqs = V.req.map((r) => `<div class="sd scard req"><div class="sd-t">${esc(REQ_KIND[r.kind] || r.kind)} · ${esc(r.status === 'IN_PROGRESS' ? 'in progress' : 'requested')}</div>
+        <div class="sd-m">${coLink(r.company_id, r.company)}</div>${r.note ? `<div class="sd-m faint">${esc(r.note)}</div>` : ''}
+        <div class="sd-m faint">Level ${esc(r.level)} · ${esc(shortDay(r.created_at))} <button class="linkish" data-studio-cancel="${r.id}">Cancel</button></div></div>`);
+    const warm = V.warm.map((w) => `<div class="sd scard warm"><div class="sd-t">${coLink(w.company_id, w.company)}</div><div class="sd-m">${esc(w.next_output || '')}</div>
+        <div class="sd-m faint">Warm since ${esc(shortDay(w.warmed_at))}</div><div class="sd-acts"><button class="btn small primary" data-modal="studio-new" data-type="${Number(w.earned_level) >= 3 ? 'BRIEF' : 'ONE_PAGE_CONCEPT'}" data-company="${w.company_id}">Create ${Number(w.earned_level) >= 3 ? 'brief' : 'concept'}</button></div></div>`);
+    body = `<p class="muted small">Client-facing concepts, briefs, proposals and itineraries being made or waiting for your review. Concept visualisations are labelled as such: they show what NOYA could create, never past work.</p>
+      <div class="lvls">${(S.levels || []).map((l) => `<div class="lvl"><b>${esc(l.label)}</b><span>${esc(l.when)}</span></div>`).join('')}</div>
+      <div class="sacts">${(S.actions || []).map((a) => `<button class="btn small ${a.level === 1 ? 'primary' : ''}" data-modal="studio-new" data-type="${a.kind}">${esc(a.label)}</button>`).join('')}</div>
+      ${grid([...V.creative.map(studioDoc), ...reqs], 'Nothing in the making. Request a concept above, or start one from a warm relationship below.')}
+      ${warm.length ? `<h3 class="grp">Warm relationships that have earned a concept · ${warm.length}</h3>${grid(warm, '')}` : ''}`;
+  } else if (t === 'OPPORTUNITIES') {
+    body = `<p class="muted small">Internal opportunity briefs: the project NOYA is trying to create with each account. For NOYA's thinking only; never attached, never sent.</p>
+      ${grid(V.opp.map(briefCard), 'No internal brief yet.')}`;
+  } else {
+    body = `<p class="muted small">Sent work, earlier versions and held documents. Kept for the record; nothing here needs you.</p>
+      ${grid(V.history.map(studioDoc), 'No history yet.')}${V.older ? `<p class="src">${n0(V.older)} older versions kept in the record.</p>` : ''}
+      ${out.length ? `<section class="dsec mt8"><header><h2>Prepared for a conversation</h2><span class="faint small">From prepared to sent, reply, meeting</span></header><div class="tbl-wrap"><table class="stack"><thead><tr><th>Company</th><th>Level</th><th>Status</th><th>Next step</th><th>Sent</th><th>Reply</th><th>Meeting</th></tr></thead><tbody>
+        ${out.map((o) => `<tr><td>${esc(o.company || '')}</td><td data-l="Level" class="small">${esc(o.level_label || `Level ${o.level}`)}</td><td data-l="Status">${pill(sentence(String(o.status || '').toLowerCase()), o.status === 'HELD' ? 'warn' : o.status === 'SENT' ? 'ok' : '')}</td>
+          <td data-l="Next step" class="small">${esc(plainText(o.next_step || '—'))}</td><td data-l="Sent" class="small">${o.sent_at ? esc(shortDay(o.sent_at)) : '—'}</td>
+          <td data-l="Reply" class="small">${o.reply_at ? esc(shortDay(o.reply_at)) : '—'}</td><td data-l="Meeting" class="small">${o.meeting_at ? esc(shortDay(o.meeting_at)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}`;
+  }
+  return `${head('Studio', esc(['NOYA’s creative room · Studio prepares, you approve and send', S.generated_at ? `updated ${new Date(S.generated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' })}` : ''].filter(Boolean).join(' · ')))}
+    <div class="tabs">${STUDIO_TABS.map(([k, l]) => `<button data-studio-tab="${k}" class="${t === k ? 'on' : ''}">${l} <span class="n">${esc(n[k])}</span></button>`).join('')}</div>
+    ${body}
     <p class="src">${esc(S.rules || '')} <button class="linkish" data-tab="agents">The Studio team</button></p>`;
 }
 // The Studio workforce on the Agents page: eight roles, the Brief & Proposal Architect first. Click a role for its work.
@@ -4756,7 +4777,8 @@ const BRIEF_FIELDS = [['company', 'Company'], ['person', 'Right person'], ['rout
 function briefBlock(b) {
   if (!b) return '';
   const val = (v) => (Array.isArray(v) ? v.join(' · ') : String(v ?? ''));
-  return `<div class="brief-h small">${b.director ? `${esc(dirName(b.director))} · ` : ''}${esc(b.lane || '')}${b.score != null ? ` · score ${esc(b.score)}` : ''}${b.confidence ? ` · ${esc(sentence(String(b.confidence).toLowerCase()))} confidence` : ''}</div>
+  const head = [b.director && dirName(b.director), b.lane, b.score != null && `score ${b.score}`, b.confidence && `${sentence(String(b.confidence).toLowerCase())} confidence`].filter(Boolean).join(' · ');
+  return `<div class="brief-h small">${esc(head)}</div>
     ${BRIEF_FIELDS.filter(([k]) => val(b[k]).trim()).map(([k, l]) => `<div class="adv-row"><b>${esc(l)}</b><div class="small" style="white-space:pre-wrap">${esc(val(b[k]))}</div></div>`).join('')}
     <p class="src">Internal only. A client one-pager follows only after a reply, a meeting or a request for information.</p>`;
 }
@@ -4878,6 +4900,7 @@ function bindV3(on) {
   on('[data-studio-cancel]', 'click', async (b, e) => { e.stopPropagation(); await call('hq_studio_request_action', { p_id: b.dataset.studioCancel, p_action: 'CANCEL' }, 'Request cancelled. It is kept in the history.'); loadV3('studio', 'hq_studio', {}, true); });
   on('[data-mission-all]', 'click', () => { state.missionAll = !state.missionAll; render(); });
   on('[data-studio-all]', 'click', (b) => { state.studioAll[b.dataset.studioAll] = !state.studioAll[b.dataset.studioAll]; render(); });
+  on('[data-studio-tab]', 'click', (b) => { state.studioTab = b.dataset.studioTab; render(); });
   on('[data-studio-preview]', 'click', (b, e) => { e.stopPropagation(); studioPreview(b.dataset.studioPreview); });
   on('[data-studio-attach]', 'click', (b, e) => { e.stopPropagation(); b.disabled = true; studioAttach(b.dataset.studioAttach); });
   $('#sr-changes')?.addEventListener('click', async () => {
