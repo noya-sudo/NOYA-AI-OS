@@ -1,0 +1,24 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+*.p12
+service-account*.json
+*credentials*.json
+*secret*
+
+# Allow the secret checker itself
+!scripts/check-secrets.mjs
+
+# Build and tooling
+node_modules/
+dist/
+.wrangler/
+.supabase/
+tests/out/
+tests/fixtures/
+*.log
+.DS_Store
