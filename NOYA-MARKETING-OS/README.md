@@ -1,55 +1,40 @@
 # NOYA Marketing OS
 
 The AI-native marketing operating system for NOYA Concierge. It covers brand, Instagram, LinkedIn, intelligence, content, organic
-growth, paid acquisition, analytics, attribution and marketing-generated leads.
+growth, paid media, analytics, attribution and marketing-generated leads.
 
-**This is not NOYA HQ.** HQ runs clients, suppliers, bookings, itineraries, payments and operations. Marketing OS hands HQ only
-qualified commercial opportunities, through one approved and audited interface.
+**A separate product from NOYA HQ.** HQ runs clients, bookings, suppliers, payments, itineraries and concierge operations. The
+only bridge, later, is qualified commercial opportunities that Adam approves.
 
-## Status: Phase 0 (architecture)
+## Status: Phase 1 built and tested (7 Nov 2026)
 
-- No platform is connected. No credential exists. Nothing can publish or spend.
-- The schema is a **proposal** (`supabase/proposed/`), checked on a throwaway local Postgres. It is not applied to any database.
-- No NOYA HQ file, table or workflow has been changed.
+- Control plane migrations written: approval engine, kill switches (all disabled), hash-chained audit, safety, alerts, registries,
+  health, agent runs. **28 / 28 database checks pass**, including a 10-way race.
+- Internal console built: headless checks pass on desktop and mobile.
+- Resend alert dispatcher prepared.
+- **Pending:** creation of the Supabase project (needs one permission for this session's `create_project` call); moving to the
+  private repo `noya-marketing-os` (automated task queued).
+- Nothing is connected, nothing can publish, nothing can spend. No NOYA HQ file has changed (`scripts/check-hq-untouched.sh`).
 
-## Safety model in one paragraph
+## Run every check
 
-Agents (LLM) **propose**. Adam **approves** the exact payload, bound by its SHA-256. A separate **executor** (no LLM) carries it
-out, only if every gate passes:
-- policy;
-- approval on these bytes;
-- not expired;
-- confirmed;
-- kill switch armed;
-- connection verified;
-- within budget.
-
-Every kill-switch control is installed **halted**. Halting cancels queued work; arming never resumes it. Money-moving actions can
-never be automatic. Every decision and every refusal is written to a hash-chained, append-only audit log.
+```bash
+PGHOST=… PGPORT=… PGUSER=postgres scripts/test-all.sh
+```
 
 ## Map
 
 | Path | What |
 |---|---|
-| `docs/architecture.md` | System design, boundary with HQ, components, agents, action pipeline, security |
-| `docs/operating-manual.md` | Daily and weekly rhythm, content workflow, leads, channel connection, incidents |
-| `docs/approvals-and-permissions.md` | Tiers, roles, policies, what an approval means, non-configurable boundaries |
-| `docs/kill-switch.md` | Four layers, controls, tripwires, runbook |
-| `docs/audit-logging.md` | What is logged, the hash chain, redaction, retention, export |
-| `docs/environment.md` | Every variable and secret: where it lives, which phase, read vs write |
-| `docs/hq-handoff-contract.md` | The only interface to NOYA HQ |
-| `docs/implementation-plan.md` | Phases 0–9 with exit gates |
-| `docs/decisions.md` | Architecture decisions and open CEO decisions (D1–D8) |
-| `supabase/proposed/` | Proposed schema + governance tests |
-| `agents/` | Agent charters |
-| `workflows/` | n8n workflow conventions (no workflows yet) |
-| `console/` | Marketing Console (Phase 1) |
-| `scripts/check-secrets.mjs` | Secret scanner: run before every commit |
-
-## Check the proposal locally
-
-```bash
-node scripts/check-secrets.mjs
-```
-
-Then see `supabase/README.md` to run the governance tests on a local Postgres.
+| `docs/architecture.md` | System design and boundary with HQ |
+| `docs/security-model.md` | Threats → controls → tests |
+| `docs/database.md` | Tables, status machines, the gate, API, roles |
+| `docs/integrations.md` | Every connector and its real status |
+| `docs/operating-manual.md` | How the desk and the department run |
+| `docs/implementation-plan.md` | Phases, with what is done and what is next |
+| `docs/zero-manual-policy.md` | When Adam is (and is not) interrupted |
+| `docs/decisions.md` | D1–D8 |
+| `docs/kill-switch.md`, `docs/approvals-and-permissions.md`, `docs/audit-logging.md`, `docs/hq-handoff-contract.md`, `docs/environment.md` | Phase 0 design detail (with Phase 1 notes) |
+| `supabase/` | Migrations, tests, alert dispatcher |
+| `console/` | Internal operating desk |
+| `scripts/` | `test-all.sh`, `test-db.sh`, `check-secrets.mjs`, `check-hq-untouched.sh` |

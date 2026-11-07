@@ -18,7 +18,7 @@ node_modules/
 dist/
 .wrangler/
 .supabase/
-tests/out/
-tests/fixtures/
+**/tests/out/
+**/tests/fixtures/
 *.log
 .DS_Store

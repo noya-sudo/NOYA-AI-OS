@@ -6,8 +6,8 @@ reading comes before writing, organic before paid, and paused campaigns before l
 | Phase | Name | External writes | Money | Main exit test |
 |---|---|---|---|---|
 | 0 | Foundations (this commit) | None | None | Adam approves the architecture and D1–D7 |
-| 1 | Control plane | None | None | Governance tests pass on the real project; console login works |
-| 2 | Brand & knowledge | None | None | Brand Guardian catches seeded bad drafts |
+| 1 | Control plane **(built; project pending)** | None | None | Governance tests pass on the real project; console login works |
+| 2 | Brand, knowledge, worker plumbing | Test alert only | None | Brand Guardian catches seeded bad drafts; [TEST] alert received |
 | 3 | Intelligence | None (reads public web) | Research credits within budget | Two weeks of signals Adam finds useful |
 | 4 | Content studio | None (Adam posts by hand) | None | Four weeks of calendar shipped through the queue |
 | 5 | Read connections | None (read tokens only) | None | Verified read connections; first weekly review with real numbers |
@@ -30,37 +30,72 @@ reading comes before writing, organic before paid, and paused campaigns before l
 
 **Exit:** Adam answers D1–D7.
 
-## Phase 1: Control plane
-**Build:**
-- Adam creates the Supabase project (D2) and the repo (D1).
-- Promote `0001_governance.sql` to the first real migration. Tests run in CI against a Supabase branch.
-- Seed Adam as owner. All controls `halted`.
-- Console v0 (static, Cloudflare): login, kill switch panel, audit viewer, empty review queue.
-- pg_cron: `gov.expire_approvals()` every 15 minutes, nightly `gov.verify_audit_chain()`.
-- n8n folder `Marketing OS`, error reporting into the existing workflow 00 pattern, and the weekly audit export to Drive.
-- CI: `check-secrets.mjs`, the governance tests, and a console build scan.
+## Phase 1: Control plane — BUILT, awaiting the Supabase project (7 Nov 2026)
+**Done (automated):**
+- Migrations `supabase/migrations/2026110710000{0,1,2}_*.sql`:
+  - identities, with Adam as sole owner (seeded when the project exists);
+  - approval requests, immutable versions, hash-bound approvals, execution requests and results;
+  - 8 kill switches, all disabled;
+  - safety events, the alert outbox and tripwires;
+  - the hash-chained audit log and its chain verification;
+  - the integration, permission and secrets registries;
+  - configuration, system health and agent runs;
+  - worker roles and pg_cron schedules.
+- 28 automated database checks (`scripts/test-db.sh`), including a 10-way concurrency race and an advisor-equivalent lint. All pass.
+- The internal console (`console/`): system status, kill switches, pending approvals, audit, services, database health, agents
+  and runs, security alerts, the alert outbox, and configuration and secrets. Headless checks pass on desktop and mobile.
+- The Resend alert dispatcher (`supabase/functions/mos-alert-dispatcher/`), prepared.
+- `.env.example`, the secret scanner, the HQ-untouched check, `scripts/test-all.sh`, and the CI workflow for the future repo.
+- Docs: security model, database, integrations, zero-manual policy, plus updates.
+
+**Found and fixed by the tests:**
+- Refusals were rolled back with their audit rows (Phase 0). They are now returned, not raised.
+- The audit chain forked under concurrent writers. Fixed: `seq` is assigned after the chain lock.
+
+**Blocked:**
+- Supabase project creation was denied by the session's permission classifier. The org is on the Free plan with one active
+  project, so a second project is expected to be quoted at $0.
+- GitHub repository creation is not available to this session (automated migration task queued).
+
+**To finish Phase 1, once `create_project` is permitted (all automated):**
+1. Create "NOYA Marketing OS" in "Noya Concierge", eu-west-2. Proceed only if the quote is $0.
+2. Wait for ACTIVE_HEALTHY.
+3. Apply the three migrations through the Supabase migration tool.
+4. Seed Adam as the owner member. His Auth user is created through the admin API with an invite email, so he never handles a
+   password in chat.
+5. Run the behavioural suite against the real project inside a transaction that is rolled back, so no test data persists. Then
+   run the Supabase security and performance advisors and fix the findings.
+6. Build the console with the project URL and publishable key.
+7. Mark `integration_registry.supabase` verified.
 
 **Exit:**
-- tests green on the real project;
-- Adam can log in and halt, and cannot arm without the typed phrase;
-- the audit log shows all of it.
+- the advisors are clean;
+- the tests pass on the real project;
+- Adam can sign in and see the desk with every switch disabled.
 
-**Adam decides:** nothing new.
-
-## Phase 2: Brand & knowledge
+## Phase 2: Brand, knowledge and first worker plumbing (recommended next)
 **Build:**
-- `0002` brand tables;
-- seed `brand.voice_rules` from NOYA's voice (the user preferences and HQ Studio's editorial master), with Adam reviewing the list
-  once;
-- the asset library, with private storage and rights fields. The existing visual tokens (navy `#061422`, paper `#F7F7F7`,
-  Cormorant Garamond and Jost) are **copied**, not linked, from HQ Studio;
-- pillars;
-- the Brand Guardian agent: deterministic checks first (banned phrases, rights, length, hashtags), then a model check for tone and
-  claims.
+1. **Worker identity plumbing.**
+   - Mint `mos_agent`, `mos_monitor` and `mos_dispatcher` JWTs, stored as n8n credentials and Supabase secrets.
+   - Create the n8n folder "Marketing OS" with a heartbeat workflow that calls `mos_agent_run_start` / `_finish`.
+   - Deploy the alert dispatcher; Adam enters the Resend key once in the secure secret form; set `alerts.enabled = true`; send
+     **one** `[TEST]` alert.
+2. **Weekly audit export** to a private Drive folder (chain head + CSV), with a monitor comparing it to the database.
+3. **Brand tables** (from `proposed/0002`, brand schema only):
+   - `brand.voice_rules`, seeded from NOYA's voice;
+   - `brand.assets`, with rights and releases, in a private storage bucket;
+   - `content.pillars`.
+4. **Brand Guardian agent v1**:
+   - deterministic checks first (banned phrases, length, hashtags, asset rights);
+   - then a Claude check for tone and claims, on the separate Marketing OS key (D7) with a daily cost cap;
+   - an evaluation set of 10 bad and 10 good drafts.
+5. **Console**: a brand rules page, the asset library, and the Brand Guardian results.
 
-**Exit:** Brand Guardian fails 10 of 10 seeded bad drafts and passes 10 of 10 good ones; Adam agrees with its reasons.
+**Exit:** Brand Guardian fails 10 of 10 bad drafts and passes 10 of 10 good ones; Adam agrees with its reasons; the `[TEST]` alert
+is received; the first weekly audit export matches the chain.
 
-**Adam decides:** the pillars and their target shares; the banned-phrase list.
+**Adam decides:** the pillars and their shares; the banned-phrase list; one Anthropic key with a monthly limit (one owner action;
+no tool can create it).
 
 ## Phase 3: Intelligence
 **Build:**

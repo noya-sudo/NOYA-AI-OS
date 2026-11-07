@@ -1,7 +1,21 @@
 # NOYA Marketing OS: Architecture
 
-Status: **proposal, Phase 0**. Nothing in this repository connects to any platform, publishes anything or spends money.
-Last updated: 7 Nov 2026.
+Status: **Phase 1 built and tested; Supabase project pending one permission.** Nothing connects to any platform, publishes
+or spends. Last updated: 7 Nov 2026.
+
+## Phase 1 at a glance
+
+| Piece | Where | State |
+|---|---|---|
+| Control plane (approval engine, kill switches, audit, registries, safety, alerts outbox, health) | `supabase/migrations/` → `docs/database.md` | Written; 28/28 tests pass on PostgreSQL 16 |
+| Internal console | `console/` | Built; headless-browser checks pass (desktop + mobile); demo mode until the project exists |
+| Alert dispatcher (Resend, D6) | `supabase/functions/mos-alert-dispatcher/` | Written, not deployed |
+| Security model | `docs/security-model.md` | Threat → control → test mapping |
+| Integrations | `docs/integrations.md` | Nothing connected; registry tracks current, prepared and future connectors |
+
+Decisions D1–D7 are taken (see `docs/decisions.md`). The Phase 0 names in sections below have been superseded where they differ:
+the implementation uses `approval_requests` / `approval_versions` / `execution_requests` / `execution_results`, kill switches
+`global`, `organic.*`, `paid.*`, `integration.*`, and worker Postgres roles instead of a shared service key.
 
 ---
 
@@ -89,10 +103,11 @@ This is decision D3 in `docs/decisions.md`.
 |---|---|---|---|
 | **Control plane / data** | New Supabase project (Postgres, Auth, Storage, pg_cron) | Service key used by n8n only | All state, governance, audit. Proposed schema in `supabase/proposed/` |
 | **Marketing Console** | Static site on Cloudflare (same pattern as `hq.noyaconcierge.com`) | Publishable key only | Review queue, calendar, kill switch, audit viewer. Calls `api.*` RPCs only |
-| **Agents** | n8n workflows calling the Claude API (and existing research tools) | Read-only credentials only | Write their output to Supabase as proposals, signals, drafts, analyses |
+| **Agents** | n8n workflows calling the Claude API (and existing research tools) | Read-only credentials only | Write their output to Supabase as proposals, signals, drafts, analyses. DB role `mos_agent` (can only propose) |
 | **Readers** | n8n workflows, deterministic | Read-only platform tokens | Pull insights, spend, comments, DMs into Supabase |
-| **Executors** | n8n workflows, deterministic, **no LLM node** | Write tokens, separate from read tokens | Claim one approved request, re-check every gate, call the API once, report |
-| **Monitors** | n8n workflows + pg_cron | Read-only | Evaluate tripwires; can halt, never arm |
+| **Executors** | n8n workflows, deterministic, **no LLM node** | Write tokens, separate from read tokens | Claim one approved request, re-check every gate, call the API once, report. DB role `mos_executor` |
+| **Monitors** | n8n workflows + pg_cron | Read-only | Evaluate tripwires; can disable switches and raise D4 pauses; never enable. DB role `mos_monitor` |
+| **Alert dispatcher** | Supabase Edge Function | Marketing OS's own Resend send-only key | Sends the alert outbox to Adam (D6). DB role `mos_dispatcher` |
 | **Courier** | n8n workflow | HQ hand-off signing secret | Delivers approved hand-offs to the HQ intake endpoint (Phase 6) |
 
 ### Why n8n, not a new runtime
@@ -149,21 +164,11 @@ see: `MKT_ENV=production` and `MKT_EXTERNAL_WRITES_ENABLED=true`. Otherwise it r
 
 Details: `docs/approvals-and-permissions.md`, `docs/kill-switch.md`, `docs/audit-logging.md`.
 
-## 7. Data model (summary)
+## 7. Data model
 
-Eight schemas in one Supabase project. Full DDL in `supabase/proposed/`. Explanation in `supabase/README.md`.
-
-| Schema | Purpose | Key tables |
-|---|---|---|
-| `gov` | Governance | members, service_identities, action_types, permission_policies, action_requests, approvals, system_controls, tripwires, budget_caps, channel_accounts, secrets_registry, audit_log, external_call_log |
-| `brand` | Brand | voice_rules, assets (with rights) |
-| `intel` | Intelligence | sources, signals, research_briefs |
-| `content` | Content | pillars, items, versions (immutable), checks, publications |
-| `paid` | Paid media | media_plans, entities, spend_daily |
-| `analytics` | Measurement | metric_snapshots, utm_links, touchpoints |
-| `leads` | Leads | inbound, qualifications, hq_handoffs |
-| `ops` | Workforce | agents, agent_runs |
-| `api` | The only surface the console and executors can call | functions only |
+Implemented in Phase 1 for the control plane: schemas `gov` and `ops`, no tables in `public`, only `public.mos_*` functions.
+Full reference: `docs/database.md`. The marketing domain tables (brand, intel, content, paid, analytics, leads) remain designed in
+`supabase/proposed/0002_marketing_domains.sql` and are added phase by phase.
 
 ## 8. Security model
 
@@ -171,7 +176,7 @@ Eight schemas in one Supabase project. Full DDL in `supabase/proposed/`. Explana
 |---|---|
 | Browser | Publishable key + user JWT; tables revoked from `anon` / `authenticated`; only `api.*` functions granted |
 | Who may do what | `gov.members.role`: owner > approver > editor > analyst > viewer. One owner (Adam) enforced by a unique index |
-| Non-humans | `gov.service_identities`: agents can only *request* listed types; only executors can *execute* listed types |
+| Non-humans | `gov.service_identities` plus dedicated Postgres roles (`mos_agent`, `mos_executor`, `mos_monitor`, `mos_dispatcher`); the service key is granted nothing. See `docs/security-model.md` |
 | Secrets | n8n credential store and Supabase secrets only; `.env*` git-ignored; `scripts/check-secrets.mjs` scans the repo; `gov.secrets_registry` records names and locations, never values |
 | Read vs write tokens | Separate credentials per platform (`*_READ_TOKEN`, `*_WRITE_TOKEN`). Readers and agents never receive write tokens |
 | Prompt injection | Untrusted text (DMs, comments, web pages) is data. Agents cannot act on it; they can only propose, and proposals are reviewed |
@@ -195,6 +200,6 @@ During development there is no write path at all. Publishing and spend are not m
 - Platform APIs (Instagram Graph, LinkedIn, Meta Marketing API, GA4) cost nothing to call; the constraint is rate limits.
 - No new paid tool without the paid-software gate.
 
-## 11. Open questions
+## 11. Decisions
 
-Tracked as decisions D1–D8 in `docs/decisions.md`.
+D1–D7 decided by Adam on 7 Nov 2026 (`docs/decisions.md`). D8 (first paid test budget) remains open until Phase 8.

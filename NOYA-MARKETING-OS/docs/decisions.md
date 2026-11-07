@@ -15,7 +15,20 @@ Architecture decisions taken in Phase 0 (proposed, pending Adam's confirmation),
 | A7 | Official APIs only; Adam's personal LinkedIn never automated | Platform terms, account safety, reputation | Cookie-based tools, unofficial APIs |
 | A8 | Money-moving actions can never be automatic (database trigger) | The cost of a mistake is unbounded | A configurable setting |
 
-## Open CEO decisions
+## CEO decisions taken (7 Nov 2026)
+
+| # | Decision |
+|---|---|
+| D1 | Separate private repository `noya-marketing-os` (migration task queued; this session cannot create repositories) |
+| D2 | Separate Supabase project "NOYA Marketing OS" in organisation "Noya Concierge" |
+| D3 | Leave every existing NOYA HQ marketing piece untouched |
+| D4 | Critical safety conditions may automatically PAUSE ads only; never resume, activate, increase or create spend |
+| D5 | Adam is sole approver |
+| D6 | Critical kill-switch alerts to Adam through the existing Resend infrastructure (own key and sender) |
+| D7 | Separate Claude / API budget and credential boundary from HQ |
+| Policy | Zero-manual-setup policy (`docs/zero-manual-policy.md`) |
+
+## Original options (for the record)
 
 **D1: Where does the code live?**
 Context: the scaffold is in `NOYA-MARKETING-OS/` inside the NOYA-AI-OS repository (the HQ repo), on a branch. No HQ file was

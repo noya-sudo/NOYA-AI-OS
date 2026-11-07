@@ -1,5 +1,7 @@
 # Audit logging
 
+> **Phase 1 implementation note (7 Nov 2026).** Implemented in `supabase/migrations/20261107100000_foundation.sql`. Each row now also records tool, target platform, payload hash, approval id and decision. `seq` is assigned after the chain lock so the chain stays linear under concurrent writers (found by the race test).
+
 Status: proposal. Enforced by `gov.audit_log`, `gov.audit()`, `gov.verify_audit_chain()` and `gov.external_call_log`.
 
 ## 1. What must be answerable, at any time

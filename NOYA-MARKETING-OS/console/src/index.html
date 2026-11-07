@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>NOYA Marketing OS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-inner">
+      <div class="mark"><span class="wordmark">NOYA</span><span class="product">Marketing OS</span></div>
+      <div class="bar-right">
+        <span id="exec-badge" class="badge badge-off">External execution: disabled</span>
+        <span id="viewer" class="viewer"></span>
+        <button id="signout" class="link" hidden>Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="demo-banner" class="banner" hidden>Demo mode: showing a real snapshot from the local test database. No live data and no actions.</div>
+  <div id="error" class="banner banner-error" hidden></div>
+
+  <main id="login" class="login" hidden>
+    <h1>Operating desk</h1>
+    <p class="muted">Internal. Members only.</p>
+    <form id="login-form">
+      <label>Email<input type="email" id="email" autocomplete="username" required></label>
+      <label>Password<input type="password" id="password" autocomplete="current-password" required></label>
+      <button type="submit" class="primary">Sign in</button>
+    </form>
+  </main>
+
+  <main id="desk" class="desk" hidden>
+    <section class="status" aria-label="System status">
+      <div class="status-item"><span class="k">Phase</span><span id="s-phase" class="v"></span></div>
+      <div class="status-item"><span class="k">External execution</span><span id="s-exec" class="v"></span></div>
+      <div class="status-item"><span class="k">Open critical alerts</span><span id="s-critical" class="v"></span></div>
+      <div class="status-item"><span class="k">Pending approvals</span><span id="s-pending" class="v"></span></div>
+      <div class="status-item"><span class="k">Audit chain</span><span id="s-chain" class="v"></span></div>
+      <div class="status-item"><span class="k">Updated</span><span id="s-updated" class="v"></span></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel" id="p-switches">
+        <div class="panel-head"><h2>Kill switches</h2><button id="stop-all" class="danger" hidden>Stop everything</button></div>
+        <p class="note">All switches start disabled. Only Adam can enable one, with a typed confirmation; automatic systems can only disable. Enabling is not offered here in Phase 1.</p>
+        <table><thead><tr><th>Switch</th><th>State</th><th>Last change</th><th></th></tr></thead><tbody id="t-switches"></tbody></table>
+      </section>
+
+      <section class="panel" id="p-security">
+        <div class="panel-head"><h2>Security alerts</h2></div>
+        <ul id="l-security" class="events"></ul>
+      </section>
+
+      <section class="panel" id="p-approvals">
+        <div class="panel-head"><h2>Pending approvals</h2></div>
+        <p class="note">Review and approval screens arrive with the content studio (Phase 4). Shown here read-only.</p>
+        <table><thead><tr><th>Item</th><th>Action</th><th>Status</th><th>By</th><th>Payload</th></tr></thead><tbody id="t-approvals"></tbody></table>
+      </section>
+
+      <section class="panel" id="p-services">
+        <div class="panel-head"><h2>Connected services</h2></div>
+        <table><thead><tr><th>Service</th><th>Status</th><th>Phase</th><th>Credential</th></tr></thead><tbody id="t-services"></tbody></table>
+      </section>
+
+      <section class="panel" id="p-health">
+        <div class="panel-head"><h2>Database health</h2><button id="run-health" class="quiet" hidden>Run checks</button></div>
+        <table><thead><tr><th>Check</th><th>Status</th><th>Detail</th><th>Checked</th></tr></thead><tbody id="t-health"></tbody></table>
+      </section>
+
+      <section class="panel" id="p-agents">
+        <div class="panel-head"><h2>Agents and runs</h2></div>
+        <table><thead><tr><th>Agent</th><th>State</th><th>Schedule</th></tr></thead><tbody id="t-agents"></tbody></table>
+        <h3>Recent runs</h3>
+        <ul id="l-runs" class="events"></ul>
+      </section>
+
+      <section class="panel wide" id="p-audit">
+        <div class="panel-head"><h2>Recent audit events</h2></div>
+        <table class="dense"><thead><tr><th>#</th><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Result</th><th>Reason</th></tr></thead><tbody id="t-audit"></tbody></table>
+      </section>
+
+      <section class="panel" id="p-alerts">
+        <div class="panel-head"><h2>Alert outbox</h2><button id="test-alert" class="quiet" hidden>Queue test alert</button></div>
+        <ul id="l-alerts" class="events"></ul>
+      </section>
+
+      <section class="panel" id="p-config">
+        <div class="panel-head"><h2>Environment and configuration</h2></div>
+        <table class="dense"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody id="t-config"></tbody></table>
+        <h3>Secrets (names only)</h3>
+        <table class="dense"><thead><tr><th>Name</th><th>Stored in</th><th>Set</th></tr></thead><tbody id="t-secrets"></tbody></table>
+      </section>
+    </div>
+  </main>
+  <footer class="foot">NOYA Marketing OS · internal operating desk · separate from NOYA HQ</footer>
+</body>
+</html>

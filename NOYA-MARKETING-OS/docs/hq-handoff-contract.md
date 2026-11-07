@@ -1,5 +1,7 @@
 # Marketing OS → NOYA HQ hand-off contract (v1, proposed)
 
+> **Phase 1 implementation note (7 Nov 2026).** The action type is `hq.handoff_opportunity` behind kill switch `integration.hq_handoff` (disabled). Still no HQ change; D3 confirmed.
+
 Status: proposal. **No HQ change has been made.** The HQ intake described in §5 is a separate HQ change that needs Adam's approval
 before anyone builds it. Until then, approved hand-offs wait in `leads.hq_handoffs` and Adam can copy them into HQ by hand.
 

@@ -1,3 +1,5 @@
+-- SUPERSEDED for the control plane by supabase/migrations/ (Phase 1). Kept for history and for the
+-- marketing domain designs (0002), which are promoted phase by phase.
 -- =====================================================================================================
 -- NOYA Marketing OS: governance control plane (PROPOSED)
 --

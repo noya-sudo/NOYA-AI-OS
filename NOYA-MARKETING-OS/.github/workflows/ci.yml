@@ -1,0 +1,32 @@
+# Runs once Marketing OS lives in its own repository (noya-marketing-os). While it is a folder inside
+# NOYA-AI-OS this file is inert (GitHub only reads workflows from the repository root).
+name: marketing-os-checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-only-local-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci-only-local-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: scripts/test-all.sh

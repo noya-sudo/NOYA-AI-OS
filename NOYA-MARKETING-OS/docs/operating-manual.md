@@ -1,7 +1,34 @@
 # NOYA Marketing OS: Operating manual
 
 How the marketing department runs day to day, who does what, and what Adam needs to do (as little as possible).
-Status: proposal. Sections marked *(Phase N)* apply from that phase.
+Status: Phase 1 control plane built. Sections marked *(Phase N)* apply from that phase. Setup follows the zero-manual-setup policy
+(`docs/zero-manual-policy.md`): Claude builds and connects; Adam only consents, approves money, approves publishing and approves
+spend.
+
+## 0. The operating desk (Phase 1)
+
+The console shows, top to bottom:
+
+| Panel | What it tells you | What you can do |
+|---|---|---|
+| Status strip | Phase, external execution (DISABLED until you enable switches), open critical alerts, pending approvals, audit chain, last update | — |
+| Kill switches | 8 switches and who changed them last | **Stop everything** / Disable (only shown when something is enabled). Enabling is deliberately not in the console in Phase 1 |
+| Security alerts | Bypass attempts, unauthorised attempts, trips, automatic pauses | Acknowledge |
+| Pending approvals | Drafts and submissions with version and payload hash | Read-only until Phase 4 |
+| Connected services | Each connector's real status (nothing connected yet) | — |
+| Database health | Audit chain, RLS coverage, no public tables, switches, integrations, alert backlog | Run checks |
+| Agents and runs | All 7 agents (off) and their runs | — |
+| Recent audit events | The last 40 events, including refusals | — |
+| Alert outbox | What would be or was emailed to you | Queue a [TEST] alert |
+| Environment and configuration | Non-secret settings and which secrets are set (names only) | — |
+
+Kill switch keys (all start **disabled**; enabling needs the typed phrase `ENABLE <key>` and a reason):
+- `global`;
+- `integration.external_writes`, `integration.hq_handoff`;
+- `organic.instagram`, `organic.linkedin_noya`, `organic.linkedin_adam` (never enabled: personal LinkedIn is manual);
+- `paid.meta_ads`, `paid.linkedin_ads` (need a confirmed daily cap first).
+
+Automatic systems can only disable switches, and (D4) raise ad PAUSES. They can never enable, resume, activate or increase.
 
 ---
 
@@ -128,11 +155,11 @@ MARKETING — 3 in queue (2 posts, 1 hand-off) · 1 qualified lead (Red Sea vill
 
 | Situation | Do |
 |---|---|
-| Wrong or embarrassing post live | Halt `global` → delete through an approved `*.delete_*` request (or by hand in the app) → record it → review |
-| Spend running away | Halt `spend.*` → pause (risk-reducing, still allowed) → check the platform-native cap → review |
-| Token leaked or suspected | Revoke at the platform → delete the n8n credential → halt `global` → rotate → `token_scope_changed` review |
+| Wrong or embarrassing post live | Disable `global` (console: Stop everything) → delete through an approved `*.delete_*` request (or by hand in the app) → record it → review |
+| Spend running away | Disable `paid.*` → pause (risk-reducing, still allowed) → check the platform-native cap → review |
+| Token leaked or suspected | Revoke at the platform → delete the n8n credential → disable `global` → rotate → `token_scope_changed` review |
 | Agent producing bad output | Set `ops.agents.enabled = false` with a `paused_reason` → review prompts and inputs |
-| Audit chain broken | Automatic `global` halt → compare with the Drive export → find the row → do not re-arm until explained |
+| Audit chain broken | Automatic `global` disable → compare with the Drive export → find the row → do not re-arm until explained |
 | Platform API change or outage | Readers record errors and accounts go to `error`. Nothing is guessed or back-filled with estimates |
 
 Full runbook: `docs/kill-switch.md` §9.

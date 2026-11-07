@@ -1,0 +1,595 @@
+{
+    "ok": true,
+    "audit": [
+        {
+            "at": "2026-11-07T13:56:42.104563+00:00",
+            "seq": 6,
+            "tool": "run_health_checks",
+            "actor": "owner@example.test",
+            "action": "health.check",
+            "reason": null,
+            "result": "info",
+            "target": "ops.system_health",
+            "platform": null,
+            "actor_type": "system",
+            "correlation_id": null,
+            "payload_sha256": null
+        },
+        {
+            "at": "2026-11-07T13:56:42.0992+00:00",
+            "seq": 5,
+            "tool": "mos_queue_test_alert",
+            "actor": "owner@example.test",
+            "action": "alert.test",
+            "reason": null,
+            "result": "ok",
+            "target": "gov.notifications:3b0081b2-d207-46f1-afd9-3fcace691d06",
+            "platform": null,
+            "actor_type": "human",
+            "correlation_id": null,
+            "payload_sha256": null
+        },
+        {
+            "at": "2026-11-07T13:56:42.097505+00:00",
+            "seq": 4,
+            "tool": "mos_create_draft",
+            "actor": "owner@example.test",
+            "action": "request.create",
+            "reason": null,
+            "result": "ok",
+            "target": "gov.approval_requests:7374a838-7909-4179-8813-5d83b17cb283",
+            "platform": "linkedin_noya",
+            "actor_type": "human",
+            "correlation_id": "720d7fab-0908-4da7-8e21-de353bfba329",
+            "payload_sha256": "3da114b4d82dc21aa06f92df4f16115316ce7fb773f0bd32c10164582e92a55a"
+        },
+        {
+            "at": "2026-11-07T13:56:42.093697+00:00",
+            "seq": 3,
+            "tool": "mos_agent_propose",
+            "actor": "agent.content_strategist",
+            "action": "request.propose",
+            "reason": "agent may not propose meta_ads.activate",
+            "result": "refused",
+            "target": "gov.approval_requests",
+            "platform": null,
+            "actor_type": "agent",
+            "correlation_id": null,
+            "payload_sha256": null
+        },
+        {
+            "at": "2026-11-07T13:56:42.091971+00:00",
+            "seq": 2,
+            "tool": "mos_agent_propose",
+            "actor": "agent.content_strategist",
+            "action": "request.propose",
+            "reason": "submitted for approval",
+            "result": "ok",
+            "target": "gov.approval_requests:548d7881-83ba-4f55-b5af-68ccd78f671c",
+            "platform": "instagram",
+            "actor_type": "agent",
+            "correlation_id": "a485d39d-d964-42e2-86b1-b8aa46868cd0",
+            "payload_sha256": "3a8f135465041c1d1241859da26bfc93fd60b62fcc7f42b20aa87be60a0f5a47"
+        },
+        {
+            "at": "2026-11-07T13:56:42.041753+00:00",
+            "seq": 1,
+            "tool": "run_health_checks",
+            "actor": "migration",
+            "action": "health.check",
+            "reason": null,
+            "result": "info",
+            "target": "ops.system_health",
+            "platform": null,
+            "actor_type": "system",
+            "correlation_id": null,
+            "payload_sha256": null
+        }
+    ],
+    "agents": [
+        {
+            "code": "agent.analytics",
+            "name": "Analytics & Attribution",
+            "enabled": false,
+            "schedule": "weekly Mon",
+            "paused_reason": "Not built yet (Phase 1)"
+        },
+        {
+            "code": "agent.brand_guardian",
+            "name": "Brand Guardian",
+            "enabled": false,
+            "schedule": null,
+            "paused_reason": "Not built yet (Phase 1)"
+        },
+        {
+            "code": "agent.community_triage",
+            "name": "Community Triage",
+            "enabled": false,
+            "schedule": "every 2h",
+            "paused_reason": "Not built yet (Phase 1)"
+        },
+        {
+            "code": "agent.content_strategist",
+            "name": "Content Strategist",
+            "enabled": false,
+            "schedule": "weekly Mon",
+            "paused_reason": "Not built yet (Phase 1)"
+        },
+        {
+            "code": "agent.intelligence",
+            "name": "Intelligence Analyst",
+            "enabled": false,
+            "schedule": "daily 07:00",
+            "paused_reason": "Not built yet (Phase 1)"
+        },
+        {
+            "code": "agent.lead_qualifier",
+            "name": "Lead Qualifier",
+            "enabled": false,
+            "schedule": "daily 18:00",
+            "paused_reason": "Not built yet (Phase 1)"
+        },
+        {
+            "code": "agent.paid_media_analyst",
+            "name": "Paid Media Analyst",
+            "enabled": false,
+            "schedule": "daily",
+            "paused_reason": "Not built yet (Phase 1)"
+        }
+    ],
+    "health": [
+        {
+            "check": "alert_backlog",
+            "detail": {
+                "dispatcher_enabled": false,
+                "undelivered_over_15_min": 0
+            },
+            "status": "ok",
+            "checked_at": "2026-11-07T13:56:42.100021+00:00"
+        },
+        {
+            "check": "audit_chain",
+            "detail": {
+                "rows": 5,
+                "first_bad_seq": null
+            },
+            "status": "ok",
+            "checked_at": "2026-11-07T13:56:42.100021+00:00"
+        },
+        {
+            "check": "integrations",
+            "detail": {
+                "error": 0,
+                "read_write": 0
+            },
+            "status": "ok",
+            "checked_at": "2026-11-07T13:56:42.100021+00:00"
+        },
+        {
+            "check": "kill_switches",
+            "detail": {
+                "total": 8,
+                "enabled": 0
+            },
+            "status": "ok",
+            "checked_at": "2026-11-07T13:56:42.100021+00:00"
+        },
+        {
+            "check": "no_public_tables",
+            "detail": {
+                "public_tables": 0
+            },
+            "status": "ok",
+            "checked_at": "2026-11-07T13:56:42.100021+00:00"
+        },
+        {
+            "check": "rls_coverage",
+            "detail": {
+                "tables": 21,
+                "tables_without_rls": 0
+            },
+            "status": "ok",
+            "checked_at": "2026-11-07T13:56:42.100021+00:00"
+        }
+    ],
+    "system": {
+        "phase": 1,
+        "product": "NOYA Marketing OS",
+        "open_critical": 1,
+        "pending_approvals": 1,
+        "external_execution": "DISABLED"
+    },
+    "viewer": {
+        "role": "owner",
+        "email": "owner@example.test"
+    },
+    "secrets": [
+        {
+            "name": "MOS_ANTHROPIC_API_KEY",
+            "access": "read",
+            "is_set": false,
+            "stored_in": "n8n_credentials",
+            "integration": "anthropic"
+        },
+        {
+            "name": "MOS_HQ_HANDOFF_SIGNING_SECRET",
+            "access": "write",
+            "is_set": false,
+            "stored_in": "n8n_credentials",
+            "integration": "hq_handoff"
+        },
+        {
+            "name": "MOS_IG_READ_TOKEN",
+            "access": "read",
+            "is_set": false,
+            "stored_in": "n8n_credentials",
+            "integration": "instagram"
+        },
+        {
+            "name": "MOS_LINKEDIN_READ_TOKEN",
+            "access": "read",
+            "is_set": false,
+            "stored_in": "n8n_credentials",
+            "integration": "linkedin_noya"
+        },
+        {
+            "name": "MOS_META_ADS_READ_TOKEN",
+            "access": "read",
+            "is_set": false,
+            "stored_in": "n8n_credentials",
+            "integration": "meta_ads"
+        },
+        {
+            "name": "MOS_RESEND_API_KEY",
+            "access": "send",
+            "is_set": false,
+            "stored_in": "supabase_edge_secrets",
+            "integration": "resend_alerts"
+        },
+        {
+            "name": "MOS_SUPABASE_SERVICE_ROLE_KEY",
+            "access": "admin",
+            "is_set": false,
+            "stored_in": "n8n_credentials",
+            "integration": "supabase"
+        }
+    ],
+    "security": [
+        {
+            "at": "2026-11-07T13:56:42.093311+00:00",
+            "id": "a7f0f808-fe2b-404b-902b-a6e00290157a",
+            "kind": "approval_bypass_attempt",
+            "source": "agent:agent.content_strategist",
+            "summary": "request.propose refused: agent may not propose meta_ads.activate",
+            "severity": "critical",
+            "acknowledged": false
+        }
+    ],
+    "agent_runs": [
+    ],
+    "audit_chain": {
+        "rows": 6,
+        "first_bad_seq": null
+    },
+    "generated_at": "2026-11-07T13:56:42.105542+00:00",
+    "integrations": [
+        {
+            "code": "github",
+            "name": "GitHub repository noya-marketing-os",
+            "notes": "Repo creation not available to the build session; code lives in NOYA-AI-OS/NOYA-MARKETING-OS until migrated",
+            "phase": 1,
+            "status": "planned",
+            "category": "devops",
+            "verified_at": null,
+            "credential_ref": null
+        },
+        {
+            "code": "resend_alerts",
+            "name": "Resend — critical alerts",
+            "notes": "D6. Outbox + dispatcher prepared; separate key from HQ email",
+            "phase": 1,
+            "status": "prepared",
+            "category": "alerts",
+            "verified_at": null,
+            "credential_ref": "MOS_RESEND_API_KEY"
+        },
+        {
+            "code": "supabase",
+            "name": "Supabase (this project)",
+            "notes": "Marketing OS database. Separate from NOYA HQ",
+            "phase": 1,
+            "status": "internal",
+            "category": "internal",
+            "verified_at": null,
+            "credential_ref": null
+        },
+        {
+            "code": "anthropic",
+            "name": "Claude API (Marketing OS budget)",
+            "notes": "D7. Separate key/workspace from HQ",
+            "phase": 2,
+            "status": "not_connected",
+            "category": "ai",
+            "verified_at": null,
+            "credential_ref": "MOS_ANTHROPIC_API_KEY"
+        },
+        {
+            "code": "firecrawl",
+            "name": "Firecrawl (research, read)",
+            "notes": null,
+            "phase": 3,
+            "status": "planned",
+            "category": "research",
+            "verified_at": null,
+            "credential_ref": "MOS_FIRECRAWL_API_KEY"
+        },
+        {
+            "code": "serper",
+            "name": "Serper (research, read)",
+            "notes": "HQ standing decision: no volume increase until plan confirmed",
+            "phase": 3,
+            "status": "planned",
+            "category": "research",
+            "verified_at": null,
+            "credential_ref": "MOS_SERPER_API_KEY"
+        },
+        {
+            "code": "linkedin_adam",
+            "name": "LinkedIn — Adam personal",
+            "notes": "Never automated. Drafts only; Adam posts by hand",
+            "phase": 4,
+            "status": "not_connected",
+            "category": "organic",
+            "verified_at": null,
+            "credential_ref": null
+        },
+        {
+            "code": "ga4",
+            "name": "Google Analytics 4",
+            "notes": "Read only",
+            "phase": 5,
+            "status": "planned",
+            "category": "analytics",
+            "verified_at": null,
+            "credential_ref": "MOS_GA4_SERVICE_ACCOUNT"
+        },
+        {
+            "code": "instagram",
+            "name": "Instagram — NOYA",
+            "notes": "Write token only from Phase 7",
+            "phase": 5,
+            "status": "not_connected",
+            "category": "organic",
+            "verified_at": null,
+            "credential_ref": "MOS_IG_READ_TOKEN"
+        },
+        {
+            "code": "linkedin_noya",
+            "name": "LinkedIn — NOYA Company Page",
+            "notes": "Depends on LinkedIn Community Management API approval",
+            "phase": 5,
+            "status": "not_connected",
+            "category": "organic",
+            "verified_at": null,
+            "credential_ref": "MOS_LINKEDIN_READ_TOKEN"
+        },
+        {
+            "code": "meta_ads",
+            "name": "Meta Ads",
+            "notes": "Write token only from Phase 8",
+            "phase": 5,
+            "status": "not_connected",
+            "category": "paid",
+            "verified_at": null,
+            "credential_ref": "MOS_META_ADS_READ_TOKEN"
+        },
+        {
+            "code": "search_console",
+            "name": "Google Search Console",
+            "notes": "Read only",
+            "phase": 5,
+            "status": "planned",
+            "category": "analytics",
+            "verified_at": null,
+            "credential_ref": null
+        },
+        {
+            "code": "hq_handoff",
+            "name": "NOYA HQ hand-off",
+            "notes": "Needs a separately approved HQ intake. Qualified opportunities only",
+            "phase": 6,
+            "status": "planned",
+            "category": "bridge",
+            "verified_at": null,
+            "credential_ref": "MOS_HQ_HANDOFF_SIGNING_SECRET"
+        },
+        {
+            "code": "linkedin_ads",
+            "name": "LinkedIn Ads",
+            "notes": null,
+            "phase": 8,
+            "status": "planned",
+            "category": "paid",
+            "verified_at": null,
+            "credential_ref": null
+        }
+    ],
+    "configuration": [
+        {
+            "key": "ai.monthly_budget_usd",
+            "value": 30,
+            "description": "Marketing OS AI budget, separate from HQ (D7)"
+        },
+        {
+            "key": "alerts.channel",
+            "value": "resend",
+            "description": "Critical alerts channel (D6). Dispatcher not yet connected"
+        },
+        {
+            "key": "alerts.enabled",
+            "value": false,
+            "description": "Dispatcher sends pending notifications only when true"
+        },
+        {
+            "key": "alerts.recipient",
+            "value": "owner",
+            "description": "Alerts go to the active owner member (Adam). No address is stored here"
+        },
+        {
+            "key": "approval_ttl_default",
+            "value": "24 hours",
+            "description": "Default approval lifetime when a permission does not set one"
+        },
+        {
+            "key": "environment",
+            "value": "production",
+            "description": "Database environment label"
+        },
+        {
+            "key": "external_execution",
+            "value": "disabled",
+            "description": "Informational. Real gating is kill switches + approvals + verified integrations + executor env flags"
+        },
+        {
+            "key": "phase",
+            "value": 1,
+            "description": "Current implementation phase"
+        },
+        {
+            "key": "product",
+            "value": "NOYA Marketing OS",
+            "description": "Product name"
+        },
+        {
+            "key": "safety.auto_pause_ads",
+            "value": true,
+            "description": "D4: critical tripwires may automatically PAUSE ads. Never resume, activate or increase"
+        }
+    ],
+    "kill_switches": [
+        {
+            "key": "global",
+            "label": "Everything",
+            "scope": "global",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "integration.external_writes",
+            "label": "All external writes",
+            "scope": "integration",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "integration.hq_handoff",
+            "label": "Hand-off of qualified opportunities to NOYA HQ",
+            "scope": "integration",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "organic.instagram",
+            "label": "Instagram (NOYA)",
+            "scope": "organic",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "organic.linkedin_adam",
+            "label": "LinkedIn — Adam personal (manual only; never automated)",
+            "scope": "organic",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "organic.linkedin_noya",
+            "label": "LinkedIn — NOYA Company Page",
+            "scope": "organic",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "paid.linkedin_ads",
+            "label": "LinkedIn Ads",
+            "scope": "paid",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        },
+        {
+            "key": "paid.meta_ads",
+            "label": "Meta Ads",
+            "scope": "paid",
+            "state": "disabled",
+            "reason": "Initialised disabled. Only the owner can enable, with a typed confirmation.",
+            "changed_at": "2026-11-07T13:56:41.846305+00:00",
+            "changed_by": "migration",
+            "tripped_by": null
+        }
+    ],
+    "notifications": [
+        {
+            "at": "2026-11-07T13:56:42.098525+00:00",
+            "kind": "test",
+            "status": "pending",
+            "is_test": true,
+            "subject": "[TEST] NOYA Marketing OS alert channel",
+            "severity": "info"
+        },
+        {
+            "at": "2026-11-07T13:56:42.093311+00:00",
+            "kind": "approval_bypass_attempt",
+            "status": "pending",
+            "is_test": false,
+            "subject": "[NOYA Marketing OS] CRITICAL: request.propose refused: agent may not propose meta_ads.activate",
+            "severity": "critical"
+        }
+    ],
+    "pending_approvals": [
+        {
+            "id": "7374a838-7909-4179-8813-5d83b17cb283",
+            "title": "Red Sea: what changed this season",
+            "status": "draft",
+            "target": "NOYA Concierge (Company Page)",
+            "version": 1,
+            "expires_at": null,
+            "updated_at": "2026-11-07T13:56:42.09601+00:00",
+            "action_type": "linkedin_noya.publish_post",
+            "requested_by": "owner@example.test",
+            "payload_sha256": "3da114b4d82dc21aa06f92df4f16115316ce7fb773f0bd32c10164582e92a55a"
+        },
+        {
+            "id": "548d7881-83ba-4f55-b5af-68ccd78f671c",
+            "title": "Aswan at first light",
+            "status": "submitted",
+            "target": "@noyaconcierge",
+            "version": 1,
+            "expires_at": null,
+            "updated_at": "2026-11-07T13:56:42.087737+00:00",
+            "action_type": "instagram.publish_media",
+            "requested_by": "agent.content_strategist",
+            "payload_sha256": "3a8f135465041c1d1241859da26bfc93fd60b62fcc7f42b20aa87be60a0f5a47"
+        }
+    ]
+}

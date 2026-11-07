@@ -1,9 +1,10 @@
--- Local stand-in for the parts of Supabase the proposed schema relies on (roles, auth.users, auth.uid(), auth.jwt()).
--- ONLY for checking the proposal on a throwaway local Postgres. Never run this against a Supabase project.
+-- Local stand-in for the parts of Supabase the migrations rely on (roles, auth.users, auth.uid(), auth.jwt()).
+-- ONLY for running the test suite on a throwaway local Postgres. Never run this against a Supabase project.
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticator') then create role authenticator nologin noinherit; end if;
 end $$;
 
 create schema if not exists auth;

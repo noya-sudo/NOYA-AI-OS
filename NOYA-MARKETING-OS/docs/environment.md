@@ -1,5 +1,8 @@
 # Environment variables and secrets
 
+> **Phase 1 implementation note (7 Nov 2026).** Variable names changed from `MKT_*` to `MOS_*`; the authoritative template is `.env.example`. Workers use per-role database JWTs (`MOS_AGENT_JWT`, `MOS_EXECUTOR_JWT`, `MOS_MONITOR_JWT`), not the service key. Status of each integration: `docs/integrations.md`.
+
+
 Status: proposal. **None of the platform credentials below exist yet.** Nothing in this repository is connected to any platform.
 A variable listed here is a plan, not a connection.
 

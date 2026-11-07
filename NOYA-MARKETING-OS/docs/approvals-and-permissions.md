@@ -1,5 +1,7 @@
 # Approvals and permission boundaries
 
+> **Phase 1 implementation note (7 Nov 2026).** Implemented as `gov.permission_registry`, `gov.approval_requests` / `approval_versions` / `approvals` / `execution_requests` / `execution_results`. Edits after approval are allowed but create a new version and **invalidate** the approval. There is no automatic mode; the only automatic action is a D4 ad PAUSE. Adam is sole approver (D5). See `docs/database.md` and `docs/security-model.md`.
+
 Status: proposal. Enforced by `supabase/proposed/0001_governance.sql` and checked by `supabase/proposed/tests/10_governance_test.sql`.
 
 ## 1. The rule

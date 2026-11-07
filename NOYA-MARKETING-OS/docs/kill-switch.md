@@ -1,5 +1,7 @@
 # Kill switch
 
+> **Phase 1 implementation note (7 Nov 2026).** Implemented in `supabase/migrations/` as `gov.kill_switches` with keys `global`, `integration.external_writes`, `integration.hq_handoff`, `organic.instagram`, `organic.linkedin_noya`, `organic.linkedin_adam`, `paid.meta_ads`, `paid.linkedin_ads`, all initialised **disabled** (= halted). "Arm" is `mos_kill_switch_enable` (owner, typed `ENABLE <key>`); "halt" is `mos_kill_switch_disable`. D4 is decided: tripwires may raise automatic PAUSE requests only. Tests: `docs/security-model.md`.
+
 Status: proposal. Enforced by `gov.system_controls`, `gov.halt()`, `api.kill_switch_*`, `api.monitor_trip()` and `gov.can_execute()`.
 
 ## 1. Purpose
