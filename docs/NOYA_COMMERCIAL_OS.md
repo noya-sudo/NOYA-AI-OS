@@ -2175,3 +2175,36 @@ Migration `20261104100000_project_engine_conversion.sql` was applied live in fiv
    Replies, reply rate, qualified, email coverage and sent are shown faint, as supporting evidence only.
 
 Brief content (people, addresses, messages) lives only in the database, never in this public repository.
+
+## Final discovery and creative studio pass (5–7 Nov 2026): development frozen after this pass
+
+- **Studio is NOYA's creative room.** Four views over the same `hq_studio` data:
+  - Ready: approved work that needs Adam (Attach, Open Gmail & send).
+  - Creative: client documents being made or reviewed, requests, and warm relationships that have earned a concept.
+  - Opportunities: internal briefs, never PDFs.
+  - History: sent, superseded, held and old versions.
+
+  Cover emails fold into their document's card. Nothing is deleted.
+- **First touch.** A cold first email carries no brief, PDF, presentation or brochure. It is 70–130 words in this order:
+  1. Why them.
+  2. The signal.
+  3. One idea.
+  4. NOYA's role.
+  5. A simple call to action.
+- **Creative levels.**
+  - Level 1: the idea lives in the email.
+  - Level 2: a one-page visual concept, after a positive reply or for an unusually strong dated trigger.
+  - Level 3: a tailored brief or proposal, only after a meeting, a real brief, demonstrated interest or a request for information.
+- **Visual concepts.** A client concept answers the client's own identity: palette, type, campaign language and audience, studied from their site and channels. NOYA stays the frame and co-brands as NOYA × CLIENT, never implying a partnership.
+  - AI images are concept visualisations. Each is captioned as such and never presented as past work.
+  - No invented product designs, no claims of access, permits or exclusivity, no stock filler.
+  - The photo library sits in a private Drive that external design tools cannot read. Real NOYA photography is therefore added in the design tool, not by the renderer.
+  - A concept built outside the PDF renderer is recorded in `studio_documents` with `content.visual.url`. `hq_studio` exposes it as `design_url`, and the card shows "Open concept". Migration `20261105130000_studio_design_url.sql`.
+- **Hunter.** The live balance is authoritative: `hunter_account`, refreshed on every W24 run.
+  - `email_verification_queue` skips hotels, resorts, aviation and other hospitality suppliers unless the account is a BUYER or DISTRIBUTION_PARTNER.
+  - Order: work-order targets, then accounts with an internal brief, then the rest. Migration `20261105120000_hunter_spend_strong_accounts.sql`.
+  - A single priority verification may run outside the schedule by raising `plan_caps.FREE.verify_per_day` for one manual W24 run, then restoring it.
+- **Discovery model.** Look for agencies that work like Maison Pyramide: luxury PR, communications and experiential houses that run brand moments in Egypt and the region.
+  - The agency owns the client, brand, creative, PR and guest list.
+  - NOYA takes responsibility for the guest journey: arrival, hotel or villa, transport, security, talent movement, concierge, dinners, boats and aviation, and on-ground problem solving.
+- **Data integrity.** A company website that belongs to another firm makes enrichment attach the wrong people. Remove the website, and mark the wrong person do-not-contact with a note.

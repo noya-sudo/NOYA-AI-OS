@@ -4580,6 +4580,7 @@ function studioActs(x) {
   const sentMail = (primary = false) => (d?.sent_at && d.thread_url ? btnLink(d.thread_url, 'View sent email', primary) : '');
   const hist = (label) => (x.company_id ? `<button class="btn small" data-modal="studio-history" data-company="${x.company_id}">${label}</button>` : '');
   let acts = []; const notes = [];
+  const concept = x.design_url ? btnLink(x.design_url, 'Open concept', x.status === 'FOR_REVIEW') : '';
   if (s.sent) acts = [d?.thread_url ? btnLink(d.thread_url, 'View sent email') : '', hist('History')];
   else if (x.status === 'SUPERSEDED' || x.ready_class === 'SUPERSEDED') acts = [`<button class="btn small primary" data-modal="studio-history" data-company="${x.company_id || ''}">View history</button>`, sentMail()];
   else if (h.email) {
@@ -4589,7 +4590,7 @@ function studioActs(x) {
     if (doc) notes.push(studioState(doc).verified ? `<span class="ok-text">${esc(doc.file || 'The PDF')} is attached and checked</span>` : `Carries ${esc(doc.file || 'the PDF')}: attach it on the “${esc(doc.title || doc.slug)}” card`);
   } else if (!h.external || x.ready_class === 'INTERNAL_ONLY') acts = [`<button class="btn small primary" data-modal="studio-review" data-id="${x.id}">View</button>`];
   else if (x.status === 'DRAFT') acts = [x.company_id ? `<button class="btn small primary" data-open="company" data-id="${x.company_id}">Continue</button>` : '', preview()];
-  else if (x.status === 'FOR_REVIEW') acts = [`<button class="btn small primary" data-modal="studio-review" data-id="${x.id}">Review</button>`, preview()];
+  else if (x.status === 'FOR_REVIEW') acts = [concept, `<button class="btn small ${concept ? '' : 'primary'}" data-modal="studio-review" data-id="${x.id}">Review</button>`, preview()];
   else if (s.verified) acts = [preview(), draft('Open Gmail & send', true)];
   else if (x.ready_class === 'READY_FOR_ATTACHMENT') {
     acts = [preview(), s.pending ? '<button class="btn small primary" disabled>Attaching… checking Gmail</button>'
@@ -4792,7 +4793,7 @@ function studioReviewModal(m) {
   return `<div class="modal-bg"><div class="modal"><h3>${esc(x.title || x.slug || 'Studio document')}</h3>
     <p class="small muted">${esc(x.company || '')} · ${esc(DOC_TYPE[x.doc_type] || x.doc_type || '')}${x.version ? ` v${esc(x.version)}` : ''}${x.level ? ` · Level ${esc(x.level)}` : ''}</p>
     ${x.ready_class ? `<p class="small">${readyPill(x.ready_class)} ${esc(x.ready_reason || '')}</p>` : ''}${x.hold_reason ? `<p class="small warn-text">${esc(x.hold_reason)}</p>` : ''}
-    <div class="btn-row">${s.h.pdf ? `<button class="btn" data-studio-preview="${esc(x.id)}">Preview ${noun}</button>` : '<span class="small faint">No PDF rendered for this one yet.</span>'}
+    <div class="btn-row">${x.design_url ? btnLink(x.design_url, 'Open the visual concept', true) : ''}${s.h.pdf ? `<button class="btn" data-studio-preview="${esc(x.id)}">Preview ${noun}</button>` : x.design_url ? '' : '<span class="small faint">No PDF rendered for this one yet.</span>'}
       ${x.company_id ? `<button class="btn ghost" data-open="company" data-id="${esc(x.company_id)}" data-close>Open the relationship</button>` : ''}</div>
     ${canReview ? `${area('What should change (only for Request changes)', 'sr-note', '', 'rows="3" maxlength="600"')}
       <p class="small muted">Approve records your approval; nothing is sent. ${x.ready_class === 'HOLD' ? 'It stays held until the relationship has earned this level.' : 'The card then shows Attach to email.'}</p>
