@@ -2208,3 +2208,27 @@ Brief content (people, addresses, messages) lives only in the database, never in
   - The agency owns the client, brand, creative, PR and guest list.
   - NOYA takes responsibility for the guest journey: arrival, hotel or villa, transport, security, talent movement, concierge, dinners, boats and aviation, and on-ground problem solving.
 - **Data integrity.** A company website that belongs to another firm makes enrichment attach the wrong people. Remove the website, and mark the wrong person do-not-contact with a note.
+
+## Private relationship engine (9 Nov 2026): permanent operating rule
+
+NOYA runs two engines side by side. The **project engine** (brands, agencies, weddings, events, hospitality, corporate, clubs, travel partners, production) and the **private relationship engine** (footballers, athletes, boxers, talent, founders, executives, family-office principals, UHNW individuals and families). The private engine is judged on relationship quality and repeat dependency, not only on immediate bookings: PROSPECT → TRUSTED CLIENT → REPEAT CLIENT → NOYA PRIVATE MEMBER.
+
+No new page or agent. It runs through the existing Directors: **NOYA Private — Athlete & Talent Relations** (agent key SPORTS), **Private Membership & Network** (PRIVATE), Research Intelligence, Contact Intelligence, Relationship Memory, Outreach Writer and the Commercial Director. Their scope and mission in `agent_registry` were rewritten on 9 Nov. The rule itself lives in `system_config.private_relationship_engine`; the working list lives in `system_config.athlete_talent_book` (Top 20 private prospects, Top 10 agent/management relationships, Top 5 immediate actions).
+
+**Who.** Footballers in every major league (Premier League, Championship, La Liga, Serie A, Bundesliga, Ligue 1, Saudi Pro League, UAE, Qatar, Egypt, international squads), other athletes and boxers, talent, music and high-end creators where NOYA fits, and the people around them: player agents, sports and talent management, player care / player services teams, PAs and EAs, family and private offices.
+
+**Routes, in order.** Published personal business contact (Instagram bio, contact button, link in bio, official site) → agent / manager / management company → PA / EA / player care → official athlete site → LinkedIn → Clay → Hunter. Hunter is never spent on data the person or their management already publishes. Labels stay honest: public named email, official published inbox, management email, agent email; "Hunter verified" only when Hunter verified it.
+
+**One route per person.** One active outreach route per individual, the strongest one, after a relationship-history check. Never the player, agent, management and PA at once; never anything that looks like mass outreach to athletes. Individuals stay in the book until a route is chosen; then they enter `contacts` with `lead_type = PRIVATE_PROSPECT`.
+
+**Ranking.** Expected lifestyle need, Egypt/MENA connection, UK–Europe–GCC movement, travel frequency, family travel, club location, discretion, repeat likelihood, agent access, public route and NOYA differentiation. Never by fame or follower count. Egypt/MENA signals (nationality or heritage, Egypt travel, GCC transfer, Middle East appearances, Red Sea / North Coast, Cairo business, Egyptian family events, brand activations or matches in Egypt) are relevance signals from credible public sources only; never infer private facts.
+
+**Proposition and tone.** NOYA is a trusted private point of contact ("whatever I need, I message NOYA and it is handled"): Egypt specialist with global execution. Not "luxury concierge services". First touches to individuals are short, discreet, personal, non-salesy and low pressure, with no brochure and no service list. To agents, managers and player care the angle changes: NOYA supports *your* clients; you keep the relationship, NOYA is the execution layer.
+
+**CRM stages.** `contacts.lead_type`: PRIVATE_PROSPECT, PRIVATE_CLIENT, REPEAT_CLIENT, NOYA_PRIVATE_CANDIDATE, NOYA_PRIVATE_MEMBER, AGENT_MANAGER (covers player care and talent management), PRIVATE_OFFICE, REFERRER. Membership lives in `club_people` and changes only when it is real. Relationship Memory keeps how the person entered, who introduced them, requests, destinations, preferences, relationship strength, agent/manager, last interaction and next appropriate touch, and nothing sensitive that is not needed.
+
+**Membership.** Never sold on first contact: FIRST REQUEST → EXCELLENT EXECUTION → REPEAT USAGE → RELATIONSHIP → MEMBERSHIP CONVERSATION.
+
+**Measured on.** Qualified private prospects, agent/management relationships, responses, introductions, private requests, repeat clients, membership candidates, members, referrals and evidenced revenue. Not profiles or emails found.
+
+**First pass (9 Nov).** Distribution routes before individuals: club player care / player services teams at five Premier League clubs, a player-care consultancy that keeps a vetted supplier list for clubs, and a new Cairo athlete management agency. Two LinkedIn notes are ready in HQ; four emails are drafted and wait for Hunter verification of Clay-found addresses. The Sports Director now holds three live projects.
