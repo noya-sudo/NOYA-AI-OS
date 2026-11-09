@@ -2232,3 +2232,26 @@ No new page or agent. It runs through the existing Directors: **NOYA Private —
 **Measured on.** Qualified private prospects, agent/management relationships, responses, introductions, private requests, repeat clients, membership candidates, members, referrals and evidenced revenue. Not profiles or emails found.
 
 **First pass (9 Nov).** Distribution routes before individuals: club player care / player services teams at five Premier League clubs, a player-care consultancy that keeps a vetted supplier list for clubs, and a new Cairo athlete management agency. Two LinkedIn notes are ready in HQ; four emails are drafted and wait for Hunter verification of Clay-found addresses. The Sports Director now holds three live projects.
+
+### Private engine refinements (9 Nov 2026, permanent)
+
+**Source hierarchy.** Record source and verification date on every fact.
+- Player current club / contract: official club → official league or federation → current reputable news → Transfermarkt (secondary only; never primary when an official source exists).
+- Agent / management: agency official website → the athlete's own public bio or website → Transfermarkt *verified* agent field → credible current press.
+- Contact: publicly published professional email → agency official contact → public LinkedIn → Clay → Hunter.
+
+**Relationship leverage.** Agency, management and player-care relationships are ranked partly on how many realistic NOYA clients they can introduce (roster size, how many players move between the UK, Europe, the GCC and Egypt). The objective is not "reach Player X" but earning the trust of the person who manages many of them.
+
+**One relationship, one active route.** When an agency is the active route, one conversation covers every player it represents: no parallel cold messages to those players, and no second approach to a sister agency under the same group. Athletes managed by an agency partner are reached only through that partner unless it advises otherwise. Club player-care outreach is a separate (squad-level) relationship and never references a player whose agency is already in conversation.
+
+**Positioning.**
+- To an agency: NOYA is the private lifestyle and destination execution partner for its roster (Egypt, UK, Europe, GCC; private travel, VIP movement, family travel, hospitality, last-minute requests). The agency keeps the client; NOYA executes and keeps them informed. Never written about one player.
+- To a large agency with a player-services team: use the official route, addressed to player services; do not lead with player names.
+- To an athlete-management partner that owns development, commercial and brand work: NOYA is the private execution layer (athlete → personal request → partner refers NOYA → NOYA executes discreetly → partner kept informed). Never compete with its commercial or branding work.
+- To club player care: vetted specialist partner; verify the person's current title first; never claim club approval or supplier status unless real.
+
+**Private-client quality.** Rank by repeat potential, access, roster size, UK / Europe / GCC / Egypt movement, family and private support needs, trust potential, Egypt/MENA relevance, likelihood of referral and ability to become a recurring NOYA Private user. Never by fame.
+
+**Private desk and the CEO Top 5.** The private desk (Top 10 management / player-care relationships, Top 20 private prospects, Top 5 private actions) lives in `system_config.athlete_talent_book`. Adam's CEO Top 5 still ranks every NOYA opportunity globally: a private action never displaces a stronger warm commercial opportunity to satisfy a quota.
+
+**Operator notes (9 Nov).** A published agency inbox is an agency's official contact: its contact record may be marked identity-confirmed when the agency itself publishes it, so its desk task shows EMAIL READY. Operator updates to candidates and tasks always target a single record id. Duplicate routes found on 9 Nov were put on HOLD with the reason recorded, never deleted.
