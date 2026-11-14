@@ -2255,3 +2255,25 @@ No new page or agent. It runs through the existing Directors: **NOYA Private —
 **Private desk and the CEO Top 5.** The private desk (Top 10 management / player-care relationships, Top 20 private prospects, Top 5 private actions) lives in `system_config.athlete_talent_book`. Adam's CEO Top 5 still ranks every NOYA opportunity globally: a private action never displaces a stronger warm commercial opportunity to satisfy a quota.
 
 **Operator notes (9 Nov).** A published agency inbox is an agency's official contact: its contact record may be marked identity-confirmed when the agency itself publishes it, so its desk task shows EMAIL READY. Operator updates to candidates and tasks always target a single record id. Duplicate routes found on 9 Nov were put on HOLD with the reason recorded, never deleted.
+
+### 2027 project acquisition sprint (14 Nov 2026, permanent until replaced)
+
+**Objective.** Lock three to four strong projects for 2027. Research volume, LinkedIn queue size and draft count are secondary. Direction (never manufactured): 20–30 high-conviction opportunities, 10–15 active conversations, 5–8 brief or proposal discussions, 3–4 won. The pipeline lives in `system_config.project_pipeline_2027`; each item carries project, company, why now, right person, email route, NOYA role, timing, commercial potential, stage, probability (judgement), blocker and next step, and links to its opportunity.
+
+**Four lanes.**
+- A. Hotel openings, relaunches and branded residences. Never pitch "concierge services"; pitch opening-week VIP guest management, owner and investor visits, press and creator trips, launch dinners, airport and security, chauffeur programmes, private extensions and an ongoing ground partnership. The hotel keeps the guest; NOYA handles the ground.
+- B. Brand and agency activations. The agency owns brand, creative, PR, campaign and guest list; NOYA owns guest journey, arrival, hotels and villas, cars, security, talent movement, private dinners, hospitality and destination execution.
+- C. Corporate and event projects. VIP and speaker desk, executive arrivals, hotel blocks, chauffeurs, security, dinners, partner hospitality, pre and post programmes.
+- D. Private network, travel and distribution partners, judged on client volume, repeat travel, referral power, conversion and NOYA Private potential.
+
+**Routes.** Public professional email → official website or team contact → Clay → Hunter → official contact form → LinkedIn. LinkedIn is fallback only (research, right-person checks, warm relationships Adam can message). The nightly planner adds no new LinkedIn or Instagram drafts while ten or more social routes are open.
+
+**Deliverability first.** Cold batches are paused until SPF and DKIM pass for noyaconcierge.com (`system_config.email_authentication`). Warm replies and high-priority one-to-one project emails continue by hand. Cold-email copy is not judged until authentication is healthy. Emails go out as "Adam Elshazly" from noya@noyaconcierge.com.
+
+**Low intent is held, not deleted.** North American wedding planners without an Egypt/MENA signal, UK fashion brands without an Egypt/MENA or campaign trigger, generic hotels and companies added for Director balance are held with the reason recorded. A "why now" that only restates NOYA's own Egypt pitch is not an Egypt signal. Exceptions: a strong project trigger, distribution power, a named buyer or real Egypt/MENA relevance.
+
+**Sequential multi-threading.** Best person first; move to the next decision maker only after the full follow-up sequence; never several people at once; never abandon a strategic company; record the relationship history.
+
+**Honesty.** No invented case studies, client names or hotel partnerships. When a formal programme with a hotel group would be new for NOYA, say so, and lead with NOYA's real Egypt execution, supplier network and a specific project or pilot.
+
+**Measured on.** Positive conversations created. Tracked separately: delivered (authenticated), bounced, replied, positive reply, meeting, brief, proposal, won. Opens are not tracked (Gmail sends carry no pixel). Definitions live in `system_config.sprint_2027_metrics`. Weekday reports lead with: 2027 projects advanced, replies, meetings, briefs requested, proposals, decision makers reached, project probability and blocker, next action; discovery follows underneath.
