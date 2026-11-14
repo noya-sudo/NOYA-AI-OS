@@ -2317,3 +2317,11 @@ No new page or agent. It runs through the existing Directors: **NOYA Private —
 **Daily report (weekdays).** 1 Money and project movement (projects advanced, proposals, meetings, positive replies); 2 warm actions for Adam; 3 2027 pipeline (moved, blocked, next); 4 private engine (management relationships, private prospects, public professional contacts, actions); 5 best new discovery only; 6 system health, failures and blockers only. Short and commercial.
 
 **Weekly review (Fridays).** New qualified opportunities, emails sent, positive replies, meetings, briefs, proposals, projects won, private requests, repeat clients, membership candidates, revenue evidence, and which sectors, contact types and angles create conversations, without over-reading small samples.
+
+### Adam's decisions (15 Nov 2026)
+- Published named professional emails stay usable without Hunter and are never relabelled verified unless an actual verification source confirms them. Two labels only: "Published address · not verified" and "Verified valid".
+- The new 2027 cold batch is held until SPF and DKIM are healthy; warm replies and existing conversations continue. Art D'Égypte is time-sensitive: in person first, with the email kept as the follow-up.
+- TMG and Four Seasons go out in the same week as separate approaches; neither references the other. TMG's owner side is a strategic, high-leverage account that may unlock several hospitality projects.
+- Kerten: Adam leads the relationship personally.
+- Private engine: daily Instagram, public-profile, management and agency research; no forced outreach on a weak route or fit; Hunter optional.
+- Daily priority: replies, meetings, requested proposals, warm follow-ups, 2027 project movement, private-client relationships, new outreach, research.
