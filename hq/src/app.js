@@ -4150,10 +4150,13 @@ const DESK_GROUPS = [['Actions', [['REPLIES', 'Replies & meetings'], ['FOLLOWUPS
   ['Ready', [['NEEDS_REVIEW', 'Email ready'], ['LINKEDIN', 'LinkedIn ready'], ['INBOX', 'Official inbox'], ['APPROVED', 'Gmail drafts'], ['POOL', 'Ready pool'], ['STUDIO', 'Studio ready']]],
   ['History', [['SENT', 'Sent'], ['REPLIED', 'Replied'], ['HELD', 'Held / closed']]]];
 const DESK_TABS = DESK_GROUPS.flatMap(([, tabs]) => tabs);
-// Contact gate (Adam, 4 Nov): Email ready means a verified address (or LinkedIn ready). An official or self-published inbox that is
-// not verified is only contact ready: it waits under Official inbox until Adam chooses to use it, and never sits beside verified emails.
+// Contact gate (Adam, 4 Nov; amended 15 Nov): Email ready means a verified address, or the person's own address published on a
+// public professional page (Hunter is not required for published data; it stays labelled "not verified"). A company inbox that is
+// not verified is only contact ready: it waits under Official inbox until Adam chooses to use it.
 const VERIFIED_ROUTES = ['VALID_VERIFIED', 'VERIFIED', 'VERIFIED_INBOX', 'VERIFIED_GENERAL'];
+const USABLE_ROUTES = [...VERIFIED_ROUTES, 'PUBLIC_NAMED_EMAIL'];
 const routeVerified = (x) => (x.channel || 'EMAIL') !== 'EMAIL' || VERIFIED_ROUTES.includes(x.route?.email_state);
+const routeUsable = (x) => (x.channel || 'EMAIL') !== 'EMAIL' || USABLE_ROUTES.includes(x.route?.email_state);
 // Follow-up tiers (follow_up_tier in the database): who deserves Adam's time first.
 const FU_TIER = { HOT: ['Hot', 'bad'], WARM: ['Warm', 'warn'], STRATEGIC: ['Strategic', 'ok'], NORMAL: ['Normal', ''], LOW_VALUE: ['Low value', ''], CLOSE_HOLD: ['Close / hold', ''] };
 const FU_TOP = ['HOT', 'WARM', 'STRATEGIC'];
@@ -4208,7 +4211,7 @@ function deskRow(x, readOnly = false) {
     <div class="dr-top"><div class="dr-who"><b>${esc(x.person || x.company || '—')}</b>${x.role ? ` <span class="faint">· ${esc(x.role)}</span>` : ''}${x.person && x.company ? ` · <a class="clickable" data-open="company" data-id="${x.company_id}">${esc(x.company)}</a>` : ''}</div>
       <span class="dr-age" title="Prepared ${esc(fmtDate(x.created_at))}">${x.age_days != null ? `${esc(x.age_days)} d` : ''}</span></div>
     <div class="dr-meta">${esc(dirName(x.director))}${proj ? ` · ${esc(projectName(proj))}` : ''}${x.qa === 'FLAGGED' ? ' · <span class="warn-text">quality flag</span>' : ''}</div>
-    <div class="dr-line"><span>${x.channel !== 'EMAIL' ? 'Route' : routeVerified(x) ? 'Verified email' : x.route?.email_state === 'PUBLIC_NAMED_EMAIL' ? 'Own address · not verified' : 'Official inbox · not verified'}</span>${route}</div>
+    <div class="dr-line"><span>${x.channel !== 'EMAIL' ? 'Route' : routeVerified(x) ? 'Verified email' : x.route?.email_state === 'PUBLIC_NAMED_EMAIL' ? 'Published address · not verified' : 'Official inbox · not verified'}</span>${route}</div>
     ${x.reason ? `<div class="dr-line warn-text">${esc(x.reason)}</div>` : ''}
     ${x.angle ? `<div class="dr-line"><span>Why them</span>${esc(plainText(x.angle).replace(/^Partnership model \(recorded\):\s*/i, ''))}</div>` : ''}
     ${x.why_now ? `<div class="dr-line"><span>Why now</span>${esc(plainText(x.why_now))}</div>` : ''}
@@ -4296,7 +4299,7 @@ function viewDesk() {
   const L = D.linkedin || [];
   const warm = state.data ? needsRows(state.data).filter((x) => x.g === 'replies' || x.g === 'meetings') : [];
   const pool = state.ceo?.pipeline?.ready_list || [];
-  const nrV = (D.needs_review || []).filter(routeVerified); const nrI = (D.needs_review || []).filter((x) => !routeVerified(x));
+  const nrV = (D.needs_review || []).filter(routeUsable); const nrI = (D.needs_review || []).filter((x) => !routeUsable(x));
   const n = { REPLIES: warm.length, TOP5: (D.top5 || []).length, NEXT20: (D.next20 || []).length, NEEDS_REVIEW: nrV.length, INBOX: nrI.length, LINKEDIN: L.filter((a) => !['CLOSED', 'MEETING'].includes(a.state)).length, APPROVED: c.approved, POOL: state.ceo?.pipeline?.ready_pool ?? pool.length, STUDIO: studioReady().length, FOLLOWUPS: c.followups, SENT: c.sent, REPLIED: c.replied, HELD: c.held + c.rejected + c.researching };
   const why = queueWhy();
   const filt = (list, withCh) => {
@@ -4350,7 +4353,7 @@ function viewDesk() {
     const shown = list.slice(pg * DESK_PAGE, pg * DESK_PAGE + DESK_PAGE);
     const pager = list.length > DESK_PAGE ? `<div class="pager"><span class="small">Showing ${pg * DESK_PAGE + 1}–${pg * DESK_PAGE + shown.length} of ${list.length}</span><span><button class="btn small ghost" data-desk-page="-1" ${pg === 0 ? 'disabled' : ''}>Previous</button><button class="btn small ghost" data-desk-page="1" ${pg >= pages - 1 ? 'disabled' : ''}>Next</button></span></div>` : '';
     const emptyEmail = t === 'NEEDS_REVIEW' && state.deskCh === 'EMAIL' && !shown.length
-      ? `<div class="calm"><div class="calm-t">No verified email waiting.</div><div class="t-sub">Email ready lists verified addresses only. When no address can be verified (for example, verification credits have run out), new email drafts wait under Official inbox instead.${nrI.length ? ` ${plural(nrI.length, 'email draft is', 'email drafts are')} there now, addressed to company inboxes.` : ''}${qaHeld().length ? ` ${plural(qaHeld().length, 'verified email draft', 'verified email drafts')} failed the quality check and wait for your edit.` : ''} ${chCount('LINKEDIN') ? `${chCount('LINKEDIN')} LinkedIn fallbacks are under LinkedIn.` : ''}</div>
+      ? `<div class="calm"><div class="calm-t">No email ready.</div><div class="t-sub">Email ready lists verified addresses and people’s own addresses published on a public professional page (shown as not verified). Drafts addressed to a company inbox wait under Official inbox.${nrI.length ? ` ${plural(nrI.length, 'email draft is', 'email drafts are')} there now, addressed to company inboxes.` : ''}${qaHeld().length ? ` ${plural(qaHeld().length, 'verified email draft', 'verified email drafts')} failed the quality check and wait for your edit.` : ''} ${chCount('LINKEDIN') ? `${chCount('LINKEDIN')} LinkedIn fallbacks are under LinkedIn.` : ''}</div>
         ${nrI.length || qaHeld().length ? `<div class="btn-row mt8 center">${nrI.length ? `<button class="btn small primary" data-desk-tab="INBOX">Open Official inbox (${nrI.length})</button>` : ''}${qaHeld().length ? '<button class="btn small" data-desk-tab="HELD">Edit the email drafts</button>' : ''}</div>` : ''}</div>` : '';
     body = `${pager}<div class="dlist">${shown.map((x) => deskRow(x)).join('') || emptyEmail || '<div class="empty">Nothing here.</div>'}</div>${shown.length > 4 ? pager : ''}
       ${t === 'HELD' && D.rejected.length ? `<h3>Rejected · ${D.rejected.length}</h3><div class="dlist">${D.rejected.map((x) => `<div class="t-row"><div><div class="t-main">${esc(x.person || x.company)}${x.person ? ` · <span class="faint">${esc(x.company)}</span>` : ''}</div><div class="t-sub">${esc(CH_LABEL[x.channel] || x.channel || '')} · ${esc(x.reason || '')} · rejected ${esc(shortDay(x.rejected_at))}${x.held_until ? ` · not rediscovered until ${esc(shortDay(x.held_until))}` : ''}</div></div></div>`).join('')}</div>` : ''}`;
@@ -4495,7 +4498,7 @@ const PROJECT_TYPE = { BRAND_CAMPAIGN_EGYPT: 'Brand campaign', BRAND_SHOOT_EGYPT
   ATHLETE_PRIVATE_TRIP: 'Athlete private trip', HOTEL_BRAND_CREATOR_COLLABORATION: 'Hotel × brand × creator' };
 const ptype = (k) => PROJECT_TYPE[k] || (k ? sentence(String(k).replace(/_/g, ' ')) : '—');
 const ROUTE_STATE = { VERIFIED: ['Verified email', 'ok'], VERIFIED_INBOX: ['Verified inbox', 'ok'], VERIFIED_GENERAL: ['Verified general inbox', 'ok'],
-  OFFICIAL_PUBLISHED_INBOX: ['Official inbox · not verified', 'info'], NEEDS_VERIFICATION: ['Email found · to verify', 'warn'], FINDER_PENDING: ['Waiting for email finder', 'warn'],
+  OFFICIAL_PUBLISHED_INBOX: ['Official inbox · not verified', 'info'], PUBLIC_NAMED_EMAIL: ['Published address · not verified', 'info'], NEEDS_VERIFICATION: ['Email found · to verify', 'warn'], FINDER_PENDING: ['Waiting for email finder', 'warn'],
   RESEARCH_PENDING: ['Email research pending', 'warn'], NO_PERSON: ['Right person not confirmed', 'bad'] };
 const emailState = (s) => { const [l, c] = ROUTE_STATE[s] || [s ? sentence(String(s).replace(/_/g, ' ')) : 'No route yet', '']; return pill(l, c); };
 function dashMission() {
