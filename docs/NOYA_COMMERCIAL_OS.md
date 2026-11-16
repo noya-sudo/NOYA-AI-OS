@@ -2325,3 +2325,12 @@ No new page or agent. It runs through the existing Directors: **NOYA Private —
 - Kerten: Adam leads the relationship personally.
 - Private engine: daily Instagram, public-profile, management and agency research; no forced outreach on a weak route or fit; Hunter optional.
 - Daily priority: replies, meetings, requested proposals, warm follow-ups, 2027 project movement, private-client relationships, new outreach, research.
+
+### Adam's decisions (16 Nov 2026)
+- Live booking requests from agency partners are treated as both a booking and a distribution relationship. If the booking converts, build toward preferred Egypt-partner status (partner terms, a reliable response standard, repeat bookings).
+- Supplier availability requests are drafted for Adam to send himself. Never promise a client a fixed turnaround that operator response times do not support. Standard line: "I'll come back to you with the strongest confirmed options once I've checked live availability with the operators." Client options quote only operator-confirmed sailings, rooms and rates.
+- A hotel group that declines a programme but offers to host NOYA guests stays a booking-partner relationship for NOYA Private and international bookings. It is never classified as failed.
+- Follow-ups stay active when the thread supports them. No attachment unless the recipient asks for material.
+- Meeting slots are not refreshed endlessly. If the proposed times lapse again, replace them with: "Happy to work around you — what time suits you best this week?" and release the private calendar holds.
+- SPF and DKIM remain the main infrastructure blocker; the seven new cold 2027 project emails stay held until both pass. Gmail sender name: Adam Elshazly.
+- Order for now: live booking, warm replies, supplier availability, warm follow-ups, SPF/DKIM, then new project outreach once authenticated.
