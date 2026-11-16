@@ -1,14 +1,394 @@
 {
-  "_rule": "Scripts may only state facts listed here with status starting 'verified'. Opinion must be phrased as opinion. Re-verify before reuse after 30 days.",
-  "facts": {
-    "F1": {"claim": "GTA VI releases Thursday 19 November 2026.", "status": "verified_primary", "source": "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026", "checked": "2026-11-16"},
-    "F2": {"claim": "GTA VI launches on PlayStation 5 and Xbox Series X|S.", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_VI", "checked": "2026-11-16"},
-    "F3": {"claim": "GTA VI is set in Vice City and the wider state of Leonida.", "status": "verified_primary", "source": "https://www.rockstargames.com/VI", "checked": "2026-11-16"},
-    "F4": {"claim": "The two lead characters are Lucia Caminos and Jason Duval.", "status": "verified_primary", "source": "https://www.rockstargames.com/VI", "checked": "2026-11-16"},
-    "F5": {"claim": "GTA V released in September 2013.", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_V", "checked": "2026-11-16"},
-    "F6": {"claim": "Vice City first appeared as a full game setting in GTA: Vice City (2002).", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto:_Vice_City", "checked": "2026-11-16"},
-    "F7": {"claim": "Rockstar/Take-Two's fan policy: generally no objection to non-commercial use without plot spoilers; no pre-release leaked footage (incl. early unboxings); no isolated cutscene/ending spoilers; no isolated in-game TV/comedy; no cheat/exploit promotion; content can be taken down at any time.", "status": "verified_primary", "source": "https://support.rockstargames.com/articles/7bNaeoMFTV0iUDGhStTXvz/policy-on-posting-copyrighted-rockstar-games-material", "checked": "2026-11-16"},
-    "F8": {"claim": "GTA VI's release was delayed twice before landing on 19 November 2026.", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_VI", "checked": "2026-11-16"},
-    "F9": {"claim": "TikTok Creator Rewards requires 18+, 10,000 followers, 100,000 video views in the last 30 days, and original videos over 1 minute.", "status": "verified_primary", "source": "https://support.tiktok.com/en/business-and-creator/creator-rewards-program", "checked": "2026-11-16"}
+ "_rule": "Scripts may only state facts listed here with status starting 'verified'. Opinion must be phrased as opinion. Re-verify before reuse after 30 days.",
+ "facts": {
+  "F1": {
+   "claim": "GTA VI releases Thursday 19 November 2026.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026",
+   "checked": "2026-11-16"
+  },
+  "F2": {
+   "claim": "GTA VI launches on PlayStation 5 and Xbox Series X|S.",
+   "status": "verified_secondary",
+   "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_VI",
+   "checked": "2026-11-16"
+  },
+  "F3": {
+   "claim": "GTA VI is set in Vice City and the wider state of Leonida.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI",
+   "checked": "2026-11-16"
+  },
+  "F4": {
+   "claim": "The two lead characters are Lucia Caminos and Jason Duval.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI",
+   "checked": "2026-11-16"
+  },
+  "F5": {
+   "claim": "GTA V released in September 2013.",
+   "status": "verified_secondary",
+   "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_V",
+   "checked": "2026-11-16"
+  },
+  "F6": {
+   "claim": "Vice City first appeared as a full game setting in GTA: Vice City (2002).",
+   "status": "verified_secondary",
+   "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto:_Vice_City",
+   "checked": "2026-11-16"
+  },
+  "F7": {
+   "claim": "Rockstar/Take-Two's fan policy: generally no objection to non-commercial use without plot spoilers; no pre-release leaked footage (incl. early unboxings); no isolated cutscene/ending spoilers; no isolated in-game TV/comedy; no cheat/exploit promotion; content can be taken down at any time.",
+   "status": "verified_primary",
+   "source": "https://support.rockstargames.com/articles/7bNaeoMFTV0iUDGhStTXvz/policy-on-posting-copyrighted-rockstar-games-material",
+   "checked": "2026-11-16"
+  },
+  "F8": {
+   "claim": "GTA VI's release was delayed twice before landing on 19 November 2026.",
+   "status": "verified_secondary",
+   "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_VI",
+   "checked": "2026-11-16"
+  },
+  "F9": {
+   "claim": "TikTok Creator Rewards requires 18+, 10,000 followers, 100,000 video views in the last 30 days, and original videos over 1 minute.",
+   "status": "verified_primary",
+   "source": "https://support.tiktok.com/en/business-and-creator/creator-rewards-program",
+   "checked": "2026-11-16"
+  },
+  "O1": {
+   "claim": "GTA VI releases on Thursday 19 November 2026. Rockstar announced this date on 6 November 2025.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026",
+   "quote": "Grand Theft Auto VI will now release on Thursday, November 19, 2026.",
+   "checked": "2026-11-16",
+   "verifier": "I couldn't refute the claim. I read the cited Rockstar Newswire page and it confirms both parts. The headline is \"Grand Theft Auto VI is Now Set to Launch November 19, 2026\", the post is dated November 6, 2025, and the body reads exactly \"Grand Theft Auto VI will now release on Thursday, November 19"
+  },
+  "O2": {
+   "claim": "The official GTA VI site still shows the date on 16 November 2026 and says pre-load is live.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI",
+   "quote": "Pre-Load Now ... Coming  November 19, 2026 ... PlayStation 5Xbox Series X|S ... Plays Best On PlayStation 5",
+   "checked": "2026-11-16",
+   "verifier": "The claim holds up. I fetched https://www.rockstargames.com/VI live on 16 November 2026 (maxAge 0, status 200). The page shows \"[Pre-Load Now]\", \"Coming  November 19, 2026\", \"PlayStation 5Xbox Series X|S\" and \"Plays Best On PlayStation 5\". The \"Pre-Load Now\" button links to a Rockstar Newswire artic"
+  },
+  "O3": {
+   "claim": "Release date history: Trailer 1 (Dec 2023) said 2025. On 2 May 2025 the date moved to 26 May 2026. On 6 November 2025 it moved again to 19 November 2026.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/258aa538o412ok/grand-theft-auto-vi-is-now-coming-may-26-2026",
+   "quote": "May 2, 2025 Hi everyone, Grand Theft Auto VI is now set to release on May 26, 2026. We are very sorry that this is later than you expected.",
+   "checked": "2026-11-16",
+   "verifier": "I checked all three dates against official sources and each one holds. (1) The 2025 window: the Take-Two press release dated Dec. 4, 2023 says GTA VI \"is coming to PlayStation 5 ... and Xbox Series X|S ... in 2025\". The official Rockstar Trailer 1 video page also reads \"Coming 2025 to PlayStation 5 "
+  },
+  "O4": {
+   "claim": "Rockstar's stated reason for the November 2026 delay was polish, and it describes the world as 'the sprawling state of Leonida' and a 'return to modern day Vice City'.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026",
+   "quote": "these extra months will allow us to finish the game with the level of polish you have come to expect and deserve. ... we are incredibly excited for players to experience the sprawling state of Leonida and a return to modern day Vice City.",
+   "checked": "2026-11-16",
+   "verifier": "I confirmed the claim on the official Rockstar Newswire post \"Grand Theft Auto VI is Now Set to Launch November 19, 2026\", dated November 6, 2025. I scraped the page live on 2026-11-16 and it reads: \"We are sorry for adding additional time to what we realize has been a long wait, but these extra mon"
+  },
+  "O5": {
+   "claim": "Announced launch platforms are PlayStation 5 and Xbox Series X|S only. A PC version is not listed in any official GTA VI material reviewed.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/517572321a549a/watch-the-grand-theft-auto-vi-launch-trailer",
+   "quote": "Grand Theft Auto VI arrives November 19 to PlayStation 5 and XBOX Series X|S.",
+   "checked": "2026-11-16",
+   "verifier": "I could not refute the claim. The cited Rockstar Newswire launch trailer post (October 15, 2026) says exactly what the claim quotes: \"Grand Theft Auto VI arrives November 19 to PlayStation 5 and XBOX Series X|S.\" Four other sources agree. (1) The official game page at rockstargames.com/VI shows \"Com"
+  },
+  "O6": {
+   "claim": "Take-Two's Q2 fiscal 2027 results (9 Nov 2026) list GTA VI on PS5 and Xbox Series X|S for 19 November 2026. CEO Strauss Zelnick said pre-orders were at 'unprecedented levels'.",
+   "status": "verified_primary",
+   "source": "https://www.take2games.com/ir/news/take-two-interactive-software-inc-reports-results-fiscal-4",
+   "quote": "The launch of Grand Theft Auto VI is ten days away and, with pre-orders continuing to reach unprecedented levels, we expect to deliver an historic year for our company. | Rockstar Games | Grand Theft Auto VI | PS5, Xbox Series X|S | November 19, 2026 |",
+   "checked": "2026-11-16",
+   "verifier": "I couldn't refute the claim; two sources confirm it. I scraped the cited official Take-Two IR page (HTTP 200), titled \"Take-Two Interactive Software, Inc. Reports Results for Fiscal Second Quarter 2027\" (quarter ended 30 Sep 2026). It quotes Strauss Zelnick, Chairman and CEO: \"The launch of Grand Th"
+  },
+  "O7": {
+   "claim": "Rockstar says GTA VI targets 30 frames per second on current-gen consoles. It was built from the ground up for current-generation consoles.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/89834o94713o21/pre-load-grand-theft-auto-vi-now",
+   "quote": "Grand Theft Auto VI has been fully developed from the ground up to provide the best possible experience for the current generation of consoles, targeting 30 frames per second while pushing both platforms to their absolute limits",
+   "checked": "2026-11-16",
+   "verifier": "I scraped the cited Rockstar Newswire page, \"Pre-Load Grand Theft Auto VI Now\" (dated November 10, 2026). It contains the quoted sentence word for word: \"Grand Theft Auto VI has been fully developed from the ground up to provide the best possible experience for the current generation of consoles, ta"
+  },
+  "O8": {
+   "claim": "PS5 Pro gets PSSR upscaling and ray-traced shadows exclusive to PS5 Pro. PS5 gets DualSense haptics, Tempest 3D Audio and improved load times.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/89834o94713o21/pre-load-grand-theft-auto-vi-now",
+   "quote": "The PlayStation 5 Pro offers breathtaking visuals, with improved clarity through PlayStation Spectral Super Resolution (PSSR) and ray-traced shadows only available on PlayStation 5 Pro.",
+   "checked": "2026-11-16",
+   "verifier": "The claim holds up against the official source. I read the cited Rockstar Newswire article \"Pre-Load Grand Theft Auto VI Now\" (dated November 10, 2026) myself, and the quote appears word for word: \"The PlayStation 5 Pro offers breathtaking visuals, with improved clarity through PlayStation Spectral "
+  },
+  "O9": {
+   "claim": "GTA VI will also be playable through Xbox Cloud Gaming on Xbox Series X|S and Xbox One, using Series S graphics settings. Remote Play is supported on PlayStation and Xbox.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/89834o94713o21/pre-load-grand-theft-auto-vi-now",
+   "quote": "The game will also be available via XBOX Cloud Gaming on XBOX Series X|S and XBOX One consoles, utilizing XBOX Series S graphics settings. ... GTAVI will also fully support Remote Play on PlayStation and XBOX.",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited official Rockstar Newswire page, \"Pre-Load Grand Theft Auto VI Now\" (November 10, 2026). It says word for word: \"The game will also be available via XBOX Cloud Gaming on XBOX Series X|S and XBOX One consoles, utilizing XBOX Series S graphics settings. And as with all cloud streaming"
+  },
+  "O10": {
+   "claim": "Pre-load opened on 10 November 2026 for digital pre-orders. Code-in-box buyers can pre-load once their code arrives. Note: Take-Two's June 2026 release had said pre-load would start 12 November; Rockstar's later Newswire date of 10 November replaces it.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/89834o94713o21/pre-load-grand-theft-auto-vi-now",
+   "quote": "November 10, 2026 Pre-loading is now available for everyone who has pre-ordered Grand Theft Auto VI digitally. Players who pre-ordered the code-in-box version can also activate their code and begin pre-loading as soon as it’s received.",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited Rockstar Newswire page \"Pre-Load Grand Theft Auto VI Now\", dated November 10, 2026. It contains the quoted text word for word: \"Pre-loading is now available for everyone who has pre-ordered Grand Theft Auto VI digitally. Players who pre-ordered the code-in-box version can also activ"
+  },
+  "O11": {
+   "claim": "Official US prices: Standard Edition $79.99, Ultimate Edition $99.99. Pre-orders opened 25 June 2026. The official copy calls it 'a single-player experience'. UK/GBP pricing was not in the material reviewed.",
+   "status": "verified_primary",
+   "source": "https://www.take2games.com/ir/news/rockstar-games-announces-pre-orders-grand-theft-auto-vi",
+   "quote": "Launching November 19, 2026, for the PlayStation® 5 computer entertainment systems and Xbox Series X|S games and entertainment systems for $79.99, Grand Theft Auto VI features a single-player experience set in the biggest, most immersive evolution of the series yet. ... The Grand Theft Auto VI: Ultimate Edition ... will be available for $99.99.",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited Take-Two IR press release (dated Jun. 24, 2026) and it confirms every part of the claim. It says \"pre-orders for Grand Theft Auto VI will begin on June 25, 2026, at midnight local time.\" It also says: \"Launching November 19, 2026, for the PlayStation® 5 ... and Xbox Series X|S ... f"
+  },
+  "O12": {
+   "claim": "Pre-order bonus: the Vintage Vice City Pack (for purchases before 20 Nov 2026). Digital pre-orders also get a free month of GTA+.",
+   "status": "verified_primary",
+   "source": "https://www.take2games.com/ir/news/rockstar-games-announces-pre-orders-grand-theft-auto-vi",
+   "quote": "All Grand Theft Auto VI pre-orders and purchases before November 20, 2026, will include the Vintage Vice City Pack, a collection of items that flash back to when the neon burned brightest, alongside a free month of GTA+ for digital pre-orders",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited Take-Two press release (dated 24 June 2026) and it confirms the claim word for word: \"All Grand Theft Auto VI pre-orders and purchases before November 20, 2026, will include the Vintage Vice City Pack, a collection of items that flash back to when the neon burned brightest, alongsid"
+  },
+  "O13": {
+   "claim": "Official premise: 'Vice City, USA.' The leads are Jason and Lucia, caught in a criminal conspiracy across the state of Leonida after 'an easy score goes wrong'.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI",
+   "quote": "Vice City, USA. Jason and Lucia have always known the deck is stacked against them. But when an easy score goes wrong, they find themselves on the darkest side of the sunniest place in America, in the middle of a criminal conspiracy stretching across the state of Leonida — forced to rely on each other more than ever if they want to make it out alive.",
+   "checked": "2026-11-16",
+   "verifier": "I could not refute the claim. I scraped https://www.rockstargames.com/VI with Firecrawl (cached 2026-11-16). The page shows the heading \"Vice City, USA.\" and then this text, which matches the claim's quote word for word: \"Jason and Lucia have always known the deck is stacked against them. But when a"
+  },
+  "O14": {
+   "claim": "Trailer 1 came out on 5 December 2023. Rockstar called the game 'the biggest, most immersive evolution of the Grand Theft Auto series yet', set in Leonida, 'home to the neon-soaked streets of Vice City and beyond'.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/8978kok9385a82/grand-theft-auto-vi-watch-trailer-1-now",
+   "quote": "December 5, 2023 Grand Theft Auto VI heads to the state of Leonida, home to the neon-soaked streets of Vice City and beyond in the biggest, most immersive evolution of the Grand Theft Auto series yet. Coming 2025 to PlayStation 5 and Xbox Series X|S.",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited Rockstar Newswire page (statusCode 200). It is dated \"December 5, 2023\" and says, word for word: \"Grand Theft Auto VI heads to the state of Leonida, home to the neon-soaked streets of Vice City and beyond in the biggest, most immersive evolution of the Grand Theft Auto series yet. C"
+  },
+  "O15": {
+   "claim": "Trailer 2 came out on 6 May 2025 under the subtitle 'Explore Vice City and beyond'.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/3928aaa9471o3a/grand-theft-auto-vi-watch-trailer-2-now",
+   "quote": "Grand Theft Auto VI — Watch Trailer 2 Now ### Explore Vice City and beyond May 6, 2025",
+   "checked": "2026-11-16",
+   "verifier": "The claim holds. I read the cited Rockstar Newswire page live. Its title is \"Grand Theft Auto VI — Watch Trailer 2 Now\", the subtitle is \"Explore Vice City and beyond\" and the date is \"May 6, 2025\". The body also says \"Explore Vice City and beyond at rockstargames.com/VI\". A second source agrees on "
+  },
+  "O16": {
+   "claim": "'Grand Theft Auto VI: An Extended Look' (announced 6 Aug 2026) premiered on Netflix on 27 August 2026 at 3 p.m. ET, then on Rockstar's YouTube and the GTA VI site at 9 p.m. ET.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/9k2kaa1o3297k9/grand-theft-auto-vi-an-extended-look",
+   "quote": "Grand Theft Auto VI: An Extended Look will premiere on Netflix Thursday, August 27 at 3 p.m. ET and will also launch on the official Rockstar Games YouTube channel and the Grand Theft Auto VI site at 9 p.m. ET on August 27.",
+   "checked": "2026-11-16",
+   "verifier": "I could not refute the claim. Every part of it matches official sources. The cited Rockstar Newswire article loaded with HTTP 200 and is dated \"August 6, 2026\". It says, word for word: \"Grand Theft Auto VI: An Extended Look will premiere on Netflix Thursday, August 27 at 3 p.m. ET and will also laun"
+  },
+  "O17": {
+   "claim": "The Launch Trailer came out on 15 October 2026. It features Justice, who composed GTA VI's original score, with the single 'Flower in a Hurricane' (feat. Tame Impala, SZA, King Gizzard & The Lizard Wizard). That song is on 'Grand Theft Auto VI: The Album'.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/517572321a549a/watch-the-grand-theft-auto-vi-launch-trailer",
+   "quote": "October 15, 2026 ... Check out the new Launch Trailer, featuring new music from electronic duo Justice, composers of the original score from Grand Theft Auto VI.",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited Rockstar Newswire page. It is dated \"October 15, 2026\" and says: \"Check out the new Launch Trailer, featuring new music from electronic duo Justice, composers of the original score from Grand Theft Auto VI. The new standalone Justice single, 'Flower in a Hurricane' feat. Tame Impala"
+  },
+  "O18": {
+   "claim": "Jason Duval's official bio: grew up around grifters and crooks, served in the Army, now works for drug runners in the Keys.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/only-in-leonida",
+   "quote": "Jason grew up around grifters and crooks. After a stint in the Army trying to shake off his troubled teens, he found himself in the Keys doing what he knows best, working for local drug runners. It might be time to try something new.",
+   "checked": "2026-11-16",
+   "verifier": "The claim is confirmed. I fetched https://www.rockstargames.com/VI/only-in-leonida (official Rockstar page, cached 2026-11-16) and it contains the quoted text word for word under \"Jason Duval\": \"Jason wants an easy life, but things just keep getting harder. Jason grew up around grifters and crooks. "
+  },
+  "O19": {
+   "claim": "Lucia Caminos' official bio: taught to fight by her father, served time in Leonida Penitentiary, and her family's past links to Liberty City.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/only-in-leonida",
+   "quote": "Lucia’s father taught her to fight as soon as she could walk. Life has been coming at her swinging ever since. Fighting for her family landed her in the Leonida Penitentiary. ... More than anything, Lucia wants the good life her mom has dreamed of since their days in Liberty City",
+   "checked": "2026-11-16",
+   "verifier": "I scraped the cited official Rockstar page (rockstargames.com/VI/only-in-leonida, HTTP 200). Its Lucia Caminos section says, word for word: \"Lucia's father taught her to fight as soon as she could walk.\" It continues: \"Fighting for her family landed her in the Leonida Penitentiary. Sheer luck got he"
+  },
+  "O20": {
+   "claim": "Other officially named characters: Cal Hampton, Boobie Ike, Dre'Quan Priest, Real Dimez (Bae-Luxe and Roxy), Raul Bautista and Brian Heder (with his wife Lori).",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/only-in-leonida",
+   "quote": "Bae-Luxe and Roxy aka Real Dimez have been friends since high school — girls with the savvy to turn their time shaking down local dealers into cold, hard cash via spicy rap tracks and a relentless social media presence.",
+   "checked": "2026-11-16",
+   "verifier": "The claim holds up. I read Rockstar's official page at https://www.rockstargames.com/VI/only-in-leonida. Besides Jason Duval and Lucia Caminos, it has a section headed by name for each of these characters: \"Cal Hampton\", \"Boobie Ike\", \"Dre'Quan Priest\", \"Real Dimez\", \"Raul Bautista\" and \"Brian Heder"
+  },
+  "O21": {
+   "claim": "Officially named places on the 'Only in Leonida' page: Vice City, Leonida Keys, Grassrivers, Port Gellhorn, Ambrosia and Mount Kalaga. The page calls Leonida 'the sunshine state'.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/only-in-leonida",
+   "quote": "Explore Vice City ... Explore Leonida Keys ... Explore Grassrivers ... Explore Port Gellhorn ... Explore Ambrosia ... Explore Mount Kalaga ... Tour a few of the must-see destinations across the sunshine state.",
+   "checked": "2026-11-16",
+   "verifier": "I scraped https://www.rockstargames.com/VI/only-in-leonida today (HTTP 200, cache dated 2026-11-16). The page contains each of these lines word for word: \"Explore Vice City\", \"Explore Leonida Keys\", \"Explore Grassrivers\", \"Explore Port Gellhorn\", \"Explore Ambrosia\" and \"Explore Mount Kalaga\". It als"
+  },
+  "O22": {
+   "claim": "Official character copy touches on in-world internet and social media: Cal is internet-obsessed, and Real Dimez build fame through 'viral videos' and 'a relentless social media presence'. This is narrative copy only, not a confirmed gameplay feature.",
+   "status": "refuted",
+   "source": "https://www.rockstargames.com/VI/only-in-leonida",
+   "quote": "What if everything on the internet was true? ... Viral videos. Viral hooks.",
+   "checked": "2026-11-16",
+   "verifier": "The claim is mostly right, but the wording goes further than the official copy, and the cited quote joins text from two different characters as if it were one passage. I read https://www.rockstargames.com/VI/only-in-leonida (live, HTTP 200). It was corroborated by a second search, which surfaced Roc"
+  },
+  "O23": {
+   "claim": "Officially named Ultimate Edition locations and items include the '95 Grotti Cheetah, Rideout Customs Mod Shop, Sara's Unisex Salon, Stock 305 Clothing Store, Electric Fang Tattoo Parlor and One-Eyed Willie's Mod Shop.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/editions",
+   "quote": "’95 Grotti Cheetah ... Rideout Customs Mod Shop ... Sara’s Unisex Salon ... Stock 305 Clothing Store ... Electric Fang Tattoo Parlor ... One-Eyed Willie’s Mod Shop",
+   "checked": "2026-11-16",
+   "verifier": "I could not refute this claim. I scraped the cited official page, https://www.rockstargames.com/VI/editions (HTTP 200, cached 2026-11-16). It lists the Ultimate Edition (\"An exclusive collection of items threaded across all aspects of Jason and Lucia's story\"). Under \"This Edition Includes\" it has t"
+  },
+  "O24": {
+   "claim": "Official cover art alt-text describes a flamingo over a speedboat and a gator in the water, so wildlife appears in official artwork. Rockstar has not described any wildlife gameplay system in the material reviewed.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/editions",
+   "quote": "Grand Theft Auto 6 cover art with the Grand Theft Auto 6 logo in the center of various characters and scenes including a helicopter flying, Jason and Lucia, a character on a motorcycle, Boobie Ike, a flamingo flying over a speedboat, a gator in the water, Raul Bautista",
+   "checked": "2026-11-16",
+   "verifier": "I read the raw HTML of https://www.rockstargames.com/VI/editions. The cover-art alt text appears there several times, word for word: \"Grand Theft Auto 6 cover art with the Grand Theft Auto 6 logo in the center of various characters and scenes including a helicopter flying, Jason and Lucia, a charact"
+  },
+  "O25": {
+   "claim": "GTA VI is rated ESRB M (Mature). Rockstar's 10 Nov 2026 post lists content descriptors and 'In-Game Purchases'. PEGI/UK rating was not checked.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/89834o94713o21/pre-load-grand-theft-auto-vi-now",
+   "quote": "Rating: ESRB M ... Blood and Gore, Intense Violence, Mature Humor,  Nudity, Strong Language, Strong Sexual Content, Use of Drugs and Alcohol ... In-Game Purchases",
+   "checked": "2026-11-16",
+   "verifier": "Confirmed from two official Rockstar pages. 1) I scraped the cited Newswire post \"Pre-Load Grand Theft Auto VI Now\", dated November 10, 2026. It shows an ESRB rating badge with the alt text \"Rating: ESRB M. Click here learn more about rating systems\" and links to esrb.org. Below the badge it lists t"
+  },
+  "O26": {
+   "claim": "The official media page offers downloadable videos, clips, 138 screenshots and 27 artwork/wallpapers. It does not grant commercial reuse rights; see O27.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/VI/media",
+   "quote": "Explore Vice City and Beyond Download and share trailers, imagery, and more.",
+   "checked": "2026-11-16",
+   "verifier": "I read https://www.rockstargames.com/VI/media live (maxAge 0). The quote is exact: \"Explore Vice City and Beyond / Download and share trailers, imagery, and more.\" The page lists \"Videos 5\", \"Clips 9\" (with a \"Download All 9 Clips in a single zip file\" link), \"Screenshots 138\" (\"Download All 138 Scr"
+  },
+  "O27": {
+   "claim": "Rockstar/Take-Two's content policy only tolerates non-commercial fan use. Monetised content or promotion counts as commercial, and Take-Two can take content down at any time. Leaked pre-release footage, isolated cutscenes/spoilers and advertising uses are excluded. Licensing requests go to copyright@take2games.com. This matters for a monetised TikTok: official trailers, screenshots and logos should not be reused.",
+   "status": "verified_primary",
+   "source": "https://support.rockstargames.com/articles/7bNaeoMFTV0iUDGhStTXvz/policy-on-posting-copyrighted-rockstar-games-material",
+   "quote": "\"Non-commercial\" means that you don't make money through the game footage you post or use the material as part of a promotion for a product or service. Take-Two Interactive reserves the right to have its copyrighted material taken down at any time. ... Pre-Release Footage: No pre-release leaked footage of any kind.",
+   "checked": "2026-11-16",
+   "verifier": "I read the cited Rockstar Support page (\"Last Updated: January 10, 2025\") and it supports every factual part of the claim. It says: \"Generally, Take-Two Interactive does not object to our fans using materials for non-commercial uses in a manner which does not intentionally spoil the plot for others."
+  },
+  "O28": {
+   "claim": "GTA V was released on 17 September 2013.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/newswire/article/ak14o88385oo81/grand-theft-auto-v-is-coming-9172013.html",
+   "quote": "Today, we have an official release date to share with you: Grand Theft Auto V will arrive in stores on September 17, 2013.",
+   "checked": "2026-11-16",
+   "verifier": "I couldn't refute it, and two official sources confirm it. The cited Rockstar Newswire post, dated 31 January 2013, says word for word: \"Grand Theft Auto V will arrive in stores on September 17, 2013.\" A Take-Two investor-relations press release headed \"September 17, 2013 8:00 AM ET\" says GTA V \"is "
+  },
+  "O29": {
+   "claim": "GTA V is set in Los Santos and Blaine County with three protagonists. Today it is on PS5, Xbox Series X|S and PC. GTA Online supports up to 30 players.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/gta-v",
+   "quote": "Welcome to Los Santos When a young street hustler, a retired bank robber, and a terrifying psychopath find themselves entangled ... the world of Los Santos and Blaine County load in faster than ever before. ... GTA Online ... for up to 30 players",
+   "checked": "2026-11-16",
+   "verifier": "I read the official page at https://www.rockstargames.com/gta-v (fetched from cache dated 2026-11-15) and it supports every part of the claim. Its header says \"Now available for PlayStation 5, Xbox Series X|S, and PC\". The story section describes \"a young street hustler, a retired bank robber, and a"
+  },
+  "O30": {
+   "claim": "Wikipedia gives GTA V's setting as the fictional state of San Andreas, and lists PS3/360 2013, PS4/XB1 2014, PC 2015 and PS5/XSX 2022 releases. Rockstar's own page names Los Santos and Blaine County.",
+   "status": "verified_secondary",
+   "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_V",
+   "quote": "17 September 2013 - PS3, Xbox 360 ... 18 November 2014 - PS4, Xbox One ... 14 April 2015 - Windows ... 15 March 2022 - PS5, Xbox Series X/S",
+   "checked": "2026-11-16",
+   "verifier": "I couldn't refute the claim. Every part checked out against the two pages I read. (1) Wikipedia (en.wikipedia.org/wiki/Grand_Theft_Auto_V) says: \"Set within the fictional state of San Andreas, based on Southern California\" and \"fictional city of Los Santos, based on Los Angeles.\" It also says: \"Gran"
+  },
+  "O31": {
+   "claim": "GTA: Vice City, developed by Rockstar North, was released on 27 October 2002 and set in the 1980s.",
+   "status": "verified_primary",
+   "source": "https://www.rockstargames.com/games/Vicecity",
+   "quote": "Welcome to the 1980s. From the decade of big hair, excess, and pastel suits comes a story of one man's rise to the top of the criminal pile ... DeveloperRockstar North ... Release DateOctober 27, 2002",
+   "checked": "2026-11-16",
+   "verifier": "Rockstar's official page (https://www.rockstargames.com/games/vicecity, scraped today) supports the claim. Its description says \"Welcome to the 1980s. From the decade of big hair, excess, and pastel suits comes a story of one man's rise to the top of the criminal pile...\" The Specifications section "
+  },
+  "O32": {
+   "claim": "Wikipedia says the 2002 Vice City was set in 1986 in a Miami-inspired city and followed Tommy Vercetti.",
+   "status": "verified_secondary",
+   "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto:_Vice_City",
+   "quote": "Set in 1986 within the fictional Vice City (based on Miami), the single-player story follows gangster Tommy Vercetti's rise to power after being released from prison",
+   "checked": "2026-11-16",
+   "verifier": "The claim holds. I read the cited Wikipedia article (revision dated 2026-10-29). Its lead says word for word: \"Set in 1986 within the fictional Vice City (based on Miami), the single-player story follows gangster Tommy Vercetti's rise to power after being released from prison and becoming caught up "
+  },
+  "O33": {
+   "claim": "Rockstar reports GTA series sales of over 470 million units sold-in worldwide (boilerplate in the June 2026 release).",
+   "status": "verified_primary",
+   "source": "https://www.take2games.com/ir/news/rockstar-games-announces-pre-orders-grand-theft-auto-vi",
+   "quote": "the Grand Theft Auto series, one of the most successful entertainment properties of all time with over 470 million units sold-in worldwide.",
+   "checked": "2026-11-16",
+   "verifier": "The claim holds. I read the cited Take-Two IR page, \"Rockstar Games Announces Pre-Orders for Grand Theft Auto VI\", dated Jun. 24, 2026 (the June 2026 release). Its \"About Rockstar Games\" boilerplate says, word for word: \"Rockstar Games cemented their reputation as creators of complex living worlds w"
+  },
+  "O34": {
+   "claim": "GTA VI releases at midnight local time on 19 November 2026 in all regions on PS5 and Xbox Series X|S; PS5 pre-load began midnight local on 10 Nov, Xbox pre-load 00:00 GMT on 10 Nov.",
+   "status": "verified_primary",
+   "source": "https://support.rockstargames.com/articles/29jV3Cv2cCgvwM1XgtMO5o/grand-theft-auto-vi-regional-pre-load-and-release-times-on-playstation-5-and-xbox-series-x-or-s",
+   "quote": "Grand Theft Auto VI will release midnight local time on November 19, 2026, in all regions for both PlayStation 5 and XBOX Series X|S.",
+   "checked": "2026-11-16"
   }
+ },
+ "unknowns_2026_11_16": [
+  "PC version: no PC release or date appears in any official GTA VI material reviewed. Every Rockstar and Take-Two source lists PS5 and Xbox Series X|S only.",
+  "Map size: Rockstar has published no numeric map size or comparison with GTA V's map. Its wording is only 'sprawling state of Leonida' and 'biggest, most immersive evolution'.",
+  "Online / multiplayer: no GTA VI online mode has been officially detailed. The pre-order release calls it 'a single-player experience', and GTA+ is linked to GTA Online / GTA V, not to a confirmed GTA VI online mode.",
+  "UK pricing in GBP: only US prices ($79.99 Standard, $99.99 Ultimate) were seen in official material. UK store prices were not checked.",
+  "PEGI / UK age rating was not checked. Only ESRB M was seen on Rockstar's pages.",
+  "Gameplay systems (wildlife behaviour, in-game social media apps, character switching, properties, heists, police/wanted system changes) have not been officially described as gameplay features. Wildlife appears only in cover-art alt-text, and social media only in character bios.",
+  "Story length, mission count and number of playable characters: official copy names Jason and Lucia as leads but does not explicitly state the playable character count.",
+  "Frame rate options: Rockstar says it 'targets 30 frames per second'. No 60fps or performance mode on any console has been announced, and PS5 Pro details mention only PSSR and ray-traced shadows.",
+  "Physical disc: the June 2026 release describes the physical version as 'containing a download code inside the box' and does not confirm a playable disc.",
+  "Contents of 'Grand Theft Auto VI: The Festival' (Newswire, 9 Nov 2026) and the full Album/Score track lists were not read.",
+  "Content rights: Rockstar's fan-content policy covers non-commercial use only. Any use of official trailers, screenshots, artwork or logos in a monetised or revenue-oriented TikTok needs a licence from copyright@take2games.com. No such permission is known to exist.",
+  "A '26 minutes gameplay' YouTube video appeared in endscreen links on the Rockstar videos page. It is not verified as official Rockstar material and should not be cited."
+ ],
+ "platform_rules_2026_11_16": [
+  {
+   "topic": "1. Rockstar fan-content policy: what counts as non-commercial",
+   "finding": "Rockstar Support's 'Policy on posting copyrighted Rockstar Games material' (last updated 10 January 2025) says: \"Generally, Take-Two Interactive does not object to our fans using materials for non-commercial uses in a manner which does not intentionally spoil the plot for others.\" It defines the term this way: \"'Non-commercial' means that you don't make money through the game footage you post or use the material as part of a promotion for a product or service. Take-Two Interactive reserves the right to have its copyrighted material taken down at any time.\" It also says: \"this policy is intended to address occasional, non-commercial in-game content use by individual members of the Rockstar fan community.\"",
+   "implication_for_yourviral7": "Any monetised TikTok, including Creator Rewards and brand deals, falls outside what this policy tolerates if it contains Rockstar material. The safe route is 100% original motion graphics, our own narration and text. Mention facts only, and show no Rockstar footage, screenshots, artwork or logos. Even tolerated fan use can be taken down at any time.",
+   "source_url": "https://support.rockstargames.com/articles/7bNaeoMFTV0iUDGhStTXvz/policy-on-posting-copyrighted-rockstar-games-material"
+  },
+  {
+   "topic": "1b. Rockstar policy: pre-release footage, spoilers, in-game TV",
+   "finding": "From the same page: \"Pre-Release Footage: No pre-release leaked footage of any kind. Any posting of in-game footage from leaked copies of the game prior to its official release date will be taken down, regardless of how the game was obtained. This includes 'early unboxing' videos.\" On spoilers: \"Posting video showing the ending of the game, an edited combination of cutscenes and/or in-game plot dialogue, or any other big reveal in the story... isolated videos of the game's cinematics will be removed.\" On in-game entertainment: \"Showing content like the TV shows and comedy performances in Grand Theft Auto... any posting of these in isolation will be flagged for removal.\" Questions go to copyright@take2games.com.",
+   "implication_for_yourviral7": "For 16 to 18 November: no leaked clips, no early-unboxing posts and no 'leak' hooks. After launch on 19 November, the 'unusual details' series must not post isolated cutscenes, the ending or plot reveals, or clips of in-game TV and comedy shows. Narrated play-throughs are tolerated, but only on a non-commercial basis.",
+   "source_url": "https://support.rockstargames.com/articles/7bNaeoMFTV0iUDGhStTXvz/policy-on-posting-copyrighted-rockstar-games-material"
+  },
+  {
+   "topic": "2. Reuse of official GTA VI artwork, screenshots, logos and map",
+   "finding": "rockstargames.com/VI/media/artwork-wallpapers offers '27 artwork and wallpapers (as zip file)', including 'Official Cover Art', 'Vice City Postcard' and versions 'With Logos'. A scrape asking for any terms of use or licence on that page returned none. The Newswire post of 3 November 2026 says: \"On November 19 we will be adding an official printable Grand Theft Auto VI cover art poster and map of Leonida as a free digital download.\" The Newswire launch gallery post of 5 November 2026 points to rockstargames.com/VI/launch-gallery. Rockstar's legal terms (rockstargames.com/legal) say Rockstar owns all 'Content' (\"designs, graphics, artwork, illustrations, photographs... characters, names... locations... trademarks, logos\"). Section 2.2 is titled 'Personal, Non-Commercial Use Only'. Section 2.3 says you may not \"copy... distribute... modify, create derivative works, commercialize, or otherwise exploit the Services (including the Content)... unless subject to separate, express written terms provided by Rockstar permitting such conduct.\" It also prohibits using Content to \"develop, train, enhance, or provide source material for... any Generative AI Tools.\"",
+   "implication_for_yourviral7": "I found no grant allowing fan creators to reuse official screenshots, wallpapers, cover art, logos, trailer footage or the Leonida map in monetised posts. Being free to download does not make it licensed. Do not use these in videos or carousels, and do not trace them or feed them to AI image tools; the AI ban is explicit. The 'map dump' carousel idea needs original, stylised graphics, or written permission from copyright@take2games.com. Also note that the official map is only released on 19 November, so it does not exist yet on 16 November.",
+   "source_url": "https://www.rockstargames.com/legal"
+  },
+  {
+   "topic": "3. TikTok AI-generated content (AIGC) labelling",
+   "finding": "TikTok Support ('How is AI-generated content labeled on TikTok?') says: \"we encourage creators to label content that has been either completely generated or significantly edited by AI. We also require creators to label all AI-generated content that contains realistic images, audio, and video.\" TikTok's in-app AIGC page says: \"While we encourage creators to disclose content that is completely AI-generated or significantly edited with AI, we require it for realistic images, audio, and video,\" and \"TikTok may automatically apply the 'AI-generated' label to content that we identify as completely generated or significantly edited with AI.\" Note that support.tiktok.com would not scrape directly, so this text comes from the search excerpt of that page.",
+   "implication_for_yourviral7": "Synthetic text-to-speech that sounds like a realistic human voice counts as 'realistic audio', so turn on the AIGC label for every video that uses TTS narration. Do this even though the voice imitates no real person, and even when the visuals are non-AI motion graphics. Labelling is encouraged anyway, costs little, and avoids enforcement under the Integrity and Authenticity guidelines. Never clone a real person's voice. Note that Metricool's help page says its AI-generated content toggle works only for video posts, not photo posts.",
+   "source_url": "https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content"
+  },
+  {
+   "topic": "4a. Scheduling videos from desktop web",
+   "finding": "From TikTok For Business's blog post 'Video Scheduler': \"You can find this feature on the web upload page. You can schedule videos anywhere from 15 minutes to 10 days in advance of publishing.\" Once a post is scheduled, \"you cannot edit the video, caption, or scheduled time.\" The post also says: \"You'll need a Business Account in order to access desktop scheduling,\" while elsewhere describing the feature as for 'creators and Business Accounts'. Buffer, a third party, claims 30 days, which conflicts with TikTok's own 10 days.",
+   "implication_for_yourviral7": "The 17 November videos (and any later 16 November slots) can be scheduled natively at tiktok.com/tiktokstudio/upload, at least 15 minutes ahead. Captions, the AIGC toggle and the time must be final before scheduling, because edits mean deleting the post and uploading again. If the Schedule option does not appear, the account may need to be a Creator or Business account.",
+   "source_url": "https://ads.tiktok.com/business/en-US/blog/introducing-video-scheduler-now-you-can-plan-tiktoks-in-advance"
+  },
+  {
+   "topic": "4b. Photo and carousel posts: desktop and music",
+   "finding": "Metricool's help centre (updated 4 November 2026) says TikTok photo posts take JPEG or WebP, up to 20 MB per image, up to 1080p. \"TikTok does not support PNG. The web version converts PNG files to JPG when you save the post. The mobile app does not convert them, so use JPG for TikTok photos in the app, or create the post on the web.\" On music: \"Business accounts can add TikTok's Top 100 trending songs. Personal accounts can only add random music to photos.\" Sked Social (October 2026) says the API accepts \"up to 35 images in a single photo post,\" and that \"TikTok can add recommended music to photo posts automatically, but only when a tool uses direct post mode. If your carousel arrives in the TikTok inbox instead, add the sound yourself in the app.\" It also warns: \"If your tool turns the images into an MP4 first, TikTok treats it as a video.\" TikTok For Business points businesses to the Commercial Music Library of pre-cleared tracks. I could not open an official TikTok page confirming native photo-post scheduling in TikTok Studio web, so treat that as unverified.",
+   "implication_for_yourviral7": "Export carousel slides as 1080x1920 JPG, not PNG. Native web scheduling is officially documented only for videos, so photo posts are safest published from the TikTok app, with sound added in-app. Business accounts are limited to Commercial Music Library or pre-cleared tracks. Personal accounts get the full music library for organic use, but those rights do not cover Creator Rewards or branded use. Original or royalty-free music baked into our own videos avoids muting.",
+   "source_url": "https://help.metricool.com/schedule-and-post-on-tiktok-bkepi"
+  },
+  {
+   "topic": "5. Content Posting API and third-party schedulers",
+   "finding": "TikTok's developer Content Sharing Guidelines say: \"Unaudited API Clients can only post contents in SELF_ONLY viewership. To make the contents publicly viewable later on, the account owner must first change their account visibility to public, and then change the privacy settings of each content to 'Everyone.'\" The Direct Post reference adds: \"All content posted by unaudited clients will be restricted to private viewing mode.\" Metricool's help centre says: \"You can schedule and automatically publish your TikTok videos from Metricool for personal and business accounts... To publish automatically, the AUTO PUBLISH button must be enabled... carousel with up to 35 images is supported.\" Its auto-publish duration limit is 3 seconds to 10 minutes. It also says: \"Choose manual publishing when you need features not available via the TikTok API, such as adding effects or music outside TikTok's Top 100 trending songs... At the scheduled time, Metricool sends you a notification to finish the post directly in the TikTok app.\" Sked Social notes that inbox/upload mode allows \"at most five pending inbox shares in any 24 hours.\"",
+   "implication_for_yourviral7": "A home-made API app would only post private (SELF_ONLY) videos until TikTok audits it, so it is no use for this launch. Metricool documents public auto-publish for TikTok videos and carousels, which implies an audited integration, though I could not open TikTok's own list of approved partners. A Metricool MCP connector appears among this session's deferred tools. If @yourviral7 is connected to Metricool, its createScheduledPost tool is the legitimate scheduling route, with the user's explicit authorisation. Otherwise, use native TikTok Studio web scheduling.",
+   "source_url": "https://developers.tiktok.com/doc/content-sharing-guidelines"
+  },
+  {
+   "topic": "6. Creator Rewards: length and originality",
+   "finding": "TikTok Support ('Who is eligible to join the Creator Rewards Program?') says videos must \"Be at least one minute long\" and that \"Video views must be longer than 5 seconds.\" It also says: \"Videos under the program that contain copyrighted music for over one minute are at risk of being muted.\" TikTok Creator Academy says: \"It must be original, high-quality content over 1 minute long.\" A third-party summary (creatorsagency.co) adds that eligible videos must be posted after enrolment, unsponsored and above 1,000 qualified For You views. That last point is not confirmed on an official page.",
+   "implication_for_yourviral7": "The 25 to 40 second prelaunch cuts will earn nothing from Creator Rewards. Only 65 to 90 second analytical versions can qualify, and only when the analysis justifies the length. Monetising also triggers Rockstar's 'commercial' line, so revenue-eligible videos must contain no Rockstar footage, art or logos, only original graphics and narration. Avoid copyrighted music in long cuts.",
+   "source_url": "https://support.tiktok.com/en/business-and-creator/creator-rewards-program"
+  }
+ ]
 }

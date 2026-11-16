@@ -6,6 +6,7 @@ import shutil
 import threading
 import time
 from datetime import date, datetime
+from pathlib import Path
 
 from . import db, editorial, ingest, publish
 from .config import ROOT, STOP_FILE, load_settings
@@ -41,6 +42,13 @@ def render_pending(limit=None):
                 ON CONFLICT(kind,ref) DO UPDATE SET attempts=attempts+1, status='running', updated_at=excluded.updated_at""", (key, db.now(), db.now()))
             c.execute("UPDATE candidates SET status='rendering' WHERE id=?", (cand["id"],))
         try:
+            if cand["category"] == "K":
+                _render_carousel(cand)
+                with db.tx() as c:
+                    c.execute("UPDATE candidates SET status='rendered' WHERE id=?", (cand["id"],))
+                    c.execute("UPDATE jobs SET status='done', updated_at=? WHERE kind='render' AND ref=?", (db.now(), key))
+                done += 1
+                continue
             variants = [("A", None)]
             if cand["alt_hook"] and cand["alt_hook"].strip() and cand["alt_hook"] != cand["hook"]:
                 variants.append(("B", cand["alt_hook"]))
@@ -79,6 +87,32 @@ def _pid_alive(pid):
         return True
     except (ProcessLookupError, PermissionError, OSError):
         return False
+
+
+def _render_carousel(cand):
+    from .campaign import render_carousel, slideshow_spec
+    car = render_carousel(cand)
+    caption = json.loads(cand["scores"]).get("caption") or cand["title"]
+    with db.tx() as c:
+        c.execute("""INSERT INTO renders(candidate_id,variant,path,thumbnail,duration,phash,qc,qc_pass,caption,hashtags,status,created_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""", (cand["id"], "CAROUSEL", car["path"], car["thumbnail"], 0, "", json.dumps(car["qc"]),
+                                              int(car["qc"]["pass"]), caption, "", "ready" if car["qc"]["pass"] else "qc_failed", db.now()))
+    if not car["qc"]["pass"]:
+        db.event("warn", "qc", f"Carousel #{cand['id']} failed QC: {car['qc']}")
+        return
+    try:   # narrated slideshow alternative (same content as a video; never posted in addition to the carousel)
+        cand2 = dict(cand, category="S", hook=cand["hook"])
+        out = render(cand["id"], "A", None, spec_override=slideshow_spec(cand))
+        qc, ph = check(out["path"], dict(cand2, script=json.dumps(slideshow_spec(cand))), out["tts"])
+        alt = Path(car["path"]) / "narrated_slideshow.mp4"
+        shutil.move(out["path"], alt)
+        Path(out["thumbnail"]).unlink(missing_ok=True)
+        with db.tx() as c:
+            c.execute("""INSERT INTO renders(candidate_id,variant,path,thumbnail,duration,phash,qc,qc_pass,caption,hashtags,status,created_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""", (cand["id"], "SLIDESHOW", str(alt), car["thumbnail"], out["duration"], ph, json.dumps(qc),
+                                                  int(qc["pass"]), caption, "", "alt" if qc["pass"] else "qc_failed", db.now()))
+    except Exception as e:
+        db.event("warn", "render", f"Slideshow version for carousel #{cand['id']} failed: {str(e)[:200]}")
 
 
 def cycle():

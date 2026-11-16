@@ -11,7 +11,7 @@ from . import db
 from .config import ROOT, load_settings
 
 WEIGHTS = {"novelty": .25, "hook": .20, "retention": .25, "share": .15, "search": .10, "efficiency": .05}
-CAT_RANGE = {"A": (15, 35), "B": (65, 100), "C": (65, 120), "D": (65, 100), "E": (15, 100)}
+CAT_RANGE = {"P": (25, 40), "S": (20, 55), "A": (15, 35), "B": (65, 100), "C": (65, 120), "D": (65, 100), "E": (15, 100)}
 SPOILER_TERMS = ["ending", "final mission", "dies", "death of", "killed off", "twist", "betray", "last mission", "credits scene"]
 FORBIDDEN_TERMS = ["leak", "leaked", "early copy", "unboxing", "insider", "rumour confirmed", "rumor confirmed", "money glitch", "mod menu", "god mode"]
 GENERIC_NAME = re.compile(r"^(img|vid|mov|clip|video|dsc|pxl|screen ?recording|capture|gta ?vi?|untitled|\d)[\s_\-\d]*$", re.I)

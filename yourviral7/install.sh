@@ -18,6 +18,9 @@ mkdir -p CONFIG/voices
 V=CONFIG/voices/en_GB-alan-medium.onnx
 [ -f "$V" ] || curl -fL -o "$V" https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alan/medium/en_GB-alan-medium.onnx
 [ -f "$V.json" ] || curl -fL -o "$V.json" https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alan/medium/en_GB-alan-medium.onnx.json
+K=CONFIG/voices/kokoro-v1.0.int8.onnx   # natural voice (Apache-2.0), preferred over Piper
+[ -f "$K" ] || curl -fL -o "$K" https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx
+[ -f CONFIG/voices/voices-v1.0.bin ] || curl -fL -o CONFIG/voices/voices-v1.0.bin https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 .venv/bin/python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8', download_root='CONFIG/models')" || echo "WARN: whisper model download failed; transcription will be skipped"
 [ -f CONFIG/secrets.env ] || cp CONFIG/secrets.env.example CONFIG/secrets.env
 ./yv7.sh dashboard >/dev/null

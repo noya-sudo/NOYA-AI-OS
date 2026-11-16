@@ -35,7 +35,7 @@ DEFAULTS = {
     "require_owner_approval": True,       # each post needs `yv7 approve <id>` unless False
     "tiktok_privacy": "PUBLIC_TO_EVERYONE",
     "mute_game_audio_default": True,      # in-game radio/music risk
-    "voice": {"provider": "auto", "piper_model": "CONFIG/voices/en_GB-alan-medium.onnx", "espeak_voice": "en-gb", "rate": 158},
+    "voice": {"provider": "auto", "kokoro_voice": "bm_george", "kokoro_speed": 1.08, "piper_model": "CONFIG/voices/en_GB-alan-medium.onnx", "espeak_voice": "en-gb", "rate": 158},
     "whisper_model": "small",             # faster-whisper; downloads on first use where network allows
     "budget_gbp_per_day": 3.0,
     "ai": {"provider": "anthropic", "model": "claude-haiku-5-5", "est_gbp_per_call": 0.01},

@@ -38,8 +38,9 @@ def schedule_ready() -> int:
     with db.tx() as c:
         rows = c.execute("""SELECT r.*, cd.total_score, cd.notes, cd.slug, cd.category FROM renders r
             JOIN candidates cd ON cd.id=r.candidate_id
-            WHERE r.qc_pass=1 AND r.variant='A' AND r.status='ready' AND r.id NOT IN (SELECT render_id FROM posts)
-            ORDER BY (cd.notes LIKE 'publish_on=%') DESC, cd.notes, cd.total_score DESC""").fetchall()
+            WHERE r.qc_pass=1 AND r.variant IN ('A','CAROUSEL') AND r.status='ready' AND r.id NOT IN (SELECT render_id FROM posts)
+            AND cd.status!='superseded'
+            ORDER BY (cd.notes LIKE 'publish_%') DESC, cd.notes, cd.total_score DESC""").fetchall()
         taken = {r["scheduled_for"] for r in c.execute("SELECT scheduled_for FROM posts WHERE status NOT IN ('failed','cancelled')")}
     now = datetime.now(tz())
     for r in rows:
@@ -48,10 +49,22 @@ def schedule_ready() -> int:
                 c.execute("UPDATE renders SET status='below_threshold' WHERE id=?", (r["id"],))
             continue
         day = now.date()
+        exact = None
+        if r["notes"] and r["notes"].startswith("publish_at="):
+            exact = datetime.fromisoformat(r["notes"].split("=", 1)[1].strip())
+            if exact.tzinfo is None:
+                exact = exact.replace(tzinfo=tz())
+            day = exact.date()
+            if exact > now + timedelta(minutes=10) and exact.isoformat() not in taken:
+                slot = exact
+            else:
+                slot = None
+                db.event("warn", "schedule", f"Planned slot {exact:%d %b %H:%M} for '{r['slug']}' has passed/taken; using next free slot")
         if r["notes"] and r["notes"].startswith("publish_on="):
             day = max(day, datetime.strptime(r["notes"].split("=")[1][:10], "%Y-%m-%d").date())
-        slot = None
-        for d in range(0, 14):
+        if not exact or not slot:
+            slot = None
+        for d in range(0, 14 if not slot else 0):
             for sl in _slots_for(day + timedelta(days=d), s):
                 if sl > now + timedelta(minutes=20) and sl.isoformat() not in taken:
                     slot = sl
@@ -87,17 +100,36 @@ def _export_package(pid):
     when = datetime.fromisoformat(p["scheduled_for"])
     d = OUT / "SCHEDULED" / f"{when:%Y-%m-%d_%H%M}_{p['slug']}"
     d.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(p["path"], d / "video.mp4")
+    if Path(p["path"]).is_dir():                     # photo carousel
+        for f in sorted(Path(p["path"]).iterdir()):
+            if f.name.startswith("slide_"):
+                (d / "slides").mkdir(exist_ok=True)
+                shutil.copy2(f, d / "slides" / f.name)
+            elif f.suffix in (".mp4", ".jpg"):
+                shutil.copy2(f, d / f.name)
+    else:
+        shutil.copy2(p["path"], d / "video.mp4")
     if p["thumbnail"]:
         shutil.copy2(p["thumbnail"], d / "cover.jpg")
     (d / "caption.txt").write_text(p["caption"] + "\n")
-    ai = "ON — this video contains AI-generated visuals" if p["ai_assisted"] else "OFF (no AI-generated visuals; narration is synthetic TTS)"
+    if Path(p["path"]).is_dir():
+        with db.tx() as c:
+            spec = json.loads(c.execute("SELECT script FROM candidates WHERE slug=?", (p["slug"],)).fetchone()["script"])
+        if spec.get("caption_video_version") and (d / "narrated_slideshow.mp4").exists():
+            (d / "caption_video_version.txt").write_text(spec["caption_video_version"] + "\n")
+    is_photo = Path(p["path"]).is_dir()
+    if p["ai_assisted"]:
+        ai = "ON (AI-generated visuals)"
+    elif is_photo:
+        ai = "OFF for the photo post (no AI visuals or voice). If you post narrated_slideshow.mp4 instead: turn it ON and use caption_video_version.txt"
+    else:
+        ai = "ON (narration is a realistic AI voice; TikTok requires the label for realistic AI audio). Visuals are original non-AI graphics"
     (d / "POST_ME.html").write_text(f"""<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width">
 <title>Post #{pid}</title><body style="font-family:system-ui;max-width:640px;margin:24px auto;padding:0 16px;background:#0b0b12;color:#eee">
 <h2>Post #{pid} — {p['title']}</h2><p><b>Post at:</b> {when:%a %d %b %H:%M} (UK)</p>
-<video src="video.mp4" controls playsinline style="width:100%;max-width:360px;border-radius:12px"></video>
+{'<div>' + ''.join(f'<img src="slides/{f.name}" style="width:31%;margin:1%;border-radius:8px">' for f in sorted((d / "slides").glob("*.jpg"))) + '</div><p><b>Photo post:</b> upload these slides in order in the TikTok app (Photo mode), add a sound from TikTok\'s library in-app.</p>' if is_photo else '<video src="video.mp4" controls playsinline style="width:100%;max-width:360px;border-radius:12px"></video>'}
 <h3>Caption (tap to select)</h3><textarea style="width:100%;height:110px" onclick="this.select()">{p['caption']}</textarea>
-<p>Cover: cover.jpg · AI-generated content label: {ai}</p>
+<p>Cover: cover.jpg · <b>TikTok "AI-generated content" toggle:</b> {ai}</p>
 <p>After posting, confirm with: <code>yv7 posted {pid} &lt;tiktok-url&gt;</code></p></body>""")
     with db.tx() as c:
         c.execute("UPDATE posts SET updated_at=?, package_dir=? WHERE id=?", (db.now(), str(d), pid))

@@ -1,0 +1,562 @@
+{
+ "name": "48h prelaunch 16-17 Nov 2026",
+ "disclosure": "",
+ "items": [
+  {
+   "slug": "c1-confirmed-cheatsheet",
+   "publish_at": "2026-11-16T15:00:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#ViceCity",
+    "#GTA6News"
+   ],
+   "facts_used": [
+    "O1",
+    "O10",
+    "O11",
+    "O13",
+    "O2",
+    "O4",
+    "O5",
+    "O7",
+    "O8",
+    "O9"
+   ],
+   "angle": "A \"receipts only\" cheat sheet. Three days before launch, rumour and fact sit side by side in everyone's feed, so this sorts them into two columns. Every tick is backed by a Rockstar or Take-Two source. The other column is limited to what the official material we reviewed does not say, worded as absent rather than \"coming soon\" and never guessed. The aim is a slide people save and come back to on launch day, not hype. Build note: original Inter-type motion graphics only, with no Rockstar logo lettering, art, screenshots or map. Export as a 1080x1920 JPG photo post and add sound in the app (Commercial Music Library only if it is a Business account). The final caption sentence about the AI voice goes only on the voiceover video version, which also needs TikTok's AIGC toggle switched on.",
+   "kind": "carousel",
+   "title": "GTA VI: confirmed vs not confirmed",
+   "slides": [
+    {
+     "kicker": "3 DAYS TO GO",
+     "title": "Your save-for-Thursday GTA VI fact sheet",
+     "body": "Ticks come from Rockstar and Take-Two. The other column: what the official material we reviewed doesn't say. Save this."
+    },
+    {
+     "kicker": "CONFIRMED - DATE & PLATFORMS",
+     "title": "Thursday 19 November 2026",
+     "body": "Native on PS5 and Xbox Series X|S. Digital pre-orders could pre-load from 10 November (Rockstar Newswire, 10 Nov)."
+    },
+    {
+     "kicker": "CONFIRMED - STORY & SETTING",
+     "title": "Jason, Lucia and Leonida",
+     "body": "Two leads in a criminal conspiracy after 'an easy score goes wrong'. Rockstar calls it a 'return to modern day Vice City'."
+    },
+    {
+     "kicker": "CONFIRMED - PERFORMANCE",
+     "title": "30fps target on current-gen",
+     "body": "Built for current-gen consoles. PS5 Pro adds PSSR upscaling and ray-traced shadows. Xbox Cloud Gaming also reaches Xbox One."
+    },
+    {
+     "kicker": "CONFIRMED - PRICE (US)",
+     "title": "$79.99 Standard, $99.99 Ultimate",
+     "body": "US prices from Take-Two. Pre-orders opened 25 June 2026. UK prices weren't in the official material we reviewed."
+    },
+    {
+     "kicker": "NOT IN OFFICIAL MATERIAL WE REVIEWED",
+     "title": "What Rockstar hasn't listed",
+     "body": "No PC version listed. No numeric map size. No 60fps mode announced: Rockstar targets 30fps. Online: officially 'a single-player experience'."
+    },
+    {
+     "kicker": "LAUNCH WEEK",
+     "title": "Follow for launch-week receipts",
+     "body": "From the 19th we test what's real. No leaks, no fake gameplay, just checked facts. Follow @yourviral7."
+    }
+   ],
+   "voiceover": "GTA Six is three days away, so here's what's actually confirmed. It's out Thursday the nineteenth of November, natively on P S five and Xbox Series X and S. Digital pre-orders can pre-load now. The leads are Jason and Lucia, across the state of Leonida, in modern day Vice City. Rockstar is targeting thirty frames per second, and P S five Pro adds extra upscaling and ray-traced shadows. In the US, Standard is seventy-nine dollars ninety-nine. And what's missing from the official material we reviewed? A PC version, a map size, and a sixty frames per second mode. The pre-order copy calls it a single-player experience. If a post says otherwise, ask for the source. Follow for launch week.",
+   "caption": "GTA VI cheat sheet: what Rockstar and Take-Two have actually confirmed three days out, and what their official material doesn't mention. Sources: Rockstar Newswire, rockstargames.com/VI and Take-Two's investor releases. Save it for Thursday. Which gap do you most want filled? Original graphics by @yourviral7, not affiliated with Rockstar Games.",
+   "caption_video_version": "GTA VI cheat sheet: what Rockstar and Take-Two have actually confirmed three days out, and what their official material doesn't mention. Sources: Rockstar Newswire, rockstargames.com/VI and Take-Two's investor releases. Save it for Thursday. Which gap do you most want filled? Original graphics by @yourviral7, not affiliated with Rockstar Games. Narration is an AI voice."
+  },
+  {
+   "slug": "v1-whats-confirmed",
+   "publish_at": "2026-11-16T16:00:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#ViceCity",
+    "#RockstarGames",
+    "#GamingNews"
+   ],
+   "facts_used": [
+    "O1",
+    "O10",
+    "O11",
+    "O13",
+    "O2",
+    "O4",
+    "O5",
+    "O7"
+   ],
+   "angle": "The Receipts Test. With three days to go, every GTA VI claim goes into one of two columns. 'Receipt' means Rockstar or Take-Two has said it in official material. 'No receipt' means none of the official posts we checked say it. We skip the hype and the rumours, show how short the confirmed list really is, and name three popular assumptions (a PC version, a 60fps mode, an online mode) that the official material we reviewed does not back up. It ends with a rule viewers can reuse that uses the same standard: if Rockstar or Take-Two hasn't said it officially, treat it as not confirmed.",
+   "kind": "video",
+   "category": "P",
+   "title": "What's actually confirmed?",
+   "hook_text": "Three days. What's actually confirmed?",
+   "alt_hook": "GTA Six facts, receipts only",
+   "segments": [
+    {
+     "kicker": "3 DAYS OUT",
+     "title": "What's actually confirmed?",
+     "body": "Official receipts only. No rumours.",
+     "vo": "GTA Six is three days out. So what's actually confirmed?"
+    },
+    {
+     "kicker": "RECEIPT",
+     "title": "19 Nov. PS5 and Xbox Series X|S",
+     "body": "Pre-load is already live for digital pre-orders",
+     "vo": "It launches Thursday the nineteenth of November, on P S five and Xbox Series X and S. Digital pre-orders can pre-load now."
+    },
+    {
+     "kicker": "RECEIPT",
+     "title": "Leonida. Vice City. Jason and Lucia.",
+     "body": "Rockstar says 'a return to modern day Vice City'",
+     "vo": "It's set in Leonida, a return to modern-day Vice City, led by Jason and Lucia."
+    },
+    {
+     "kicker": "RECEIPT",
+     "title": "Targets 30fps. $79.99 in the US",
+     "body": "UK pound price wasn't in the official material we reviewed",
+     "vo": "Rockstar targets thirty frames per second. Standard is seventy-nine ninety-nine in the US."
+    },
+    {
+     "kicker": "NO RECEIPT",
+     "title": "PC? 60fps? Online mode?",
+     "body": "Not in any official Rockstar or Take-Two material we've seen",
+     "vo": "No official word on PC, a sixty-frames mode, or online. The pre-order copy calls it single-player."
+    },
+    {
+     "kicker": "OUR RULE",
+     "title": "No official receipt = not confirmed",
+     "body": "Which one surprised you? Tell me below.",
+     "vo": "No official receipt? Not confirmed. Which one surprised you?"
+    }
+   ],
+   "caption": "GTA VI is three days away. Here's what Rockstar and Take-Two have actually confirmed, and what they haven't. Narration is an AI voice. Visuals are original graphics. Not affiliated with Rockstar Games."
+  },
+  {
+   "slug": "c2-leonida-guide",
+   "publish_at": "2026-11-16T17:30:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#ViceCity",
+    "#Leonida"
+   ],
+   "facts_used": [
+    "O1",
+    "O14",
+    "O15",
+    "O18",
+    "O19",
+    "O21",
+    "O31",
+    "O4"
+   ],
+   "angle": "A Leonida guide built only from Rockstar's wording: no map, no fan theories, no 'leaked' geography. Each slide gives one place name or phrase Rockstar has published, with where it came from, so viewers can tell confirmed names from the guessing that fills feeds before launch. The six places are the destinations listed in the 'Explore' section of Rockstar's Only in Leonida page, which the page calls 'a few of the must-see destinations'. They are not every official name. One slide covers what we did not find in official material: a map size. FORMAT DECISION: this goes out as a native photo carousel. Export 7 slides as 1080x1920 JPG (not PNG), with no voiceover baked in. Post from the TikTok app and add a cleared sound in-app: the Commercial Music Library if the account is a Business account. Typography is plain original type only. No Pricedown or other GTA-style lettering, no 'VI' logo lockups, no Rockstar logo, no postcard or cover-art styling, and no wallpaper, screenshot or map backgrounds, even blurred. The voiceover field is only for an optional, separate narrated MP4 version. If that version is posted, it uses AI-generated (TTS) narration, so TikTok's AI-generated label must be on. Replace the caption's last sentence with: 'Narration is AI-generated (synthetic voice). Graphics are original text cards with no Rockstar artwork.'",
+   "kind": "carousel",
+   "title": "Six places Rockstar officially named",
+   "slides": [
+    {
+     "kicker": "OFFICIAL WORDS ONLY",
+     "title": "Six places Rockstar officially named",
+     "body": "A text-only Leonida guide built from Rockstar's own wording. No map, no leaks, no guesses. GTA Six launches 19 November 2026."
+    },
+    {
+     "kicker": "THE STATE",
+     "title": "'The sprawling state of Leonida'",
+     "body": "That's Rockstar's phrase from its launch-date announcement. Its 'Only in Leonida' page also calls it 'the sunshine state'."
+    },
+    {
+     "kicker": "THE CITY",
+     "title": "A 'return to modern day Vice City'",
+     "body": "Rockstar's exact words. The 2002 original was set in the 1980s. We won't guess an in-game year."
+    },
+    {
+     "kicker": "SIX DESTINATIONS",
+     "title": "Six destinations Rockstar spotlights",
+     "body": "Vice City. Leonida Keys. Grassrivers. Port Gellhorn. Ambrosia. Mount Kalaga. The 'Explore' tiles on Rockstar's Only in Leonida page."
+    },
+    {
+     "kicker": "WHERE THE LEADS FIT",
+     "title": "Jason, Lucia and their Leonida",
+     "body": "Jason's official bio puts him in the Keys, working for local drug runners. Lucia's says she landed in Leonida Penitentiary."
+    },
+    {
+     "kicker": "STILL UNKNOWN",
+     "title": "No map size in what we reviewed",
+     "body": "In the official material we reviewed, Rockstar gives no map size. Its words: 'sprawling' and 'Vice City and beyond'."
+    },
+    {
+     "kicker": "FOLLOW @YOURVIRAL7",
+     "title": "We'll check these names at launch",
+     "body": "From 19 November 2026 we'll look for all six destinations in-game. Follow @yourviral7 for honest, spoiler-free checks."
+    }
+   ],
+   "voiceover": "Six places Rockstar officially named. No map, no leaks, just their words. Rockstar calls it the sprawling state of Leonida, and its Only in Leonida page calls it the sunshine state. The big one: a return to modern day Vice City. The original was set in the eighties, and we won't guess a year for this one. Rockstar's page spotlights six destinations: Vice City, the Leonida Keys, Grassrivers, Port Gellhorn, Ambrosia and Mount Kalaga. Map size? Nothing official in what we've read. GTA Six lands on the nineteenth of November. We'll check all six. Follow for more.",
+   "caption": "Six destinations from Rockstar's own Only in Leonida page, plus Rockstar's exact words on Vice City. No map, no leaks, no guesses. GTA VI launches 19 November 2026. Which one are you heading to first?",
+   "caption_video_version": "Six destinations from Rockstar's own Only in Leonida page, plus Rockstar's exact words on Vice City. No map, no leaks, no guesses. GTA VI launches 19 November 2026. Which one are you heading to first? Narration is an AI voice."
+  },
+  {
+   "slug": "v2-three-tests",
+   "publish_at": "2026-11-16T18:30:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#PS5Pro",
+    "#XboxCloudGaming"
+   ],
+   "facts_used": [
+    "O1",
+    "O10",
+    "O7",
+    "O8",
+    "O9"
+   ],
+   "angle": "Our take: Rockstar's 10 November pre-load post reads like a spec sheet, and most fans skim it. Instead of guessing at secrets, YOURVIRAL7 picks three official claims that can be measured after launch: PSSR on PS5 Pro plus ray-traced shadows exclusive to PS5 Pro, Xbox Cloud Gaming on Xbox One at Series S settings, and 'improved load times' on PS5. We say how we plan to test each one, and we say plainly where Rockstar's wording leaves a gap, such as load times improved compared with what, or cloud results that depend on your connection. That makes us the account that checks Rockstar's own words, not the one chasing rumours.",
+   "kind": "video",
+   "category": "P",
+   "title": "Three claims we can test",
+   "hook_text": "Three Rockstar claims. We'll test them.",
+   "alt_hook": "Rockstar's spec sheet, put to the test",
+   "segments": [
+    {
+     "kicker": "Launch tests",
+     "title": "Three claims we can test",
+     "vo": "Rockstar made three claims we can actually test."
+    },
+    {
+     "kicker": "Test 1",
+     "title": "PS5 Pro vs base PS5",
+     "body": "Official: PSSR upscaling + ray-traced shadows exclusive to PS5 Pro",
+     "vo": "Test one. Rockstar says P S five Pro gets P S S R upscaling and ray-traced shadows the base console doesn't. We'll compare the settings."
+    },
+    {
+     "kicker": "Test 2",
+     "title": "Cloud play on Xbox One",
+     "body": "Official: Xbox Cloud Gaming, Series S settings",
+     "vo": "Test two. It's on Xbox Cloud Gaming, even on Xbox One, at Series S settings. We'll show how ours holds up."
+    },
+    {
+     "kicker": "Test 3",
+     "title": "PS5 load times, timed",
+     "body": "Rockstar: 'improved load times' on PS5. We'll publish our timings.",
+     "vo": "Test three. Rockstar promises improved load times on P S five. We'll time them and publish the numbers."
+    },
+    {
+     "kicker": "19 Nov",
+     "title": "Results after launch",
+     "body": "No footage until release. Original graphics only.",
+     "vo": "Results after launch on the nineteenth. Follow for them."
+    }
+   ],
+   "caption": "Three official GTA VI claims we can actually measure after launch. Which test do you want first? (AI voiceover, original graphics)"
+  },
+  {
+   "slug": "c3-launch-week-checklist",
+   "publish_at": "2026-11-16T20:00:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#GTA6News",
+    "#GTA6Release"
+   ],
+   "facts_used": [
+    "O1",
+    "O10",
+    "O2",
+    "O27",
+    "O3",
+    "O34",
+    "O5",
+    "O9"
+   ],
+   "angle": "Most launch-week checklists get padded out with rumours. This one sticks to what Rockstar has published: the midnight-local unlock (00:00 UK time on Thursday), native platforms plus the cloud option, and how pre-load works on each console. It also says plainly what is not announced, such as a PC version. Then it covers the part most clip-posters skip, Rockstar's own fan-content policy, and links 'commercial' to making money from game footage, which is how the policy words it. FORMAT: a narrated slideshow VIDEO (option b), 1080x1920, about 35 seconds, with the TTS voiceover and burned-in captions. It is published and scheduled as a video post, not a photo carousel. Turn on TikTok's AI-generated content toggle, because realistic TTS counts as realistic audio; the caption line alone is not enough. DESIGN: 100% original text cards only. No GTA VI logo or wordmark styling, cover art, Vice City Postcard, screenshots, trailer frames or Leonida map, and nothing traced from or fed to AI tools. Plain 'GTA VI' / 'GTA Six' in a neutral font only.",
+   "kind": "carousel",
+   "title": "Your GTA Six launch-week checklist",
+   "slides": [
+    {
+     "kicker": "LAUNCH WEEK",
+     "title": "Your GTA Six launch-week checklist",
+     "body": "Date, platforms, pre-load and Rockstar's fan-content rules, all from official pages. Save this for Thursday."
+    },
+    {
+     "kicker": "1 / RELEASE",
+     "title": "Thursday 19 November, midnight local time",
+     "body": "Rockstar Support says midnight local time in all regions, so 00:00 UK time. Date set 6 November 2025."
+    },
+    {
+     "kicker": "2 / PLATFORMS",
+     "title": "Native on PS5 and Xbox Series X|S",
+     "body": "No PC version is listed in Rockstar's official GTA VI material. Xbox Cloud Gaming adds Xbox One, at Series S settings."
+    },
+    {
+     "kicker": "3 / PRE-LOAD",
+     "title": "Pre-load is already live",
+     "body": "Digital pre-orders since 10 November: midnight local on PS5, 00:00 GMT on Xbox. Code-in-box buyers pre-load once codes arrive."
+    },
+    {
+     "kicker": "4 / POSTING CLIPS",
+     "title": "Read Rockstar's fan-content policy first",
+     "body": "Take-Two generally doesn't object to non-commercial fan use. Making money from game footage counts as commercial. Removal possible anytime."
+    },
+    {
+     "kicker": "5 / SPOILER ETIQUETTE",
+     "title": "What the policy excludes",
+     "body": "Isolated cutscenes, spoilers and leaked pre-release footage are excluded, and so are advertising uses."
+    },
+    {
+     "kicker": "FOLLOW",
+     "title": "Follow for honest launch-day testing",
+     "body": "From the nineteenth we test the official claims against the real game. No leaks, no fake gameplay. @yourviral7"
+    }
+   ],
+   "voiceover": "GTA Six launch week, so here's the checklist. It unlocks at midnight local time on Thursday the nineteenth of November. In the UK, that's midnight going into Thursday. It launches on P S five and Xbox Series X and S, Xbox Cloud Gaming covers Xbox One as well, and no PC version has been announced. If you pre-ordered digitally, pre-load has been live since the tenth. Planning to post clips? Take-Two generally doesn't object to non-commercial fan use, but making money from game footage counts as commercial. The policy also excludes isolated cutscenes, spoilers and leaked pre-release footage, so keep spoilers off people's feeds. Follow Your Viral Seven. We'll be testing the real game from launch day.",
+   "caption": "GTA VI launch-week checklist. Only what Rockstar has published: it unlocks at midnight local time on 19 Nov (00:00 UK, Thursday), launches natively on PS5 and Xbox Series X|S, and pre-load is live now. Plus the fan-content rules worth reading before you post. Save this, and send it to the mate who needs it before Thursday. Original graphics, no Rockstar footage, art or logos.",
+   "caption_video_version": "GTA VI launch-week checklist. Only what Rockstar has published: it unlocks at midnight local time on 19 Nov (00:00 UK, Thursday), launches natively on PS5 and Xbox Series X|S, and pre-load is live now. Plus the fan-content rules worth reading before you post. Save this, and send it to the mate who needs it before Thursday. Original graphics, no Rockstar footage, art or logos. Narration is an AI voice.",
+   "context_reviewed_terms": [
+    "leaked"
+   ],
+   "_review_note": "'leaked' appears only when quoting Rockstar's policy exclusion of leaked pre-release footage (O27). Reviewed 2026-11-16."
+  },
+  {
+   "slug": "v3-vice-city-case",
+   "publish_at": "2026-11-16T21:00:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#ViceCity",
+    "#GrandTheftAuto"
+   ],
+   "facts_used": [
+    "O1",
+    "O13",
+    "O14",
+    "O28",
+    "O31",
+    "O4"
+   ],
+   "angle": "An argument about the setting, built only from Rockstar's own wording. It has been twenty-four years since the original GTA: Vice City (Rockstar: released 27 October 2002, set in the 1980s). The video does not claim the city has been missing since then. Rockstar's 6 November 2025 delay announcement calls GTA VI a 'return to modern day Vice City'. The city also comes first in specific official wording: the official premise opens 'Vice City, USA.', and Rockstar's Trailer 1 description calls Leonida 'home to the neon-soaked streets of Vice City and beyond'. Our opinion, clearly signposted, is that an eighties classic rebuilt for the present day and given top billing by Rockstar is what makes Vice City the most anticipated GTA setting. No hype, no leaks, no invented mechanics.",
+   "kind": "video",
+   "category": "P",
+   "title": "24 years since the original",
+   "hook_text": "Vice City: twenty-four years on",
+   "alt_hook": "Why Vice City tops my list",
+   "segments": [
+    {
+     "kicker": "Original → GTA Six",
+     "title": "24 years since the original",
+     "body": "GTA: Vice City (2002) → GTA VI (19 Nov 2026)",
+     "vo": "Twenty-four years after the original, GTA Six is heading back to Vice City."
+    },
+    {
+     "kicker": "Then vs now",
+     "title": "From the eighties to modern day",
+     "body": "Original: released 27 Oct 2002, set in the 1980s",
+     "vo": "The original landed in October two thousand and two, set in the eighties. Rockstar calls this a return to modern-day Vice City."
+    },
+    {
+     "kicker": "Official wording",
+     "title": "Rockstar names the city first",
+     "body": "Premise: 'Vice City, USA.' · Trailer 1 description: 'neon-soaked streets'",
+     "vo": "And the city gets top billing. The official premise opens with: Vice City, USA."
+    },
+    {
+     "kicker": "Our take",
+     "title": "Eighties classic, modern day, top billing",
+     "body": "Opinion: why it's the most anticipated setting",
+     "vo": "My take: an eighties classic, rebuilt for today, and named first by Rockstar. That's the most anticipated setting."
+    },
+    {
+     "kicker": "19 Nov",
+     "title": "Three days. Your pick?",
+     "body": "Original graphics · AI voice disclosed",
+     "vo": "Three days to go. Is Vice City your top GTA setting?"
+    }
+   ],
+   "caption": "24 years after the original GTA: Vice City (2002), GTA VI heads back on 19 Nov. Our case for Vice City as the most anticipated GTA setting, using Rockstar's own wording. Agree? (AI voiceover, original graphics)"
+  },
+  {
+   "slug": "v4-vi-vs-v",
+   "publish_at": "2026-11-17T13:00:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#GTAV",
+    "#ViceCity",
+    "#Rockstar"
+   ],
+   "facts_used": [
+    "O1",
+    "O11",
+    "O13",
+    "O2",
+    "O28",
+    "O29",
+    "O4",
+    "O5"
+   ],
+   "angle": "A receipts ledger for GTA VI vs GTA V. Each comparison is either backed by an official Rockstar or Take-Two line, or goes in the 'no official details' column. Map size and online are the two gaps we name honestly: nothing official we checked gives either. The honest comparison is short, and we say so out loud.",
+   "kind": "video",
+   "category": "P",
+   "title": "Receipts only",
+   "hook_text": "GTA VI vs V: receipts only",
+   "alt_hook": "Thirteen years apart: what's confirmed",
+   "segments": [
+    {
+     "kicker": "VI vs V",
+     "title": "Receipts only",
+     "body": "Official Rockstar and Take-Two sources only.",
+     "vo": "Six versus Five. Receipts only."
+    },
+    {
+     "kicker": "Release gap",
+     "title": "Sept 2013 → 19 Nov 2026",
+     "body": "Thirteen years between them",
+     "vo": "Five launched in September twenty thirteen. Six lands on the nineteenth of November."
+    },
+    {
+     "kicker": "Setting & cast",
+     "title": "Los Santos vs Leonida",
+     "body": "V: three protagonists. VI: Jason and Lucia lead.",
+     "vo": "Five: Los Santos and three protagonists. Six: Leonida and modern-day Vice City, led by Jason and Lucia."
+    },
+    {
+     "kicker": "Platforms",
+     "title": "VI: no PC version listed",
+     "body": "VI launches natively on PS5 and Xbox Series X|S. V is on PC.",
+     "vo": "Five is on PC. Six launches on P S five and Xbox Series X and S. No PC version in anything official we checked."
+    },
+    {
+     "kicker": "Not confirmed",
+     "title": "Map size? Online? No official details.",
+     "body": "Pre-order copy: 'a single-player experience'. No map figure found.",
+     "vo": "Map size? No number in anything official, so twice as big is a guess. Online? Official pre-order copy says single-player experience."
+    },
+    {
+     "kicker": "Our take",
+     "title": "Compare receipts, not rumours",
+     "body": "AI voiceover · original graphics · not affiliated with Rockstar",
+     "vo": "Our take: compare receipts, not rumours. What should we test first?"
+    }
+   ],
+   "caption": "GTA VI vs GTA V, using official Rockstar and Take-Two sources only. What should we test first on the 19th?\nAI voiceover · original graphics · not affiliated with Rockstar Games"
+  },
+  {
+   "slug": "v5-five-experiments",
+   "publish_at": "2026-11-17T17:30:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#ViceCity",
+    "#Leonida"
+   ],
+   "facts_used": [
+    "O1",
+    "O21",
+    "O24",
+    "O34",
+    "O7",
+    "O8",
+    "O9"
+   ],
+   "angle": "Testing the fine print: each of the five launch-day experiments starts from a gap in Rockstar's own published material. In some cases Rockstar has said something we can check: a 30fps target, PS5 Pro extras, and Xbox Cloud Gaming on console using Series S settings. In others it has said nothing about something players want to know: the unlock time, the map size, and how the wildlife actually behaves. Each one is set up as a question we will answer from 19 November. There are no claimed results, no leaks and no invented mechanics. Visuals are text-only original motion graphics. No illustration copies, traces or resembles the official cover art or any Rockstar character, and no official art goes into an AI tool.",
+   "kind": "video",
+   "category": "P",
+   "title": "Five tests. No guesses.",
+   "hook_text": "Five GTA VI tests. No guesses.",
+   "alt_hook": "Rockstar didn't say. We'll check.",
+   "segments": [
+    {
+     "kicker": "Day one plan",
+     "title": "Five tests. No guesses.",
+     "vo": "Five GTA Six tests. No guesses."
+    },
+    {
+     "kicker": "Test 1",
+     "title": "Midnight unlock: what minute?",
+     "body": "Rockstar Support: midnight local time, 19 Nov",
+     "vo": "One: Rockstar says it unlocks at midnight local time. We'll log the exact minute it goes live in the UK."
+    },
+    {
+     "kicker": "Test 2",
+     "title": "30fps target. Any other mode?",
+     "body": "PS5 Pro gets PSSR and RT shadows. No other mode in official material we reviewed.",
+     "vo": "Two: Rockstar targets thirty frames per second. We found no other mode in the official material, so we'll check the settings."
+    },
+    {
+     "kicker": "Test 3",
+     "title": "How does the wildlife behave?",
+     "body": "Gator in official art. No wildlife system in material we reviewed.",
+     "vo": "Three: we found nothing official on how wildlife behaves, so we'll see what the gators actually do."
+    },
+    {
+     "kicker": "Tests 4 + 5",
+     "title": "Time the drive. Try the cloud.",
+     "body": "No map size in official material we reviewed. Cloud: Series S settings.",
+     "vo": "Four: we found no official map size, so we'll time the drive from Vice City to Mount Kalaga. Five: does cloud play hold up?"
+    },
+    {
+     "kicker": "Results",
+     "title": "Results from 19 Nov, not before",
+     "body": "Which test should go first?",
+     "vo": "Results from the nineteenth. Which test first?"
+    }
+   ],
+   "caption": "Five things we'll actually test when GTA VI launches on 19 Nov, based on Rockstar's own fine print and the gaps in it. No leaks, no early copy. Which goes first? (AI-generated voiceover, original graphics)"
+  },
+  {
+   "slug": "v6-why-unusual-details",
+   "publish_at": "2026-11-17T20:30:00",
+   "hashtags": [
+    "#GTA6",
+    "#GTAVI",
+    "#Leonida",
+    "#GTA6Launch"
+   ],
+   "facts_used": [
+    "O1",
+    "O21",
+    "O24"
+   ],
+   "angle": "This is a mission statement built on a narrow, verifiable gap in the official record. Rockstar's official cover art shows wildlife: its alt-text describes a flamingo over a speedboat and a gator in the water. But the official material we reviewed does not describe any wildlife system or behaviour. YOURVIRAL7 exists to fill gaps like that honestly. From launch day on 19 November, the channel logs unusual details first-hand and keeps 'officially confirmed' separate from 'found in play'. There are no leaks, no early copies and no story spoilers.\n\nRENDER SPEC (mandatory): visuals are original text-led motion graphics only. Do NOT show, crop, trace, recolour or AI-generate from the Official Cover Art, the Macca the Gator design, or any Rockstar screenshot, trailer frame, map or logo (Rockstar legal section 2.3 bars derivative works and use as generative-AI source material). A generic, original stylised gator or flamingo icon drawn from scratch is acceptable, or use typography alone. No GTA VI logo. No footage, so the narration never says 'as you can see'.\n\nDISCLOSURE: the narration is synthetic TTS, which TikTok treats as realistic audio, so the TikTok 'AI-generated content' toggle must be ON when posting. The caption also carries an 'AI voiceover' note.\n\nSERIES BRIEF (post-launch): later 'unusual details' episodes must not post isolated cutscenes, the ending, plot reveals, or clips of in-game TV or comedy shows, as Rockstar policy forbids these. If the account is monetised (Creator Rewards or brand deals), Rockstar gameplay footage falls outside the non-commercial tolerance. Monetised episodes must stay original-graphics-and-narration only, unless a licence is obtained from copyright@take2games.com.",
+   "kind": "video",
+   "category": "P",
+   "title": "Rockstar hasn't explained Leonida's wildlife",
+   "hook_text": "Rockstar hasn't explained Leonida's wildlife.",
+   "alt_hook": "Leonida's wildlife: still officially unexplained.",
+   "segments": [
+    {
+     "kicker": "The gap",
+     "title": "Rockstar hasn't explained Leonida's wildlife",
+     "vo": "Here's a gap in the official info: how does wildlife work in Leonida?",
+     "body": "Shown in official art. No system described."
+    },
+    {
+     "kicker": "What's official",
+     "title": "Shown, not explained",
+     "vo": "The official cover art shows a flamingo and a gator. But nothing we've read explains how wildlife actually behaves in the game.",
+     "body": "No wildlife system in the official material we reviewed"
+    },
+    {
+     "kicker": "The mission",
+     "title": "I'm logging the unusual stuff",
+     "vo": "So from the nineteenth, I'm documenting the unusual details myself. The odd behaviours nobody officially promised.",
+     "body": "Starts launch day: 19 November 2026"
+    },
+    {
+     "kicker": "House rules",
+     "title": "No leaks. No spoilers. Ever.",
+     "vo": "House rules: no leaks, no early copies, no story spoilers. Everything labelled confirmed or found.",
+     "body": "Confirmed vs found, always labelled"
+    },
+    {
+     "kicker": "Follow",
+     "title": "Leonida, logged properly",
+     "vo": "Rockstar calls Leonida the sunshine state. Let's see what's really in it. Follow for the logbook.",
+     "body": "@yourviral7, the Leonida logbook"
+    }
+   ],
+   "caption": "Rockstar's cover shows a gator, but the official material we reviewed doesn't describe any wildlife system. From 19 November I'm logging what's actually in Leonida, with no leaks and no spoilers. (AI voiceover)"
+  }
+ ]
+}

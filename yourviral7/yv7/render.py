@@ -46,7 +46,8 @@ PALETTES = [((10, 6, 32), (120, 18, 92), (255, 92, 168)),     # dusk magenta
             ((8, 8, 14), (40, 40, 70), (180, 160, 255))]      # night violet
 
 
-def card_png(out: Path, kicker="", title="", body="", idx=0, bg_image: Path | None = None, label="ORIGINAL COMMENTARY"):
+def card_png(out: Path, kicker="", title="", body="", idx=0, bg_image: Path | None = None, label="ORIGINAL COMMENTARY",
+             slide_no: str = "", still: bool = False):
     top, mid, acc = PALETTES[idx % len(PALETTES)]
     img = Image.new("RGB", (W + 120, H + 210), top)
     d = ImageDraw.Draw(img)
@@ -108,8 +109,23 @@ def card_png(out: Path, kicker="", title="", body="", idx=0, bg_image: Path | No
     f = font("Bold", 34)
     d.text((x0, 150), "YOURVIRAL7", font=f, fill=acc)
     d.text((x0, 196), label, font=font("Medium", 28), fill=(220, 220, 230))
-    img.convert("RGB").save(out, quality=95)
+    if slide_no:
+        d.text((iw - 60 - 230, 150), slide_no, font=font("Bold", 34), fill=(235, 235, 245))
+    img = img.convert("RGB")
+    if still:                       # photo-mode slide: crop to exact 1080x1920
+        img = img.crop((60, 105, 60 + W, 105 + H))
+    img.save(out, quality=95)
     return out
+
+
+def text_layout(kicker, title, body):
+    """Deterministic line-wrapping shared by the animated (ASS) text overlay."""
+    tmp = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    maxw = W - 120 - SAFE_RIGHT - 30
+    size = 104 if len(title) < 22 else 88 if len(title) < 40 else 74
+    tl = _wrap(tmp, title, font("Black", size), maxw)[:3] if title else []
+    bl = _wrap(tmp, body, font("SemiBold", 52), maxw)[:2] if body else []
+    return size, tl, bl
 
 
 def _cover(im, w, h):
@@ -120,7 +136,8 @@ def _cover(im, w, h):
 
 
 def _wrap(d, text, f, maxw):
-    words, lines, cur = text.split(), [], ""
+    text = text.replace(" X|S", "\u00a0X|S").replace("PlayStation 5", "PlayStation\u00a05")
+    words, lines, cur = [w for w in text.split(" ") if w], [], ""
     for wd in words:
         t = (cur + " " + wd).strip()
         if d.textlength(t, font=f) <= maxw:
@@ -159,12 +176,15 @@ def motion_center_x(src: Path, start: float, dur: float) -> float:
 # ---------- segments ----------
 def _seg_card(seg, i, fps, dur, voice, out, bg=None):
     png = WORK / f"{out.stem}.png"
-    card_png(png, seg.get("kicker", ""), seg.get("title", ""), seg.get("body", ""), seg.get("palette", i), bg,
-             label=seg.get("label", "ORIGINAL COMMENTARY"))
+    if seg.get("animate", True):
+        card_png(png, "", "", "", seg.get("palette", i), bg, label=seg.get("label", "ORIGINAL COMMENTARY"))
+    else:
+        card_png(png, seg.get("kicker", ""), seg.get("title", ""), seg.get("body", ""), seg.get("palette", i), bg,
+                 label=seg.get("label", "ORIGINAL COMMENTARY"))
     n = max(int(dur * fps), 1)
     zoom = f"crop={W}:{H}:x='60*(1-t/{dur:.3f})':y='105*(t/{dur:.3f})'"   # slow drift on oversized card
     _encode([FFMPEG, "-y", "-v", "error", "-loop", "1", "-framerate", str(fps), "-i", png], voice, dur,
-            f"[0:v]{zoom},format=yuv420p,fade=t=in:st=0:d=0.25[v]", out, fps, n)
+            f"[0:v]{zoom},format=yuv420p" + (",fade=t=in:st=0:d=0.2" if i > 0 else "") + "[v]", out, fps, n)
 
 
 def _seg_media(seg, src: dict, fps, dur, voice, out, mute):
@@ -214,7 +234,7 @@ def _ass_time(t):
     return f"{int(h)}:{int(m):02d}:{s:05.2f}"
 
 
-def build_ass(cues, hook, total, out: Path, callouts):
+def build_ass(cues, hook, total, out: Path, callouts, texts=()):
     fontname = "Inter ExtraBold"
     hdr = f"""[Script Info]
 ScriptType: v4.00+
@@ -227,14 +247,19 @@ ScaledBorderAndShadow: yes
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Sub,{fontname},74,&H00FFFFFF,&H0000FFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,90,{SAFE_RIGHT},{SAFE_BOTTOM},1
 Style: Hook,Inter Black,92,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,3,10,0,8,80,{SAFE_RIGHT},250,1
+Style: Kicker,Inter Bold,42,&H0010100A,&H00FFFFFF,&H00A85CFF,&H00A85CFF,-1,0,0,0,100,100,0,0,3,12,0,7,0,0,0,1
+Style: Title,Inter Black,100,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,4,3,7,0,0,0,1
+Style: Body,Inter SemiBold,52,&H00F5EBEB,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,7,0,0,0,1
 Style: Callout,Inter ExtraBold,58,&H00FFFFFF,&H00FFFFFF,&H00A8205C,&H00A8205C,-1,0,0,0,100,100,0,0,3,14,0,8,90,{SAFE_RIGHT},420,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ev = []
-    if hook:
-        ev.append(f"Dialogue: 2,{_ass_time(0)},{_ass_time(min(2.8, total))},Hook,,0,0,0,,{{\\fad(0,200)\\t(0,180,\\fscx106\\fscy106)\\t(180,320,\\fscx100\\fscy100)}}{_esc(hook)}")
+    if hook:   # visible from frame 0, punch-in, readable within 1.5s
+        ev.append(f"Dialogue: 3,{_ass_time(0)},{_ass_time(min(2.2, total))},Hook,,0,0,0,,{{\\fad(0,180)\\fscx118\\fscy118\\t(0,140,\\fscx100\\fscy100)}}{_esc(hook)}")
+    for line in texts:
+        ev.append(line)
     for a, b, text in callouts:
         ev.append(f"Dialogue: 1,{_ass_time(a)},{_ass_time(b)},Callout,,0,0,0,,{{\\fad(150,150)}}{_esc(text)}")
     for a, b, text in cues:
@@ -242,11 +267,37 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     out.write_text(hdr + "\n".join(ev) + "\n", encoding="utf-8")
 
 
+ACCENTS_ASS = ["&H00A85CFF", "&H00D0E040", "&H003CAAFF", "&H00FFA0B4"]   # BGR of palette accents
+
+
+def text_events(seg, start, dur, idx):
+    """Kicker pill slides in, title lines rise in staggered, body fades in — all original typography."""
+    if not seg.get("animate", True) or seg.get("type") != "card":
+        return []
+    size, tl, bl = text_layout(seg.get("kicker", ""), seg.get("title", ""), seg.get("body", ""))
+    x, y, end = 120, 800, start + dur
+    acc = ACCENTS_ASS[seg.get("palette", idx) % 4]
+    ev = []
+    if seg.get("kicker"):
+        ev.append(f"Dialogue: 1,{_ass_time(start)},{_ass_time(end)},Kicker,,0,0,0,,{{\\an7\\3c{acc}\\4c{acc}\\fad(120,120)\\move({x-70},{y},{x},{y},0,220)}}{_esc(seg['kicker'].upper())}")
+        y += 96
+    for j, line in enumerate(tl):
+        d0 = 120 + j * 90
+        ev.append(f"Dialogue: 1,{_ass_time(start + d0/1000)},{_ass_time(end)},Title,,0,0,0,,{{\\an7\\fs{size}\\fad(160,120)\\move({x},{y+50},{x},{y},0,260)}}{_esc(line)}")
+        y += int(size * 1.08)
+    y += 18
+    for j, line in enumerate(bl):
+        d0 = 380 + len(tl) * 90 + j * 80
+        ev.append(f"Dialogue: 1,{_ass_time(start + d0/1000)},{_ass_time(end)},Body,,0,0,0,,{{\\an7\\fad(220,120)\\pos({x},{y})}}{_esc(line)}")
+        y += 66
+    return ev
+
+
 def _esc(t):
     return t.replace("\\", "").replace("{", "(").replace("}", ")").replace("\n", "\\N")
 
 
-def chunk_cues(text, start, dur, max_words=4):
+def chunk_cues(text, start, dur, max_words=3):
     words = text.split()
     if not words:
         return []
@@ -281,13 +332,13 @@ def music_bed(out: Path, dur: float, seed=0):
 
 
 # ---------- main ----------
-def render(candidate_id: int, variant="A", hook_override=None) -> dict:
+def render(candidate_id: int, variant="A", hook_override=None, spec_override=None) -> dict:
     with db.tx() as c:
         cand = dict(c.execute("SELECT * FROM candidates WHERE id=?", (candidate_id,)).fetchone())
-    spec = json.loads(cand["script"])
+    spec = spec_override or json.loads(cand["script"])
     s = load_settings()
     WORK.mkdir(parents=True, exist_ok=True)
-    tag = f"c{candidate_id}"          # segments/VO shared across hook variants; only the overlay pass differs
+    tag = f"c{candidate_id}" + ("s" if spec_override else "")          # segments/VO shared across hook variants; only the overlay pass differs
     srcs = {}
     for sid in json.loads(cand["source_ids"] or "[]"):
         with db.tx() as c:
@@ -297,7 +348,7 @@ def render(candidate_id: int, variant="A", hook_override=None) -> dict:
     vids = [x for x in srcs.values() if x["kind"] == "video"]
     fps = spec.get("fps") or (60 if vids and max(v["fps"] for v in vids) > 45 else 30)
     segs = list(spec["segments"]) + ([dict(type="card", **spec["outro"], palette=3)] if spec.get("outro") else [])
-    parts, cues, callouts, t, engines = [], [], [], 0.0, set()
+    parts, cues, callouts, t, engines, texts = [], [], [], 0.0, set(), []
     for i, seg in enumerate(segs):
         voice, vdur = None, 0.0
         if seg.get("vo"):
@@ -330,6 +381,7 @@ def render(candidate_id: int, variant="A", hook_override=None) -> dict:
                 cues.append((t + a, t + b, txt.upper()))
         if seg.get("callout"):
             callouts.append((t + 0.1, t + min(dur, 3.2), seg["callout"]))
+        texts += text_events(seg, t, dur, i)
         parts.append(out)
         t += dur
     total = t
@@ -339,15 +391,17 @@ def render(candidate_id: int, variant="A", hook_override=None) -> dict:
     if not (variant != "A" and joined.exists()):
         run([FFMPEG, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", joined])
     ass = WORK / f"{tag}{variant}.ass"
-    build_ass(cues, hook_override or cand["hook"], total, ass, callouts)
+    build_ass(cues, hook_override or cand["hook"], total, ass, callouts, texts)
     bed = WORK / f"{tag}_bed.wav"
     if not (variant != "A" and bed.exists()):
         music_bed(bed, total + 0.5, seed=candidate_id)
     final_dir = ROOT / "OUTPUT" / "READY"
     final = final_dir / f"{cand['slug']}_{variant}.mp4"
     fontsdir = FONTS.as_posix()
-    run([FFMPEG, "-y", "-v", "error", "-i", joined, "-i", bed, "-filter_complex",
-         f"[0:v]subtitles='{ass.as_posix()}':fontsdir='{fontsdir}'[v];"
+    run([FFMPEG, "-y", "-v", "error", "-i", joined, "-i", bed, "-f", "lavfi", "-i", f"color=c=0xFF5CA8:s={W}x9:r={fps}",
+         "-filter_complex",
+         f"[0:v]subtitles='{ass.as_posix()}':fontsdir='{fontsdir}'[s];"
+         f"[s][2:v]overlay=x='-w+w*t/{total:.3f}':y=0:shortest=1[v];"
          f"[1:a]volume=0.30[m];[0:a][m]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]",
          "-map", "[v]", "-map", "[a]", "-r", str(fps), *VENC, *AENC, final])
     thumb = final_dir / f"{cand['slug']}_{variant}.jpg"

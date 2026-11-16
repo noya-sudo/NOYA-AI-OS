@@ -8,8 +8,19 @@ from .config import ROOT, load_settings
 from .media import FFMPEG, run
 
 
+KOKORO_MODEL = ROOT / "CONFIG" / "voices" / "kokoro-v1.0.int8.onnx"
+KOKORO_VOICES = ROOT / "CONFIG" / "voices" / "voices-v1.0.bin"
+_kokoro = None
+
+
 def engine() -> str:
     v = load_settings()["voice"]
+    if v["provider"] in ("auto", "kokoro") and KOKORO_MODEL.exists() and KOKORO_VOICES.exists():
+        try:
+            import kokoro_onnx  # noqa: F401
+            return "kokoro"
+        except ImportError:
+            pass
     model = ROOT / v["piper_model"]
     if v["provider"] in ("auto", "piper") and model.exists():
         try:
@@ -26,7 +37,15 @@ def synth(text: str, out: Path) -> tuple[Path, float, str]:
     v = load_settings()["voice"]
     eng = engine()
     raw = out.with_suffix(".raw.wav")
-    if eng == "piper":
+    if eng == "kokoro":
+        global _kokoro
+        import soundfile as sf
+        from kokoro_onnx import Kokoro
+        if _kokoro is None:
+            _kokoro = Kokoro(str(KOKORO_MODEL), str(KOKORO_VOICES))
+        samples, sr = _kokoro.create(text, voice=v.get("kokoro_voice", "bm_george"), speed=float(v.get("kokoro_speed", 1.08)), lang="en-gb")
+        sf.write(str(raw), samples, sr)
+    elif eng == "piper":
         from piper import PiperVoice
         voice = PiperVoice.load(str(ROOT / v["piper_model"]))
         with wave.open(str(raw), "wb") as w:

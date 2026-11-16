@@ -30,6 +30,12 @@ and registers the service to start at login (launchd / systemd user / Task Sched
 2. When notified, open `OUTPUT/SCHEDULED/<slot>/POST_ME.html`, post the video with the caption, then run `yv7 posted <id> <url>`.
    Faster: upload the whole queue once into **TikTok Studio on desktop** and use its built-in scheduler (up to 10 days ahead).
 
+## Campaigns & carousels
+`CONTENT_DATABASE/campaign_*.json` holds reviewed campaigns (videos + photo carousels with exact `publish_at` slots), loaded with
+`yv7.campaign.load(path)`. Carousels export 1080x1920 JPG slides (TikTok photo mode) plus an optional narrated slideshow video
+(`narrated_slideshow.mp4` + `caption_video_version.txt`). Post one or the other, never both.
+Voice: Kokoro `bm_george` (local, natural). It is a realistic AI voice, so TikTok's AI-generated content toggle must be ON for videos.
+
 ## Pipeline
 `ingest` (copy-complete wait, SHA-256 dedupe, ffprobe, quarantine with plain report, originals moved to ARCHIVE and never deleted) →
 `analyze` (thumbnail, timecoded contact sheet, scene changes, music-risk heuristic, Whisper transcript, optional Claude vision on the contact sheet;
