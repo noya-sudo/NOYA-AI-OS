@@ -1,0 +1,10 @@
+watchdog>=4
+numpy>=1.26
+pillow>=10
+imagehash>=4.3
+requests>=2.31
+faster-whisper>=1.0      # local speech-to-text (model downloads once from huggingface.co)
+piper-tts>=1.3           # natural local TTS (voice downloads once from huggingface.co)
+pytesseract>=0.3         # analytics screenshot OCR (needs tesseract binary)
+anthropic>=0.40          # OPTIONAL: vision review of contact sheets, budget-capped at £3/day
+openpyxl>=3.1            # OPTIONAL: .xlsx analytics exports

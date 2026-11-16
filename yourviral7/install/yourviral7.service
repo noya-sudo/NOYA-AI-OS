@@ -1,0 +1,14 @@
+[Unit]
+Description=YOURVIRAL7 TikTok content service
+After=network-online.target
+
+[Service]
+WorkingDirectory=__DIR__
+Environment=YV7_HOME=__DIR__
+ExecStart=__DIR__/yv7.sh start
+Restart=on-failure
+RestartSec=30
+Nice=10
+
+[Install]
+WantedBy=default.target

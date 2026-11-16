@@ -1,0 +1,18 @@
+# media, state and secrets never go to git
+INBOX/
+PROCESSING/
+ARCHIVE/
+QUARANTINE/
+OUTPUT/
+ANALYTICS/
+LOGS/
+BACKUPS/
+DASHBOARD/index.html
+CONTENT_DATABASE/*.sqlite*
+CONFIG/secrets.env
+CONFIG/settings.json
+CONFIG/models/
+CONFIG/voices/
+STOP
+.venv/
+__pycache__/

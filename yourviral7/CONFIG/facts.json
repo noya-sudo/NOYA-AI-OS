@@ -1,0 +1,14 @@
+{
+  "_rule": "Scripts may only state facts listed here with status starting 'verified'. Opinion must be phrased as opinion. Re-verify before reuse after 30 days.",
+  "facts": {
+    "F1": {"claim": "GTA VI releases Thursday 19 November 2026.", "status": "verified_primary", "source": "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026", "checked": "2026-11-16"},
+    "F2": {"claim": "GTA VI launches on PlayStation 5 and Xbox Series X|S.", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_VI", "checked": "2026-11-16"},
+    "F3": {"claim": "GTA VI is set in Vice City and the wider state of Leonida.", "status": "verified_primary", "source": "https://www.rockstargames.com/VI", "checked": "2026-11-16"},
+    "F4": {"claim": "The two lead characters are Lucia Caminos and Jason Duval.", "status": "verified_primary", "source": "https://www.rockstargames.com/VI", "checked": "2026-11-16"},
+    "F5": {"claim": "GTA V released in September 2013.", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_V", "checked": "2026-11-16"},
+    "F6": {"claim": "Vice City first appeared as a full game setting in GTA: Vice City (2002).", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto:_Vice_City", "checked": "2026-11-16"},
+    "F7": {"claim": "Rockstar/Take-Two's fan policy: generally no objection to non-commercial use without plot spoilers; no pre-release leaked footage (incl. early unboxings); no isolated cutscene/ending spoilers; no isolated in-game TV/comedy; no cheat/exploit promotion; content can be taken down at any time.", "status": "verified_primary", "source": "https://support.rockstargames.com/articles/7bNaeoMFTV0iUDGhStTXvz/policy-on-posting-copyrighted-rockstar-games-material", "checked": "2026-11-16"},
+    "F8": {"claim": "GTA VI's release was delayed twice before landing on 19 November 2026.", "status": "verified_secondary", "source": "https://en.wikipedia.org/wiki/Grand_Theft_Auto_VI", "checked": "2026-11-16"},
+    "F9": {"claim": "TikTok Creator Rewards requires 18+, 10,000 followers, 100,000 video views in the last 30 days, and original videos over 1 minute.", "status": "verified_primary", "source": "https://support.tiktok.com/en/business-and-creator/creator-rewards-program", "checked": "2026-11-16"}
+  }
+}
