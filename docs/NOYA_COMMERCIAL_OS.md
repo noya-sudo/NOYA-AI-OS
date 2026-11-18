@@ -2334,3 +2334,32 @@ No new page or agent. It runs through the existing Directors: **NOYA Private —
 - Meeting slots are not refreshed endlessly. If the proposed times lapse again, replace them with: "Happy to work around you — what time suits you best this week?" and release the private calendar holds.
 - SPF and DKIM remain the main infrastructure blocker; the seven new cold 2027 project emails stay held until both pass. Gmail sender name: Adam Elshazly.
 - Order for now: live booking, warm replies, supplier availability, warm follow-ups, SPF/DKIM, then new project outreach once authenticated.
+
+## NOYA commercial system refresh (18 Nov 2026)
+
+A refresh of the existing operating system, not a rebuild: same HQ, Directors, CRM, Gmail sync, Studio, n8n and Supabase. Live settings are in `system_config.commercial_refresh_18_nov` and `system_config.strategic_partnerships`; Director missions in `agent_registry`; tools in `tool_capabilities`.
+
+**Core question for every agent:** what real project could NOYA execute with this company or person? Output chain: account → signal → project idea → right person → contact route → outreach → conversation → brief → proposal → project. Agents find opportunities proactively.
+
+**Priority lanes (more discovery attention):**
+1. Fashion, beauty and luxury brands (UK, France, Italy, UAE, KSA, Qatar, Egypt, GCC; USA selectively). Signals: MENA expansion, Dubai/Riyadh launches, Egypt campaigns, collections, creator campaigns, fashion weeks, brand dinners, influencer trips, destination shoots, ambassadors, pop-ups, new retail. Lead with a project (creator trip, Giza shoot, Red Sea brand weekend, launch dinner, press trip, VIP programme, museum evening, North Coast or El Gouna activation), never with "concierge services".
+2. Marketing, PR, creative and experiential agencies. The agency keeps the client, brand, creative, PR and guest list; NOYA makes the project work on the ground (travel, VIP arrivals, hotels and villas, cars, security, talent and guest movement, dining, yachts, aviation, local execution).
+3. Private members clubs and private networks (London, Paris, Monaco, Dubai, Abu Dhabi, Riyadh, Doha, Milan, Geneva, New York, LA). The club owns the community; NOYA designs and executes the destination experience (three-night Cairo/Giza weekend, GEM programme, Cairo + Red Sea, Cairo + Luxor/Aswan, founder or investor retreat).
+4. Private events, weddings and celebrations through planners. The planner owns design and the client; NOYA owns hotel blocks, arrivals, chauffeurs, security, guest concierge, pre/post events, private experiences, yachts and aviation. Strengthen planners, never compete.
+
+Other lanes continue: hospitality, travel, corporate, media, production, sports, talent and private clients.
+
+**Strategic Partnerships:** builds the network that makes NOYA hard to compete with. Keeps a Top 20 of strategic relationships, a Top 10 of new partners and a Top 5 to advance this week. Each partner answers what it enables NOYA to sell, which projects it helps win, who refers whom, what access it gives, and whether it improves quality, margin, speed, trust or coverage. Classes: core execution, referral, distribution, supplier, local, strategic brand relationship, private client referrer, white-label, hold. Suppliers are kept separate from business-development relationships. Scored by relationships opened, referrals, preferred terms, capability added, projects enabled and revenue influenced, never by companies researched.
+
+**Outreach:** no auto-send. First touch 70–130 words: why you, why now, project idea, NOYA's role, low-friction ask. No brochure, deck, service list, fake familiarity, fake urgency, or "synergies / collaboration / luxury solutions". Partnership emails explain what NOYA does for their clients, what they do for NOYA, how it works and why there is no conflict. One person at a time; full follow-up sequence; then the next decision maker. Never abandon a strategic account because one person was silent.
+
+**Email route order:** public named professional email → official published email → Instagram business email → management → agency → official website → Clay → Hunter if necessary → contact form → LinkedIn fallback. Hunter is optional.
+
+**Studio:** first touch → positive response → one-page visual concept → meeting → tailored brief → proposal. Concept visuals only when they help the prospect imagine the project, always labelled as concepts.
+
+**Pipeline:** 20–30 high-conviction projects, 10–15 active conversations, 5–8 brief/proposal discussions, 3–4 wins. Never manufactured. Advance at least one meaningful 2027 opportunity every weekday. Warm always outranks cold.
+
+**Daily report:** A warm/live; B 2027 project movement; C top new outreach (max five); D strategic partnerships; E private client engine; F discovery (strongest only); G real blockers only.
+**Friday review:** projects advanced, positive replies, meetings, briefs, proposals, wins, bookings, partnerships advanced, private relationships advanced, best vertical, best message angle, weakest lane, next week's priorities.
+
+**Quality:** never fabricate clients, projects, relationships, partnerships, revenue, availability, pricing, case studies, agent relationships or warm introductions. Everything source-backed.
