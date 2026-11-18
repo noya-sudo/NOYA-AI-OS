@@ -2363,3 +2363,14 @@ Other lanes continue: hospitality, travel, corporate, media, production, sports,
 **Friday review:** projects advanced, positive replies, meetings, briefs, proposals, wins, bookings, partnerships advanced, private relationships advanced, best vertical, best message angle, weakest lane, next week's priorities.
 
 **Quality:** never fabricate clients, projects, relationships, partnerships, revenue, availability, pricing, case studies, agent relationships or warm introductions. Everything source-backed.
+
+### Adam's decisions (18 Nov 2026, after the refresh)
+
+1. **Authentication.** Adam fixes SPF and DKIM himself. Every cold first touch stays held as an unsent draft until the daily live DNS check shows both records healthy. The queue is then released in the recorded priority order (`system_config.email_reserve.release_plan_18_nov`), at most four cold first touches a day. Warm replies and follow-ups are not capped.
+2. **Declined bookings.** When NOYA withdraws from a booking, the outcome is recorded accurately (archived, with the reason and the options sourced). Courtesy closes go to the client and to every supplier who quoted, so supplier relationships stay warm.
+3. **Partnership book.** STRATEGIC / DISTRIBUTION / REFERRAL relationships are kept separate from EXECUTION SUPPLIERS. The first priority is relationships that can generate several projects, clients or introductions: agency groups, hotel collections, private members clubs, travel networks, sports management and player care. Execution suppliers sit underneath (`strategic_partnerships.execution_layer`) and never count as project-generating partnerships.
+4. **Signal over prestige.** Project potential and a real signal outrank brand prestige. A brand with no Egypt / MENA / project trigger is researched further or held. Weak brand concepts are never forced.
+5. **Agency routes.** Find contact routes in this order: public website, Instagram, press, management/team pages, then Clay, and Hunter only after those. Before drafting, check the CRM for earlier contact with the same company. A new named person after an unanswered generic inbox is a first named-person touch, never a duplicate chase.
+6. **Clubs and networks.** Look for international member travel, founder/investor communities, GCC/UK presence, recurring events and destination programmes.
+7. **Execution gaps.** Source close protection, Red Sea yachts and North Coast villas as unvetted supplier candidates (relationship_status supplier, universe EXCLUDED) until NOYA has vetted them.
+8. **n8n.** While the Claude connector is disconnected, the workflows keep running. Sync health is judged from `gmail_sync_state` and interactions. No n8n inspection or repair is claimed.
