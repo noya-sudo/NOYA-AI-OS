@@ -2374,3 +2374,12 @@ Other lanes continue: hospitality, travel, corporate, media, production, sports,
 6. **Clubs and networks.** Look for international member travel, founder/investor communities, GCC/UK presence, recurring events and destination programmes.
 7. **Execution gaps.** Source close protection, Red Sea yachts and North Coast villas as unvetted supplier candidates (relationship_status supplier, universe EXCLUDED) until NOYA has vetted them.
 8. **n8n.** While the Claude connector is disconnected, the workflows keep running. Sync health is judged from `gmail_sync_state` and interactions. No n8n inspection or repair is claimed.
+
+**Further decisions (18 Nov 2026, evening)**
+
+9. **One route per inbox.** There are never two unsent drafts to the same inbox, and each account has one active route. The daily check scans all Gmail drafts for duplicate recipients. It keeps the newest current draft and removes a superseded older one only after reading both. The removal is recorded on the opportunity.
+10. **Cold queue in waves.** Passing SPF/DKIM does not release the whole held queue. Wave 1 is eight first touches, chosen by project and relationship potential, at two a day. Review the replies seven days after the last wave 1 send, before proposing wave 2.
+11. **Warm first.** Live relationships always outrank the cold queue. When a contact has invited a call, the next action is the call, not another scheduling email.
+12. **Unverified Clay addresses.** Do not use one where the email domain differs from the website domain until an official source confirms the domain. Research order: official website, team/contact pages, Instagram business contact, confirmed company domain, Clay, verification, then LinkedIn. Never guess.
+13. **Projects, not database growth.** Discovery continues across brands, agencies, clubs and travel networks, private events, and multiplier partnerships. Every new account must carry a real signal and a project idea.
+14. **n8n.** The connector is available again. Inspect and repair only; no rebuilds.
