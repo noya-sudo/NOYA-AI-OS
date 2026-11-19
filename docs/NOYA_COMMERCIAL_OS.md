@@ -2455,3 +2455,34 @@ Adam's instruction: not more rows. The goal is more right people, usable routes,
   - Contact gaps (strongest accounts only).
   - Drafts ready: one account, one person, one route, one project.
   - Research volume only when it is commercially useful.
+
+## Execution priority (19 Nov 2026)
+
+Adam approved Clay Phase 2. The bottleneck is now execution, not lead volume.
+
+- **No large discovery sweep.** Clay stays at 70% deepening and converting strong accounts, 30% new discovery. The database does not grow while strong accounts remain unsent.
+- **Success measures.**
+  - Counted: right people contacted, replies, meetings, briefs, proposals, projects, private client access, revenue.
+  - Never counted as progress: Clay rows, contacts discovered, drafts created.
+- **Revised wave 1.** Opens only once SPF and DKIM genuinely pass, at no more than two cold first touches a day.
+  - Day 1: TMG + LIGHTBLUE.
+  - Day 2: PURPLE + AUDITOIRE.
+  - Day 3: Four Seasons + Indagare.
+  - Day 4: onepointfive + Bacchus.
+  - Day 5: 303 + Sienna Charles.
+  - TMG and Four Seasons stay on different days, and neither email references the other.
+- **Why the new wave 1 accounts.**
+  - Indagare: active 2027 Egypt demand (February waitlisted), a named partnerships contact, and repeat member-family requests.
+  - AUDITOIRE: luxury-house event work and a Gulf footprint.
+- **Wave 2.** Pearl Events Atelier and YPO move back to wave 2, behind the time-bound EGYPES. They are still valid prospects, but the Phase 2 accounts rank higher.
+- **Adam's order.**
+  1. Thomas: a call, not another scheduling email.
+  2. Maison Pyramide follow-up.
+  3. 67 Pall Mall follow-up.
+  4. Greycoat.
+  5. MCI Middle East.
+  6. EMBARK Beyond.
+  7. Dorchester thank-you.
+  8. Nile charter and client closes.
+  9. SPF and DKIM.
+- **After the gate opens, monitor daily:** replies, deliverability, meetings, positive interest, projects created and multiplier relationships advanced. Each positive reply reaches Adam with a drafted response and the next step.
