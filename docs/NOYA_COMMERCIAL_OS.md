@@ -2383,3 +2383,29 @@ Other lanes continue: hospitality, travel, corporate, media, production, sports,
 12. **Unverified Clay addresses.** Do not use one where the email domain differs from the website domain until an official source confirms the domain. Research order: official website, team/contact pages, Instagram business contact, confirmed company domain, Clay, verification, then LinkedIn. Never guess.
 13. **Projects, not database growth.** Discovery continues across brands, agencies, clubs and travel networks, private events, and multiplier partnerships. Every new account must carry a real signal and a project idea.
 14. **n8n.** The connector is available again. Inspect and repair only; no rebuilds.
+
+## Clay growth engine (19 Nov 2026)
+
+Adam's direction (18–19 Nov): Clay becomes NOYA's daily discovery, contact and project-generation engine, for corporate/B2B projects and for private-client distribution. No HQ rebuild, no new pages, no new agents. The full rules live in `system_config.clay_growth_engine`.
+
+- **Two discovery lanes, run every weekday.**
+  - SIGNAL-LED: current Egypt/MENA/GCC evidence, which gives a clear why-now.
+  - ICP-LED: strong fit with no Egypt announcement needed, e.g. premium or UHNW clientele, destination work, member communities, multi-client access.
+  - The question is "who should NOYA know before they need Egypt?", not only "who is already doing Egypt?".
+- **Two stages.**
+  - Stage 1 builds the company universe: separate searches per lane, then qualify, score and shortlist, without enriching every result.
+  - Stage 2 runs only for strong accounts: one or two senior people, public routes, work email only if useful, one route, an opportunity and outreach.
+- **Clay is discovery, not qualification.** Confirm each account on the official site, recent activity, Instagram or press before it becomes QUALIFIED. Reject false positives. Semantic search is noisy; industry filters plus description phrases are precise. Clay allows one search at a time.
+- **Project hypothesis required.** No account is outreach-ready without one.
+  - Multipliers (agencies, clubs, travel networks, management firms, family-office gatekeepers, branded residences) often outrank one-off buyers.
+  - Execution suppliers stay separate from commercial partnerships.
+- **Email truth.**
+  - A Clay work email on the confirmed company domain is a usable route (`CLAY_WORK_EMAIL`, migration `20261119090000`) and is never labelled verified.
+  - Hunter is optional.
+  - A good official business route (hello@, hey@, partnerships@) beats spending credits or days verifying a personal address. Address it for the named person's attention.
+- **Credit discipline.** Cheap searches first. Email enrichment only for high-score accounts, and at most one or two people per account.
+- **Daily flow (direction, not quota).** 20–40 candidates → 8–15 interesting accounts → 5–10 people/routes → 3–5 outreach opportunities.
+- **Daily report.**
+  - Top 5 corporate/project, Top 5 private/distribution and Top 5 strategic partnership opportunities (lists may overlap).
+  - Each entry: company, person, fit, project hypothesis, signal, route, next action.
+  - Plus what Clay generated. Never raw results.
