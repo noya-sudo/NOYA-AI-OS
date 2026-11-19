@@ -2534,3 +2534,22 @@ A new priority Egypt vertical, run in parallel with everything else. It never re
   - live conversations;
   - incoming executives, only where publicly confirmed;
   - next actions.
+
+### Executive Landing: Adam's decisions (19 Nov 2026, after the first pass)
+
+- **Outreach allocation.** After wave 1, each send day carries one Executive Landing cold first touch and one wave 2 cold first touch. The overall cap stays at two cold first touches a day.
+- **Execution partners.**
+  - Vet now: driver and long-term vehicle, premium residential broker, international-school relationships, household staffing.
+  - Next: medical, licensed legal and immigration, licensed tax, security.
+  - Shortlists are candidates only until a partner passes the vetting checklist.
+- **Pricing.** Internal only. Never published. Scope first, and quote only after Adam approves. Figures live in `system_config`, not in this repo.
+- **Economics.** Two figures are kept separate: revenue per converted family, and expected revenue per landing at an assumed conversion rate. Neither is presented as proven.
+- **Route discipline.**
+  - Every Executive Landing contact goes through the route check in this order: official site, public professional route, Clay, company-domain verification, LinkedIn fallback.
+  - Clay emails with a name mismatch, an atypical format or another company's domain are held until a real verifier confirms them. Domain reputation is never risked for convenience.
+- **Priority hierarchy.** Multiplier relationships usually rank above direct corporate targets.
+  1. Executive-search partners.
+  2. A strong mobility or moving referral partner.
+  3. Signal-led multinational HR and People buyers.
+  4. The hotel-opening and incoming-GM ecosystem.
+  - The objective chain: one search, mobility or corporate relationship, then multiple executives, family landings, private desk conversions and referrals.
