@@ -2486,3 +2486,51 @@ Adam approved Clay Phase 2. The bottleneck is now execution, not lead volume.
   8. Nile charter and client closes.
   9. SPF and DKIM.
 - **After the gate opens, monitor daily:** replies, deliverability, meetings, positive interest, projects created and multiplier relationships advanced. Each positive reply reaches Adam with a drafted response and the next step.
+
+## Executive Landing Desk (19 Nov 2026)
+
+A new priority Egypt vertical, run in parallel with everything else. It never replaces, pauses or reorders the warm list, wave 1, wave 2, the 70/30 Clay rule or the existing engines, and warm work still outranks it. Named people, emails, drafts and pricing live only in the CRM, Gmail and `system_config.executive_landing`, never in this public repo.
+
+- **Thesis.** NOYA makes the move into Egypt work outside the office.
+  - The product is executive landing, family settlement, then ongoing private lifestyle management.
+  - The employer may pay for the landing.
+  - The long-term goal is a recurring NOYA Private household that refers other executives.
+- **Positioning.** Never "relocation services".
+  - For companies: "You handle the executive's role. We make everything outside the office work."
+  - For search firms: "You place the leader. We make the move work."
+  - For executives: "One trusted point of contact for settling into and living in Egypt properly."
+- **Channels.**
+  - Corporate buyers: HR, People, Global Mobility, Talent, Country HR, CEO Office.
+  - Executives and families: approached only through public professional data.
+  - Gatekeepers: executive search, leadership advisory, mobility and relocation firms, family offices, private banks, chambers. One gatekeeper relationship can bring many executives.
+- **Signals.**
+  - Egypt CEO, Country Manager, MD and GM appointments.
+  - New hotel GMs and hotel openings.
+  - New Egypt offices, regional headquarters and market entries.
+  - Every signal is verified live before outreach.
+- **Lead scoring.**
+  - Raised by: a recent senior appointment, an international company, a new Egypt operation or regional HQ, a hotel opening, executive-search involvement, company-funded mobility, sourced family relocation, seniority, and repeat-assignment potential.
+  - Fame never counts.
+- **Privacy and regulation.**
+  - Never assume an executive is relocating without a source.
+  - Never research spouses, children or private accounts. Family details are collected only after consent, and a family's private life does not become CRM data.
+  - Immigration, permits, residency, tax, legal and regulated finance are handled only by authorised partners. NOYA coordinates.
+- **Service phases.**
+  - Pre-arrival: needs, neighbourhoods, schools, temporary stay, airport, driver, security, first-week plan.
+  - First 30 days: home, staff, utilities, medical, clubs, orientation, all through licensed and vetted partners.
+  - First 90 days: lifestyle integration, travel and the private desk.
+- **Packages.** Three internal packages: Executive Landing, Family Landing and Executive Private Desk.
+  - Prices are internal hypotheses until Adam approves them.
+  - Third-party costs are always shown separately from NOYA fees.
+- **Partner networks.**
+  - Execution partners are suppliers, kept separate from referral partners: brokers, schools, chauffeurs, vehicles, household staffing, security, medical, insurance, licensed legal/immigration/tax, moving, interiors, telecom, maintenance, gyms and clubs.
+  - None are vetted yet. NOYA sources and vets them before promising any service.
+- **Sending.** Outreach shares the overall cap of two cold first touches a day. Adam sets how it interleaves with wave 2.
+- **Daily report.** A compact Executive Landing section covering:
+  - new signals;
+  - strong corporate buyers;
+  - search and mobility partners;
+  - named decision makers;
+  - live conversations;
+  - incoming executives, only where publicly confirmed;
+  - next actions.
