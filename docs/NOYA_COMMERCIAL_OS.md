@@ -2409,3 +2409,49 @@ Adam's direction (18–19 Nov): Clay becomes NOYA's daily discovery, contact and
   - Top 5 corporate/project, Top 5 private/distribution and Top 5 strategic partnership opportunities (lists may overlap).
   - Each entry: company, person, fit, project hypothesis, signal, route, next action.
   - Plus what Clay generated. Never raw results.
+
+## Clay Phase 2 (19 Nov 2026)
+
+Adam's instruction: not more rows. The goal is more right people, usable routes, project conversations, private client access and multiplier relationships. People, emails and drafts live only in the CRM, Gmail and `system_config.clay_phase_2`, never in this public repo.
+
+- **Cycle split.**
+  - Each cycle is 70% deepening strong existing accounts and 30% new discovery.
+  - No new discovery while a strong account still lacks a named person or route.
+- **Per strong account, resolve:** the right person, their role, one route, a project idea, the multiplier value and the next action.
+- **When to enrich.** Enrich a senior person in Clay only when all four hold:
+  - the account is strong;
+  - the role is relevant;
+  - a project hypothesis exists;
+  - no better public route exists.
+- **Routes.**
+  - CLAY_WORK_EMAIL is usable but never VERIFIED unless a real verifier confirms it.
+  - Where no personal route exists, an official published inbox, sent for the named person's attention, is acceptable. It is registered in `email_official_inboxes`.
+  - One active route per account.
+- **Agency map.** For each agency, record AGENCY → KEY LUXURY CLIENTS → RECENT CAMPAIGNS → MENA/GCC RELEVANCE → POSSIBLE EGYPT PROJECT (`clay_phase_2.agency_map`).
+  - The map exists to make the agency pitch specific.
+  - We never contact an agency's clients separately.
+- **Private distribution.**
+  - Covers travel and concierge firms, clubs, branded residences and family/private offices.
+  - Model: they keep the client; NOYA runs Egypt and supports selected global requests.
+- **Family and private wealth.**
+  - Only lifestyle-credible offices qualify.
+  - Investment-led wealth managers are not automatically relevant; one was deprioritised on 19 Nov.
+- **Sports and talent.**
+  - The aim is one relationship that reaches multiple clients.
+  - Never approach the athlete, the agent and the agency at the same time.
+  - A sister agency stays on hold while another agency in the same group has a live approach.
+- **Fashion production.** No approach without a senior contact and a credible Egypt production trigger.
+- **Top 10 multipliers.**
+  - A live ranking of ten, with no suppliers, kept in `clay_phase_2.top_10_multipliers`.
+  - Ranked by future clients, projects, access, repeat business, strategic fit, MENA/Egypt relevance and route quality.
+- **Release order.**
+  - 303 is promoted to wave 1 (Day 5).
+  - Phase 2 drafts join wave 2 in `email_reserve.release_plan_18_nov.phase_2_queue_19_nov.merged_wave_2_order`, multiplier ranking first.
+  - Everything stays held until SPF/DKIM pass.
+- **Daily report.** Sections in order:
+  - Top 5 corporate project accounts: person, route, project, why now, next action.
+  - Top 5 private/distribution accounts: person, route, client access, proposition, next action.
+  - Top 5 multiplier relationships: what each unlocks.
+  - Contact gaps (strongest accounts only).
+  - Drafts ready: one account, one person, one route, one project.
+  - Research volume only when it is commercially useful.
