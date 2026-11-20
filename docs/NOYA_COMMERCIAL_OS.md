@@ -2553,3 +2553,15 @@ A new priority Egypt vertical, run in parallel with everything else. It never re
   3. Signal-led multinational HR and People buyers.
   4. The hotel-opening and incoming-GM ecosystem.
   - The objective chain: one search, mobility or corporate relationship, then multiple executives, family landings, private desk conversions and referrals.
+
+## Operating corrections (20 Nov 2026)
+
+- Execution over research. The bottleneck is conversion from READY to SENT to CONVERSATION, not a lack of prospects. No additional research and no new verticals until the execution backlog materially moves. The discovery share is paused; only the route work needed to send an item already in the queue continues.
+- Warm actions are surfaced as today's actions, every day. A weekly review never defers them to "next week".
+- Clean cohort. Outreach sent before SPF and DKIM passed is not a conversion benchmark. From the first authenticated send, measure delivered, bounced, replied, positive reply, meeting, brief, proposal and project, and report them separately from the earlier history.
+- Modelled economics, such as value per converted family, are labelled estimated economics. They are never revenue, pipeline, a forecast or proven customer value.
+- A partner whose original project was declined is tracked as a partner (for example, a booking or hospitality partner open for NOYA guests), not as an active project, until a new commercial opportunity exists.
+- Account integrity. A contact is never reported under another account; each account carries its own route.
+- Client bookings. Gmail is reconciled before any booking action. Never send fresh supplier enquiries where suppliers have already replied: select from the replies and close the rest. Where a recorded decision and a new instruction conflict, surface the conflict to Adam before acting.
+- Cold email stays held until SPF and DKIM genuinely pass the live DNS check; Adam fixes DNS directly.
+- Draft date wording is kept current before a draft is surfaced for sending.
