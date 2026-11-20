@@ -807,3 +807,7 @@ table.sc td, table.sc th { white-space: nowrap; }
 .pipe-line button.pl-i:hover .pl-l { color: var(--navy); text-decoration: underline; }
 .pipe-line .pl-n { font-size: 15px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
 .pipe-line .pl-l { font-size: 11.5px; color: var(--muted); }
+
+/* Last-resort screen when a view cannot be drawn (20 Nov): never a blank or permanent "Loading". */
+.crash { max-width: 520px; margin: 15vh auto 0; padding: 0 16px; text-align: center; }
+.crash h1 { letter-spacing: .2em; font-weight: 500; }

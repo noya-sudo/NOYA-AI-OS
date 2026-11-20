@@ -11,6 +11,30 @@ const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
+// BOUNDED READS (20 Nov production fix). Every Supabase call ends in data or an error within a fixed time, even if the network,
+// a large payload or the auth refresh stalls; it never throws. Before this, one stalled or rejected read could leave HQ on
+// "Loading" for good. Raw reasons stay in state.errors (More / Admin → System); CEO screens show a plain sentence and Retry.
+const RPC_TIMEOUT_MS = (() => { try { return Number(globalThis.localStorage?.getItem('hq.rpcTimeoutMs')) || 30000; } catch { return 30000; } })();
+const LOAD_WATCHDOG_MS = 90000;
+async function rpcT(fn, args, ms = RPC_TIMEOUT_MS) {
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  let timer;
+  const late = new Promise((resolve) => { timer = setTimeout(() => { try { ctl?.abort(); } catch { /* already settled */ } resolve({ data: null, error: { message: `timeout: ${fn} did not answer within ${Math.round(ms / 1000)} s` } }); }, ms); });
+  try {
+    let q = args === undefined ? sb.rpc(fn) : sb.rpc(fn, args);
+    if (ctl && typeof q?.abortSignal === 'function') q = q.abortSignal(ctl.signal);
+    const r = await Promise.race([q, late]);
+    return r && typeof r === 'object' ? r : { data: null, error: { message: `${fn}: empty response` } };
+  } catch (e) {
+    return { data: null, error: { message: `${fn}: ${e?.message || e}` } };
+  } finally { clearTimeout(timer); }
+}
+// A runtime error is recorded for diagnostics; it never blanks HQ.
+function noteErr(key, e) {
+  const m = e?.message || String(e ?? 'unknown error'); const at = String(e?.stack || '').split('\n').slice(1, 3).map((x) => x.trim()).join(' | ');
+  try { state.errors[key] = at ? `${m} @ ${at}` : m; } catch { /* state not ready */ }
+}
+
 // HQ V3 (Adam, 9 Oct): six destinations — one screen, one job. Everything that existed before stays reachable under More,
 // unchanged; nothing was deleted. Agents' old floor, email desk, radar and feed live under More → Agents & intelligence.
 // Studio joined the primary navigation on 19 Oct (Destination Egypt mission): it is operational, so it is no longer under More.
@@ -176,12 +200,13 @@ const errKey = (k) => (k === 'data' ? 'main' : k);
 async function readKey(k) {
   if (state.busy[k]) return false;
   state.busy[k] = true;
-  const snap = SNAPSHOTS[k];
-  const { data, error } = snap ? await sb.rpc('hq_cached', { p_key: snap }) : await sb.rpc(READS[k]);
-  state.busy[k] = false;
-  const notReady = snap && data && data.ok === false && data.reason && Object.keys(data).length <= 2;
-  if (error || notReady) { state.errors[errKey(k)] = error ? error.message : `snapshot ${data.reason}`; return false; }
-  state[k] = data; delete state.errors[errKey(k)]; return true;
+  try {
+    const snap = SNAPSHOTS[k];
+    const { data, error } = snap ? await rpcT('hq_cached', { p_key: snap }) : await rpcT(READS[k]);
+    const notReady = snap && data && data.ok === false && data.reason && Object.keys(data).length <= 2;
+    if (error || notReady) { state.errors[errKey(k)] = error ? error.message : `snapshot ${data.reason}`; return false; }
+    state[k] = data; delete state.errors[errKey(k)]; return true;
+  } catch (e) { noteErr(errKey(k), e); return false; } finally { state.busy[k] = false; }
 }
 const WAVES = {
   full: () => [['data', 'desk', 'ceo', 'cmd', 'net'], ['ov', 'dir', 'rel', 'ops', 'directors', 'exec'], ['ins', 'advisor', 'com', ...(state.tab === 'outreach' ? ['er'] : [])]],
@@ -190,18 +215,29 @@ const WAVES = {
   desk: () => [['desk']],
 };
 async function load(silent = false, scope = 'full') {
-  if (state.inflight) return;
-  state.inflight = true;
-  if (!silent) { state.loading = true; render(); }
-  if (scope === 'full' || scope === 'light') { if (!state.advisorSeen) { state.advisorSeen = true; sb.rpc('hq_advisor_seen'); } }
-  for (const wave of WAVES[scope]()) { await Promise.all(wave.map(readKey)); state.loading = false; render(); }
-  state.inflight = false;
-  // The morning follow-up lists (FOLLOW UP / REOPEN) load after the waves, never inside one.
-  if (state.tab === 'dashboard' && (scope === 'full' || !state.fuBoard)) loadV3('fuBoard', 'hq_follow_up_board', { p_limit: 5 }, scope === 'full');
-  if (state.tab === 'club' && state.club) readKey('club').then(render);
-  if (['studio', 'agents'].includes(state.tab) && state.studio) readKey('studio').then(render);
-  if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true);
-  if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
+  // A load that has been running longer than the watchdog is treated as dead, so Refresh and polling can never be blocked for good.
+  if (state.inflight && Date.now() - (state.inflightAt || 0) < LOAD_WATCHDOG_MS) return;
+  state.inflight = true; state.inflightAt = Date.now();
+  try {
+    if (!silent) { state.loading = true; render(); }
+    if (scope === 'full' || scope === 'light') { if (!state.advisorSeen) { state.advisorSeen = true; rpcT('hq_advisor_seen'); } }
+    for (const wave of WAVES[scope]()) {
+      // All-settled: every read in a wave ends (data, error or timeout); one failure never holds back or discards the others.
+      // The main read paints as soon as it lands, so the screen leaves "Loading" without waiting for the slowest read.
+      await Promise.allSettled(wave.map((k) => readKey(k).then((ok) => { if (ok && k === 'data' && state.loading) { state.loading = false; render(); } })));
+      state.loading = false; render();
+    }
+  } catch (e) { noteErr('load', e); } finally { state.inflight = false; state.loading = false; }
+  try {
+    // The morning follow-up lists (FOLLOW UP / REOPEN) load after the waves, never inside one.
+    if (state.tab === 'dashboard' && (scope === 'full' || !state.fuBoard)) loadV3('fuBoard', 'hq_follow_up_board', { p_limit: 5 }, scope === 'full');
+    if (state.tab === 'club' && state.club) readKey('club').then(render);
+    if (['studio', 'agents'].includes(state.tab) && state.studio) readKey('studio').then(render);
+    if (state.tab === 'director' && state.dirKey) loadDirector(state.dirKey, true);
+    if (state.agents && AGENT_TABS.includes(state.tab)) { loadAgents(true); if (state.tab === 'agent' && state.agentKey) loadAgent(state.agentKey, true); }
+    if (typeof afterLoad === 'function') afterLoad(scope);
+  } catch (e) { noteErr('load', e); }
+  render();
 }
 // Load one read on demand (a section that needs data no wave has fetched yet), then redraw.
 const ensure = (k) => { if (!state[k] && !state.busy[k] && !state.errors[errKey(k)]) readKey(k).then(render); };
@@ -209,20 +245,20 @@ const ensure = (k) => { if (!state[k] && !state.busy[k] && !state.errors[errKey(
 async function loadLinkedInHistory(id) {
   if (state.busy[`lih:${id}`]) return;
   state.busy[`lih:${id}`] = true;
-  const { data, error } = await sb.rpc('hq_linkedin_history', { p_connection: id });
+  const { data, error } = await rpcT('hq_linkedin_history', { p_connection: id });
   state.busy[`lih:${id}`] = false; state.liHist[id] = error ? { error: error.message } : (data || []);
   render();
 }
 async function loadTimeline(kind, id) {
   const key = `${kind}:${id}`;
-  const { data, error } = await sb.rpc('hq_timeline', { p_kind: kind, p_id: id });
+  const { data, error } = await rpcT('hq_timeline', { p_kind: kind, p_id: id });
   state.timeline[key] = error ? { error: error.message } : data;
   render();
 }
 
 async function call(fn, args, successText) {
   state.notice = null;
-  const { data, error } = await sb.rpc(fn, args);
+  const { data, error } = await rpcT(fn, args);
   if (error) { state.notice = { err: true, text: friendly(error.message) }; state.errors.lastAction = `${fn}: ${error.message}`; render(); return null; }
   if (data && data.ok === false) state.notice = { err: true, text: explain(data) };
   else state.notice = { err: false, text: successText };
@@ -302,8 +338,10 @@ function explain(r) {
 }
 // ---------------------------------------------------------------- auth
 async function initAuth() {
-  const { data } = await sb.auth.getSession();
-  state.session = data.session;
+  // Bounded like every read: a stalled session restore shows the sign-in screen instead of a blank page.
+  let data = null;
+  try { ({ data } = await Promise.race([sb.auth.getSession(), new Promise((r) => setTimeout(() => r({ data: { session: null }, timedOut: true }), 15000))])); } catch (e) { noteErr('auth', e); }
+  state.session = data?.session || null;
   sb.auth.onAuthStateChange((_evt, session) => {
     const was = !!state.session;
     state.session = session;
@@ -362,7 +400,9 @@ function renderPasswordChange(forced) {
 }
 
 // ---------------------------------------------------------------- shell
-function navBadge(key) {
+// A badge that cannot be computed shows nothing; it never stops the navigation from drawing (20 Nov).
+function navBadge(key) { try { return navBadgeInner(key); } catch (e) { noteErr('nav', e); return ''; } }
+function navBadgeInner(key) {
   const ov = state.ov; const d = state.data;
   if (key === 'dashboard' && d) { const n = todayItems(d).count; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'desk' && state.desk) { const n = state.desk.counts.needs_review.total; return n ? `<span class="badge">${n}</span>` : ''; }
@@ -379,7 +419,34 @@ function navBadge(key) {
 }
 const navLabel = (k) => NAV.flatMap(([, i]) => i).find(([key]) => key === k)?.[1] || k;
 
+// RENDER BOUNDARY (20 Nov production fix). A screen that fails to draw shows a plain message with Retry; the navigation stays usable
+// and the reason goes to diagnostics. Before this, one unexpected field in a snapshot threw inside the Dashboard template, the page kept
+// its first "Loading HQ…" and every refresh was blocked.
+let renderDepth = 0;
 function render() {
+  if (renderDepth > 1) return;
+  renderDepth += 1;
+  try { renderInner(); } catch (e) {
+    noteErr('render', e); state.viewCrash = state.tab;
+    try { renderInner(); } catch (e2) {
+      noteErr('render', e2);
+      const app = document.getElementById('app');
+      if (app) app.innerHTML = '<div class="crash"><h1>NOYA HQ</h1><p>This screen could not be displayed. Nothing was sent or changed.</p><button class="btn primary" id="crash-reload">Reload HQ</button></div>';
+      document.getElementById('crash-reload')?.addEventListener('click', () => location.reload());
+    }
+  } finally { renderDepth -= 1; state.viewCrash = null; }
+}
+// One view, drawn safely: if it throws, only the main area says so.
+function safeView(view, d) {
+  if (state.viewCrash && state.viewCrash === state.tab) return viewUnavailable();
+  try { return view(d); } catch (e) { noteErr(`view:${state.tab}`, e); return viewUnavailable(); }
+}
+const viewUnavailable = () => '<div class="unavail"><span>This screen could not be displayed with the latest data. Nothing was sent or changed.</span><button class="btn small" data-retry="all">Retry</button></div>';
+// One Dashboard section, drawn safely: a failing section never takes the screen with it.
+function sect(name, f) {
+  try { return f(); } catch (e) { noteErr(`section:${name}`, e); return `<section class="dsec"><div class="unavail"><span>This section could not be displayed.</span><button class="btn small" data-retry="all">Retry</button></div></section>`; }
+}
+function renderInner() {
   document.body.classList.toggle('auth', !state.session || mustChangePassword() || state.modal === 'password');
   if (!state.session) return renderLogin();
   if (mustChangePassword()) return renderPasswordChange(true);
@@ -409,7 +476,7 @@ function render() {
           ${state.notice ? `<div class="banner ${state.notice.err ? 'err' : 'ok'}">${esc(state.notice.text)}${state.notice.href ? ` <a href="${esc(state.notice.href)}" target="_blank" rel="noopener noreferrer">${esc(state.notice.label || 'Open')}</a>` : ''}</div>` : ''}
           ${state.errors.main && /not authorised/i.test(state.errors.main) ? '<div class="banner err">This account is not authorised for NOYA HQ.</div>' : ''}
           ${staleErr && d ? `<div class="unavail top"><span>Some figures may be out of date: the last refresh did not complete.</span><button class="btn small" data-retry="all">Retry</button></div>` : ''}
-          ${d && view ? view(d) : state.loading || !state.errors.main ? '<p class="muted">Loading HQ…</p>' : /not authorised/i.test(state.errors.main) ? '' : unavailable('all')}
+          ${d && view ? safeView(view, d) : (state.loading || state.inflight) && !state.errors.main ? '<p class="muted">Loading HQ…</p>' : /not authorised/i.test(state.errors.main || '') ? '' : unavailable('all')}
         </main>
       </div>
     </div>
@@ -924,7 +991,7 @@ function viewReports(d) {
 async function loadDiag() {
   if (state.busy.diag) return;
   state.busy.diag = true;
-  const { data, error } = await sb.rpc('hq_cache_status');
+  const { data, error } = await rpcT('hq_cache_status');
   state.busy.diag = false; state.diag = error ? { error: error.message } : data; render();
 }
 function diagPanel() {
@@ -1587,7 +1654,7 @@ const NM_ARGS = { opp: 'p_opportunity', company: 'p_company', contact: 'p_contac
 async function loadNextMove(kind, id) {
   const key = `${kind}:${id}`; if (state.busy[`nm:${key}`] || state.nextMove[key]) return;
   state.busy[`nm:${key}`] = true;
-  const { data, error } = await sb.rpc('hq_next_move', { [NM_ARGS[kind]]: id });
+  const { data, error } = await rpcT('hq_next_move', { [NM_ARGS[kind]]: id });
   state.busy[`nm:${key}`] = false; state.nextMove[key] = error ? { error: error.message } : data;
   render();
 }
@@ -1599,7 +1666,7 @@ const LC_ASSET = { NONE: 'Nothing attached: a plain founder email with one idea'
 async function loadLeadCard(id) {
   if (!id || state.busy[`lc:${id}`] || state.leadCard[id]) return;
   state.busy[`lc:${id}`] = true;
-  const { data, error } = await sb.rpc('hq_lead_card', { p_opp: id });
+  const { data, error } = await rpcT('hq_lead_card', { p_opp: id });
   state.busy[`lc:${id}`] = false; state.leadCard[id] = error ? { error: error.message } : data;
   render();
 }
@@ -1685,7 +1752,7 @@ const fuBtn = (t, label = 'Follow up / Reopen', primary = false) => (fuTarget(t)
 async function openFollowUp(t) {
   const key = fuTarget(t).map(([k, v]) => `${k}:${v}`).join('|');
   state.modal = { kind: 'fu', t, key }; render();
-  const { data, error } = await sb.rpc('hq_follow_up', Object.fromEntries(Object.entries(FU_ARGS).map(([k, a]) => [a, t[k] || null])));
+  const { data, error } = await rpcT('hq_follow_up', Object.fromEntries(Object.entries(FU_ARGS).map(([k, a]) => [a, t[k] || null])));
   state.fu[key] = error ? { error: error.message } : data;
   if (state.modal?.key === key) render();
 }
@@ -2138,7 +2205,7 @@ function accountBlock(id) {
     ${(a.sources || []).length ? `<div class="small faint mt6">Sources: ${a.sources.map((u) => `<a href="${esc(/^https?:/.test(u) ? u : `https://${u}`)}" target="_blank" rel="noopener noreferrer">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(' · ')}</div>` : ''}`;
 }
 async function loadAccount(id) {
-  const { data, error } = await sb.rpc('hq_account', { p_company: id });
+  const { data, error } = await rpcT('hq_account', { p_company: id });
   state.account[id] = error ? { error: error.message } : data;
   render();
 }
@@ -2862,7 +2929,7 @@ async function readLinkedInFiles(files) {
 // hits the request time limit. A stop is safe: uploading again adds only what is missing.
 async function importLinkedIn(C, M, I = null) {
   const say = (text) => { state.notice = { err: false, text }; render(); };
-  const rpc = async (fn, args) => { const { data, error } = await sb.rpc(fn, args); if (error || data?.ok === false) throw new Error(error?.message || explain(data)); return data; };
+  const rpc = async (fn, args) => { const { data, error } = await rpcT(fn, args); if (error || data?.ok === false) throw new Error(error?.message || explain(data)); return data; };
   const st = { file_duplicates: (C?.dups || 0) + (M?.dups || 0), connections_new: 0, connections_updated: 0, connections_skipped: C?.skipped || 0,
     messages_new: 0, messages_already_imported: 0, messages_skipped: 0, drafts_left_out: M?.drafts || 0, spam_left_out: M?.spam || 0 };
   let stage = 'starting';
@@ -2965,7 +3032,7 @@ function bind() {
     // Fast path for phone review: save, update the card in place, move on; refresh everything in the background.
     const k = b.dataset.relStatus; const g = (state.rel?.groups || []).find((x) => x.key === b.dataset.id); if (!g) return;
     document.querySelectorAll(`[data-rel-status][data-id="${CSS.escape(g.key)}"]`).forEach((el) => { el.disabled = true; });
-    const { data, error } = await sb.rpc('hq_relationship_status', { p_key: g.key, p_status: k });
+    const { data, error } = await rpcT('hq_relationship_status', { p_key: g.key, p_status: k });
     if (error || data?.ok === false) { state.notice = { err: true, text: error ? friendly(error.message) : explain(data) }; if (error) state.errors.lastAction = error.message; render(); return; }
     g.review = { ...(g.review || {}), status: k, status_at: new Date().toISOString() };
     g.dismissed = k === 'NOT_RELEVANT' ? 'DISMISSED' : null;
@@ -3073,14 +3140,17 @@ const n0 = (v) => (v == null ? '—' : esc(v));
 async function loadAgents(force = false) {
   if (state.agentsLoading || (state.agents && !force)) return;
   state.agentsLoading = true;
-  const { data, error } = await sb.rpc('hq_agents');
-  state.agentsLoading = false;
-  if (error) state.errors.agents = error.message; else { state.agents = data; delete state.errors.agents; }
+  try {
+    // hq_agents is served from the background snapshot (it takes longer than the 8 s request limit to compute live).
+    const { data, error } = await rpcT('hq_cached', { p_key: 'agents' });
+    const bad = error || (data && data.ok === false && data.reason && Object.keys(data).length <= 2);
+    if (bad) state.errors.agents = error ? error.message : `snapshot ${data.reason}`; else { state.agents = data; delete state.errors.agents; }
+  } catch (e) { noteErr('agents', e); } finally { state.agentsLoading = false; }
   render();
 }
 async function loadAgent(key, force = false) {
   if (!force && state.agentDetail[key]) return;
-  const { data, error } = await sb.rpc('hq_agent', { p_key: key });
+  const { data, error } = await rpcT('hq_agent', { p_key: key });
   state.agentDetail[key] = error ? { error: error.message } : data;
   render();
 }
@@ -3320,17 +3390,18 @@ async function loadV3(key, fn, args = {}, force = false) {
   if (state.busy[key] || (!force && (state[key] || state.errors[errKey(key)]))) return;
   if (SNAPSHOTS[key] || READS[key] === fn) { await readKey(key); render(); return; }
   state.busy[key] = true;
-  const { data, error } = await sb.rpc(fn, args);
-  state.busy[key] = false;
-  if (error) state.errors[key] = error.message; else { state[key] = data; delete state.errors[key]; }
+  try {
+    const { data, error } = await rpcT(fn, args);
+    if (error) state.errors[key] = error.message; else { state[key] = data; delete state.errors[key]; }
+  } catch (e) { noteErr(key, e); } finally { state.busy[key] = false; }
   render();
 }
 async function loadDirector(key, force = false) {
   if (!force && (state.dirDetail[key] || state.errors[`director:${key}`])) return;
   if (state.busy[`dir:${key}`]) return;
   state.busy[`dir:${key}`] = true;
-  const { data, error } = await sb.rpc('hq_cached', { p_key: `director:${key}` });
-  state.busy[`dir:${key}`] = false;
+  let data = null; let error = null;
+  try { ({ data, error } = await rpcT('hq_cached', { p_key: `director:${key}` })); } finally { state.busy[`dir:${key}`] = false; }
   const bad = error || (data && data.ok === false && data.reason && Object.keys(data).length <= 2);
   if (bad) { state.errors[`director:${key}`] = error ? error.message : `snapshot ${data.reason}`; if (!state.dirDetail[key] || state.dirDetail[key].error) state.dirDetail[key] = { error: true }; }
   else { state.dirDetail[key] = data; delete state.errors[`director:${key}`]; }
@@ -3361,7 +3432,7 @@ const estatePill = (s) => { const [l, c] = ESTATE[s] || [s || 'No email', '']; r
 // hq_advisor(): the brief, 3-5 observations (situation -> meaning -> action), what changed since the last visit, where NOYA is
 // winning and wasting time. hq_advisor_seen() marks the visit first, so "since" is the previous visit. All from NOYA data.
 async function loadAdvisor() {
-  if (!state.advisorSeen) { state.advisorSeen = true; await sb.rpc('hq_advisor_seen'); }
+  if (!state.advisorSeen) { state.advisorSeen = true; await rpcT('hq_advisor_seen'); }
   await readKey('advisor'); render();
 }
 function advisorToday() {
@@ -3737,7 +3808,8 @@ function dashWeekly() {
   const att = (A.observations || []).find((o) => o.kind === 'ATTENTION');
   const blocked = (state.directors?.members || []).filter((m) => m.role === 'DIRECTOR' && (m.status === 'BLOCKED' || m.status === 'ERROR'));
   const quiet = (state.directors?.members || []).filter((m) => m.role === 'DIRECTOR' && m.key !== 'GROWTH' && !Number(C.funnel?.by_director_week?.[m.key]?.sent) && !Number(m.d3?.companies_found));
-  const stuck = (C.pipeline || []).filter((s) => s.stuck > 0).sort((a, b) => b.stuck - a.stuck)[0];
+  const stages = Array.isArray(C.pipeline) ? C.pipeline : (state.cmd?.funnel?.stages || []);
+  const stuck = stages.filter((s) => s.stage !== 'LOST_PARKED' && s.stuck > 0).sort((a, b) => b.stuck - a.stuck)[0];
   const rec = (A.observations || [])[0];
   const mline = [['Revenue', M.revenue], ['Fees', M.fees], ['Commission', M.commission], ['Supplier cost', M.supplier_cost], ['Gross profit', M.gross_profit], ['Receivables', M.receivables]]
     .map(([l, v]) => `<span><span class="faint">${l}</span> ${esc(moneyOf(v) || 'Not recorded')}</span>`).join('');
@@ -3757,7 +3829,7 @@ function viewDashboard(d) {
   if (!state.inflight) loadV3('fuBoard', 'hq_follow_up_board', { p_limit: 5 });
   const day = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
   return `${head(state.advisor?.greeting || 'Dashboard', esc([day, asOf(state.ceo)].filter(Boolean).join(' · ')))}
-    ${dashStrip(d)}${dashActions(d)}${dashAdvisor()}${dashMission()}${dashPipeline()}${dashFunnel()}${dashOpportunities()}${dashPulse()}${dashWeekly()}`;
+    ${sect('strip', () => dashStrip(d))}${sect('actions', () => dashActions(d))}${sect('advisor', dashAdvisor)}${sect('mission', dashMission)}${sect('pipeline', dashPipeline)}${sect('funnel', dashFunnel)}${sect('opportunities', dashOpportunities)}${sect('pulse', dashPulse)}${sect('weekly', dashWeekly)}`;
 }
 
 // ---------------------------------------------------------------- COMMAND CENTRE (Adam, 18 Oct: professional operating mode)
@@ -4639,7 +4711,7 @@ async function studioStorePdf(x) {
   state.notice = { err: false, text: `Checked: this is the approved ${pdf.file_name}. Saving it to the Studio…` }; render();
   const up = await sb.storage.from('studio-pdfs').upload(pdf.path, file, { upsert: true, contentType: 'application/pdf' });
   if (up.error) { state.notice = { err: true, text: `The PDF could not be saved: ${friendly(up.error.message)} Nothing was attached.` }; render(); return false; }
-  const { data, error } = await sb.rpc('hq_studio_pdf_stored', { p_slug: x.slug, p_version: x.version, p_sha256: p.sha256, p_fingerprint: p.fingerprint, p_bytes: p.bytes });
+  const { data, error } = await rpcT('hq_studio_pdf_stored', { p_slug: x.slug, p_version: x.version, p_sha256: p.sha256, p_fingerprint: p.fingerprint, p_bytes: p.bytes });
   if (error || data?.ok === false) { state.notice = { err: true, text: error ? friendly(error.message) : explain(data) }; render(); return false; }
   await readKey('studio'); render(); return true;
 }
@@ -4661,7 +4733,7 @@ async function studioAttach(id) {
   state.busy[`att:${id}`] = true; state.notice = null;
   try {
     if (x.handoff?.pdf && !x.handoff.pdf.stored && !(await studioStorePdf(x))) return;
-    const { data, error } = await sb.rpc('hq_studio_attach', { p_slug: x.slug, p_version: x.version });
+    const { data, error } = await rpcT('hq_studio_attach', { p_slug: x.slug, p_version: x.version });
     if (error) { state.notice = { err: true, text: friendly(error.message) }; return; }
     if (data?.ok === false) { state.notice = { err: true, text: explain(data) }; return; }
     const to = toLine(x.handoff?.draft);
@@ -4899,7 +4971,7 @@ function bindV3(on) {
   $('#rv-check')?.addEventListener('click', async () => {
     const text = $('#rv-text')?.value || ''; const rows = revenueRows(text);
     if (!rows.length) { state.modal = { ...state.modal, text, preview: { valid: [], errors: [{ row: 0, errors: ['No rows found: paste a header row and at least one record.'] }] } }; render(); return; }
-    const { data, error } = await sb.rpc('hq_revenue_import', { p_rows: rows, p_apply: false });
+    const { data, error } = await rpcT('hq_revenue_import', { p_rows: rows, p_apply: false });
     state.modal = { ...state.modal, text, rows, preview: error ? { valid: [], errors: [{ row: 0, errors: [friendly(error.message)] }] } : data }; render();
   });
   on('[data-studio-cancel]', 'click', async (b, e) => { e.stopPropagation(); await call('hq_studio_request_action', { p_id: b.dataset.studioCancel, p_action: 'CANCEL' }, 'Request cancelled. It is kept in the history.'); loadV3('studio', 'hq_studio', {}, true); });
@@ -4949,4 +5021,8 @@ setInterval(() => {
   if (tick % 120 === 0) load(true, 'full'); else if (tick % 24 === 0) load(true, 'light');
 }, 5000);
 
+// Read-only diagnostics handle (the same reasons shown under More / Admin → System); used by the resilience tests.
+globalThis.__hq = { errors: () => ({ ...state.errors }) };
+window.addEventListener('error', (e) => noteErr('runtime', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => noteErr('runtime', e.reason));
 initAuth();
