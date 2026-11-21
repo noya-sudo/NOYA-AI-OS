@@ -39,13 +39,15 @@ function noteErr(key, e) {
 // unchanged; nothing was deleted. Agents' old floor, email desk, radar and feed live under More → Agents & intelligence.
 // Studio joined the primary navigation on 19 Oct (Destination Egypt mission): it is operational, so it is no longer under More.
 // HQ V4 (21 Nov 2026): the CEO control centre. Seven destinations; every earlier screen stays reachable under More, unchanged.
-const PRIMARY = [['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams'], ['relations', 'Relationships'], ['projects', 'Projects'], ['agents', 'Agents']];
+// Acceptance pass (21 Nov): Agents sits under More with Studio, Intelligence, Finance and System / Admin.
+const PRIMARY = [['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams'], ['relations', 'Relationships'], ['projects', 'Projects']];
 const MORE = [
-  ['Workspaces', [['desk', 'Approval desk'], ['dashboard', 'Dashboard (classic)'], ['studio', 'Studio'], ['club', 'Club'], ['ops', 'Operations']]],
-  ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
+  ['Operate', [['agents', 'Agents'], ['studio', 'Studio / Briefs'], ['intelligence', 'Intelligence'], ['finance', 'Finance'], ['system', 'System / Admin']]],
+  ['Workspaces', [['desk', 'Approval desk'], ['dashboard', 'Dashboard (classic)'], ['club', 'Club'], ['ops', 'Operations']]],
+  ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
   ['Sales', [['overview', 'Command (classic)'], ['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach (classic)'], ['linkedin', 'LinkedIn'], ['website', 'Website leads'], ['partners', 'Partnerships'], ['events', 'Events']]],
   ['Records', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts'], ['pipeline', 'Pipeline'], ['tasks', 'Tasks']]],
-  ['Admin', [['reports', 'Reports'], ['finance', 'Revenue & finance'], ['costs', 'System costs'], ['system', 'System health'], ['help', 'Help & playbook']]],
+  ['Admin', [['reports', 'Reports'], ['costs', 'System costs'], ['help', 'Help & playbook']]],
 ];
 const NAV = [['HQ', PRIMARY], ...MORE];
 const MORE_KEYS = MORE.flatMap(([, items]) => items.map(([k]) => k));
@@ -112,6 +114,7 @@ const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 const state = {
   session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'today', loading: false,
   today: null, opps: null, streams: null, mail: null, routes: null, seq: {}, actNote: null, refocus: null, typeT: null, streamOpen: null, streamPillar: '',
+  seasons: null, scout: null, pships: null, seasonH: 90, paOpen: null,
   oppF: { stage: 'PROJECT_READY_PLUS', stream: '', rel: '', q: '', offset: 0 }, routeF: { filter: 'ACTIONABLE', stream: '', q: '', offset: 0 },
   desk: null, ops: null, directors: null, club: null, busy: {}, dirKey: null, dirDetail: {}, dirSec: {}, more: false, feedAll: false, feedDir: '',
   deskTab: 'TOP5', deskCh: 'EMAIL', deskDir: '', deskProj: '', deskMore: null, ceo: null, net: null, deskPage: 0, deskOpen: {}, deskSrc: {}, relTab: 'IMPORTANT', clubTab: 'PRIVATE',
@@ -279,6 +282,10 @@ function explain(r) {
   const reason = r.reason || '';
   const map = {
     ALREADY_PROCESSED: 'Already approved — a draft exists or is being created. Nothing new was done.',
+    LOCKED_STATUS: 'This agreement is already sent, signed or ended, so the term sheet is locked.',
+    SIGNATURE_NOTE_REQUIRED: 'To mark an agreement signed, add a note saying who signed what, and when.',
+    UNKNOWN_STATUS: 'That status is not recognised. Nothing was changed.',
+    UNKNOWN_DECISION: 'That decision is not recognised. Nothing was changed.',
     ALREADY_APPROVED: 'This outreach is already approved; it can no longer be edited, held or rejected.',
     DRAFT_CHANGED_REFRESH: 'The draft changed since you opened it. The latest version is now shown — please review and approve again.',
     REJECTED: 'This outreach was rejected and cannot be approved.',
@@ -469,7 +476,7 @@ function renderInner() {
         <div class="brand">${__HAS_LOGO__ ? '<img src="/noya-mark.svg" alt="">' : ''}<span class="word">NOYA<small>HQ · Private office</small></span></div>
         <nav class="nav-primary">${PRIMARY.map(([k, l]) => `<button class="nav-item ${state.tab === k || (k === 'agents' && state.tab === 'director') ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</nav>
         <button class="nav-more ${moreOpen() ? 'open' : ''}" id="nav-more">More / Admin</button>
-        ${moreOpen() ? MORE.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('') : ''}
+        ${moreOpen() ? MORE.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k || (k === 'agents' && ['director', 'agent'].includes(state.tab)) ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('') : ''}
       </aside></div>
       <div>
         <div class="topbar"><div class="mbrand">NOYA</div>
@@ -493,7 +500,7 @@ function renderInner() {
       ${[['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
       <button id="bmenu" class="${state.menu || ['relations', 'projects', 'agents', 'director', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
     </nav>
-    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['relations', 'Relationships'], ['projects', 'Projects'], ['agents', 'Agents']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
+    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['relations', 'Relationships'], ['projects', 'Projects']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? safeDrawer(state.drawer) : ''}
     ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : state.modal.kind === 'fu' ? fuModal(state.modal) : renderAnyModal(state.modal)) : ''}`;
   bind();
@@ -503,6 +510,7 @@ function renderInner() {
     if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(caret ? caret[0] : n, caret ? caret[1] : n); } catch { /* not a text field */ } }
   }
   if (LIGHT_TABS.has(state.tab) && (TAB_KEYS[state.tab] || []).some((k) => !state[k] && !state.busy[k] && !state.errors[k])) ensureLight(state.tab);
+  if (EXTRA_KEYS[state.tab]) ensureExtra(state.tab);
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
 
@@ -3001,6 +3009,7 @@ function bind() {
   bindAgents(on);
   bindV3(on);
   bindV4(on);
+  bindV4b(on);
   on('[data-tab]', 'click', (b) => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; state.menu = false; state.drawer = null; render(); window.scrollTo(0, 0); });
   on('[data-go]', 'click', (b, e) => {
     e.stopPropagation(); state.tab = b.dataset.go; if (b.dataset.otab) state.outreachTab = b.dataset.otab;
@@ -3399,7 +3408,7 @@ function bindAgents(on) {
 // ================================================================ HQ V3 (Adam, 9 Oct): consolidate, simplify, prove, freeze
 // Six destinations. Every number on these screens comes from one admin-gated read and reconciles with the others:
 // hq_outreach_desk (approval desk), hq_directors / hq_director (the workforce), hq_club, hq_operations, hq_growth.
-const moreOpen = () => state.more || MORE_KEYS.includes(state.tab);
+const moreOpen = () => state.more || MORE_KEYS.includes(state.tab) || state.tab === 'director' || state.tab === 'agent';
 const plural = (n, one, many) => `${n} ${Number(n) === 1 ? one : many}`;
 async function loadV3(key, fn, args = {}, force = false) {
   // A read that failed waits for Retry or the next refresh: never re-requested on every redraw.
@@ -4945,7 +4954,8 @@ async function retry(k) {
   if (k === 'all') { Object.keys(state.errors).forEach((x) => { if (x !== 'lastAction') delete state.errors[x]; }); return load(false, 'full'); }
   if (LIGHT_KEYS.includes(k)) {
     delete state.errors[k]; render();
-    const fns = { today: ['hq_today', {}], opps: ['hq_opportunities', oppArgs()], streams: ['hq_streams', {}], mail: ['hq_email_summary', {}], routes: ['hq_email_routes', routeArgs()] };
+    const fns = { today: ['hq_today', {}], opps: ['hq_opportunities', oppArgs()], streams: ['hq_streams', {}], mail: ['hq_email_summary', {}], routes: ['hq_email_routes', routeArgs()],
+      seasons: ['hq_seasons', { p_horizon: 180 }], scout: ['hq_tool_scout', {}], pships: ['hq_partnerships', {}] };
     return loadLight(k, fns[k][0], fns[k][1], true);
   }
   if (k.startsWith('director:')) { const key = k.slice(9); delete state.errors[k]; delete state.dirDetail[key]; render(); return loadDirector(key, true); }
@@ -5016,7 +5026,7 @@ function bindV3(on) {
 // hq_email_routes: 0.3–45 KB each, about 0.2 s together) instead of the 1–4 MB dashboard reads. They draw without waiting for those reads
 // and each has its own loading, empty and error state. The only write here is hq_ceo_action (audited): nothing sends, approves or spends.
 const LIGHT_TABS = new Set(['today', 'opps', 'mail', 'streams']);
-const LIGHT_KEYS = ['today', 'opps', 'streams', 'mail', 'routes'];
+const LIGHT_KEYS = ['today', 'opps', 'streams', 'mail', 'routes', 'seasons', 'scout', 'pships'];
 const TAB_KEYS = { today: ['today'], opps: ['opps', 'streams'], streams: ['streams'], mail: ['mail', 'routes'] };
 const LIGHT_TIMEOUT_MS = 15000;
 const STAGE_ORDER = ['MARKET_UNIVERSE', 'QUALIFIED_ACCOUNT', 'CONTACT_READY', 'PROJECT_READY', 'OUTREACH_READY', 'CONTACTED', 'FOLLOW_UP', 'ACTIVE_CONVERSATION', 'MEETING', 'BRIEF', 'PROPOSAL', 'NEGOTIATION', 'WON', 'ACTIVE_PROJECT', 'COMPLETED', 'REPEAT'];
@@ -5179,6 +5189,7 @@ function viewStreams() {
     const list = shown.filter((s) => s.pillar === p); if (!list.length) return '';
     return sec4(l, `<span class="count">${list.length} streams</span>`, `<div class="sm4-head" aria-hidden="true"><span>Stream</span><span>Universe</span><span>Ready</span><span>Contacted</span><span>Talking</span><span>Proposal</span><span>Won</span></div>${list.map(streamRow).join('')}`);
   }).join('')}
+  ${sect('seasonal', seasonalSection)}
   <p class="foot4">Counts come from CRM records; revenue only as recorded in finance. Seasonal windows appear only when sourced.</p>`;
 }
 function streamRow(s) {
@@ -5302,13 +5313,115 @@ function bindV4(on) {
   typed('route-q', state.routeF, reloadRoutes);
 }
 
+// ---------------------------------------------------------------- ACCEPTANCE PASS (21 Nov 2026): seasonal calendar, tool scout, partnership agreements.
+// Small reads only (hq_seasons, hq_tool_scout, hq_partnerships). Writes are audited and record Adam's decisions; nothing sends, signs or buys.
+const EXTRA_KEYS = { streams: [['seasons', 'hq_seasons', () => ({ p_horizon: 180 })]], system: [['scout', 'hq_tool_scout', () => ({})]], partners: [['pships', 'hq_partnerships', () => ({})]] };
+function ensureExtra(tab) {
+  for (const [k, fn, args] of EXTRA_KEYS[tab] || []) if (!state[k] && !state.busy[k] && !state.errors[k]) setTimeout(() => loadLight(k, fn, args()), 0);
+}
+const CONF4 = (c) => (c === 'VERIFIED' ? '<span class="lbl actual">Verified</span>' : '<span class="lbl est">Estimate</span>');
+const dRange = (a, b) => (b && b !== a ? `${shortDay(a)} – ${shortDay(b)}` : shortDay(a));
+
+// Seasonal calendar (Streams): rolling 30 / 60 / 90 / 180 days. NO SOURCE = NO DATE.
+function seasonalSection() {
+  const S = state.seasons; const h = state.seasonH || 90;
+  if (!S) return sec4('Seasonal calendar', '', lightState('seasons', 'seasonal windows'));
+  const rows = (S.windows || []).filter((w) => w.days_to_start <= h);
+  const c = S.counts || {};
+  const tabs = `<div class="chips">${[[30, c.d30], [60, c.d60], [90, c.d90], [180, c.d180]].map(([n, k]) => `<button class="chip ${h === n ? 'on' : ''}" data-season-h="${n}">${n} days <span class="c">${esc(k ?? 0)}</span></button>`).join('')}</div>`;
+  const body = rows.length ? `<div class="dl4">${rows.map((w) => `<div class="dl-row se4 ${w.act_now ? 'now' : ''}">
+      <span class="d">${esc(dRange(w.starts_on, w.ends_on))}</span>
+      <span><b>${esc(w.name)}</b> ${CONF4(w.confidence)}${w.act_now ? ' <span class="tag4">Outreach window open</span>' : ''}
+        <span class="s4">${esc([w.stream_label, w.market && M(w.market)].filter(Boolean).join(' · '))}</span>
+        ${w.angle ? `<span class="n4">${esc(w.angle)}</span>` : ''}
+        <span class="s4">Outreach ${esc(dRange(w.outreach_from, w.outreach_to))}${w.accounts ? ` · ${esc(w.accounts)}` : ''} · <a href="${esc(safeHref(w.source_url))}" target="_blank" rel="noopener noreferrer">source</a></span></span>
+    </div>`).join('')}</div>`
+    : `<div class="empty-box"><p>No sourced seasonal windows in the next ${h} days.</p><p class="why">No source, no date: windows appear only once a source confirms them.</p></div>`;
+  return sec4('Seasonal calendar', `<span class="count">${esc(c.act_now ?? 0)} outreach window${Number(c.act_now) === 1 ? '' : 's'} open now</span>`, tabs + body);
+}
+
+// Tool / source scout (More → System / Admin): quiet, gated recommendations. Research and recommend only.
+function toolScoutPanel() {
+  const T = state.scout;
+  if (!T) return sec4('Tool and source scout', '', lightState('scout', 'tool recommendations'));
+  const recs = T.surfaced || []; const q = T.quiet || {};
+  const kv4 = (k, v) => (v ? `<div class="ts-kv"><span>${k}</span><span>${v}</span></div>` : '');
+  const card = (r) => `<article class="ts4">
+    <div class="ca4-top"><span class="kind">${esc(sentence(String(r.capability_area || '').replace(/_/g, ' ')))}</span><span class="rec ${esc(String(r.recommendation).toLowerCase())}">${esc(r.recommendation)}</span></div>
+    <h4>${r.vendor_url ? `<a href="${esc(safeHref(r.vendor_url))}" target="_blank" rel="noopener noreferrer">${esc(r.tool)}</a>` : esc(r.tool)}</h4>
+    ${kv4('Capability gap', esc(r.capability_gap))}${kv4('Why NOYA benefits', esc(r.why_noya))}${kv4('Improves / replaces', esc(r.improves_replaces))}
+    ${kv4('Price', r.price_model ? `${esc(r.price_model)} <a href="${esc(safeHref(r.price_source_url))}" target="_blank" rel="noopener noreferrer">(source, ${esc(shortDay(r.price_verified_at))})</a>` : 'Not verified')}
+    ${kv4('Data / privacy', `${esc(sentence(r.privacy_risk))}${r.privacy_note ? ` · ${esc(r.privacy_note)}` : ''}`)}${kv4('Integration effort', esc(sentence(r.integration_effort)))}${kv4('Expected benefit', esc(r.expected_benefit))}
+    ${(r.evidence_urls || []).length ? kv4('Evidence', r.evidence_urls.map((u, i) => `<a href="${esc(safeHref(u))}" target="_blank" rel="noopener noreferrer">${i + 1}</a>`).join(' · ')) : ''}
+    <div class="btn-row"><button class="btn small" data-scout="${esc(r.id)}" data-to="APPROVED_BY_ADAM">Approve</button><button class="btn small ghost" data-scout="${esc(r.id)}" data-to="REJECTED_BY_ADAM">Reject</button><button class="btn small ghost" data-scout="${esc(r.id)}" data-to="PARKED">Park</button></div>
+    <p class="why">Approving records your decision only. Nothing is bought, subscribed or connected.</p>
+  </article>`;
+  return sec4('Tool and source scout', `<span class="count">${esc(q.hold ?? 0)} held · ${esc(q.reject ?? 0)} rejected (not shown)</span>`,
+    recs.length ? `<div class="ca4s">${recs.map(card).join('')}</div>` : '<p class="empty4">No recommendation with a genuine capability or ROI case right now.</p>');
+}
+
+// Partnership agreements and intelligence (More → Partnerships). Default NON-EXCLUSIVE; term sheets are drafts for Adam / legal review.
+const PA_STATUS = ['NO_AGREEMENT_NEEDED', 'DISCUSSION', 'TERMS_REQUESTED', 'TERM_SHEET_PREPARED', 'LEGAL_REVIEW', 'SENT', 'SIGNED', 'EXPIRED_TERMINATED'];
+function partnershipsPanel() {
+  const P = state.pships;
+  if (!P) return sec4('Agreements and partnership intelligence', '', lightState('pships', 'partnership agreements'));
+  const rows = P.rows || [];
+  const q8 = (p) => [['What they control', p.they_control], ['What NOYA controls', p.noya_controls], ['What they can refer', p.they_can_refer], ['What NOYA can refer', p.noya_can_refer],
+    ['First project to test', p.first_test_project], ['How money works', p.money_model || 'To agree; never assumed'], ['Conflict', p.conflict || 'None identified'], ['Agreement required', sentence(p.agreement_required)]];
+  const ver = (p) => Object.entries(p.verification || {}).filter(([, v]) => v && typeof v === 'object').map(([k, v]) => `<div class="ts-kv"><span>${esc(sentence(k.replace(/_/g, ' ')))}</span><span>${esc(v.value || v.claimed || '')} <span class="lbl ${/VERIFIED|FROM_THEIR/.test(v.status) && !/NOT_VERIFIED/.test(v.status) ? 'actual' : 'est'}">${esc(sentence(String(v.status || '').replace(/_/g, ' ')))}</span></span></div>`).join('');
+  const ts = (p) => (p.term_sheet ? `<details class="mt6"><summary class="small">Term sheet (draft, ${esc(shortDay(p.term_sheet_prepared_at))})</summary><p class="why">${esc(p.term_sheet.status_note || '')}</p>${(p.term_sheet.sections || []).map((s) => `<div class="ts-kv"><span>${esc(s.title)}</span><span>${esc(s.content)}</span></div>`).join('')}</details>` : '');
+  const row = (p) => {
+    const open = state.paOpen === p.id; const locked = ['SENT', 'SIGNED', 'EXPIRED_TERMINATED'].includes(p.status);
+    return `<div class="sm4 ${open ? 'open' : ''}">
+      <div class="pa-row" role="button" tabindex="0" data-pa-open="${esc(p.id)}"><span class="sm4-name">${esc(p.partner_name)} <span class="tag4 muted">${esc(sentence(p.tier.replace(/_/g, ' ')))}</span></span><span class="s4">${esc(sentence(p.partnership_type.replace(/_/g, ' ')))}</span><span class="stg t-${p.status === 'SIGNED' ? 'won' : ['TERM_SHEET_PREPARED', 'LEGAL_REVIEW', 'SENT'].includes(p.status) ? 'live' : 'touch'}">${esc(sentence(p.status.replace(/_/g, ' ')))}</span></div>
+      ${open ? `<div class="sm4-body">
+        <p class="why">${esc(p.exclusivity === 'EXCLUSIVE' ? 'Exclusive (approved by Adam)' : 'Non-exclusive (default)')}${p.notes ? ` · ${esc(clip(p.notes, 240))}` : ''}</p>
+        ${q8(p).map(([k, v]) => `<div class="ts-kv"><span>${k}</span><span>${esc(v || '—')}</span></div>`).join('')}
+        ${ver(p) ? `<h3>Verification</h3>${ver(p)}` : ''}
+        ${ts(p)}
+        <div class="btn-row mt6">${locked ? '' : `<button class="btn small" data-pa-sheet="${esc(p.id)}">${p.term_sheet ? 'Refresh term sheet' : 'Prepare term sheet'}</button>`}
+          <select data-pa-status="${esc(p.id)}" aria-label="Agreement status">${PA_STATUS.map((s) => `<option value="${s}" ${p.status === s ? 'selected' : ''}>${esc(sentence(s.replace(/_/g, ' ')))}</option>`).join('')}</select>
+          <input id="pa-note-${esc(p.id)}" type="text" placeholder="Note (required to mark signed)" aria-label="Status note"><button class="btn small ghost" data-pa-save="${esc(p.id)}">Save status</button></div>
+        <p class="why">Term sheets are drafts for your and counsel's review: not legal advice, not binding. Nothing is sent or signed by HQ.</p>
+      </div>` : ''}
+    </div>`;
+  };
+  return sec4('Agreements and partnership intelligence', `<span class="count">${rows.length} partners · multipliers first</span>`, rows.length ? rows.map(row).join('') : '<p class="empty4">No partnership records yet.</p>');
+}
+
+function bindV4b(on) {
+  on('[data-season-h]', 'click', (b) => { state.seasonH = Number(b.dataset.seasonH); render(); });
+  on('[data-scout]', 'click', async (b) => {
+    b.disabled = true;
+    const { data, error } = await rpcT('hq_tool_scout_decide', { p_id: b.dataset.scout, p_decision: b.dataset.to, p_note: null });
+    state.notice = error ? { err: true, text: friendly(error.message) } : data?.ok === false ? { err: true, text: explain(data) } : { err: false, text: 'Decision recorded. Nothing was bought or connected.' };
+    await loadLight('scout', 'hq_tool_scout', {}, true);
+  });
+  on('[data-pa-open]', 'click', (b) => { state.paOpen = state.paOpen === b.dataset.paOpen ? null : b.dataset.paOpen; render(); });
+  on('[data-pa-open]', 'keydown', (b, e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
+  on('[data-pa-sheet]', 'click', async (b) => {
+    b.disabled = true;
+    const { data, error } = await rpcT('hq_prepare_term_sheet', { p_id: b.dataset.paSheet });
+    state.notice = error ? { err: true, text: friendly(error.message) } : data?.ok === false ? { err: true, text: explain(data) } : { err: false, text: 'Term sheet draft prepared for your review. Nothing was sent or signed.' };
+    await loadLight('pships', 'hq_partnerships', {}, true);
+  });
+  on('[data-pa-save]', 'click', async (b) => {
+    const id = b.dataset.paSave; const status = document.querySelector(`[data-pa-status="${id}"]`)?.value; const note = (document.getElementById(`pa-note-${id}`)?.value || '').trim();
+    if (status === 'SIGNED' && note.length < 10) { const el = document.getElementById(`pa-note-${id}`); el?.setCustomValidity('Say who signed what, and when.'); el?.reportValidity(); el?.addEventListener('input', () => el.setCustomValidity(''), { once: true }); return; }
+    b.disabled = true;
+    const { data, error } = await rpcT('hq_partnership_status', { p_id: id, p_status: status, p_note: note || null });
+    state.notice = error ? { err: true, text: friendly(error.message) } : data?.ok === false ? { err: true, text: explain(data) } : { err: false, text: 'Agreement status recorded.' };
+    await loadLight('pships', 'hq_partnerships', {}, true);
+  });
+}
+
 // Deep links (21 Nov): hq.noyaconcierge.com/#opps opens Opportunities; the address follows the screen without adding history entries.
 function syncHash() { try { const h = `#${state.tab}`; if (location.hash !== h) history.replaceState(null, '', h); } catch { /* file:// or sandboxed */ } }
 const VIEWS = { dashboard: viewDashboard, today: viewToday, opps: viewOpps, mail: viewMail, streams: viewStreams, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, studio: viewStudio, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
   overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: () => revenuePanel() + viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
-  intelligence: viewIntelligence, reports: viewReports, system: (d) => healthPanel() + viewSystem(d) + teamPanel(), help: viewHelp,
-  radar: viewRadar, library: viewLibrary, actions: viewActions, partners: viewPartners, events: viewEvents, projects: viewProjects,
+  intelligence: viewIntelligence, reports: viewReports, system: (d) => sect('scout', toolScoutPanel) + sect('health', healthPanel) + sect('system', () => viewSystem(d)) + sect('team', teamPanel), help: viewHelp,
+  radar: viewRadar, library: viewLibrary, actions: viewActions, partners: (d) => sect('pships', partnershipsPanel) + sect('partners', () => viewPartners(d)), events: viewEvents, projects: viewProjects,
   agent: viewAgent, emails: viewEmails, agentradar: viewAgentRadar, feed: viewFeed };
 
 // Refresh: every 60s normally, every 5s for two minutes after an approval. Paused while typing,

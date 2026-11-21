@@ -944,3 +944,18 @@ main > .k4s { margin-bottom: 12px; }
   .dl-row { grid-template-columns: 48px minmax(0, 1fr); }
   .dl-row > .btn { grid-column: 2; justify-self: start; }
 }
+
+/* Acceptance pass (21 Nov 2026): seasonal calendar, tool scout, partnership agreements. */
+.se4.now { background: var(--panel-2); }
+.se4 .n4 { display: block; }
+.ts4 { border: 1px solid var(--line); border-radius: 8px; padding: 12px 13px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ts4 h4 { margin: 0; font-size: 15px; }
+.ts-kv { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; font-size: 12.5px; padding: 3px 0; border-top: 1px dashed var(--line); overflow-wrap: anywhere; }
+.ts-kv > span:first-child { color: var(--muted); }
+.rec { font-size: 10px; letter-spacing: .08em; font-weight: 700; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--line-2); color: var(--muted); }
+.rec.adopt { border-color: var(--ok); color: var(--ok); }
+.rec.test { border-color: var(--info); color: var(--info); }
+.pa-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 2px; cursor: pointer; font-size: 13px; }
+.pa-row:hover { background: var(--panel-2); }
+.sm4-body select, .sm4-body input[type="text"] { width: auto; flex: 1 1 160px; padding: 4px 8px; font-size: 12px; }
+@media (max-width: 640px) { .ts-kv { grid-template-columns: minmax(0, 1fr); gap: 2px; } .pa-row { grid-template-columns: minmax(0, 1fr) auto; } .pa-row > .s4 { display: none; } }

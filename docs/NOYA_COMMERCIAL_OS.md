@@ -2615,7 +2615,7 @@ Seasonal windows appear only when sourced.
 - Unanswered enquiries appear on Today.
 - The Marketing OS repository stays private and separate. The only integration point is the database intake.
 
-**Unauthenticated batch (21 Nov).** About 50 drafts were sent manually from Gmail while SPF and DKIM still fail.
+**Unauthenticated batch (21 Nov).** About 50 sends left the Gmail account from existing drafts while SPF and DKIM still fail; who initiated them is for Adam to confirm.
 - They are logged in the CRM and tracked as their own cohort, never as the clean cohort or a benchmark.
 - Follow-ups to that batch are cold email and stay held until SPF and DKIM pass.
 - The cold-email gate is unchanged.
@@ -2632,3 +2632,98 @@ Seasonal windows appear only when sourced.
 The UI suites `hq/tests/ui_v4.mjs` and `hq/tests/ui_resilience.mjs` run in `npm test` with synthetic fixtures.
 
 **Access.** HQ is gated by `hq_admins` (`hq_admin_email()` raises "not authorised" for anyone else). RLS is on all new tables, and internal functions are revoked from authenticated users. The schema lives in `supabase/migrations`.
+
+## Acceptance pass and freeze (21 Nov 2026)
+
+The major HQ build is approved. This pass closes the remaining gaps without a redesign; the fast reads, security model, streamlined screens, canonical streams, Today workflow and Gmail reconciliation are unchanged.
+
+**Decisions recorded (21 Nov)**
+
+| Decision | What was recorded |
+|---|---|
+| Nile charter: A, keep withdrawn | Reopen only if the client explicitly asks to proceed. The six closing drafts now give the accurate reason (NOYA is not taking the request forward, not "the family decided"), and the unfinished supplier draft is complete. No new enquiries. |
+| Cold follow-ups: A, hold | Follow-ups to cold contacts in the 21 Nov batch are held until SPF and DKIM both pass: next action says HELD, no follow-up date, and the hold is audited. No new cold first-touch pressure while authentication fails. Replies, live clients and genuine warm relationships continue. |
+| Unauthenticated batch | Stays its own cohort and is never the clean benchmark. The clean cohort starts only after authentication passes. |
+| Private aviation broker: B, verify, sign nothing | Recorded as a commission partnership in DISCUSSION. The verification checklist (identity, jurisdiction, model, operators and AOCs, insurance, contracting, payment, refunds, commission, liability, client ownership, non-circumvention, sanctions) lives in `partnership_agreements.verification`. A verification reply is drafted, unsent. |
+| Duplicates: A, merge exact duplicates only | Merged only same company and same domain via `company_merge()`. Ambiguous name clashes are never merged. |
+| Gmail batch | Who initiated it is not inferred and remains for Adam to confirm. It is a security matter only if he did not. |
+
+**How the merge works**
+
+`company_merge()` is idempotent and auditable:
+- It moves every company reference (declared foreign keys and every `*company_id` column).
+- It fills only empty fields on the kept record.
+- It keeps the duplicate row with `merged_into` set; nothing is deleted.
+- It logs `company_merges` (moved counts, conflicts, snapshot) and `approval_audit`.
+
+**Seasonal engine**
+
+`seasonal_windows` plus the `hq_seasons` read provide rolling 30, 60, 90 and 180-day windows.
+- NO SOURCE = NO DATE is enforced by a database rule: a dated window needs a source URL and a verification date.
+- Windows are labelled Verified or Estimate.
+- Outreach windows are computed from lead time.
+- A window appears on Today only when its outreach window opens. Otherwise it lives under Streams as the seasonal calendar.
+
+**Tool / source scout**
+
+`tool_scout` holds quiet, gated recommendations in the format below. Every recommendation needs evidence, and any price needs an official source and date.
+
+| Field |
+|---|
+| Tool / source |
+| Capability gap |
+| Why NOYA benefits |
+| Improves / replaces |
+| Verified price |
+| Privacy risk |
+| Integration effort |
+| Expected benefit |
+| Recommendation: ADOPT, TEST, HOLD or REJECT |
+
+- Only ADOPT and TEST surface (More → System / Admin). HOLD and REJECT stay quiet.
+- It researches and recommends only: it never buys, subscribes, enters payment details, increases spend or grants access. Adam's decision is recorded by `hq_tool_scout_decide`.
+
+**Partnership agreements and term sheets**
+
+`partnership_agreements` covers the following:
+- **Type:** referral, reciprocal, white-label, preferred, commission, net rate / markup, distribution, member benefit, execution, concierge desk, owner / resident desk, co-marketing or sourcing.
+- **Tier:** multipliers first.
+- **Intelligence:** the eight partnership questions.
+- **Status:** NO AGREEMENT NEEDED → DISCUSSION → TERMS REQUESTED → TERM SHEET PREPARED → LEGAL REVIEW → SENT → SIGNED → EXPIRED / TERMINATED.
+- **Exclusivity:** NON-EXCLUSIVE by default. Exclusivity is allowed only with Adam's recorded approval and rationale.
+- **Signing:** SIGNED requires a signature note.
+
+`hq_prepare_term_sheet` builds a structured draft for Adam and counsel. Sections depend on the partnership type, from Parties to the Governing Law / Dispute placeholder. The draft is not legal advice and not binding. Nothing is sent or signed by HQ.
+
+**Navigation**
+
+Primary navigation: Today, Opportunities, Outreach, Streams, Relationships, Projects, then More. More holds:
+- Agents
+- Studio / Briefs
+- Intelligence
+- Finance
+- System / Admin
+
+**Discovery**
+
+Discovery is permanent: Adam's queue runs warm before cold, and agent intelligence is always on. When the backlog is high, only low-priority discovery volume is lowered. Empty streams are valid gaps and are never filled with weak companies.
+
+**Tests**
+
+- **`hq/tests/ui_v4.mjs` (65 checks):**
+  - seasonal source links, horizons and empty state;
+  - Tool Scout gating and decision recording;
+  - the term-sheet draft, status rules and the SIGNED note requirement;
+  - Agents under More.
+- **`hq/tests/prod_version.mjs`:** the local build identity, and production byte identity when the host is reachable. If it is not reachable, the result is SKIP, never a pass.
+- **`supabase/tests/hq_v4_checks.sql` (16 checks):**
+  - the seasonal source rule;
+  - Tool Scout evidence and price rules;
+  - partnership rules;
+  - merge history retention;
+  - the cold follow-up hold;
+  - grants and RLS.
+
+**Freeze**
+
+Major HQ architecture is frozen once production is verified. From then on the work is commercial execution, discovery, learning, outreach, relationships, partnerships, projects and revenue. A redesign happens only if a real production or commercial defect proves it necessary.

@@ -55,6 +55,24 @@ export const FX = {
     return { rows: rows.slice(off, off + lim), total: rows.length, limit: lim, offset: off, filter: b?.p_filter, computed_at: now() };
   },
   hq_ceo_action: () => ({ ok: true, status: 'DONE' }),
+  hq_seasons: () => ({ generated_at: now(), horizon: 180, counts: { d30: 1, d60: 2, d90: 2, d180: 3, act_now: 1 }, undated_rule: 'NO SOURCE = NO DATE',
+    windows: [
+      { id: uid(901), name: 'Example Fashion Week', category: 'FASHION_WEEK', market: 'EUROPE', stream: 'STREAM_7', stream_label: 'Stream 7', starts_on: day(20), ends_on: day(26), lead_time_days: 45, outreach_from: day(-25), outreach_to: day(5), angle: 'Brand hospitality around the shows.', accounts: 'Example houses', source_url: 'https://example.org/fashion-calendar', source_title: 'Official calendar', verified: now(), confidence: 'VERIFIED', days_to_start: 20, act_now: true, bucket: 30 },
+      { id: uid(902), name: 'Example Festival', category: 'FILM_FESTIVAL', market: 'EUROPE', stream: 'STREAM_18', stream_label: 'Stream 18', starts_on: day(50), ends_on: day(55), lead_time_days: 90, outreach_from: day(-40), outreach_to: day(20), angle: 'Talent hospitality.', accounts: null, source_url: 'https://example.org/festival', source_title: 'Festival site', verified: now(), confidence: 'ESTIMATE', days_to_start: 50, act_now: false, bucket: 60 },
+      { id: uid(903), name: 'Example Yacht Show', category: 'YACHTING', market: 'EUROPE', stream: 'STREAM_1', stream_label: 'Stream 1', starts_on: day(150), ends_on: day(153), lead_time_days: 120, outreach_from: day(30), outreach_to: day(110), angle: 'Charter conversations.', accounts: null, source_url: 'https://example.org/yacht', source_title: 'Show site', verified: now(), confidence: 'ESTIMATE', days_to_start: 150, act_now: false, bucket: 180 },
+    ] }),
+  hq_tool_scout: () => ({ generated_at: now(), quiet: { hold: 2, reject: 1, decided: 0 }, rule: 'Research and recommend only.',
+    surfaced: [{ id: uid(950), tool: 'Example Deliverability Tool', vendor_url: 'https://example.org/tool', capability_area: 'DELIVERABILITY', capability_gap: 'No visibility into spam placement for the clean cohort.', why_noya: 'Low-volume, high-value outreach needs early warning.', improves_replaces: 'Adds a deliverability signal.', price_model: null, price_source_url: null, price_verified_at: null, privacy_risk: 'LOW', privacy_note: 'Aggregate data only.', integration_effort: 'LOW', expected_benefit: 'Protects the clean cohort before damage.', recommendation: 'TEST', evidence_urls: ['https://example.org/docs'], status: 'PROPOSED' }] }),
+  hq_tool_scout_decide: () => ({ ok: true, status: 'APPROVED_BY_ADAM' }),
+  hq_partnerships: () => ({ generated_at: now(), counts: { DISCUSSION: 2 },
+    rows: [
+      { id: uid(970), partner_name: 'Example Agency', partnership_type: 'WHITE_LABEL', tier: 'MULTIPLIER', status: 'DISCUSSION', exclusivity: 'NON_EXCLUSIVE', they_control: 'Brand activation briefs', noya_controls: 'Egypt execution', they_can_refer: 'Activations in Egypt', noya_can_refer: 'Brands needing an agency', first_test_project: 'One activation', money_model: null, conflict: null, agreement_required: 'UNKNOWN', verification: {}, term_sheet: null, notes: null },
+      { id: uid(971), partner_name: 'Example Broker', partnership_type: 'COMMISSION', tier: 'EXECUTION_SUPPLIER', status: 'DISCUSSION', exclusivity: 'NON_EXCLUSIVE', they_control: 'Charter supply', noya_controls: 'Client relationship', they_can_refer: null, noya_can_refer: 'Charter requests', first_test_project: null, money_model: '10% of broker net margin', conflict: null, agreement_required: 'YES',
+        verification: { legal_identity: { claimed: 'Example SAS', status: 'CLAIMED_NOT_VERIFIED' }, role: { value: 'Broker, not an operator', status: 'SELF_DECLARED' } },
+        term_sheet: { status_note: 'DRAFT for Adam / legal review. Not legal advice. Not binding.', sections: [{ key: 'PARTIES', title: 'Parties', content: 'NOYA Concierge and Example Broker.' }, { key: 'EXCLUSIVITY', title: 'Exclusivity', content: 'NON-EXCLUSIVE (default).' }] }, term_sheet_prepared_at: now(), notes: 'Verify, sign nothing.' },
+    ] }),
+  hq_prepare_term_sheet: () => ({ ok: true, sections: 31 }),
+  hq_partnership_status: () => ({ ok: true, status: 'LEGAL_REVIEW' }),
   hq_timeline: () => [],
   hq_dashboard: () => ({ admin: 'test@example.com', brief: {}, tasks: [], health: {}, inbound: [], revenue: {}, approvals: [], enquiries: [], marketing: {}, completions: [], generated_at: now(), intelligence: {}, opportunities: [] }),
   hq_outreach_desk: () => ({ held: [], sent: [], top5: [], counts: { needs_review: { total: 2, EMAIL: 2, LINKEDIN: 0 }, followups_due: 0 }, next20: [], status: {}, replied: [], approved: [], linkedin: [], rejected: [], followups: [], researching: [], generated_at: now(), needs_review: [], studio_ready: [], meeting_assist: [] }),
@@ -118,7 +136,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('Today: the gate shows cold email held', /Cold email held/i.test(t));
   check('Today: a new website enquiry appears as a New enquiry card', /New enquiry/.test(t) && /NOYA-TEST01/.test(t));
   check('Address follows the screen (#today deep link)', (await page.evaluate(() => location.hash)) === '#today');
-  check('Primary navigation has the seven V4 destinations', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Opportunities|Outreach|Streams|Relationships|Projects|Agents');
+  check('Primary navigation is Today, Opportunities, Outreach, Streams, Relationships, Projects (+ More)', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Opportunities|Outreach|Streams|Relationships|Projects' && await page.locator('#nav-more').count() === 1);
   // Done → audited hq_ceo_action, then only hq_today is re-read.
   const before = n(calls, 'hq_today'); const dashBefore = n(calls, 'hq_dashboard');
   await page.locator(`[data-ceo-act="${uid(1)}"][data-to="DONE"]`).click(); await page.waitForTimeout(500);
@@ -221,7 +239,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
 {
   const { browser, page, errors, calls } = await open({ hash: 'streams' });
   await page.waitForSelector('.sm4-row', { timeout: 6000 }).catch(() => {});
-  check('Streams lists all 36 streams in 4 pillars', await page.locator('.sm4-row').count() === 36 && await page.locator('main .v4').count() === 4);
+  check('Streams lists all 36 streams in 4 pillars', await page.locator('.sm4-row').count() === 36 && await page.locator('main .v4:has(.sm4-head)').count() === 4);
   await page.locator('[data-pillar="EVENTS_CORPORATE"]').click(); await page.waitForTimeout(150);
   check('Pillar filter narrows to one pillar (9 streams)', await page.locator('.sm4-row').count() === 9);
   await page.locator('[data-pillar=""]').click(); await page.locator('[data-stream-open="STREAM_1"]').click(); await page.waitForTimeout(150);
@@ -230,6 +248,69 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.locator('.sm4.open [data-stream-go="STREAM_1"]').click(); await page.waitForTimeout(500);
   check('Open opportunities filters Opportunities by that stream (canonical code)', (await page.evaluate(() => location.hash)) === '#opps' && last(calls, 'hq_opportunities').p_stream === 'STREAM_1' && last(calls, 'hq_opportunities').p_stage === 'ALL');
   check('No uncaught page errors on Streams', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
+// 7b. Seasonal calendar on Streams: sourced windows only, rolling horizons, empty state.
+{
+  const { browser, page, errors } = await open({ hash: 'streams' });
+  await page.waitForSelector('.se4', { timeout: 6000 }).catch(() => {});
+  const n90 = await page.locator('.se4').count();
+  const sourced = await page.locator('.se4 a[href^="https://"]').count();
+  check('Seasonal calendar lists windows within 90 days by default, each with its source link', n90 === 2 && sourced === n90, `${n90} windows, ${sourced} sources`);
+  check('Open outreach windows are flagged and confidence is labelled', /Outreach window open/.test(await mainText(page)) && await page.locator('.se4 .lbl.est').count() >= 1);
+  await page.locator('[data-season-h="180"]').click(); await page.waitForTimeout(100);
+  check('180-day horizon shows the later window too', await page.locator('.se4').count() === 3);
+  await page.locator('[data-season-h="30"]').click(); await page.waitForTimeout(100);
+  check('30-day horizon narrows the list', await page.locator('.se4').count() === 1);
+  check('No uncaught page errors on the seasonal calendar', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
+{
+  const { browser, page } = await open({ hash: 'streams', behave: (fn) => (fn === 'hq_seasons' ? { generated_at: now(), horizon: 180, counts: { d30: 0, d60: 0, d90: 0, d180: 0, act_now: 0 }, windows: [] } : undefined) });
+  await page.waitForSelector('.sm4-row', { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(400);
+  check('Seasonal empty state explains the rule (no source, no date)', /No sourced seasonal windows in the next 90 days/.test(await mainText(page)) && /No source, no date/.test(await mainText(page)));
+  await browser.close();
+}
+// 7c. Tool / source scout under System / Admin: gated recommendations; a decision records only.
+{
+  const { browser, page, errors, calls } = await open({ hash: 'system' });
+  await page.waitForSelector('.ts4', { timeout: 8000 }).catch(() => {});
+  const t = await mainText(page);
+  check('Tool scout shows only surfaced recommendations (TEST/ADOPT); held and rejected stay quiet', await page.locator('.ts4').count() === 1 && /2 held · 1 rejected \(not shown\)/.test(t));
+  check('Recommendation shows the required fields (gap, benefit, price, privacy, effort, evidence)', ['Capability gap', 'Why NOYA benefits', 'Improves / replaces', 'Price', 'Data / privacy', 'Integration effort', 'Expected benefit', 'Evidence'].every((x) => t.includes(x)) && /Not verified/.test(t));
+  await page.locator('[data-scout][data-to="APPROVED_BY_ADAM"]').click(); await page.waitForTimeout(400);
+  const d = last(calls, 'hq_tool_scout_decide');
+  check('Approve records the decision via hq_tool_scout_decide (nothing bought)', d.p_decision === 'APPROVED_BY_ADAM' && d.p_id === uid(950) && /Nothing was bought or connected/.test(await page.locator('.banner').innerText().catch(() => '')));
+  check('No uncaught page errors on System / Admin', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
+// 7d. Partnership agreements: eight questions, verification, term-sheet preparation, status rules.
+{
+  const { browser, page, errors, calls } = await open({ hash: 'partners' });
+  await page.waitForSelector('.pa-row', { timeout: 8000 }).catch(() => {});
+  check('Partnerships lists agreements with multipliers first', (await page.locator('.pa-row .sm4-name').allInnerTexts())[0]?.startsWith('Example Agency'));
+  await page.locator(`[data-pa-open="${uid(970)}"]`).click(); await page.waitForTimeout(100);
+  let t = await mainText(page);
+  check('An agreement shows the eight partnership questions and NON-EXCLUSIVE default', ['What they control', 'What NOYA controls', 'What they can refer', 'What NOYA can refer', 'First project to test', 'How money works', 'Conflict', 'Agreement required'].every((x) => t.includes(x)) && /Non-exclusive \(default\)/.test(t) && /To agree; never assumed/.test(t));
+  await page.locator(`[data-pa-sheet="${uid(970)}"]`).click(); await page.waitForTimeout(400);
+  check('Prepare term sheet calls hq_prepare_term_sheet for that agreement', last(calls, 'hq_prepare_term_sheet').p_id === uid(970));
+  await page.locator(`[data-pa-open="${uid(971)}"]`).click(); await page.waitForTimeout(100);
+  t = await mainText(page);
+  check('A prepared term sheet is a labelled draft; verification shows claimed vs verified', /Not legal advice\. Not binding/.test(t) && /Claimed not verified/.test(t));
+  const before = calls.filter((c) => c.fn === 'hq_partnership_status').length;
+  await page.selectOption(`[data-pa-status="${uid(971)}"]`, 'SIGNED'); await page.locator(`[data-pa-save="${uid(971)}"]`).click(); await page.waitForTimeout(200);
+  check('Marking SIGNED without a note is blocked (no call)', calls.filter((c) => c.fn === 'hq_partnership_status').length === before);
+  await page.selectOption(`[data-pa-status="${uid(971)}"]`, 'LEGAL_REVIEW'); await page.locator(`[data-pa-save="${uid(971)}"]`).click(); await page.waitForTimeout(400);
+  check('Status change records via hq_partnership_status', last(calls, 'hq_partnership_status').p_status === 'LEGAL_REVIEW');
+  check('No uncaught page errors on Partnerships', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
+// 7e. Agents lives under More; its deep link still works and highlights it there.
+{
+  const { browser, page, errors } = await open({ hash: 'agents' });
+  await page.waitForTimeout(1500);
+  check('Agents opens from More (expanded, item active), not from the primary navigation', await page.locator('.nav-group .nav-item.active[data-tab="agents"]').count() === 1 && await page.locator('.nav-primary [data-tab="agents"]').count() === 0);
+  check('No uncaught page errors on Agents', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
 // 8. Mobile (390 px): every V4 screen fits without horizontal scroll; bottom navigation has five targets.
