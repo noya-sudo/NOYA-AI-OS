@@ -48,7 +48,7 @@ studio/templates.mjs              A4 page and block templates; cover variants na
 studio/brand/brand.css            navy #061422, off-white #F7F7F7, hairlines; Cormorant Garamond + Jost (local, OFL)
 studio/brand/images.json          NOYA's approved photo library (Drive IDs, subjects, never-list); photos cached in brand/images/
                                   (not committed: the repository is public)
-studio/brand/logo.svg             the central logo (not yet supplied; the typeset NOYA wordmark is used until it is)
+studio/brand/logo.svg             the central logo (vector trace of the NOYA key emblem and wordmark, Nov 2026)
 studio/render.mjs                 JSON -> HTML -> PDF (Chromium); pages paginate themselves; fails on overflow or missing fonts
 studio/build.mjs                  case -> stage documents -> PDFs (+ an internal pack when a case has several internal documents),
                                   then the reviewer on every client document (studio/out/<slug>.review.json)

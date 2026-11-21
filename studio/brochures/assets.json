@@ -1,0 +1,227 @@
+{
+  "note": "Asset register for the NOYA brochure collection. Every photo printed in a brochure must be listed here. Status: NOYA CONTENT (NOYA-branded props in frame; photographer and releases not documented), APPROVAL REQUIRED (already published in NOYA's 2026 brochures but its photographer or licence is not documented; prints, and is listed in the QC report until Adam confirms the right to use it), EXCLUDED (third-party material; the build refuses it). Files are git-ignored (public repository); each 'source' names the original brochure page it was extracted from (pdfimages), so the set can be rebuilt. Evidence audit (21 Nov 2026): no photographer, shoot, release or stock licence is documented for any NOYA image; the Drive website library (_web) is approved by Adam but its rights are unverified too.",
+  "logo": {
+    "file": "studio/brand/logo.svg",
+    "source": "Vector trace of the NOYA key emblem and wordmark embedded in NOYA_Concierge_Brochure.pdf (page 1 alpha mask)",
+    "status": "CLEARED"
+  },
+  "images": {
+    "yacht-tray-tall": {
+      "source": "Concierge Brochure p1 (cover)",
+      "px": "1062x1887",
+      "subject": "NOYA towels and a tray with champagne on a yacht deck, Red Sea",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot (NOYA-branded towels)",
+      "note": "NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "yacht-tray-wide": {
+      "source": "Brands & Productions p6",
+      "px": "1440x960",
+      "subject": "NOYA cushions and tray on a yacht deck",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot",
+      "note": "NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "beach-dinner": {
+      "source": "Brands & Productions p8 / Corporate p6",
+      "px": "1440x960",
+      "subject": "Long table on the sand with NOYA cushions",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot (NOYA-branded cushions)",
+      "note": "Not to be captioned as a client event unless verified. NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "robe-pool": {
+      "source": "Brands & Productions p9",
+      "px": "1995x1330",
+      "subject": "Guest in a NOYA robe overlooking a pool and the sea",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot (NOYA robe)",
+      "note": "NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "robes-two": {
+      "source": "Concierge Brochure p5",
+      "px": "1080x720",
+      "subject": "Two guests in NOYA robes at an infinity pool",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot (NOYA robes)",
+      "note": "NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "towels-daybed": {
+      "source": "Concierge Brochure p5",
+      "px": "1080x720",
+      "subject": "NOYA towels and a tray on a poolside daybed",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot",
+      "note": "NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "champagne-car": {
+      "source": "Brands & Productions p11 / Corporate p10",
+      "px": "1200x1800",
+      "subject": "Two glasses raised in a chauffeured car with a NOYA seat cover",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot (NOYA-branded seat)",
+      "note": "NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "car-headrest": {
+      "source": "Corporate p4",
+      "px": "615x922",
+      "subject": "Rear cabin of a chauffeured car with the NOYA screen on the headrest",
+      "status": "NOYA CONTENT",
+      "provenance": "NOYA brand shoot",
+      "note": "Small or half-page slots only (615 px wide). NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+    },
+    "pool-palm": {
+      "source": "Concierge Brochure p5",
+      "px": "720x1080",
+      "subject": "Long pool lined with palms and daybeds",
+      "status": "EXCLUDED",
+      "provenance": "Unknown; likely a partner property's own photography",
+      "note": "Provenance unknown; likely partner property photography. Not used."
+    },
+    "villa-loungers": {
+      "source": "Concierge Brochure p6",
+      "px": "3181x2122",
+      "subject": "Infinity pool loungers above the Aegean (Mykonos style villa)",
+      "status": "EXCLUDED",
+      "provenance": "Unknown; likely villa partner marketing photography",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "villa-hillside": {
+      "source": "Concierge Brochure p6",
+      "px": "1138x640",
+      "subject": "Hillside villa with pool, Cyclades",
+      "status": "EXCLUDED",
+      "provenance": "Unknown; likely villa partner marketing photography",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "villa-stone": {
+      "source": "Concierge Brochure p6",
+      "px": "900x600",
+      "subject": "Stone villa pool facing the sea",
+      "status": "EXCLUDED",
+      "provenance": "Unknown",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "villa-interior": {
+      "source": "Concierge Brochure p6",
+      "px": "900x600",
+      "subject": "Villa bedroom with sea view",
+      "status": "EXCLUDED",
+      "provenance": "Unknown",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "villa-aerial": {
+      "source": "Concierge Brochure p6",
+      "px": "640x1138",
+      "subject": "Aerial view of a villa pool",
+      "status": "EXCLUDED",
+      "provenance": "Unknown",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "villa-terrace": {
+      "source": "Concierge Brochure p6",
+      "px": "1052x1591",
+      "subject": "Covered villa terrace facing the sea",
+      "status": "EXCLUDED",
+      "provenance": "Unknown",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "villa-dusk": {
+      "source": "Concierge Brochure p6",
+      "px": "963x640",
+      "subject": "Villa and pool lit at dusk",
+      "status": "EXCLUDED",
+      "provenance": "Unknown",
+      "note": "Matches a villa photo folder owned by an outside villa agency; no licence found (evidence audit 21 Nov 2026)."
+    },
+    "chauffeur-arrival": {
+      "source": "Concierge Brochure p6",
+      "px": "917x675",
+      "subject": "Chauffeur opening a car door for a guest",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown; stock-like"
+    },
+    "yacht-dining": {
+      "source": "Concierge Brochure p6",
+      "px": "574x391",
+      "subject": "Table on a yacht with a superyacht offshore",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown",
+      "note": "Low resolution: small slots only."
+    },
+    "saqqara-night": {
+      "source": "Concierge Brochure p7",
+      "px": "638x526",
+      "subject": "Step Pyramid of Djoser lit for an evening event",
+      "status": "EXCLUDED",
+      "note": "Appears to show a third party's event; using it would imply NOYA produced it."
+    },
+    "hotel-arrival": {
+      "source": "Corporate p1 / Private Desk p1",
+      "px": "960x1440",
+      "subject": "Mercedes V-Class at a London hotel entrance, doorman",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown; hotel and vehicle registration recognisable",
+      "note": "Confirm it is NOYA's own shoot or licensed; the hotel is identifiable, so no association may be implied."
+    },
+    "car-night": {
+      "source": "Concierge Brochure p2 / Private Desk p2",
+      "px": "960x1707",
+      "subject": "Black executive car at night",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown"
+    },
+    "car-street": {
+      "source": "Corporate p2",
+      "px": "1062x1402",
+      "subject": "Black saloon outside a modern building",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown"
+    },
+    "pyramid-woman": {
+      "source": "Brands & Productions p1 (cover)",
+      "px": "1020x1394",
+      "subject": "Woman in white linen beside the Pyramid of Khafre and Sphinx enclosure, Giza",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown; possibly creator content",
+      "note": "If this is a creator's image, written usage permission is required."
+    },
+    "shoot-villa": {
+      "source": "Brands & Productions p3",
+      "px": "1210x1613",
+      "subject": "Camera monitor framing a villa pool during a shoot",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Behind-the-scenes; confirm it is a NOYA-coordinated shoot before any caption implies so"
+    },
+    "shoot-yacht": {
+      "source": "Brands & Productions p10",
+      "px": "972x1728",
+      "subject": "Photographer shooting models on a yacht bow, Red Sea",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Behind-the-scenes; model releases unknown"
+    },
+    "terrace-sea": {
+      "source": "Brands & Productions p9",
+      "px": "1150x714",
+      "subject": "Two chairs on a terrace above a pine-fringed bay",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown"
+    },
+    "pyramids-camels": {
+      "source": "Concierge Brochure p3",
+      "px": "587x417",
+      "subject": "Giza pyramids with a camel train",
+      "status": "APPROVAL REQUIRED",
+      "provenance": "Unknown; stock-like",
+      "note": "Low resolution: small slots only. Replace with NOYA website library photo pyramids-khufu-05 (Drive 1MwwAJ1hpuo7qOaN79SEUu74tFeEHawGa)."
+    }
+  },
+  "excluded_from_collection": {
+    "dior-giza-show": "Dior Men's show at the Pyramids (Brands & Productions p5): third-party campaign; no usage rights or permission. Removed.",
+    "jacquemus-nile": "Jacquemus Nile campaign (Brands & Productions p5): third-party campaign; no usage rights or permission. Removed.",
+    "egypt-drone-show": "Concierge Brochure p10 background: a third party's drone show and crowd. Removed.",
+    "emirates-cabin": "Private Desk p4 strip: shows Emirates branding, implies an airline relationship. Removed.",
+    "egypt-collages": "Brands & Productions p4 and Corporate p5 grids: low-resolution collages of unknown provenance. Not used."
+  },
+  "replace_with_website_library": "studio/brand/images.json lists NOYA's website photos (Drive 'Noya Website/_web'), already cleared. This environment cannot download from Drive, so the Egypt pages use typography and the few cleared photos above. Final pass: swap in pyramids-khufu-14 (terrace dinner facing Khafre), grand-egyptian-museum-04, v-class-pyramids, north-coast-villa-02 and el-gouna-03."
+}
