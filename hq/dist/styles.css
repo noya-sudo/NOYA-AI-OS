@@ -834,6 +834,7 @@ table.sc td, table.sc th { white-space: nowrap; }
 .ca4.k-decide { border-color: var(--navy); box-shadow: inset 3px 0 0 var(--navy); }
 .ca4.k-fix { box-shadow: inset 3px 0 0 var(--warn); }
 .ca4.k-call, .ca4.k-reply { box-shadow: inset 3px 0 0 var(--ok); }
+.ca4.k-enquiry { box-shadow: inset 3px 0 0 var(--info); border-color: var(--info); }
 .ca4-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .ca4 .kind { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .ca4 h4 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }

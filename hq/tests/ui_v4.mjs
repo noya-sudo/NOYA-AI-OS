@@ -24,6 +24,7 @@ export const FX = {
       { id: uid(1), kind: 'CALL', who: 'Test Person · Example Lodge', what_happened: 'Invited a call.', why: 'Preferred-stay partner.', todo: 'Call on the business mobile.', button_label: 'Call', button_url: 'tel:+10000000000', status: 'OPEN', due_on: day(-1), company_id: uid(501), opportunity_id: uid(101), source: 'test' },
       { id: uid(2), kind: 'DECIDE', who: 'Example Charter · option A or B', what_happened: 'Two options prepared.', why: 'Commits a client budget.', todo: 'Choose A or B.', button_label: null, button_url: null, status: 'OPEN', due_on: null, company_id: null, opportunity_id: null, source: 'test' },
       { id: uid(3), kind: 'SEND', who: 'Test Person · Example Agency', what_happened: 'Draft ready in Gmail.', why: 'Warm thread.', todo: 'Send the draft.', button_label: 'Open draft', button_url: 'https://mail.google.com/mail/u/0/#drafts', status: 'OPEN', due_on: day(2), company_id: uid(502), opportunity_id: uid(102), source: 'test' },
+      { id: null, kind: 'ENQUIRY', who: 'Example · Private Concierge Enquiry', what_happened: 'Website enquiry NOYA-TEST01 on 21 Nov: Cairo & Giza, from 10 Dec, 2 guests', why: 'Inbound and qualified by the website.', todo: 'Reply personally within 24 hours', button_label: 'Find in Gmail', button_url: 'https://mail.google.com/mail/u/0/#search/NOYA-TEST01', status: 'OPEN', source: 'website', company_id: null, opportunity_id: uid(109) },
       { id: null, kind: 'REPLY', who: 'Example Club', what_happened: 'They wrote last on 20 Nov.', why: 'A reply is waiting.', todo: 'Reply in Gmail', button_label: 'Open the thread', button_url: 'https://mail.google.com/mail/u/0/#inbox', status: 'OPEN', source: 'gmail', company_id: uid(503), opportunity_id: null },
     ], actions_more: 0,
     live: [{ ...opp(1, 'MEETING'), decision_maker: 'Test Person 1', last_interaction: now(), prepared_docs: 2, action_open: true }, { ...opp(2, 'ACTIVE_CONVERSATION'), decision_maker: 'Test Person 2' }],
@@ -115,6 +116,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('Today shows deadlines, waiting, this week, prepared-not-sent and blockers', ['Deadlines', 'Waiting on others', 'This week', 'Prepared, not sent', 'Blockers', '37 follow-ups due'].every((x) => t.includes(x)));
   check('Today: overdue items are marked late', await page.locator('.due.late, .dl-row.late').count() >= 2);
   check('Today: the gate shows cold email held', /Cold email held/i.test(t));
+  check('Today: a new website enquiry appears as a New enquiry card', /New enquiry/.test(t) && /NOYA-TEST01/.test(t));
   check('Address follows the screen (#today deep link)', (await page.evaluate(() => location.hash)) === '#today');
   check('Primary navigation has the seven V4 destinations', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Opportunities|Outreach|Streams|Relationships|Projects|Agents');
   // Done → audited hq_ceo_action, then only hq_today is re-read.

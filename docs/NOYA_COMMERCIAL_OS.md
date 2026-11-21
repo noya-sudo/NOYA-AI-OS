@@ -2565,3 +2565,70 @@ A new priority Egypt vertical, run in parallel with everything else. It never re
 - Client bookings. Gmail is reconciled before any booking action. Never send fresh supplier enquiries where suppliers have already replied: select from the replies and close the rest. Where a recorded decision and a new instruction conflict, surface the conflict to Adam before acting.
 - Cold email stays held until SPF and DKIM genuinely pass the live DNS check; Adam fixes DNS directly.
 - Draft date wording is kept current before a draft is surfaced for sending.
+
+## HQ V4 and operating mode (21 Nov 2026)
+
+Supersedes the 20 Nov "no additional research or new verticals" rule. Everything else in "Operating corrections (20 Nov 2026)" stands.
+
+**Priority.** Warm actions outrank cold discovery in Adam's personal queue. The agents continue controlled, high-quality discovery across all NOYA commercial streams in the background at all times. New accounts enter the CRM silently, one route each. They reach Adam only as qualified opportunities (PROJECT READY and above) or decisions. Discovery volume is never reported as progress.
+
+**HQ navigation.** Today, Opportunities, Outreach, Streams, Relationships, Projects, Agents. Every earlier screen stays under More: Approval desk, Dashboard (classic), Studio, Club, Operations and all records. Nothing was removed.
+
+**Fast reads.** The four new screens read small server-side RPCs instead of the 1–4 MB dashboard reads:
+
+| Screen | RPC |
+|---|---|
+| Today | `hq_today` |
+| Opportunities | `hq_opportunities` |
+| Streams | `hq_streams` |
+| Outreach | `hq_email_summary` and `hq_email_routes` |
+
+- Payloads are 0.3–44 KB, and all five reads run in about 0.25 s together (measured 21 Nov).
+- Filters, search and paging run on the server.
+- Every list has a loading state, an empty state with a way out, and an error state with Retry.
+- The only write on these screens is `hq_ceo_action`, which is audited. Nothing sends, approves or spends.
+
+**Today** (`ceo_actions` plus derived items) shows:
+- what needs Adam: decisions, calls, sends, forms and fixes;
+- unanswered website enquiries and replies waiting;
+- live opportunities;
+- deadlines in the next 7 days (sourced dates only);
+- items waiting on others;
+- the week's outcomes;
+- prepared-but-unsent work;
+- streams to watch and blockers.
+
+The daily check curates `ceo_actions` from Gmail truth: DONE when sent, WAITING when the next move is theirs, at most 7 open.
+
+**Streams.** The 36 canonical streams (`commercial_streams`, four pillars) are tracked as separate businesses. For each stream the system tracks:
+- universe, project ready, contacted, in conversation, meeting, proposal and won;
+- replies in the last 30 days;
+- revenue, only as recorded;
+- contact gaps;
+- the next action and the top three accounts.
+
+Seasonal windows appear only when sourced.
+
+**Marketing OS → CRM.** Website enquiries land in `website_enquiries`:
+- The intake matches an existing contact or company and creates one opportunity, with attribution.
+- Test submissions are archived.
+- Unanswered enquiries appear on Today.
+- The Marketing OS repository stays private and separate. The only integration point is the database intake.
+
+**Unauthenticated batch (21 Nov).** About 50 drafts were sent manually from Gmail while SPF and DKIM still fail.
+- They are logged in the CRM and tracked as their own cohort, never as the clean cohort or a benchmark.
+- Follow-ups to that batch are cold email and stay held until SPF and DKIM pass.
+- The cold-email gate is unchanged.
+
+**Checks.** `supabase/tests/hq_v4_checks.sql` runs in the daily check. It is read-only and covers:
+- stream mapping;
+- one primary route per company;
+- canonical route states;
+- route cache freshness;
+- grants (anon none; authenticated limited to the reads and `hq_ceo_action`);
+- RLS;
+- stale READY records after a send.
+
+The UI suites `hq/tests/ui_v4.mjs` and `hq/tests/ui_resilience.mjs` run in `npm test` with synthetic fixtures.
+
+**Access.** HQ is gated by `hq_admins` (`hq_admin_email()` raises "not authorised" for anyone else). RLS is on all new tables, and internal functions are revoked from authenticated users. The schema lives in `supabase/migrations`.
