@@ -38,11 +38,13 @@ function noteErr(key, e) {
 // HQ V3 (Adam, 9 Oct): six destinations — one screen, one job. Everything that existed before stays reachable under More,
 // unchanged; nothing was deleted. Agents' old floor, email desk, radar and feed live under More → Agents & intelligence.
 // Studio joined the primary navigation on 19 Oct (Destination Egypt mission): it is operational, so it is no longer under More.
-const PRIMARY = [['dashboard', 'Dashboard'], ['agents', 'Agents'], ['desk', 'Outreach'], ['studio', 'Studio'], ['relations', 'Relationships'], ['club', 'Club'], ['ops', 'Operations']];
+// HQ V4 (21 Nov 2026): the CEO control centre. Seven destinations; every earlier screen stays reachable under More, unchanged.
+const PRIMARY = [['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams'], ['relations', 'Relationships'], ['projects', 'Projects'], ['agents', 'Agents']];
 const MORE = [
+  ['Workspaces', [['desk', 'Approval desk'], ['dashboard', 'Dashboard (classic)'], ['studio', 'Studio'], ['club', 'Club'], ['ops', 'Operations']]],
   ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['intelligence', 'Market intel'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
   ['Sales', [['overview', 'Command (classic)'], ['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach (classic)'], ['linkedin', 'LinkedIn'], ['website', 'Website leads'], ['partners', 'Partnerships'], ['events', 'Events']]],
-  ['Records', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts'], ['pipeline', 'Pipeline'], ['projects', 'Projects'], ['tasks', 'Tasks']]],
+  ['Records', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts'], ['pipeline', 'Pipeline'], ['tasks', 'Tasks']]],
   ['Admin', [['reports', 'Reports'], ['finance', 'Revenue & finance'], ['costs', 'System costs'], ['system', 'System health'], ['help', 'Help & playbook']]],
 ];
 const NAV = [['HQ', PRIMARY], ...MORE];
@@ -108,7 +110,9 @@ const ANGLE = {
 const tip = (k) => (HELP[k] ? ` title="${esc(HELP[k])}"` : '');
 
 const state = {
-  session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'dashboard', loading: false,
+  session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'today', loading: false,
+  today: null, opps: null, streams: null, mail: null, routes: null, seq: {}, actNote: null, refocus: null, typeT: null, streamOpen: null, streamPillar: '',
+  oppF: { stage: 'PROJECT_READY_PLUS', stream: '', rel: '', q: '', offset: 0 }, routeF: { filter: 'ACTIONABLE', stream: '', q: '', offset: 0 },
   desk: null, ops: null, directors: null, club: null, busy: {}, dirKey: null, dirDetail: {}, dirSec: {}, more: false, feedAll: false, feedDir: '',
   deskTab: 'TOP5', deskCh: 'EMAIL', deskDir: '', deskProj: '', deskMore: null, ceo: null, net: null, deskPage: 0, deskOpen: {}, deskSrc: {}, relTab: 'IMPORTANT', clubTab: 'PRIVATE',
   modal: null, drawer: null, timeline: {}, q: '', queueAll: false, queueP3: false, menu: false,
@@ -220,6 +224,8 @@ async function load(silent = false, scope = 'full') {
   state.inflight = true; state.inflightAt = Date.now();
   try {
     if (!silent) { state.loading = true; render(); }
+    // The screen Adam is on reads first (small server-side read), so it paints before the heavy waves start.
+    if (LIGHT_TABS.has(state.tab) && scope !== 'desk') { await loadTab(state.tab, true); state.loading = false; render(); }
     if (scope === 'full' || scope === 'light') { if (!state.advisorSeen) { state.advisorSeen = true; rpcT('hq_advisor_seen'); } }
     for (const wave of WAVES[scope]()) {
       // All-settled: every read in a wave ends (data, error or timeout); one failure never holds back or discards the others.
@@ -404,6 +410,8 @@ function renderPasswordChange(forced) {
 function navBadge(key) { try { return navBadgeInner(key); } catch (e) { noteErr('nav', e); return ''; } }
 function navBadgeInner(key) {
   const ov = state.ov; const d = state.data;
+  if (key === 'today' && state.today) { const n = (state.today.actions || []).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
+  if (key === 'mail' && state.desk) { const n = state.desk.counts.needs_review.total; return n ? `<span class="badge">${n}</span>` : ''; }
   if (key === 'dashboard' && d) { const n = todayItems(d).count; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'desk' && state.desk) { const n = state.desk.counts.needs_review.total; return n ? `<span class="badge">${n}</span>` : ''; }
   if (key === 'relations') key = 'relationships';
@@ -413,7 +421,7 @@ function navBadgeInner(key) {
   if (key === 'linkedin' && ov) { const n = ov.actions.filter((a) => a.kind === 'LINKEDIN').length; return n ? `<span class="badge">${n}</span>` : ''; }
   if (key === 'inbox' && d) { const n = repliesForAdam(d).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'website' && ov) { const n = ov.website.filter((w) => w.status === 'NEW').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
-  if (key === 'finance' && state.ins) { const n = (state.ins.finance.records || []).filter((r) => r.status === 'OVERDUE').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
+  if (key === 'finance' && state.ins) { const n = (state.ins.finance?.records || []).filter((r) => r.status === 'OVERDUE').length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   if (key === 'system' && ov) { const n = ov.system.failures.length + ov.system.signals.filter((s) => !s.ok).length; return n ? `<span class="badge hot">${n}</span>` : ''; }
   return '';
 }
@@ -452,6 +460,7 @@ function renderInner() {
   if (mustChangePassword()) return renderPasswordChange(true);
   if (state.modal === 'password') return renderPasswordChange(false);
   const d = state.data; const live = state.ov || d; const view = VIEWS[state.tab];
+  const act = document.activeElement; const keep = act && act.id && /^(INPUT|TEXTAREA)$/.test(act.tagName) ? { id: act.id, s: act.selectionStart, e: act.selectionEnd } : null;
   // A failed refresh of data already on screen: say the figures may be out of date (sections without data show their own state).
   const staleErr = Object.keys(state.errors).some((k) => k !== 'main' && k !== 'lastAction' && (k === 'data' ? state.data : state[k]) != null);
   $('#app').innerHTML = `
@@ -466,7 +475,7 @@ function renderInner() {
         <div class="topbar"><div class="mbrand">NOYA</div>
           <div class="search"><input id="q" type="search" placeholder="Search people, companies, markets, tasks…" value="${esc(state.q)}" autocomplete="off">${state.q.trim().length >= 2 ? searchResults(state.q) : ''}</div>
           <div class="meta">
-            <span class="live">${live ? `Live · ${esc(fmtDate(live.generated_at))} Cairo` : state.loading ? 'Loading…' : ''}</span>
+            <span class="live">${live ? `Live · ${esc(fmtDate(live.generated_at))} Cairo` : state.today ? `Live · ${esc(fmtDate(state.today.generated_at))} Cairo` : state.loading ? 'Loading…' : ''}</span>
             <button class="btn small" id="quick" title="Quick actions">+ New</button>
             <button class="btn small" id="refresh">Refresh</button>
             <button class="btn small" id="menu" title="Account">⋯</button>
@@ -476,18 +485,24 @@ function renderInner() {
           ${state.notice ? `<div class="banner ${state.notice.err ? 'err' : 'ok'}">${esc(state.notice.text)}${state.notice.href ? ` <a href="${esc(state.notice.href)}" target="_blank" rel="noopener noreferrer">${esc(state.notice.label || 'Open')}</a>` : ''}</div>` : ''}
           ${state.errors.main && /not authorised/i.test(state.errors.main) ? '<div class="banner err">This account is not authorised for NOYA HQ.</div>' : ''}
           ${staleErr && d ? `<div class="unavail top"><span>Some figures may be out of date: the last refresh did not complete.</span><button class="btn small" data-retry="all">Retry</button></div>` : ''}
-          ${d && view ? safeView(view, d) : (state.loading || state.inflight) && !state.errors.main ? '<p class="muted">Loading HQ…</p>' : /not authorised/i.test(state.errors.main || '') ? '' : unavailable('all')}
+          ${LIGHT_TABS.has(state.tab) && view ? safeView(view, d) : d && view ? safeView(view, d) : (state.loading || state.inflight) && !state.errors.main ? '<p class="muted">Loading HQ…</p>' : /not authorised/i.test(state.errors.main || '') ? '' : unavailable('all')}
         </main>
       </div>
     </div>
     <nav class="bnav">
-      ${[['dashboard', 'Dashboard'], ['agents', 'Agents'], ['desk', 'Outreach'], ['relations', 'Relationships']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k || (k === 'agents' && state.tab === 'director') ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
-      <button id="bmenu" class="${state.menu || ['studio', 'club', 'ops', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
+      ${[['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
+      <button id="bmenu" class="${state.menu || ['relations', 'projects', 'agents', 'director', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
     </nav>
-    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['studio', 'Studio'], ['club', 'Club'], ['ops', 'Operations']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
-    ${state.drawer ? renderDrawer(state.drawer) : ''}
+    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['relations', 'Relationships'], ['projects', 'Projects'], ['agents', 'Agents']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
+    ${state.drawer ? safeDrawer(state.drawer) : ''}
     ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : state.modal.kind === 'fu' ? fuModal(state.modal) : renderAnyModal(state.modal)) : ''}`;
   bind();
+  syncHash();
+  if (state.refocus || keep) {
+    const el = document.getElementById(state.refocus || keep.id); const caret = keep && keep.id === el?.id ? [keep.s, keep.e] : null; state.refocus = null;
+    if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(caret ? caret[0] : n, caret ? caret[1] : n); } catch { /* not a text field */ } }
+  }
+  if (LIGHT_TABS.has(state.tab) && (TAB_KEYS[state.tab] || []).some((k) => !state[k] && !state.busy[k] && !state.errors[k])) ensureLight(state.tab);
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
 
@@ -2985,6 +3000,7 @@ function bind() {
   const on = (sel2, ev, fn) => document.querySelectorAll(sel2).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
   bindAgents(on);
   bindV3(on);
+  bindV4(on);
   on('[data-tab]', 'click', (b) => { state.tab = b.dataset.tab; state.notice = null; state.q = ''; state.menu = false; state.drawer = null; render(); window.scrollTo(0, 0); });
   on('[data-go]', 'click', (b, e) => {
     e.stopPropagation(); state.tab = b.dataset.go; if (b.dataset.otab) state.outreachTab = b.dataset.otab;
@@ -4927,6 +4943,11 @@ function viewOps() {
 // Retry one section (or everything) after a temporary failure.
 async function retry(k) {
   if (k === 'all') { Object.keys(state.errors).forEach((x) => { if (x !== 'lastAction') delete state.errors[x]; }); return load(false, 'full'); }
+  if (LIGHT_KEYS.includes(k)) {
+    delete state.errors[k]; render();
+    const fns = { today: ['hq_today', {}], opps: ['hq_opportunities', oppArgs()], streams: ['hq_streams', {}], mail: ['hq_email_summary', {}], routes: ['hq_email_routes', routeArgs()] };
+    return loadLight(k, fns[k][0], fns[k][1], true);
+  }
   if (k.startsWith('director:')) { const key = k.slice(9); delete state.errors[k]; delete state.dirDetail[key]; render(); return loadDirector(key, true); }
   if (k.startsWith('agent:')) { const key = k.slice(6); delete state.agentDetail[key]; render(); return loadAgent(key, true); }
   if (k === 'agents') { delete state.errors.agents; render(); return loadAgents(true); }
@@ -4990,7 +5011,300 @@ function bindV3(on) {
   on('[data-club-add]', 'click', async (b) => { await call('hq_club_person', { p_contact: b.dataset.contact, p_role: b.dataset.clubAdd, p_status: 'PROSPECT', p_note: null }, 'Added to the club structure. Nothing was sent.'); loadV3('club', 'hq_club', {}, true); });
 }
 
-const VIEWS = { dashboard: viewDashboard, today: viewDashboard, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, studio: viewStudio, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
+// ---------------------------------------------------------------- HQ V4 (21 Nov 2026): the CEO control centre
+// Today, Opportunities, Outreach and Streams read small server-side RPCs (hq_today, hq_opportunities, hq_streams, hq_email_summary,
+// hq_email_routes: 0.3–45 KB each, about 0.2 s together) instead of the 1–4 MB dashboard reads. They draw without waiting for those reads
+// and each has its own loading, empty and error state. The only write here is hq_ceo_action (audited): nothing sends, approves or spends.
+const LIGHT_TABS = new Set(['today', 'opps', 'mail', 'streams']);
+const LIGHT_KEYS = ['today', 'opps', 'streams', 'mail', 'routes'];
+const TAB_KEYS = { today: ['today'], opps: ['opps', 'streams'], streams: ['streams'], mail: ['mail', 'routes'] };
+const LIGHT_TIMEOUT_MS = 15000;
+const STAGE_ORDER = ['MARKET_UNIVERSE', 'QUALIFIED_ACCOUNT', 'CONTACT_READY', 'PROJECT_READY', 'OUTREACH_READY', 'CONTACTED', 'FOLLOW_UP', 'ACTIVE_CONVERSATION', 'MEETING', 'BRIEF', 'PROPOSAL', 'NEGOTIATION', 'WON', 'ACTIVE_PROJECT', 'COMPLETED', 'REPEAT'];
+const STAGE_V4 = { MARKET_UNIVERSE: 'Market universe', QUALIFIED_ACCOUNT: 'Qualified account', CONTACT_READY: 'Contact ready', PROJECT_READY: 'Project ready', OUTREACH_READY: 'Outreach ready', CONTACTED: 'Contacted', FOLLOW_UP: 'Follow-up', ACTIVE_CONVERSATION: 'In conversation', MEETING: 'Meeting', BRIEF: 'Brief', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', ACTIVE_PROJECT: 'Active project', COMPLETED: 'Completed', REPEAT: 'Repeat client', PARKED: 'Parked', LOST: 'Lost', ARCHIVED: 'Archived' };
+const ST4 = (s) => STAGE_V4[s] || sentence(String(s || '').replace(/_/g, ' '));
+const stageTier = (s) => { const i = STAGE_ORDER.indexOf(s); return s === 'PARKED' || s === 'LOST' || s === 'ARCHIVED' ? 'off' : i >= 12 ? 'won' : i >= 7 ? 'live' : i >= 5 ? 'touch' : 'early'; };
+const stagePill = (s) => `<span class="stg t-${stageTier(s)}">${esc(ST4(s))}</span>`;
+const PILLARS = [['PRIVATE_TALENT', 'Private clients & talent'], ['BRANDS_CULTURE', 'Brands & culture'], ['EVENTS_CORPORATE', 'Events & corporate'], ['TRAVEL_DISTRIBUTION', 'Travel & distribution']];
+const KIND4 = { CALL: 'Call', DECIDE: 'Decision', SEND: 'Send', FIX: 'Fix', FORM: 'Form', REPLY: 'Reply', MEETING: 'Meeting', PROPOSAL: 'Proposal', FOLLOW_UP: 'Follow-up', CLIENT_ISSUE: 'Client', NEXT_MOVE: 'Next move', COLD: 'Cold' };
+const OPP_STAGE_FILTERS = [['PROJECT_READY_PLUS', 'Project ready and above'], ['ACTIVE_CONVERSATION', 'In conversation'], ['MEETING', 'Meeting'], ['PROPOSAL', 'Proposal'], ['FOLLOW_UP', 'Follow-up'], ['CONTACTED', 'Contacted'], ['OUTREACH_READY', 'Outreach ready'], ['PROJECT_READY', 'Project ready'], ['ALL', 'Everything']];
+const REL_FILTERS = [['', 'Any relationship'], ['WARM', 'Warm'], ['PARTNER', 'Partner'], ['COLD', 'Cold']];
+const ROUTE_FILTERS = [['ACTIONABLE', 'Actionable', 'actionable'], ['REPLIES', 'Warm', 'replies'], ['FOLLOW_UPS', 'Follow-ups', 'follow_ups'], ['READY', 'Ready', 'ready'], ['PUBLIC_NAMED', 'Named email', 'public_named'], ['OFFICIAL_INBOX', 'Official inbox', 'official_inbox'], ['CLAY', 'Clay work email', 'clay'], ['MANAGEMENT_AGENT', 'Management / agent', 'management_agent'], ['INSTAGRAM', 'Instagram email', 'instagram'], ['NEEDS_RESEARCH', 'Needs research', 'needs_research'], ['SENT', 'Sent', 'sent']];
+const OPP_PAGE = 30; const ROUTE_PAGE = 25;
+const clip = (t, n) => { const s = String(t ?? ''); return s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s; };
+const projLabel = (p) => { const t = plainText(p || ''); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
+const safeHref = (u) => (/^(https:\/\/|tel:|mailto:)/i.test(String(u || '')) ? String(u) : '');
+const cairoLong = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' });
+const isPast = (d) => d && String(d).slice(0, 10) < todayKey();
+const skel = (n) => `<div class="skel">${'<div></div>'.repeat(n)}</div>`;
+const sec4 = (title, aside, body, cls = '') => `<section class="v4 ${cls}"><header class="v4h"><h2>${title}</h2>${aside || ''}</header>${body}</section>`;
+const head4 = (title, sub, aside = '') => `<div class="h4"><div><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div>${aside}</div>`;
+// The three states every list has: loading, error (Retry) and results — an empty result says so and offers a way out.
+const lightState = (key, what) => (state.errors[key] ? unavailable(key) : state.busy[key] || !state[key] ? `${skel(3)}<p class="sr">Loading ${esc(what)}…</p>` : '');
+
+async function loadLight(key, fn, args = {}, force = false) {
+  if (state.busy[key] && !force) return;
+  state.busy[key] = true; state.seq[key] = (state.seq[key] || 0) + 1; const seq = state.seq[key];
+  try {
+    const { data, error } = await rpcT(fn, args, LIGHT_TIMEOUT_MS);
+    if (seq !== state.seq[key]) return; // a newer request (a filter change) replaced this one
+    if (error) state.errors[key] = error.message; else if (data == null) state.errors[key] = `${fn}: empty response`; else { state[key] = data; delete state.errors[key]; }
+  } catch (e) { if (seq === state.seq[key]) noteErr(key, e); } finally { if (seq === state.seq[key]) state.busy[key] = false; render(); }
+}
+const oppArgs = () => ({ p_stage: state.oppF.stage, p_stream: state.oppF.stream || null, p_market: null, p_relationship: state.oppF.rel || null, p_q: state.oppF.q || null, p_limit: OPP_PAGE, p_offset: state.oppF.offset });
+const routeArgs = () => ({ p_filter: state.routeF.filter, p_stream: state.routeF.stream || null, p_q: state.routeF.q || null, p_limit: ROUTE_PAGE, p_offset: state.routeF.offset });
+function loadTab(tab, force = false) {
+  const need = (k) => force || (!state[k] && !state.errors[k] && !state.busy[k]);
+  const jobs = [];
+  if (tab === 'today' && need('today')) jobs.push(loadLight('today', 'hq_today', {}, force));
+  if (tab === 'opps' && need('opps')) jobs.push(loadLight('opps', 'hq_opportunities', oppArgs(), force));
+  if ((tab === 'opps' || tab === 'streams') && need('streams')) jobs.push(loadLight('streams', 'hq_streams', {}, force && tab === 'streams'));
+  if (tab === 'mail' && need('mail')) jobs.push(loadLight('mail', 'hq_email_summary', {}, force));
+  if (tab === 'mail' && need('routes')) jobs.push(loadLight('routes', 'hq_email_routes', routeArgs(), force));
+  return Promise.allSettled(jobs);
+}
+function ensureLight(tab) { if (LIGHT_TABS.has(tab)) setTimeout(() => loadTab(tab), 0); }
+const reloadOpps = () => loadLight('opps', 'hq_opportunities', oppArgs(), true);
+const reloadRoutes = () => loadLight('routes', 'hq_email_routes', routeArgs(), true);
+
+// ---- TODAY: what needs Adam, what is live, what is due, what is waiting.
+function viewToday() {
+  const T = state.today;
+  const gate = T ? `<span class="gate ${T.gate === 'PASS' ? 'ok' : 'hold'}">${T.gate === 'PASS' ? 'Cold email open' : 'Cold email held · SPF / DKIM'}</span>` : '';
+  if (!T) return head4('Today', esc(cairoLong())) + lightState('today', 'today');
+  const acts = T.actions || []; const W = T.week || {}; const R = T.ready_unsent || {};
+  return `${head4('Today', esc(cairoLong()), gate)}
+  ${T.bottleneck ? `<p class="lede">${esc(T.bottleneck)}</p>` : ''}
+  ${sec4('Needs you', `<span class="count">${acts.length}${T.actions_more ? ` · ${T.actions_more} more` : ''}</span>`,
+    acts.length ? `<div class="ca4s">${acts.map(actCard).join('')}</div>` : '<p class="empty4">Nothing needs you right now. Discovery continues in the background.</p>')}
+  <div class="cols4">
+    ${sec4('Live opportunities', '<button class="link4" data-tab="opps">All opportunities</button>',
+      (T.live || []).length ? `<div class="rows4">${T.live.map(liveRow).join('')}</div>` : '<p class="empty4">No live conversation yet.</p>')}
+    <div class="stack4">
+      ${sec4('Deadlines · next 7 days', '', deadlineList(T.deadlines))}
+      ${sec4('Waiting on others', '', waitingList(T.waiting))}
+    </div>
+  </div>
+  ${sec4('This week', W.as_of ? `<span class="count">as of ${esc(fmtDate(W.as_of))}</span>` : '',
+    `<div class="k4s">${[['Right people contacted', W.right_people_contacted], ['Replies', W.replies], ['Positive', W.positive], ['Meetings', W.meetings], ['Proposals', W.proposals], ['Won', W.wins]]
+      .map(([l, n]) => `<div class="k4"><b>${esc(n ?? 0)}</b><span>${l}</span></div>`).join('')}</div>${revenueLine(W.revenue)}`)}
+  <div class="cols4">
+    ${sec4('Prepared, not sent', '<button class="link4" data-tab="mail">Outreach</button>',
+      `<div class="k4s k3"><div class="k4"><b>${esc(R.warm ?? 0)}</b><span>Warm actions for you</span></div><div class="k4"><b>${esc(R.cold_held ?? 0)}</b><span>Cold first touches${R.gated ? ' · held' : ''}</span></div><div class="k4"><b>${esc(R.cold_gmail_drafts ?? 0)}</b><span>System drafts in Gmail</span></div></div>
+      ${(T.follow_ups_due || []).map((f) => `<p class="note4">${esc(f.n)} follow-up${Number(f.n) === 1 ? '' : 's'} due ${esc(shortDay(f.due_on))}. Check replies first; follow up only where there is a reason to.</p>`).join('')}`)}
+    ${sec4('Streams to watch', '<button class="link4" data-tab="streams">All streams</button>',
+      (T.streams || []).length ? `<div class="rows4">${T.streams.map((s) => `<div class="row4 tight" role="button" tabindex="0" data-stream-go="${esc(s.code)}"><div><div class="t4">${esc(s.label)}</div><div class="s4">${esc([s.live ? `${s.live} live` : '', s.warm ? `${s.warm} warm` : '', s.ready ? `${s.ready} ready` : '', s.season || ''].filter(Boolean).join(' · ') || '—')}</div></div></div>`).join('')}</div>` : '<p class="empty4">No stream activity yet.</p>')}
+  </div>
+  ${(T.blockers || []).length ? sec4('Blockers', '', T.blockers.map((b) => `<div class="blk4"><span class="dot4 ${b.kind === 'DELIVERABILITY' || b.kind === 'PROPOSAL_OVERDUE' ? 'warn' : ''}"></span><span>${esc(b.text)}</span></div>`).join('')) : ''}
+  <p class="foot4">Updated ${esc(fmtDate(T.generated_at))} Cairo. Nothing on this screen sends, approves or spends.</p>`;
+}
+function actCard(a) {
+  const href = safeHref(a.button_url);
+  const btn = href ? `<a class="btn small primary" href="${esc(href)}"${/^https:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}>${esc(a.button_label || 'Open')}</a>` : '';
+  const noting = !!a.id && state.actNote === a.id;
+  const done = a.id ? (a.kind === 'DECIDE'
+    ? `<button class="btn small" data-act-note="${esc(a.id)}">Record decision</button>`
+    : `<button class="btn small" data-ceo-act="${esc(a.id)}" data-to="DONE">Done</button><button class="btn small ghost" data-ceo-act="${esc(a.id)}" data-to="WAITING">Waiting on them</button>`) : '';
+  return `<article class="ca4 k-${esc(String(a.kind || '').toLowerCase())}">
+    <div class="ca4-top"><span class="kind">${esc(KIND4[a.kind] || sentence(a.kind))}</span>${a.due_on ? `<span class="due ${isPast(a.due_on) ? 'late' : ''}">due ${esc(shortDay(a.due_on))}</span>` : ''}</div>
+    <h4>${esc(a.who)}</h4>
+    ${a.what_happened ? `<p>${esc(a.what_happened)}</p>` : ''}
+    ${a.why ? `<p class="why">${esc(a.why)}</p>` : ''}
+    ${a.todo ? `<p class="todo">${esc(a.todo)}</p>` : ''}
+    ${noting ? `<div class="note-form"><textarea id="act-note" rows="2" placeholder="Your decision, in a few words (for example: B)"></textarea><div class="btn-row"><button class="btn small primary" data-ceo-act="${esc(a.id)}" data-to="DONE" data-with-note>Save decision</button><button class="btn small ghost" data-act-note="">Cancel</button></div><p class="why">Saving records your decision only. Nothing is sent; the agents prepare the next step for your approval.</p></div>` : ''}
+    <div class="btn-row">${btn}${noting ? '' : done}${a.opportunity_id ? `<button class="btn small ghost" data-lopp="${esc(a.opportunity_id)}">Record</button>` : ''}</div>
+  </article>`;
+}
+const liveRow = (o) => `<div class="row4" role="button" tabindex="0" data-lopp="${esc(o.id)}">
+  <div><div class="t4">${esc(o.company || '—')}</div><div class="s4">${esc([projLabel(o.project), o.decision_maker, o.stream_label].filter(Boolean).join(' · '))}</div>${o.next_action ? `<div class="n4">${esc(clip(o.next_action, 150))}</div>` : ''}</div>
+  <div class="r4">${stagePill(o.stage)}${o.next_action_due ? `<span class="due ${isPast(o.next_action_due) ? 'late' : ''}">${esc(shortDay(o.next_action_due))}</span>` : ''}</div></div>`;
+function deadlineList(list) {
+  if (!(list || []).length) return '<p class="empty4">No dated commitments in the next 7 days.</p>';
+  return `<div class="dl4">${list.map((x) => `<div class="dl-row ${isPast(x.due_on) ? 'late' : ''}"${x.opportunity_id ? ` role="button" tabindex="0" data-lopp="${esc(x.opportunity_id)}"` : ''}><span class="d">${esc(shortDay(x.due_on))}</span><span><b>${esc(x.what)}</b>${x.detail ? `<span class="s4">${esc(clip(x.detail, 120))}</span>` : ''}</span></div>`).join('')}</div>`;
+}
+function waitingList(list) {
+  if (!(list || []).length) return '<p class="empty4">Nothing outstanding from others.</p>';
+  return `<div class="dl4">${list.map((x) => `<div class="dl-row"><span class="d">${x.due_on ? esc(shortDay(x.due_on)) : '—'}</span><span><b>${esc(x.who)}</b>${x.waiting_on ? `<span class="s4">${esc(clip(x.waiting_on, 120))}</span>` : ''}</span><button class="btn small ghost" data-ceo-act="${esc(x.id)}" data-to="OPEN">Back to me</button></div>`).join('')}</div>`;
+}
+function revenueLine(rev) {
+  const r = (rev || []).filter((x) => x && x.currency);
+  return `<p class="note4">Revenue recorded this week: ${r.length ? r.map((x) => esc(money(x.amount ?? x.gross ?? x.total, x.currency))).join(' · ') : 'none'}. Only recorded revenue is shown; no estimate.</p>`;
+}
+
+// ---- OPPORTUNITIES: qualified projects, highest stage first, filtered on the server.
+function viewOpps() {
+  const O = state.opps; const F = state.oppF; const streams = state.streams?.streams || [];
+  const counts = O?.counts || {};
+  const sumFrom = (k) => STAGE_ORDER.slice(STAGE_ORDER.indexOf(k)).reduce((a, s) => a + (counts[s] || 0), 0);
+  const cnt = (k) => (!O ? '' : k === 'PROJECT_READY_PLUS' ? sumFrom('PROJECT_READY') : k === 'ALL' ? Object.values(counts).reduce((a, b) => a + b, 0) : (counts[k] || 0));
+  const filtered = F.stage !== 'PROJECT_READY_PLUS' || F.stream || F.rel || F.q;
+  const rows = O?.rows || [];
+  const body = !O || (state.busy.opps && !rows.length) ? lightState('opps', 'opportunities')
+    : state.errors.opps ? unavailable('opps')
+    : !rows.length ? `<div class="empty-box"><p>No opportunities match these filters.</p><div class="btn-row">${filtered ? '<button class="btn small" data-opp-clear>Clear filters</button>' : ''}${F.stage !== 'ALL' ? '<button class="btn small ghost" data-opp-stage="ALL">Search every stage</button>' : ''}</div></div>`
+    : `<div class="rows4 ${state.busy.opps ? 'dim' : ''}">${rows.map(oppRow).join('')}</div>${pager(O.total, F.offset, OPP_PAGE, 'opp')}`;
+  return `${head4('Opportunities', 'Qualified projects across the 36 commercial streams, highest stage first.')}
+  <div class="filters4">
+    <div class="chips">${OPP_STAGE_FILTERS.map(([k, l]) => `<button class="chip ${F.stage === k ? 'on' : ''}" data-opp-stage="${k}">${l}${O ? ` <span class="c">${cnt(k)}</span>` : ''}</button>`).join('')}</div>
+    <div class="frow">
+      <select data-opp-stream aria-label="Stream"><option value="">All streams</option>${PILLARS.map(([p, pl]) => `<optgroup label="${esc(pl)}">${streams.filter((s) => s.pillar === p).map((s) => `<option value="${esc(s.code)}" ${F.stream === s.code ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</optgroup>`).join('')}${F.stream && !streams.some((s) => s.code === F.stream) ? `<option value="${esc(F.stream)}" selected>${esc(F.stream)}</option>` : ''}</select>
+      <select data-opp-rel aria-label="Relationship">${REL_FILTERS.map(([k, l]) => `<option value="${k}" ${F.rel === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <input id="opp-q" type="search" placeholder="Company, person or project" value="${esc(F.qDraft ?? F.q)}" autocomplete="off" aria-label="Search opportunities">
+    </div>
+  </div>
+  ${O && !state.errors.opps ? `<p class="meta4">${esc(O.total)} ${Number(O.total) === 1 ? 'opportunity' : 'opportunities'}${O.missing_next ? ` · <span class="warn-t">${esc(O.missing_next)} contacted without a next action</span>` : ''}</p>` : ''}
+  ${body}`;
+}
+const oppRow = (o) => `<div class="row4" role="button" tabindex="0" data-lopp="${esc(o.id)}">
+  <div><div class="t4">${esc(o.company || '—')}${o.relationship === 'WARM' || o.relationship === 'PARTNER' ? ` <span class="tag4">${esc(sentence(o.relationship))}</span>` : ''}</div>
+    <div class="s4">${esc([projLabel(o.project), o.person ? `${o.person}${o.position ? `, ${o.position}` : ''}` : '', o.stream_label].filter(Boolean).join(' · '))}</div>
+    ${o.next_action ? `<div class="n4">${esc(clip(o.next_action, 160))}</div>` : ''}${o.blocker ? `<div class="n4 warn-t">${esc(clip(o.blocker, 120))}</div>` : ''}</div>
+  <div class="r4">${stagePill(o.stage)}${o.route ? `<span class="s4">${esc(o.route)}</span>` : ''}${o.next_action_due ? `<span class="due ${o.overdue ? 'late' : ''}">${esc(shortDay(o.next_action_due))}</span>` : ''}</div></div>`;
+function pager(total, offset, size, kind) {
+  const t = Number(total) || 0; if (t <= size) return '';
+  const from = offset + 1; const to = Math.min(offset + size, t);
+  return `<div class="pg4"><button class="btn small" data-page="${kind}" data-dir="-1" ${offset <= 0 ? 'disabled' : ''}>Previous</button><span>${from}–${to} of ${t}</span><button class="btn small" data-page="${kind}" data-dir="1" ${to >= t ? 'disabled' : ''}>Next</button></div>`;
+}
+
+// ---- STREAMS: the 36 commercial streams as distinct businesses, grouped by pillar.
+function viewStreams() {
+  const S4 = state.streams;
+  if (!S4) return head4('Commercial streams', 'Each stream is run as its own business: sourcing, qualification, outreach, follow-up and conversion.') + lightState('streams', 'streams');
+  const all = S4.streams || []; const pf = state.streamPillar;
+  const tot = (k) => all.reduce((a, s) => a + (Number(s[k]) || 0), 0);
+  const shown = pf ? all.filter((s) => s.pillar === pf) : all;
+  return `${head4('Commercial streams', 'Each stream is run as its own business: sourcing, qualification, outreach, follow-up and conversion.')}
+  <div class="k4s">${[['Universe', tot('universe')], ['Project ready', tot('project_ready')], ['Contacted', tot('contacted')], ['In conversation', tot('conversations')], ['Proposals', tot('proposals')], ['Won', tot('wins')]].map(([l, n]) => `<div class="k4"><b>${esc(n)}</b><span>${l}</span></div>`).join('')}</div>
+  <div class="chips"><button class="chip ${!pf ? 'on' : ''}" data-pillar="">All 4 pillars</button>${PILLARS.map(([p, l]) => `<button class="chip ${pf === p ? 'on' : ''}" data-pillar="${p}">${l}</button>`).join('')}</div>
+  ${PILLARS.filter(([p]) => !pf || pf === p).map(([p, l]) => {
+    const list = shown.filter((s) => s.pillar === p); if (!list.length) return '';
+    return sec4(l, `<span class="count">${list.length} streams</span>`, `<div class="sm4-head" aria-hidden="true"><span>Stream</span><span>Universe</span><span>Ready</span><span>Contacted</span><span>Talking</span><span>Proposal</span><span>Won</span></div>${list.map(streamRow).join('')}`);
+  }).join('')}
+  <p class="foot4">Counts come from CRM records; revenue only as recorded in finance. Seasonal windows appear only when sourced.</p>`;
+}
+function streamRow(s) {
+  const open = state.streamOpen === s.code;
+  const n = (v) => `<span class="${Number(v) ? '' : 'z'}">${esc(v ?? 0)}</span>`;
+  return `<div class="sm4 ${open ? 'open' : ''}">
+    <div class="sm4-row" role="button" tabindex="0" data-stream-open="${esc(s.code)}"><span class="sm4-name">${esc(s.label)}${Number(s.replies_30d) ? ` <span class="tag4">${esc(s.replies_30d)} replied</span>` : ''}</span>${n(s.universe)}${n(s.project_ready)}${n(s.contacted)}${n(s.conversations)}${n(s.proposals)}${n(s.wins)}</div>
+    ${open ? `<div class="sm4-body">
+      ${s.mission ? `<p class="why">${esc(s.mission)}</p>` : ''}
+      ${s.next_action ? `<p class="todo">${esc(clip(s.next_action, 220))}</p>` : ''}
+      <div class="sm4-facts">${[Number(s.meetings) ? `${s.meetings} meeting${Number(s.meetings) === 1 ? '' : 's'}` : '', Number(s.contact_gap) ? `${s.contact_gap} high-priority accounts still need a contact route` : '', (s.revenue || []).length ? `Recorded revenue: ${s.revenue.map((r) => money(r.amount, r.currency)).join(' · ')}` : '', s.season ? `Season: ${s.season.name}${s.season.starts_on ? ` from ${shortDay(s.season.starts_on)}` : ''} (${String(s.season.confidence || '').toLowerCase()})` : ''].filter(Boolean).map((t) => `<span>${esc(t)}</span>`).join('')}</div>
+      ${(s.top || []).length ? `<div class="rows4">${s.top.map((o) => `<div class="row4 tight" role="button" tabindex="0" data-lopp="${esc(o.id)}"><div><div class="t4">${esc(o.company || '—')}</div><div class="s4">${esc(projLabel(o.project))}</div></div><div class="r4">${stagePill(o.stage)}</div></div>`).join('')}</div>` : '<p class="empty4">No accounts in this stream yet: sourcing is the next step.</p>'}
+      <div class="btn-row"><button class="btn small" data-stream-go="${esc(s.code)}">Open opportunities</button><button class="btn small ghost" data-stream-mail="${esc(s.code)}">Contact routes</button></div>
+    </div>` : ''}
+  </div>`;
+}
+
+// ---- OUTREACH: one route per company, three states, gated cold email.
+function viewMail() {
+  const M4 = state.mail; const R4 = state.routes; const F = state.routeF; const streams = state.streams?.streams || [];
+  const gateOpen = (M4?.gate || state.today?.gate) === 'PASS';
+  const desk = state.desk?.counts?.needs_review?.total;
+  const rows = R4?.rows || [];
+  const body = !R4 || (state.busy.routes && !rows.length) ? lightState('routes', 'contact routes')
+    : state.errors.routes ? unavailable('routes')
+    : !rows.length ? `<div class="empty-box"><p>No contact routes match these filters.</p><div class="btn-row">${F.filter !== 'ACTIONABLE' || F.stream || F.q ? '<button class="btn small" data-route-reset>Show actionable routes</button>' : ''}<button class="btn small ghost" data-route-filter="NEEDS_RESEARCH">Accounts that need research</button></div></div>`
+    : `<div class="rows4 ${state.busy.routes ? 'dim' : ''}">${rows.map(routeRow).join('')}</div>${pager(R4.total, F.offset, ROUTE_PAGE, 'route')}`;
+  return `${head4('Outreach', 'One verified route per company. Every email is an unsent Gmail draft that you send yourself.')}
+  <div class="banner4 ${gateOpen ? 'ok' : 'hold'}">${gateOpen ? 'SPF and DKIM pass: cold first touches may be released in small, clean cohorts.' : 'Cold email is held until SPF and DKIM pass. Warm replies and follow-ups continue; nothing is sent automatically.'}</div>
+  ${desk ? `<div class="strip4"><span><b>${esc(desk)}</b> outreach item${Number(desk) === 1 ? '' : 's'} waiting for your review in the approval desk.</span><button class="btn small primary" data-tab="desk">Open approval desk</button></div>` : ''}
+  <div class="filters4">
+    <div class="chips">${ROUTE_FILTERS.map(([k, l, c]) => `<button class="chip ${F.filter === k ? 'on' : ''}" data-route-filter="${k}">${l}${M4 && M4[c] != null ? ` <span class="c">${esc(M4[c])}</span>` : ''}</button>`).join('')}</div>
+    <div class="frow">
+      <select data-route-stream aria-label="Stream"><option value="">All streams</option>${PILLARS.map(([p, pl]) => `<optgroup label="${esc(pl)}">${streams.filter((s) => s.pillar === p).map((s) => `<option value="${esc(s.code)}" ${F.stream === s.code ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</optgroup>`).join('')}</select>
+      <input id="route-q" type="search" placeholder="Company, person or email" value="${esc(F.qDraft ?? F.q)}" autocomplete="off" aria-label="Search contact routes">
+    </div>
+  </div>
+  ${state.errors.mail && !M4 ? `<div class="unavail"><span>Route counts are temporarily unavailable.</span><button class="btn small" data-retry="mail">Retry</button></div>` : ''}
+  ${R4 && !state.errors.routes ? `<p class="meta4">${esc(R4.total)} ${Number(R4.total) === 1 ? 'company' : 'companies'} · one route each${R4.computed_at ? ` · routes checked ${esc(fmtDate(R4.computed_at))}` : ''}</p>` : ''}
+  ${body}`;
+}
+const routeRow = (r) => `<div class="row4" role="button" tabindex="0" data-lopp="${esc(r.opportunity_id)}">
+  <div><div class="t4">${esc(r.company || '—')}${r.warm ? ' <span class="tag4">Warm</span>' : ''}${r.sent ? ' <span class="tag4 muted">Sent</span>' : ''}</div>
+    <div class="s4">${esc([r.person ? `${r.person}${r.position ? `, ${r.position}` : ''}` : '', r.stream].filter(Boolean).join(' · '))}</div>
+    ${r.email ? `<div class="s4 mono">${esc(r.email)}</div>` : ''}${r.next_action ? `<div class="n4">${esc(clip(r.next_action, 150))}</div>` : ''}</div>
+  <div class="r4"><span class="route ${/verified|named|published/i.test(r.label || '') ? 'good' : ''}">${esc(r.label || '—')}</span>${r.email ? `<a class="link4" href="https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.email)}" target="_blank" rel="noopener noreferrer" data-stop>Gmail history</a>` : ''}${r.next_action_due ? `<span class="due ${isPast(r.next_action_due) ? 'late' : ''}">${esc(shortDay(r.next_action_due))}</span>` : ''}</div></div>`;
+
+// ---- One opportunity, from the rows already on screen (no heavy read needed); the full record opens once the CRM data is loaded.
+function findLight(id) {
+  if (!id) return null;
+  const hit = (state.opps?.rows || []).find((x) => x.id === id) || (state.today?.live || []).find((x) => x.id === id);
+  if (hit) return hit;
+  const r = (state.routes?.rows || []).find((x) => x.opportunity_id === id);
+  if (r) return { id, company_id: r.company_id, company: r.company, person: r.person, position: r.position, route: r.label, next_action: r.next_action, next_action_due: r.next_action_due, stream_label: r.stream, status: r.status };
+  for (const s of state.streams?.streams || []) { const t = (s.top || []).find((x) => x.id === id); if (t) return { ...t, stream_label: s.label }; }
+  const a = (state.today?.actions || []).find((x) => x.opportunity_id === id);
+  return a ? { id, company_id: a.company_id, company: a.who, next_action: a.todo } : null;
+}
+function lightDrawer(id) {
+  const o = findLight(id) || {}; const full = state.data?.opportunities?.some((x) => x.id === id);
+  return drawerShell(`<h2>${esc(o.company || 'Opportunity')}</h2><div class="pills">${o.stage ? stagePill(o.stage) : o.status ? pill(sentence(o.status)) : ''}${o.stream_label ? pill(o.stream_label) : ''}${o.relationship ? pill(o.relationship) : ''}</div>`, `
+    <div class="grid2">
+      ${kv('Project', esc(projLabel(o.project) || '—'))}
+      ${kv('Decision maker', `${esc(o.person || o.decision_maker || '—')}${o.position ? `<div class="muted small">${esc(o.position)}</div>` : ''}`)}
+      ${kv('Route', esc(o.route || '—'))}
+      ${kv('Next date', o.next_action_due ? `<span class="${isPast(o.next_action_due) ? 'warn-t' : ''}">${esc(fmtDay(o.next_action_due))}</span>` : '—')}
+    </div>
+    ${o.why_now ? `<h3>Why now</h3><p>${esc(o.why_now)}</p>` : ''}
+    ${o.next_action ? `<h3>Next action</h3><p>${esc(o.next_action)}</p>` : ''}
+    ${o.blocker ? `<h3>Blocker</h3><p class="warn-t">${esc(o.blocker)}</p>` : ''}
+    <div class="btn-row">${full ? `<button class="btn small primary" data-open="opp" data-id="${esc(id)}">Full record and actions</button>` : `<span class="muted small">${state.data ? 'Full record not in the loaded CRM data.' : 'The full record opens once the CRM data has loaded.'}</span>`}${o.company_id && state.dir ? `<button class="btn small" data-open="company" data-id="${esc(o.company_id)}">Company</button>` : ''}</div>
+    <h3>History</h3>${timelineBlock('opportunity', id)}`);
+}
+function safeDrawer(dr) {
+  try { return dr.kind === 'lopp' ? lightDrawer(dr.id) : renderDrawer(dr); } catch (e) { noteErr('drawer', e); return drawerShell('<h2>Record</h2>', '<p class="muted">This record could not be displayed yet. Nothing was changed.</p>'); }
+}
+
+function bindV4(on) {
+  const go = (tab) => { state.tab = tab; state.drawer = null; state.menu = false; render(); window.scrollTo(0, 0); };
+  on('[data-lopp]', 'click', (b, e) => { if (e.target.closest('a,[data-stop]')) return; e.stopPropagation(); const id = b.dataset.lopp; if (!id) return; state.drawer = { kind: 'lopp', id }; render(); if (!state.timeline[`opportunity:${id}`]) loadTimeline('opportunity', id); });
+  on('[data-lopp],[data-stream-open],[data-stream-go]', 'keydown', (b, e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
+  on('[data-ceo-act]', 'click', async (b) => {
+    const note = b.dataset.withNote !== undefined ? ($('#act-note')?.value || '').trim() : null;
+    if (b.dataset.withNote !== undefined && !note) { const el = $('#act-note'); el?.setCustomValidity('Write your decision first.'); el?.reportValidity(); el?.addEventListener('input', () => el.setCustomValidity(''), { once: true }); return; }
+    b.disabled = true; state.actNote = null;
+    const to = b.dataset.to; const text = { DONE: note ? 'Decision recorded. Nothing was sent.' : 'Marked done. Nothing was sent.', WAITING: 'Moved to Waiting on others.', OPEN: 'Back in Needs you.' }[to] || 'Updated.';
+    // Audited write (hq_ceo_action), then only the small Today read is refreshed: never the heavy dashboard reads.
+    const { data, error } = await rpcT('hq_ceo_action', { p_id: b.dataset.ceoAct, p_action: to, p_note: note });
+    if (error) { state.notice = { err: true, text: friendly(error.message) }; state.errors.lastAction = `hq_ceo_action: ${error.message}`; }
+    else if (data && data.ok === false) state.notice = { err: true, text: explain(data) };
+    else state.notice = { err: false, text };
+    await loadLight('today', 'hq_today', {}, true);
+  });
+  on('[data-act-note]', 'click', (b) => { state.actNote = b.dataset.actNote || null; render(); if (state.actNote) $('#act-note')?.focus(); });
+  on('[data-stream-go]', 'click', (b, e) => { e.stopPropagation(); state.oppF = { stage: 'ALL', stream: b.dataset.streamGo, rel: '', q: '', offset: 0 }; go('opps'); reloadOpps(); });
+  on('[data-stream-mail]', 'click', (b, e) => { e.stopPropagation(); state.routeF = { filter: 'ACTIONABLE', stream: b.dataset.streamMail, q: '', offset: 0 }; go('mail'); loadTab('mail'); reloadRoutes(); });
+  on('[data-stream-open]', 'click', (b) => { state.streamOpen = state.streamOpen === b.dataset.streamOpen ? null : b.dataset.streamOpen; render(); });
+  on('[data-pillar]', 'click', (b) => { state.streamPillar = b.dataset.pillar || ''; render(); });
+  on('[data-opp-stage]', 'click', (b) => { state.oppF.stage = b.dataset.oppStage; state.oppF.offset = 0; render(); reloadOpps(); });
+  on('[data-opp-clear]', 'click', () => { clearTimeout(state.typeT); state.oppF = { stage: 'PROJECT_READY_PLUS', stream: '', rel: '', q: '', offset: 0 }; render(); reloadOpps(); });
+  on('select[data-opp-stream]', 'change', (el) => { state.oppF.stream = el.value; state.oppF.offset = 0; render(); reloadOpps(); });
+  on('select[data-opp-rel]', 'change', (el) => { state.oppF.rel = el.value; state.oppF.offset = 0; render(); reloadOpps(); });
+  on('[data-route-filter]', 'click', (b) => { state.routeF.filter = b.dataset.routeFilter; state.routeF.offset = 0; render(); reloadRoutes(); });
+  on('[data-route-reset]', 'click', () => { clearTimeout(state.typeT); state.routeF = { filter: 'ACTIONABLE', stream: '', q: '', offset: 0 }; render(); reloadRoutes(); });
+  on('select[data-route-stream]', 'change', (el) => { state.routeF.stream = el.value; state.routeF.offset = 0; render(); reloadRoutes(); });
+  on('[data-page]', 'click', (b) => {
+    const k = b.dataset.page; const dir = Number(b.dataset.dir);
+    if (k === 'opp') { state.oppF.offset = Math.max(0, state.oppF.offset + dir * OPP_PAGE); render(); reloadOpps(); }
+    if (k === 'route') { state.routeF.offset = Math.max(0, state.routeF.offset + dir * ROUTE_PAGE); render(); reloadRoutes(); }
+    window.scrollTo(0, 0);
+  });
+  // Search boxes: typing never loses focus; the server is asked 350 ms after the last key.
+  const typed = (id, F, reload) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener('input', () => {
+      F.qDraft = el.value; clearTimeout(state.typeT);
+      state.typeT = setTimeout(() => { const v = el.value.trim(); if (v === F.q) return; F.q = v; F.offset = 0; state.refocus = id; render(); reload(); }, 350);
+    });
+  };
+  typed('opp-q', state.oppF, reloadOpps);
+  typed('route-q', state.routeF, reloadRoutes);
+}
+
+// Deep links (21 Nov): hq.noyaconcierge.com/#opps opens Opportunities; the address follows the screen without adding history entries.
+function syncHash() { try { const h = `#${state.tab}`; if (location.hash !== h) history.replaceState(null, '', h); } catch { /* file:// or sandboxed */ } }
+const VIEWS = { dashboard: viewDashboard, today: viewToday, opps: viewOpps, mail: viewMail, streams: viewStreams, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, studio: viewStudio, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
   overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: () => revenuePanel() + viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
   intelligence: viewIntelligence, reports: viewReports, system: (d) => healthPanel() + viewSystem(d) + teamPanel(), help: viewHelp,
@@ -5023,6 +5337,7 @@ setInterval(() => {
 
 // Read-only diagnostics handle (the same reasons shown under More / Admin → System); used by the resilience tests.
 globalThis.__hq = { errors: () => ({ ...state.errors }) };
+{ const h = decodeURIComponent((location.hash || '').slice(1)); if (h && VIEWS[h] && h !== 'director' && h !== 'agent') state.tab = h; }
 window.addEventListener('error', (e) => noteErr('runtime', e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => noteErr('runtime', e.reason));
 initAuth();

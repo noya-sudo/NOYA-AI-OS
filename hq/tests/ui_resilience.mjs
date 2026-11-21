@@ -35,7 +35,8 @@ function session() {
   return { access_token: `${b64url({ alg: 'HS256', typ: 'JWT' })}.${b64url({ sub: user.id, email: user.email, role: 'authenticated', exp })}.sig`, token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: 'test-refresh', user };
 }
 // behave(fn, body) may return: undefined (default fixture), { hang: true }, { status, json }, or a JSON value.
-async function open({ viewport = { width: 1280, height: 860 }, behave = () => undefined, timeoutMs = 1500 } = {}) {
+// These checks cover the classic Dashboard (More → Dashboard), opened by its deep link; the V4 screens are covered in ui_v4.mjs.
+async function open({ viewport = { width: 1280, height: 860 }, behave = () => undefined, timeoutMs = 1500, hash = 'dashboard' } = {}) {
   const browser = await chromium.launch({ executablePath: CHROME });
   const page = await (await browser.newContext({ viewport })).newPage(); const errors = []; const calls = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -55,7 +56,7 @@ async function open({ viewport = { width: 1280, height: 860 }, behave = () => un
     if (FX[m[1]]) return route.fulfill({ json: FX[m[1]]() });
     return route.fulfill({ json: m[1].startsWith('hq_') ? {} : null });
   });
-  await page.goto('http://localhost:4181/');
+  await page.goto(`http://localhost:4181/${hash ? `#${hash}` : ''}`);
   await page.fill('input[name=email]', 'test@example.com'); await page.fill('input[name=password]', 'not-a-real-password');
   await page.click('button[type=submit]');
   return { browser, page, errors, calls };
@@ -68,7 +69,7 @@ const errs = (page) => page.evaluate(() => globalThis.__hq?.errors?.() || {});
   const { browser, page, errors } = await open();
   await page.waitForSelector('.kpis', { timeout: 8000 }).catch(() => {});
   const t = await mainText(page); const e = await errs(page);
-  check('Production regression: Dashboard draws when ceo.pipeline is an object (no permanent "Loading HQ…")', !/Loading HQ…/.test(t) && /Weekly CEO review/.test(t), Object.keys(e).join(', '));
+  check('Production regression: Dashboard draws when ceo.pipeline is an object (no permanent "Loading HQ…")', !/Loading HQ…/.test(t) && /Weekly CEO review/.test(t), JSON.stringify(e).slice(0, 300));
   check('Production regression: the weekly review section did not fail', !e['section:weekly'] && !e.render, e['section:weekly'] || e.render || '');
   check('No uncaught page errors on a normal load', errors.length === 0, errors.join(' | '));
   await browser.close();
