@@ -1,7 +1,7 @@
 # Workflow 10d: owner alert (DRAFT, tested 21 Nov 2026; NOT YET PUBLISHED)
 
 - Workflow: **10d - NOYA Website Enquiry Intake** (`eLucjNPgTRKS5nBC`).
-- Draft version with the alert: `a6fc1824-e978-4c4c-b30e-75401ea70715`.
+- Draft version with the alert: `5789e0e0-cf06-4214-934a-5c76718d8aaf` (first draft `a6fc1824-…`, superseded by the review fixes below).
 - Live (active) version, unchanged until the CEO approves: `8512b736-7de8-483a-8b64-bf9b2ecdf909`. This is also the rollback.
 
 ## What it does
@@ -10,12 +10,12 @@ Once **Insert Website Enquiry Row** succeeds (the enquiry is saved in HQ), one i
 
 - **Build Owner Alert** (Code, `build_owner_alert.js`) writes a plain-text alert with these fields:
   - name;
-  - service (the form category in plain words, plus the client's sub-choice);
+  - service (the form category in plain words, plus the client's sub-choice; on the corporate, brands and partnerships forms the client's role goes in the context, not the service);
   - destination/context;
   - dates;
-  - phone (a `wa.me` link only for a number in international format, marked "WhatsApp use not confirmed");
+  - phone: a `wa.me` link only for a number in international format, marked "WhatsApp use not confirmed". A trunk 0 written after the country code ("+44 (0)7…", "+20 010…") is dropped first. A malformed "+" number is labelled "not a valid international number", and one without a country code is labelled "no country code";
   - email;
-  - message preview (280 characters);
+  - message preview (280 characters), taken from the field each form keeps its text in: villas, weddings and membership use property_preferences/special_requirements, not message;
   - source/campaign (UTMs, "Google Ads click id present" when a gclid/gbraid/wbraid is in the landing page, form page, referrer);
   - the HQ reference.
 
@@ -43,6 +43,20 @@ One synthetic travel enquiry: NOYA-HDPMJ9, "NOYA WEBSITE PRODUCTION TEST — DO 
 - Alert delivered to the noya@ inbox, unread, from "NOYA HQ" (Gmail message `1a1fdcc212329eab`), with every field correct.
 - Order confirmed: Respond Success, then Build Owner Alert, then Send Owner Alert (0.6 s), then the CRM branch.
 - Closed afterwards: task COMPLETED, opportunity ARCHIVED, contact DO_NOT_CONTACT.
+
+## Independent review (21 Nov 2026)
+
+Three reviewers looked at the change (website, alert code, tests/privacy), and two skeptics checked each finding. Four distinct defects survived; all are fixed:
+
+- villa, wedding and membership alerts read "No message";
+- a "+44 (0)…" or "+20 010…" number produced an invalid `wa.me` link;
+- the corporate/brand/partnership role was shown as the service;
+- the website's live smoke test still waited for the old "Thank you".
+
+Re-checked:
+
+- locally, across 10 enquiry types (villa, wedding, membership, corporate, brand with and without the webhook body, partnership, Private Calendar, long message, one-sided dates);
+- in n8n with `test_workflow` (execution 4891, every external node pinned: no rows written, no email sent). Villa enquiry, "+44 (0) 7700 900456" became wa.me/447700900456, and the message read "Sea view, pool, private chef · Kosher kitchen". Order unchanged: Respond Success first.
 
 ## To publish / roll back
 
