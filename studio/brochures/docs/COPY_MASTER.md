@@ -28,7 +28,7 @@ Egypt is where our knowledge and working relationships run deepest. Elsewhere we
 
 > Luxury is not simply about access. It is about having someone who understands how you live.
 
-### Page 03 · split · photo: car-headrest
+### Page 03 · split · photo: car-night · **APPROVAL: photo rights (car image)**
 
 **Eyebrow:** Who we work with  
 **Title:** Four kinds of client. One standard of care.  
@@ -44,15 +44,15 @@ Egypt is where our knowledge and working relationships run deepest. Elsewhere we
 **Title:** Where to stay, how to move, and who will be waiting.  
 
 - **Stays** Hotels, private villas and residences, chosen for the way you travel: privacy, space for a family, a quiet room, a short drive to where you need to be.
-- **Journeys** Flights in every cabin, with First and Business fares sourced on request. Private aviation and yacht charter through licensed specialist operators.
+- **Journeys** Flights in any cabin, with premium fares researched on request. Private aviation and yacht charter through licensed specialist operators.
 - **Arrivals** Airport meet-and-assist, fast-track where available, and a chauffeur waiting with the car you asked for.
-- **Itineraries** Multi-stop journeys planned and held together by one person, who adjusts them when plans change.
+- **Itineraries** Multi-stop journeys planned and held together by one person, who adjusts them as the days unfold.
 
 <sub>Fares, rooms, venues, allocations and permissions are subject to availability and confirmed at the time of booking.</sub>
 
 ### Page 05 · split · photo: champagne-car
 
-**Eyebrow:** Lifestyle management and sourcing  
+**Eyebrow:** Lifestyle and sourcing  
 **Title:** The details of a private life, handled.  
 
 Reservations at restaurants that are difficult to book. Tickets for the match, the show, the opening. A private chef for a week at the villa. Flowers, gifts and surprises delivered on the right day, to the right door.
@@ -66,7 +66,7 @@ Watches, handbags, jewellery, vehicles, art and rare objects, found through inde
 ### Page 06 · band · photo: beach-dinner · **APPROVAL: case study (client courtesy approval)**
 
 **Eyebrow:** Private occasions  
-**Title:** Celebrations planned with the care of a single dinner.  
+**Title:** Celebrations of every size, planned with the same attention.  
 
 Birthdays, anniversaries, proposals, weddings and gatherings of family and friends. We find the setting, manage the guests’ travel and rooms, and bring together the suppliers, so that the people hosting can enjoy the occasion with everyone else.
 
@@ -92,9 +92,9 @@ Birthdays, anniversaries, proposals, weddings and gatherings of family and frien
 **Eyebrow:** Egypt  
 **Title:** Where our knowledge runs deepest.  
 
-Egypt is at the centre of NOYA. We know its hotels and villas, its drivers and guides, the right time to arrive at a monument and the people to call when a plan needs to change.
+Egypt is at the centre of NOYA. We know its hotels and villas, its drivers and guides, the right time to arrive at a monument and the people to call when a day needs rearranging.
 
-- *Cairo and Giza* · the Pyramids, the Grand Egyptian Museum, the city’s best hotels and tables
+- *Cairo and Giza* · the Pyramids, the Grand Egyptian Museum, the city’s grand hotels and favourite tables
 - *Luxor and Aswan* · the Nile, the Valley of the Kings, historic riverside hotels and private sailing
 - *El Gouna and the Red Sea* · marinas, yachting, diving and relaxed resort living
 - *The North Coast* · summer villas, beach clubs and the Mediterranean season
@@ -115,7 +115,7 @@ Outside Egypt, we arrange stays and journeys across the Mediterranean summer, Eu
 - Long-haul and family holidays
 - Further afield, on request
 
-1. **Listen** We start with how you like to travel and live, not with a list of options.
+1. **Listen** We start with how you like to travel and live.
 2. **Propose** Your NOYA contact presents a considered recommendation, with alternatives where they are worth having.
 3. **Confirm** Nothing is booked until you approve it. Every confirmation is passed to you in writing.
 4. **Remain close** We stay available before, during and after the journey, and adjust when plans change.
@@ -153,9 +153,9 @@ Most relationships with NOYA begin with a single request. Send it by email or Wh
 **Eyebrow:** The Private Desk  
 **Title:** A service built around people, not bookings.  
 
-NOYA Private Desk is for people whose time is spoken for and whose expectations go beyond a booking service.
+NOYA Private Desk is for people with full diaries and high expectations of the service around them.
 
-Whether you are travelling for business, spending time with family or simply need something taken care of, every request runs through one relationship: a NOYA contact who knows your preferences, your people and your standards, and who quietly manages the detail so that you do not have to.
+Whether you are travelling for business or with family, or simply need something taken care of, every request runs through one relationship: a NOYA contact who knows your preferences, your people and your standards, and who quietly manages the detail so that you do not have to.
 
 From a family summer on the North Coast to a dinner reservation in Paris tonight, the same person is on the other end of the line.
 
@@ -168,7 +168,7 @@ From a family summer on the North Coast to a dinner reservation in Paris tonight
 - A private record of your preferences, kept and used
 - Coordination across destinations and time zones
 - Specialist knowledge of Egypt
-- Short-notice requests handled wherever they can be
+- Short-notice requests met wherever possible
 - Confidentiality as standard, for you and your family
 
 **Preferences, remembered** The seat you prefer, the room you asked for last time, dietary requirements, the driver you liked, the children’s schedules. We keep a careful private record, so that you are never asked twice.
@@ -178,7 +178,7 @@ From a family summer on the North Coast to a dinner reservation in Paris tonight
 **Eyebrow:** Travel and stays  
 **Title:** Journeys planned around how you travel.  
 
-- **Flights** Every cabin and every route, with First and Business fares sourced on request. Changes and cancellations handled for you.
+- **Flights** Any cabin, on most routes, with First and Business options researched for you. Changes and cancellations handled on your behalf.
 - **Hotels, villas and residences** Properties chosen for privacy, service and the way you live, with the room, the view and the welcome arranged before you arrive.
 - **Private aviation and yachts** Arranged with licensed specialist operators, chosen for the aircraft or vessel, the crew and the route.
 - **Arrivals and ground movement** Airport meet-and-assist, chauffeurs, and security coordination through licensed providers where it is needed.
@@ -192,15 +192,15 @@ From a family summer on the North Coast to a dinner reservation in Paris tonight
 
 - **Lifestyle** Restaurant tables, beach clubs, tickets and event access, private dining, wellness retreats and personal shopping.
 - **Family** Family holidays, children’s travel, school-holiday planning, anniversaries, birthdays and milestones.
-- **Relocation** For families and players moving to or from Egypt: homes, schools, drivers, household staff introductions and settling in.
-- **Personal** Homecomings, last-minute requests and confidential personal matters, handled with discretion.
+- **Relocation** For families and athletes moving to or from Egypt: homes, schools, drivers, household staff introductions and settling in.
+- **Personal** A home made ready for your return, last-minute requests and confidential personal matters, handled with discretion.
 
 ### Page 06 · text · **APPROVAL: sourcing supplier capability**
 
 **Eyebrow:** Private sourcing  
 **Title:** Some things cannot simply be ordered.  
 
-A particular reference of watch. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.
+A particular watch reference. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.
 
 We search through independent dealers, specialist auction and resale houses and private collectors, and present what we find with its provenance, condition and price, before anything is committed.
 
@@ -212,32 +212,32 @@ We search through independent dealers, specialist auction and resale houses and 
 - Gifts and occasion pieces
 
 - **Authenticated** Pieces are offered only with appropriate authentication by independent specialists, and the documentation is passed to you.
-- **Transparent** Price, condition and provenance are set out in writing. You decide before anything is bought.
-- **Independent** NOYA is not an authorised dealer or agent for any brand. We do not offer guaranteed allocations, and we do not pretend to.
+- **In writing** Every detail is documented. You decide before anything is bought.
+- **Independent** NOYA is not an authorised dealer or agent for any brand. We do not offer guaranteed allocations.
 
 <sub>Availability depends on the market at the time of the request.</sub>
 
 ### Page 07 · text
 
-**Eyebrow:** Who we look after  
+**Eyebrow:** Who the Desk is for  
 **Title:** For people whose time is spoken for.  
 
 Private Desk clients are individuals and families who value discretion, efficiency and personal service above all.
 
 - Founders and chief executives
-- Chairmen and investors
+- Chairs and investors
 - Family offices and private families
-- Athletes and football players
+- Athletes
 - Artists and performers
 - Public figures
 - International guests visiting Egypt
-- Entrepreneurs
+- Private offices and executive assistants
 
 **In practice**
 
 - **Executives** Travel, airport assistance, chauffeurs, hotels and support outside office hours.
 - **Families** Holidays, children’s travel, celebrations and the logistics of a busy household.
-- **Players and talent** Travel, family support, relocation, transport and confidential requests around a demanding calendar.
+- **Athletes and talent** Travel, family support, relocation, transport and confidential requests around a demanding calendar.
 - **Guests to Egypt** Arrival, private itineraries, hospitality and support for an accompanying party.
 
 ### Page 08 · text · **APPROVAL: access wording**
@@ -247,7 +247,7 @@ Private Desk clients are individuals and families who value discretion, efficien
 
 *We keep the number of Private Desk relationships small, so that each one receives proper attention.*
 
-Most begin with an introduction from an existing client or partner. Others begin with a private conversation with our founder. We consider each enquiry individually.
+Many begin with an introduction. Others begin with a private conversation with our founder. We consider each enquiry individually.
 
 Some clients prefer an ongoing private arrangement; others prefer to work with us request by request. We will recommend what suits you, and agree the terms in writing before any work begins.
 
@@ -276,13 +276,13 @@ Knowing your preferences before you ask. Responding when plans change. Protectin
 *Purpose:* Establish operational competence, accountability and commercial maturity; explain how NOYA is engaged.  
 *Pages:* 10
 
-### Page 01 · cover · photo: hotel-arrival · **APPROVAL: photo rights (hotel arrival image)**
+### Page 01 · cover · photo: car-street · **APPROVAL: photo rights (car image)**
 
-**Kicker:** Executive Travel · Hospitality · Destination Management  
+**Kicker:** Executive Travel · Hospitality · Lifestyle Management  
 **Title:** NOYA Corporate  
-**Line:** Travel, hospitality and destination management for organisations. Expert in Egypt. Coordinated worldwide.  
+**Line:** Travel, hospitality and visits for organisations, held by one contact. Expert in Egypt. Arranging worldwide.  
 
-### Page 02 · split · photo: car-street · **APPROVAL: photo rights (car image)**
+### Page 02 · split · photo: car-night · **APPROVAL: photo rights (car image)**
 
 **Eyebrow:** About NOYA  
 **Title:** An extension of your executive team.  
@@ -293,7 +293,7 @@ Rather than managing several suppliers, your organisation works with one NOYA co
 
 Our expertise is built around Egypt, where we hold direct working relationships across hospitality, transport and local services. Through partners we know, we support travel and hospitality requirements internationally.
 
-**** We work alongside existing travel providers and internal teams, adding a dedicated hospitality and lifestyle layer around every journey.
+**Alongside your team** We work alongside existing travel providers and internal teams, adding a dedicated hospitality and lifestyle layer around every journey.
 
 ### Page 03 · text
 
@@ -304,7 +304,7 @@ Our expertise is built around Egypt, where we hold direct working relationships 
 - **Less administration** We coordinate suppliers, reservations and logistics, taking the load off executive assistants and internal teams.
 - **International coordination** Journeys and visits managed across destinations and time zones, with every confirmation in writing.
 - **Specialist Egypt knowledge** Direct relationships and local judgement throughout Egypt, from Cairo to the Red Sea and the Nile.
-- **Composure when plans change** A delayed flight, a moved meeting, an extra guest. We adapt quickly and quietly.
+- **Calm when things move** A delayed flight, a moved meeting, an extra guest. We adapt quickly and quietly.
 - **Discretion** Confidential handling of itineraries, guests and internal matters, as standard.
 
 ### Page 04 · split · photo: car-headrest
@@ -379,7 +379,7 @@ Every organisation’s requirements are different. We agree scope, service expec
 
 ### Page 08 · text
 
-**Eyebrow:** Who we work with  
+**Eyebrow:** Sectors we support  
 **Title:** Different sectors. The same requirement.  
 
 *The work varies. The underlying need does not: someone reliable to hold the detail when people who matter are moving.*
@@ -402,10 +402,10 @@ Every organisation’s requirements are different. We agree scope, service expec
 **Eyebrow:** How we work  
 **Title:** One owner, from first call to final account.  
 
-1. **Enquiry** You tell us what is needed, as briefly as you like.
+1. **Enquiry** You tell us what is needed, in a few lines.
 2. **Proposal** A written proposal with a clear scope, the options worth considering and itemised costs.
 3. **Planning** Every supplier, timing and contact is confirmed in writing through one NOYA lead.
-4. **Delivery** We remain on hand throughout, on the ground in Egypt where required, and adapt when plans change.
+4. **Delivery** We remain on hand throughout, on the ground in Egypt where required, and adapt as the programme moves.
 5. **Review** A short debrief and final account. Preferences are recorded, so the next visit starts further ahead.
 
 **Our role** NOYA is accountable for the arrangements we make and for coordinating the suppliers we engage. NOYA arranges and coordinates. Private aviation, yacht charter, security and other regulated services are delivered by independent licensed operators, selected for each request.
@@ -413,7 +413,7 @@ Every organisation’s requirements are different. We agree scope, service expec
 ### Page 10 · closing · photo: yacht-tray-wide
 
 **Eyebrow:** Corporate enquiries  
-**Title:** A trusted partner for executive travel, hospitality and destination management.  
+**Title:** A trusted partner for executive travel, hospitality and visits to Egypt.  
 
 For a corporate account, a visiting delegation or a single assignment in Egypt or internationally, contact NOYA directly.
 
@@ -439,7 +439,7 @@ For a corporate account, a visiting delegation or a single assignment in Egypt o
 **Eyebrow:** The partner  
 **Title:** The ground layer every project depends on.  
 
-NOYA is a UK-based concierge and destination business with deep expertise in Egypt. For brands, agencies and production companies, we provide what sits around the creative: locations, permissions through licensed partners, accommodation, movement, hospitality, talent care and the local relationships that make each of them possible.
+NOYA is a UK-based concierge business with deep expertise in Egypt. For brands, agencies and production companies, we provide what sits around the creative: locations, permissions through licensed partners, accommodation, movement, hospitality, talent care and the local relationships that make each of them possible.
 
 > A production is rarely judged on the creative alone. It is judged on whether the site opened on time, whether the vehicle was waiting, and who answered the telephone when a permission stalled at four in the afternoon.
 
@@ -463,10 +463,10 @@ From the first recce to the final reconciliation, NOYA coordinates the suppliers
 - Security coordination through licensed providers
 - Freight and equipment support
 
-### Page 04 · band · photo: beach-dinner
+### Page 04 · band · photo: terrace-sea · **APPROVAL: photo rights (terrace image)**
 
 **Eyebrow:** Brand experiences and destination events  
-**Title:** A brand programme, hosted rather than handled.  
+**Title:** A brand programme, properly hosted.  
 
 Launches, press and media trips, creator journeys, VIP dinners and brand retreats. We take responsibility for the guest journey from invitation logistics to departure, so the brand team can host.
 
@@ -481,7 +481,7 @@ Launches, press and media trips, creator journeys, VIP dinners and brand retreat
 
 For campaigns, launches and brand trips, we identify talent, creators and influencers suited to the brief, approach them or their representatives, and coordinate availability, travel and hospitality around the programme.
 
-- **Sourcing** (Shortlists matched to the brief, audience and market; Approaches through talent representatives; Availability, schedules and travel; Celebrity and VIP guest attendance)
+- **Sourcing** (Shortlists matched to the brief, audience and market; Approaches through talent representatives; Availability, schedules and travel; VIP guest attendance, coordinated through representatives)
 - **Care on the ground** (Airport meet-and-assist and dedicated drivers; Hotel, villa and residence accommodation; Dietary, welfare and rest requirements; Discreet handling and non-disclosure as standard)
 
 **Clear lines** NOYA is not a talent agency and does not represent talent. Fees, usage rights and contracts are agreed between the brand or agency and the talent’s representatives. We coordinate everything around them.
@@ -544,17 +544,19 @@ Good productions depend on clear lines. This is how responsibility is usually di
 | Brand | Objectives, approvals, budget and final sign-off. |
 | Creative agency | Concept, creative direction, casting decisions and the client relationship. |
 | Talent representatives | Talent fees, usage rights and contracts. |
-| Licensed production partners | Filming permissions, technical crew and equipment, issued and delivered under their licences. |
+| Licensed production partners | Applications for filming permissions, technical crew and equipment, delivered under their licences. Permissions themselves are issued by the relevant authorities. |
 | NOYA | Locations and recces, logistics, accommodation, transport, hospitality, talent and crew care, local suppliers and on-the-ground coordination, with one point of contact throughout. |
 
-<sub>NOYA is the destination, coordination and hospitality partner. Technical production services, filming permissions and specialist crew are delivered and issued through approved licensed partners, under NOYA coordination.</sub>
+<sub>NOYA is the coordination and hospitality partner. Technical production services and specialist crew are delivered by approved licensed partners under NOYA coordination; filming permissions are issued by the relevant authorities and applied for through those partners.</sub>
 
 ### Page 10 · text
 
 **Eyebrow:** Commercial scope  
 **Title:** Clear scope. Clear costs.  
 
-Every project is quoted against an approved brief. Fees reflect the delivery requirements and the commercial scope, and costs are presented transparently, separating supplier costs, NOYA’s coordination fee and any agreed mark-up, so budget holders know precisely what they are approving before the first supplier is committed.
+Every project is quoted against an approved brief, and fees follow what the brief asks NOYA to deliver.
+
+Costs are itemised: supplier costs, NOYA’s coordination fee and any agreed mark-up are shown separately, and nothing is committed until the budget holder has approved them.
 
 - Project fee or day rate agreed in writing before work begins
 - Deposit to secure suppliers, dates and permissions
@@ -597,12 +599,12 @@ When your client travels to Egypt, you need someone on the ground whose standard
 
 NOYA works behind travel advisors, concierge firms and agencies as their Egypt delivery partner. You keep the relationship. We design and deliver the programme, white-label or under the NOYA name, as you prefer.
 
-Demand for Egypt is growing, with the opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a fuller calendar of international events. We help partners say yes to those requests with confidence.
+Interest in Egypt has grown with the opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a fuller calendar of international events. We help partners say yes to those requests with confidence.
 
-### Page 03 · split · photo: car-headrest
+### Page 03 · split · photo: champagne-car
 
 **Eyebrow:** What we deliver  
-**Title:** Everything your client needs in Egypt.  
+**Title:** What we arrange in Egypt.  
 
 - Custom itineraries and destination planning
 - Hotels, private villas and Nile accommodation
@@ -620,10 +622,10 @@ Demand for Egypt is growing, with the opening of the Grand Egyptian Museum, new 
 **Eyebrow:** Destinations  
 **Title:** Egypt, in four chapters.  
 
-- **Cairo and Giza** The Pyramids, the Grand Egyptian Museum and Cairo’s great hotels and restaurants. Ideal for first visits, executive travel, cultural programmes and VIP guests.
-- **Luxor and Aswan** The Valley of the Kings, Karnak, Abu Simbel and the Nile, with historic riverside hotels and private river journeys. Ideal for families, cultural travel and multi-day journeys.
-- **El Gouna and the Red Sea** A year-round resort town of marinas, golf, yachting and residences. Ideal for families, long stays, retreats and destination weddings.
-- **The North Coast** Summer villas, beach clubs and a busy calendar of music and events on the Mediterranean, from Almaza Bay to Marassi and Ras El Hekma. Ideal for summer travel, groups and celebrations.
+- **Cairo and Giza** The Pyramids, the Grand Egyptian Museum and Cairo’s historic and contemporary hotels and restaurants. Suited to first visits, executive travel, cultural programmes and VIP guests.
+- **Luxor and Aswan** The Valley of the Kings, Karnak, Abu Simbel and the Nile, with historic riverside hotels and private river journeys. Best for families, cultural travel and longer itineraries.
+- **El Gouna and the Red Sea** A year-round resort town of marinas, golf, yachting and residences. Good for families, long stays, retreats and destination weddings.
+- **The North Coast** Summer villas, beach clubs and a busy calendar of music and events on the Mediterranean, from Almaza Bay to Marassi and Ras El Hekma. The place for summer travel, groups and celebrations.
 
 ### Page 05 · text · **APPROVAL: partner terms**
 
@@ -631,7 +633,7 @@ Demand for Egypt is growing, with the opening of the Grand Egyptian Museum, new 
 **Title:** Clear ownership. Clear handovers.  
 
 - **Your client remains yours** We do not market to, solicit or contract directly with partner clients. Confidentiality and non-solicitation are agreed in writing before the first booking.
-- **White-label or co-branded** Documents, guest communications and on-the-ground introductions are presented under your brand or ours, as agreed for each booking.
+- **White-label or NOYA-branded** Documents, guest communications and on-the-ground introductions are presented under your brand or ours, as agreed for each booking.
 - **A defined handover** Each booking moves from your brief to our proposal, your confirmation, a guest dossier and on-the-ground delivery, with responsibilities stated in writing.
 - **Escalation** Every booking has a named NOYA lead. Our founder is the escalation point for every partner relationship.
 
@@ -664,7 +666,7 @@ We work with partners on one of two structures, chosen per partner or per bookin
 ### Page 07 · text
 
 **Eyebrow:** Responsibilities  
-**Title:** Who does what.  
+**Title:** Responsibilities, in writing.  
 
 | Party | Responsible for |
 |---|---|
@@ -676,7 +678,7 @@ We work with partners on one of two structures, chosen per partner or per bookin
 
 ### Page 08 · text
 
-**Eyebrow:** Who we work with  
+**Eyebrow:** Partners we support  
 **Title:** Built for partners who protect their clients.  
 
 - Luxury travel advisors and designers
@@ -719,13 +721,13 @@ Send the brief, however early, and we will come back with a proposal under your 
 ### Page 02 · statement
 
 **Eyebrow:** How we present our work  
-**Title:** Fewer examples, every one of them real.  
+**Title:** Only work we can evidence.  
 
 Our clients choose NOYA partly because we do not talk about them. The work in this document is therefore described without names: no client, hotel or supplier is identified unless they have agreed to it in writing.
 
 Each entry describes an engagement NOYA has completed, and only what our booking records, contracts and correspondence show. We do not include proposals, introductions or plans, and we do not estimate figures we cannot document.
 
-The selection is updated each quarter. Further detail, and references where a client has agreed to give one, can be discussed privately.
+The selection is reviewed each quarter. Further detail can be discussed privately.
 
 ### Page 03 · text · **APPROVAL: case study (client courtesy approval)**
 
@@ -734,7 +736,7 @@ The selection is updated each quarter. Further detail, and references where a cl
 
 **Guest accommodation and coordination for a destination wedding** (Private occasion · Cairo · October 2025)
 - Brief: A couple marrying in Cairo needed rooms and on-the-ground coordination for guests travelling from abroad, at a five-star hotel, across the wedding days.
-- Delivered: NOYA negotiated and contracted a group rate with the hotel, took guest bookings directly, managed the rooming list through successive revisions, arranged the couple’s suite and photo session, accommodated the wedding planners and coordinated guest transport.
+- Delivered: NOYA negotiated and contracted a group rate with the hotel, took guest bookings directly, managed the rooming list through successive revisions, arranged the couple’s suite and photo session, arranged rooms for the wedding planners and coordinated guest transport.
 - Outcome: Guest rooms were contracted and paid through NOYA and reconciled with the hotel. The final rooming list was issued four days before the wedding.
 
 **What it involved**
@@ -755,17 +757,17 @@ An entry is added to this document only when the engagement is complete and its 
 
 - **Contract or confirmation** The supplier agreement, booking confirmation or pro-forma issued in NOYA’s name.
 - **Delivery** The correspondence showing the work was carried out: final lists, schedules, on-the-day coordination.
-- **Payment** Records of the payments made to suppliers in NOYA’s name.
+- **Payment** Records of the payments made in NOYA’s name to suppliers.
 - **Permission** The client’s agreement to the way the work is described, and to any name or image used.
 
-**Next edition** The Q1 2027 edition will add engagements completed this winter, once their evidence and permissions are in place.
+**New entries** Further engagements are added only once their evidence and permissions are in place.
 
 ### Page 05 · closing
 
 **Eyebrow:** References  
 **Title:** Ask us about the detail.  
 
-If you would like to know more about any engagement, or to speak with a client who has agreed to give a reference, contact our founder directly.
+If you would like to know more about any engagement, contact our founder directly.
 
 *[Standard NOYA contact block: NOYA Concierge · Adam Elshazly, Founder · noya@noyaconcierge.com · WhatsApp +44 786 456 9006 · noyaconcierge.com · @noyaconcierge]*
 

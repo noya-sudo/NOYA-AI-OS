@@ -27,11 +27,11 @@ export default {
     {
       layout: 'statement', tone: 'navy',
       eyebrow: 'How we present our work',
-      title: 'Fewer examples, every one of them real.',
+      title: 'Only work we can evidence.',
       blocks: [
         { p: 'Our clients choose NOYA partly because we do not talk about them. The work in this document is therefore described without names: no client, hotel or supplier is identified unless they have agreed to it in writing.' },
         { p: 'Each entry describes an engagement NOYA has completed, and only what our booking records, contracts and correspondence show. We do not include proposals, introductions or plans, and we do not estimate figures we cannot document.' },
-        { p: 'The selection is updated each quarter. Further detail, and references where a client has agreed to give one, can be discussed privately.' },
+        { p: 'The selection is reviewed each quarter. Further detail can be discussed privately.' },
       ],
     },
     {
@@ -44,7 +44,7 @@ export default {
           meta: ['Private occasion', 'Cairo', 'October 2025'],
           title: 'Guest accommodation and coordination for a destination wedding',
           brief: 'A couple marrying in Cairo needed rooms and on-the-ground coordination for guests travelling from abroad, at a five-star hotel, across the wedding days.',
-          delivered: 'NOYA negotiated and contracted a group rate with the hotel, took guest bookings directly, managed the rooming list through successive revisions, arranged the couple’s suite and photo session, accommodated the wedding planners and coordinated guest transport.',
+          delivered: 'NOYA negotiated and contracted a group rate with the hotel, took guest bookings directly, managed the rooming list through successive revisions, arranged the couple’s suite and photo session, arranged rooms for the wedding planners and coordinated guest transport.',
           outcome: 'Guest rooms were contracted and paid through NOYA and reconciled with the hotel. The final rooming list was issued four days before the wedding.',
         } },
         { h3: 'What it involved' },
@@ -60,11 +60,11 @@ export default {
         { cols: { n: 2, items: [
           { h: 'Contract or confirmation', t: 'The supplier agreement, booking confirmation or pro-forma issued in NOYA’s name.' },
           { h: 'Delivery', t: 'The correspondence showing the work was carried out: final lists, schedules, on-the-day coordination.' },
-          { h: 'Payment', t: 'Records of the payments made to suppliers in NOYA’s name.' },
+          { h: 'Payment', t: 'Records of the payments made in NOYA’s name to suppliers.' },
           { h: 'Permission', t: 'The client’s agreement to the way the work is described, and to any name or image used.' },
         ] } },
         { gap: 8 },
-        { box: { h: 'Next edition', t: 'The Q1 2027 edition will add engagements completed this winter, once their evidence and permissions are in place.' } },
+        { box: { h: 'New entries', t: 'Further engagements are added only once their evidence and permissions are in place.' } },
       ],
     },
     {
@@ -72,7 +72,7 @@ export default {
       eyebrow: 'References',
       title: 'Ask us about the detail.',
       blocks: [
-        { p: 'If you would like to know more about any engagement, or to speak with a client who has agreed to give a reference, contact our founder directly.' },
+        { p: 'If you would like to know more about any engagement, contact our founder directly.' },
         { contact: { founder: true } },
       ],
     },

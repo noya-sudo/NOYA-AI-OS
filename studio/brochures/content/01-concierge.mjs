@@ -30,7 +30,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'car-headrest', pos: '50% 40%',
+      layout: 'split', side: 'left', img: 'car-night', pos: '60% 50%', approval: 'photo rights (car image)',
       eyebrow: 'Who we work with',
       title: 'Four kinds of client.\nOne standard of care.',
       blocks: [
@@ -49,16 +49,16 @@ export default {
       blocks: [
         { cols: { n: 2, items: [
           { h: 'Stays', t: 'Hotels, private villas and residences, chosen for the way you travel: privacy, space for a family, a quiet room, a short drive to where you need to be.' },
-          { h: 'Journeys', t: 'Flights in every cabin, with First and Business fares sourced on request. Private aviation and yacht charter through licensed specialist operators.' },
+          { h: 'Journeys', t: 'Flights in any cabin, with premium fares researched on request. Private aviation and yacht charter through licensed specialist operators.' },
           { h: 'Arrivals', t: 'Airport meet-and-assist, fast-track where available, and a chauffeur waiting with the car you asked for.' },
-          { h: 'Itineraries', t: 'Multi-stop journeys planned and held together by one person, who adjusts them when plans change.' },
+          { h: 'Itineraries', t: 'Multi-stop journeys planned and held together by one person, who adjusts them as the days unfold.' },
         ] } },
         { note: AVAILABILITY, mt: 4 },
       ],
     },
     {
       layout: 'split', side: 'right', img: 'champagne-car', pos: '30% 50%',
-      eyebrow: 'Lifestyle management and sourcing',
+      eyebrow: 'Lifestyle and sourcing',
       title: 'The details of a\nprivate life, handled.',
       blocks: [
         { p: 'Reservations at restaurants that are difficult to book. Tickets for the match, the show, the opening. A private chef for a week at the villa. Flowers, gifts and surprises delivered on the right day, to the right door.' },
@@ -70,7 +70,7 @@ export default {
     {
       layout: 'band', img: 'beach-dinner', h: 128, pos: '50% 50%',
       eyebrow: 'Private occasions',
-      title: 'Celebrations planned with\nthe care of a single dinner.',
+      title: 'Celebrations of every size,\nplanned with the same attention.',
       blocks: [
         { p: 'Birthdays, anniversaries, proposals, weddings and gatherings of family and friends. We find the setting, manage the guests’ travel and rooms, and bring together the suppliers, so that the people hosting can enjoy the occasion with everyone else.' },
         { list: { two: true, items: ['Weddings and celebrations', 'Private dinners and parties', 'Group travel for family and friends', 'Guest travel, rooms and transfers', 'Venues, catering and entertainment', 'Gifts and personal touches'] } },
@@ -97,9 +97,9 @@ export default {
       eyebrow: 'Egypt',
       title: 'Where our knowledge\nruns deepest.',
       blocks: [
-        { p: 'Egypt is at the centre of NOYA. We know its hotels and villas, its drivers and guides, the right time to arrive at a monument and the people to call when a plan needs to change.' },
+        { p: 'Egypt is at the centre of NOYA. We know its hotels and villas, its drivers and guides, the right time to arrive at a monument and the people to call when a day needs rearranging.' },
         { list: { items: [
-          '*Cairo and Giza* · the Pyramids, the Grand Egyptian Museum, the city’s best hotels and tables',
+          '*Cairo and Giza* · the Pyramids, the Grand Egyptian Museum, the city’s grand hotels and favourite tables',
           '*Luxor and Aswan* · the Nile, the Valley of the Kings, historic riverside hotels and private sailing',
           '*El Gouna and the Red Sea* · marinas, yachting, diving and relaxed resort living',
           '*The North Coast* · summer villas, beach clubs and the Mediterranean season',
@@ -117,7 +117,7 @@ export default {
         { list: { two: true, items: ['Marbella and the Costa del Sol', 'Mykonos and the Greek islands', 'Saint-Tropez and Cannes', 'London, Paris and European cities', 'Long-haul and family holidays', 'Further afield, on request'] } },
         { gap: 6 },
         { steps: [
-          { h: 'Listen', t: 'We start with how you like to travel and live, not with a list of options.' },
+          { h: 'Listen', t: 'We start with how you like to travel and live.' },
           { h: 'Propose', t: 'Your NOYA contact presents a considered recommendation, with alternatives where they are worth having.' },
           { h: 'Confirm', t: 'Nothing is booked until you approve it. Every confirmation is passed to you in writing.' },
           { h: 'Remain close', t: 'We stay available before, during and after the journey, and adjust when plans change.' },

@@ -22,8 +22,8 @@ export default {
       eyebrow: 'The Private Desk',
       title: 'A service built around people, not bookings.',
       blocks: [
-        { p: 'NOYA Private Desk is for people whose time is spoken for and whose expectations go beyond a booking service.' },
-        { p: 'Whether you are travelling for business, spending time with family or simply need something taken care of, every request runs through one relationship: a NOYA contact who knows your preferences, your people and your standards, and who quietly manages the detail so that you do not have to.' },
+        { p: 'NOYA Private Desk is for people with full diaries and high expectations of the service around them.' },
+        { p: 'Whether you are travelling for business or with family, or simply need something taken care of, every request runs through one relationship: a NOYA contact who knows your preferences, your people and your standards, and who quietly manages the detail so that you do not have to.' },
         { p: 'From a family summer on the North Coast to a dinner reservation in Paris tonight, the same person is on the other end of the line.' },
       ],
     },
@@ -37,7 +37,7 @@ export default {
           'A private record of your preferences, kept and used',
           'Coordination across destinations and time zones',
           'Specialist knowledge of Egypt',
-          'Short-notice requests handled wherever they can be',
+          'Short-notice requests met wherever possible',
           'Confidentiality as standard, for you and your family',
         ] } },
         { gap: 6 },
@@ -50,7 +50,7 @@ export default {
       title: 'Journeys planned around how you travel.',
       blocks: [
         { cols: { n: 2, items: [
-          { h: 'Flights', t: 'Every cabin and every route, with First and Business fares sourced on request. Changes and cancellations handled for you.' },
+          { h: 'Flights', t: 'Any cabin, on most routes, with First and Business options researched for you. Changes and cancellations handled on your behalf.' },
           { h: 'Hotels, villas and residences', t: 'Properties chosen for privacy, service and the way you live, with the room, the view and the welcome arranged before you arrive.' },
           { h: 'Private aviation and yachts', t: 'Arranged with licensed specialist operators, chosen for the aircraft or vessel, the crew and the route.' },
           { h: 'Arrivals and ground movement', t: 'Airport meet-and-assist, chauffeurs, and security coordination through licensed providers where it is needed.' },
@@ -66,8 +66,8 @@ export default {
         { cols: { n: 1, items: [
           { h: 'Lifestyle', t: 'Restaurant tables, beach clubs, tickets and event access, private dining, wellness retreats and personal shopping.' },
           { h: 'Family', t: 'Family holidays, children’s travel, school-holiday planning, anniversaries, birthdays and milestones.' },
-          { h: 'Relocation', t: 'For families and players moving to or from Egypt: homes, schools, drivers, household staff introductions and settling in.' },
-          { h: 'Personal', t: 'Homecomings, last-minute requests and confidential personal matters, handled with discretion.' },
+          { h: 'Relocation', t: 'For families and athletes moving to or from Egypt: homes, schools, drivers, household staff introductions and settling in.' },
+          { h: 'Personal', t: 'A home made ready for your return, last-minute requests and confidential personal matters, handled with discretion.' },
         ] } },
       ],
     },
@@ -77,32 +77,32 @@ export default {
       title: 'Some things cannot simply be ordered.',
       approval: 'sourcing supplier capability',
       blocks: [
-        { p: 'A particular reference of watch. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.' },
+        { p: 'A particular watch reference. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.' },
         { p: 'We search through independent dealers, specialist auction and resale houses and private collectors, and present what we find with its provenance, condition and price, before anything is committed.' },
         { gap: 3 },
         { list: { two: true, items: ['Watches', 'Handbags and leather goods', 'Jewellery', 'Vehicles', 'Art, objects and collectibles', 'Gifts and occasion pieces'] } },
         { gap: 7 },
         { cols: { n: 3, items: [
           { h: 'Authenticated', t: 'Pieces are offered only with appropriate authentication by independent specialists, and the documentation is passed to you.' },
-          { h: 'Transparent', t: 'Price, condition and provenance are set out in writing. You decide before anything is bought.' },
-          { h: 'Independent', t: 'NOYA is not an authorised dealer or agent for any brand. We do not offer guaranteed allocations, and we do not pretend to.' },
+          { h: 'In writing', t: 'Every detail is documented. You decide before anything is bought.' },
+          { h: 'Independent', t: 'NOYA is not an authorised dealer or agent for any brand. We do not offer guaranteed allocations.' },
         ] } },
         { note: 'Availability depends on the market at the time of the request.', mt: 6 },
       ],
     },
     {
       layout: 'text',
-      eyebrow: 'Who we look after',
+      eyebrow: 'Who the Desk is for',
       title: 'For people whose time is spoken for.',
       blocks: [
         { p: 'Private Desk clients are individuals and families who value discretion, efficiency and personal service above all.' },
-        { list: { two: true, items: ['Founders and chief executives', 'Chairmen and investors', 'Family offices and private families', 'Athletes and football players', 'Artists and performers', 'Public figures', 'International guests visiting Egypt', 'Entrepreneurs'] } },
+        { list: { two: true, items: ['Founders and chief executives', 'Chairs and investors', 'Family offices and private families', 'Athletes', 'Artists and performers', 'Public figures', 'International guests visiting Egypt', 'Private offices and executive assistants'] } },
         { gap: 8 },
         { h3: 'In practice' },
         { cols: { n: 2, items: [
           { k: 'Executives', t: 'Travel, airport assistance, chauffeurs, hotels and support outside office hours.' },
           { k: 'Families', t: 'Holidays, children’s travel, celebrations and the logistics of a busy household.' },
-          { k: 'Players and talent', t: 'Travel, family support, relocation, transport and confidential requests around a demanding calendar.' },
+          { k: 'Athletes and talent', t: 'Travel, family support, relocation, transport and confidential requests around a demanding calendar.' },
           { k: 'Guests to Egypt', t: 'Arrival, private itineraries, hospitality and support for an accompanying party.' },
         ] } },
       ],
@@ -114,7 +114,7 @@ export default {
       approval: 'access wording',
       blocks: [
         { intro: 'We keep the number of Private Desk relationships small, so that each one receives proper attention.' },
-        { p: 'Most begin with an introduction from an existing client or partner. Others begin with a private conversation with our founder. We consider each enquiry individually.' },
+        { p: 'Many begin with an introduction. Others begin with a private conversation with our founder. We consider each enquiry individually.' },
         { p: 'Some clients prefer an ongoing private arrangement; others prefer to work with us request by request. We will recommend what suits you, and agree the terms in writing before any work begins.' },
         { gap: 4 },
         { steps: [

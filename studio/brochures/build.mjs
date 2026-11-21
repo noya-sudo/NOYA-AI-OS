@@ -170,7 +170,7 @@ function copyMaster(doc) {
       else if (b.h3) out.push(`**${md(b.h3)}**`, '');
       else if (b.list || b.dots) { const L = b.list || b.dots; if (L.h) out.push(`**${md(L.h)}**`); L.items.forEach((x) => out.push(`- ${md(x)}`)); out.push(''); }
       else if (b.cols) { b.cols.items.forEach((x) => out.push(`- **${md(x.h || x.k || '')}**${x.t ? ` ${md(x.t)}` : ''}${x.list ? ` (${x.list.map(md).join('; ')})` : ''}${x.more ? ` *${md(x.more)}*` : ''}`)); out.push(''); }
-      else if (b.box) { out.push(`**${md(b.box.h || '')}** ${[].concat(b.box.t).map(md).join(' ')}`, ''); }
+      else if (b.box) { out.push(`${b.box.h ? `**${md(b.box.h)}** ` : ''}${[].concat(b.box.t).map(md).join(' ')}`, ''); }
       else if (b.steps) { b.steps.forEach((s, j) => out.push(`${j + 1}. **${md(s.h)}** ${md(s.t)}`)); out.push(''); }
       else if (b.cards) { b.cards.items.forEach((c) => { out.push(`- **${md(c.h)}**${c.tag ? ` (${md(c.tag)})` : ''}: ${[].concat(c.t || []).map(md).join(' ')}`); (c.list || []).forEach((x) => out.push(`  - ${md(x)}`)); }); out.push(''); }
       else if (b.table) { out.push(`| ${b.table.head.join(' | ')} |`, `|${b.table.head.map(() => '---').join('|')}|`); b.table.rows.forEach((r) => out.push(`| ${r.map(md).join(' | ')} |`)); out.push(''); }

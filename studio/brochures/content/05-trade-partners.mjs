@@ -26,13 +26,13 @@ export default {
       blocks: [
         { p: 'When your client travels to Egypt, you need someone on the ground whose standards match your own: someone who answers quickly, plans properly and never forgets whose client it is.' },
         { p: 'NOYA works behind travel advisors, concierge firms and agencies as their Egypt delivery partner. You keep the relationship. We design and deliver the programme, white-label or under the NOYA name, as you prefer.' },
-        { p: 'Demand for Egypt is growing, with the opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a fuller calendar of international events. We help partners say yes to those requests with confidence.' },
+        { p: 'Interest in Egypt has grown with the opening of the Grand Egyptian Museum, new luxury hospitality across Cairo, El Gouna and the North Coast, and a fuller calendar of international events. We help partners say yes to those requests with confidence.' },
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'car-headrest', pos: '50% 45%',
+      layout: 'split', side: 'left', img: 'champagne-car', pos: '35% 50%',
       eyebrow: 'What we deliver',
-      title: 'Everything your client needs in Egypt.',
+      title: 'What we arrange in Egypt.',
       blocks: [
         { list: { items: [
           'Custom itineraries and destination planning',
@@ -54,10 +54,10 @@ export default {
       approval: 'photo rights (Giza image)',
       blocks: [
         { cols: { n: 2, items: [
-          { k: 'I', h: 'Cairo and Giza', t: 'The Pyramids, the Grand Egyptian Museum and Cairo’s great hotels and restaurants. Ideal for first visits, executive travel, cultural programmes and VIP guests.' },
-          { k: 'II', h: 'Luxor and Aswan', t: 'The Valley of the Kings, Karnak, Abu Simbel and the Nile, with historic riverside hotels and private river journeys. Ideal for families, cultural travel and multi-day journeys.' },
-          { k: 'III', h: 'El Gouna and the Red Sea', t: 'A year-round resort town of marinas, golf, yachting and residences. Ideal for families, long stays, retreats and destination weddings.' },
-          { k: 'IV', h: 'The North Coast', t: 'Summer villas, beach clubs and a busy calendar of music and events on the Mediterranean, from Almaza Bay to Marassi and Ras El Hekma. Ideal for summer travel, groups and celebrations.' },
+          { k: 'I', h: 'Cairo and Giza', t: 'The Pyramids, the Grand Egyptian Museum and Cairo’s historic and contemporary hotels and restaurants. Suited to first visits, executive travel, cultural programmes and VIP guests.' },
+          { k: 'II', h: 'Luxor and Aswan', t: 'The Valley of the Kings, Karnak, Abu Simbel and the Nile, with historic riverside hotels and private river journeys. Best for families, cultural travel and longer itineraries.' },
+          { k: 'III', h: 'El Gouna and the Red Sea', t: 'A year-round resort town of marinas, golf, yachting and residences. Good for families, long stays, retreats and destination weddings.' },
+          { k: 'IV', h: 'The North Coast', t: 'Summer villas, beach clubs and a busy calendar of music and events on the Mediterranean, from Almaza Bay to Marassi and Ras El Hekma. The place for summer travel, groups and celebrations.' },
         ] } },
         { gap: 7 },
         { photos: { imgs: ['pyramid-woman', 'yacht-tray-wide', 'towels-daybed'], h: 60, cols: '1fr 1.5fr 1.5fr' } },
@@ -71,7 +71,7 @@ export default {
       blocks: [
         { cols: { n: 2, items: [
           { h: 'Your client remains yours', t: 'We do not market to, solicit or contract directly with partner clients. Confidentiality and non-solicitation are agreed in writing before the first booking.' },
-          { h: 'White-label or co-branded', t: 'Documents, guest communications and on-the-ground introductions are presented under your brand or ours, as agreed for each booking.' },
+          { h: 'White-label or NOYA-branded', t: 'Documents, guest communications and on-the-ground introductions are presented under your brand or ours, as agreed for each booking.' },
           { h: 'A defined handover', t: 'Each booking moves from your brief to our proposal, your confirmation, a guest dossier and on-the-ground delivery, with responsibilities stated in writing.' },
           { h: 'Escalation', t: 'Every booking has a named NOYA lead. Our founder is the escalation point for every partner relationship.' },
         ] } },
@@ -105,7 +105,7 @@ export default {
     {
       layout: 'text', tone: 'navy',
       eyebrow: 'Responsibilities',
-      title: 'Who does what.',
+      title: 'Responsibilities, in writing.',
       blocks: [
         { table: { head: ['Party', 'Responsible for'], rows: [
           ['Partner', 'The client relationship, the client contract and payment collection (net structure), and passing on the brief and any changes.'],
@@ -118,7 +118,7 @@ export default {
     },
     {
       layout: 'text',
-      eyebrow: 'Who we work with',
+      eyebrow: 'Partners we support',
       title: 'Built for partners who protect their clients.',
       blocks: [
         { list: { two: true, items: ['Luxury travel advisors and designers', 'Concierge companies', 'International agencies', 'Family offices', 'Corporate travel teams', 'Event and PR agencies', 'Production companies', 'Wedding planners', 'Sports organisations', 'Hospitality partners'] } },

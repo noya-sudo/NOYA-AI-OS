@@ -23,7 +23,7 @@ export default {
       eyebrow: 'The partner',
       title: 'The ground layer every project depends on.',
       blocks: [
-        { p: 'NOYA is a UK-based concierge and destination business with deep expertise in Egypt. For brands, agencies and production companies, we provide what sits around the creative: locations, permissions through licensed partners, accommodation, movement, hospitality, talent care and the local relationships that make each of them possible.' },
+        { p: 'NOYA is a UK-based concierge business with deep expertise in Egypt. For brands, agencies and production companies, we provide what sits around the creative: locations, permissions through licensed partners, accommodation, movement, hospitality, talent care and the local relationships that make each of them possible.' },
         { pull: 'A production is rarely judged on the creative alone. It is judged on whether the site opened on time, whether the vehicle was waiting, and who answered the telephone when a permission stalled at four in the afternoon.' },
         { p: 'We hold those details so the creative team can concentrate on the work.' },
       ],
@@ -49,9 +49,9 @@ export default {
       ],
     },
     {
-      layout: 'band', img: 'beach-dinner', h: 108, pos: '50% 55%',
+      layout: 'band', img: 'terrace-sea', h: 108, pos: '50% 50%', approval: 'photo rights (terrace image)',
       eyebrow: 'Brand experiences and destination events',
-      title: 'A brand programme, hosted rather than handled.',
+      title: 'A brand programme, properly hosted.',
       blocks: [
         { p: 'Launches, press and media trips, creator journeys, VIP dinners and brand retreats. We take responsibility for the guest journey from invitation logistics to departure, so the brand team can host.' },
         { cols: { n: 3, items: [
@@ -68,7 +68,7 @@ export default {
       blocks: [
         { p: 'For campaigns, launches and brand trips, we identify talent, creators and influencers suited to the brief, approach them or their representatives, and coordinate availability, travel and hospitality around the programme.' },
         { cols: { n: 2, items: [
-          { h: 'Sourcing', list: ['Shortlists matched to the brief, audience and market', 'Approaches through talent representatives', 'Availability, schedules and travel', 'Celebrity and VIP guest attendance'] },
+          { h: 'Sourcing', list: ['Shortlists matched to the brief, audience and market', 'Approaches through talent representatives', 'Availability, schedules and travel', 'VIP guest attendance, coordinated through representatives'] },
           { h: 'Care on the ground', list: ['Airport meet-and-assist and dedicated drivers', 'Hotel, villa and residence accommodation', 'Dietary, welfare and rest requirements', 'Discreet handling and non-disclosure as standard'] },
         ] } },
         { gap: 6 },
@@ -131,10 +131,10 @@ export default {
           ['Brand', 'Objectives, approvals, budget and final sign-off.'],
           ['Creative agency', 'Concept, creative direction, casting decisions and the client relationship.'],
           ['Talent representatives', 'Talent fees, usage rights and contracts.'],
-          ['Licensed production partners', 'Filming permissions, technical crew and equipment, issued and delivered under their licences.'],
+          ['Licensed production partners', 'Applications for filming permissions, technical crew and equipment, delivered under their licences. Permissions themselves are issued by the relevant authorities.'],
           ['NOYA', 'Locations and recces, logistics, accommodation, transport, hospitality, talent and crew care, local suppliers and on-the-ground coordination, with one point of contact throughout.'],
         ] } },
-        { note: 'NOYA is the destination, coordination and hospitality partner. Technical production services, filming permissions and specialist crew are delivered and issued through approved licensed partners, under NOYA coordination.', mt: 5 },
+        { note: 'NOYA is the coordination and hospitality partner. Technical production services and specialist crew are delivered by approved licensed partners under NOYA coordination; filming permissions are issued by the relevant authorities and applied for through those partners.', mt: 5 },
       ],
     },
     {
@@ -142,7 +142,8 @@ export default {
       eyebrow: 'Commercial scope',
       title: 'Clear scope. Clear costs.',
       blocks: [
-        { p: 'Every project is quoted against an approved brief. Fees reflect the delivery requirements and the commercial scope, and costs are presented transparently, separating supplier costs, NOYA’s coordination fee and any agreed mark-up, so budget holders know precisely what they are approving before the first supplier is committed.' },
+        { p: 'Every project is quoted against an approved brief, and fees follow what the brief asks NOYA to deliver.' },
+        { p: 'Costs are itemised: supplier costs, NOYA’s coordination fee and any agreed mark-up are shown separately, and nothing is committed until the budget holder has approved them.' },
         { list: { items: [
           'Project fee or day rate agreed in writing before work begins',
           'Deposit to secure suppliers, dates and permissions',
@@ -151,8 +152,6 @@ export default {
           'Full supplier reconciliation and final statement on completion',
         ] } },
         { note: AVAILABILITY, mt: 5 },
-        { gap: 6 },
-        { photos: { imgs: ['yacht-tray-wide', 'towels-daybed'], h: 58 } },
       ],
     },
     {

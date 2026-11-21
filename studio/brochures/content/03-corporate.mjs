@@ -11,21 +11,21 @@ export default {
   purpose: 'Establish operational competence, accountability and commercial maturity; explain how NOYA is engaged.',
   pages: [
     {
-      layout: 'cover', img: 'hotel-arrival', pos: '50% 50%', approval: 'photo rights (hotel arrival image)',
-      kicker: 'Executive Travel · Hospitality · Destination Management',
+      layout: 'cover', img: 'car-street', pos: '40% 50%', approval: 'photo rights (car image)',
+      kicker: 'Executive Travel · Hospitality · Lifestyle Management',
       title: 'NOYA Corporate',
-      line: 'Travel, hospitality and destination management for organisations.\nExpert in Egypt. Coordinated worldwide.',
+      line: 'Travel, hospitality and visits for organisations, held by one contact.\nExpert in Egypt. Arranging worldwide.',
       base: ['noyaconcierge.com', 'Edition 2026'],
     },
     {
-      layout: 'split', side: 'right', img: 'car-street', pos: '50% 50%', approval: 'photo rights (car image)',
+      layout: 'split', side: 'right', img: 'car-night', pos: '40% 50%', approval: 'photo rights (car image)',
       eyebrow: 'About NOYA',
       title: 'An extension of your executive team.',
       blocks: [
         { p: 'NOYA provides executive travel, hospitality and lifestyle management for organisations, their leaders, their guests and their people.' },
         { p: 'Rather than managing several suppliers, your organisation works with one NOYA contact who coordinates every detail with discretion and accountability.' },
         { p: 'Our expertise is built around Egypt, where we hold direct working relationships across hospitality, transport and local services. Through partners we know, we support travel and hospitality requirements internationally.' },
-        { box: { t: 'We work alongside existing travel providers and internal teams, adding a dedicated hospitality and lifestyle layer around every journey.' } },
+        { box: { h: 'Alongside your team', t: 'We work alongside existing travel providers and internal teams, adding a dedicated hospitality and lifestyle layer around every journey.' } },
       ],
     },
     {
@@ -38,7 +38,7 @@ export default {
           { k: '02', h: 'Less administration', t: 'We coordinate suppliers, reservations and logistics, taking the load off executive assistants and internal teams.' },
           { k: '03', h: 'International coordination', t: 'Journeys and visits managed across destinations and time zones, with every confirmation in writing.' },
           { k: '04', h: 'Specialist Egypt knowledge', t: 'Direct relationships and local judgement throughout Egypt, from Cairo to the Red Sea and the Nile.' },
-          { k: '05', h: 'Composure when plans change', t: 'A delayed flight, a moved meeting, an extra guest. We adapt quickly and quietly.' },
+          { k: '05', h: 'Calm when things move', t: 'A delayed flight, a moved meeting, an extra guest. We adapt quickly and quietly.' },
           { k: '06', h: 'Discretion', t: 'Confidential handling of itineraries, guests and internal matters, as standard.' },
         ] } },
       ],
@@ -67,7 +67,7 @@ export default {
           { h: 'On the ground', list: ['Movement planning and vehicles', 'Accommodation and room blocks', 'A NOYA contact throughout the visit'] },
         ] } },
         { gap: 6 },
-        { photos: { imgs: ['pyramids-camels', 'yacht-tray-wide', 'towels-daybed'], h: 48 } },
+        { photos: { imgs: ['pyramids-camels', 'pyramid-woman'], h: 52, cols: '1.5fr 1fr' } },
         { note: 'Access to heritage sites and venues is subject to the permissions of the relevant authorities and owners.', mt: 3 },
       ],
       approval: 'photo rights (pyramids image)',
@@ -99,7 +99,7 @@ export default {
     },
     {
       layout: 'text', tone: 'navy',
-      eyebrow: 'Who we work with',
+      eyebrow: 'Sectors we support',
       title: 'Different sectors. The same requirement.',
       blocks: [
         { intro: 'The work varies. The underlying need does not: someone reliable to hold the detail when people who matter are moving.' },
@@ -114,10 +114,10 @@ export default {
       title: 'One owner, from first call to final account.',
       blocks: [
         { steps: [
-          { h: 'Enquiry', t: 'You tell us what is needed, as briefly as you like.' },
+          { h: 'Enquiry', t: 'You tell us what is needed, in a few lines.' },
           { h: 'Proposal', t: 'A written proposal with a clear scope, the options worth considering and itemised costs.' },
           { h: 'Planning', t: 'Every supplier, timing and contact is confirmed in writing through one NOYA lead.' },
-          { h: 'Delivery', t: 'We remain on hand throughout, on the ground in Egypt where required, and adapt when plans change.' },
+          { h: 'Delivery', t: 'We remain on hand throughout, on the ground in Egypt where required, and adapt as the programme moves.' },
           { h: 'Review', t: 'A short debrief and final account. Preferences are recorded, so the next visit starts further ahead.' },
         ] },
         { gap: 8 },
@@ -127,7 +127,7 @@ export default {
     {
       layout: 'closing', img: 'yacht-tray-wide', h: 104, pos: '50% 50%',
       eyebrow: 'Corporate enquiries',
-      title: 'A trusted partner for executive travel, hospitality and destination management.',
+      title: 'A trusted partner for executive travel, hospitality and visits to Egypt.',
       small: true,
       blocks: [
         { p: 'For a corporate account, a visiting delegation or a single assignment in Egypt or internationally, contact NOYA directly.' },

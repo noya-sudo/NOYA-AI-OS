@@ -67,7 +67,7 @@ pdfimages -all <brochure>.pdf <dir>/<prefix>
 ```
 
 Then convert each source listed in `assets.json` (`source` names the brochure and page) to `images/<key>.jpg`, long edge ≤ 1800 px, JPEG quality 82.
-A copy of the prepared set is in Drive alongside the PDFs (see the QC report).
+The prepared set is not yet in Drive (see the QC report, section 8).
 
 ## Upgrade path
 

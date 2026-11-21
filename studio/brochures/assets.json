@@ -68,7 +68,7 @@
       "subject": "Rear cabin of a chauffeured car with the NOYA screen on the headrest",
       "status": "NOYA CONTENT",
       "provenance": "NOYA brand shoot",
-      "note": "Small or half-page slots only (615 px wide). NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use."
+      "note": "Small or half-page slots only (615 px wide). NOYA-branded props in frame, so almost certainly NOYA content; no photographer, licence or model release found in NOYA records (evidence audit 21 Nov 2026). Confirm photographer and releases before print use. Maybach emblem on the seat back: incidental marque on the vehicle used; include in photo sign-off or retouch."
     },
     "pool-palm": {
       "source": "Concierge Brochure p5",
@@ -160,23 +160,25 @@
       "source": "Corporate p1 / Private Desk p1",
       "px": "960x1440",
       "subject": "Mercedes V-Class at a London hotel entrance, doorman",
-      "status": "APPROVAL REQUIRED",
+      "status": "EXCLUDED",
       "provenance": "Unknown; hotel and vehicle registration recognisable",
-      "note": "Confirm it is NOYA's own shoot or licensed; the hotel is identifiable, so no association may be implied."
+      "note": "The awning reads THE RITZ LONDON and the number plate is legible: implies an association with a named hotel. Removed (QC 21 Nov 2026)."
     },
     "car-night": {
       "source": "Concierge Brochure p2 / Private Desk p2",
       "px": "960x1707",
       "subject": "Black executive car at night",
       "status": "APPROVAL REQUIRED",
-      "provenance": "Unknown"
+      "provenance": "Unknown",
+      "note": "Rolls-Royce and Mercedes-Maybach in frame: incidental marques; include in photo sign-off."
     },
     "car-street": {
       "source": "Corporate p2",
       "px": "1062x1402",
       "subject": "Black saloon outside a modern building",
       "status": "APPROVAL REQUIRED",
-      "provenance": "Unknown"
+      "provenance": "Unknown",
+      "note": "Cropped 10% from the right to remove a hotel sign (BVLGARI). A Bentley grille remains in frame: incidental marque, include in photo sign-off."
     },
     "pyramid-woman": {
       "source": "Brands & Productions p1 (cover)",
