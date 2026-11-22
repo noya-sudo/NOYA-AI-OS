@@ -2727,3 +2727,10 @@ Discovery is permanent: Adam's queue runs warm before cold, and agent intelligen
 **Freeze**
 
 Major HQ architecture is frozen once production is verified. From then on the work is commercial execution, discovery, learning, outreach, relationships, partnerships, projects and revenue. A redesign happens only if a real production or commercial defect proves it necessary.
+
+**Freeze recorded (21 Nov 2026, 19:56 UTC).** Production `hq.noyaconcierge.com` serves version `4a452720d0a0` (commit afc947a). Checks run:
+- `version.json` matches the committed build.
+- `app.js` carries the acceptance code.
+- The login screen loads only `/app.js` and `/styles.css`.
+
+Major HQ architecture is FROZEN (`system_config.hq_architecture`). Adam's logged-in check is still pending. DNS check at the same time: SPF missing, DKIM NXDOMAIN; the cold gate stays CLOSED.
