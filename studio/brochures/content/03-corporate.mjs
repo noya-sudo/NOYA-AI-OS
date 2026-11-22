@@ -11,14 +11,14 @@ export default {
   purpose: 'Establish operational competence, accountability and commercial maturity; explain how NOYA is engaged.',
   pages: [
     {
-      layout: 'cover', img: 'car-street', pos: '40% 50%', approval: 'photo rights (car image)',
+      layout: 'cover', img: 'car-street', pos: '40% 50%',
       kicker: 'Executive Travel · Hospitality · Lifestyle Management',
       title: 'NOYA Corporate',
       line: 'Travel, hospitality and visits for organisations, held by one contact.\nExpert in Egypt. Arranging worldwide.',
       base: ['noyaconcierge.com', 'Edition 2026'],
     },
     {
-      layout: 'split', side: 'right', img: 'car-night', pos: '40% 50%', approval: 'photo rights (car image)',
+      layout: 'split', side: 'right', img: 'car-night', pos: '40% 50%',
       eyebrow: 'About NOYA',
       title: 'An extension of your executive team.',
       blocks: [
@@ -70,7 +70,6 @@ export default {
         { photos: { imgs: ['pyramids-camels', 'pyramid-woman'], h: 52, cols: '1.5fr 1fr' } },
         { note: 'Access to heritage sites and venues is subject to the permissions of the relevant authorities and owners.', mt: 3 },
       ],
-      approval: 'photo rights (pyramids image)',
     },
     {
       layout: 'band', img: 'beach-dinner', h: 110, pos: '50% 55%',
@@ -95,7 +94,6 @@ export default {
         ] } },
         { note: `Fees reflect scope, volume and the level of availability required. ${TERMS}`, mt: 6 },
       ],
-      approval: 'engagement model',
     },
     {
       layout: 'text', tone: 'navy',
@@ -127,10 +125,10 @@ export default {
     {
       layout: 'closing', img: 'yacht-tray-wide', h: 104, pos: '50% 50%',
       eyebrow: 'Corporate enquiries',
-      title: 'A trusted partner for executive travel, hospitality and visits to Egypt.',
+      title: 'Wherever your people travel.\nWith particular expertise in Egypt.',
       small: true,
       blocks: [
-        { p: 'For a corporate account, a visiting delegation or a single assignment in Egypt or internationally, contact NOYA directly.' },
+        { p: 'For a corporate account, retained support or a single assignment, in Egypt, across Europe or further afield, contact NOYA directly.' },
         { contact: { founder: true } },
       ],
     },

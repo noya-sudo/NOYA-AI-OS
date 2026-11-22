@@ -30,7 +30,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'car-night', pos: '60% 50%', approval: 'photo rights (car image)',
+      layout: 'split', side: 'left', img: 'car-night', pos: '60% 50%',
       eyebrow: 'Who we work with',
       title: 'Four kinds of client.\nOne standard of care.',
       blocks: [
@@ -63,8 +63,8 @@ export default {
       blocks: [
         { p: 'Reservations at restaurants that are difficult to book. Tickets for the match, the show, the opening. A private chef for a week at the villa. Flowers, gifts and surprises delivered on the right day, to the right door.' },
         { h3: 'Private sourcing', mt: 4 },
-        { p: 'Watches, handbags, jewellery, vehicles, art and rare objects, found through independent dealers, specialist houses and private collectors. Every piece is presented with its provenance, condition and price before anything is committed.' },
-        { note: 'NOYA is not an authorised dealer or agent for any brand and does not offer guaranteed allocations. Authentication is arranged through independent specialists.', mt: 4 },
+        { p: 'Luxury watches, rare handbags, jewellery, cars, art, collectibles and gifts, sourced on request through independent dealers, specialist houses and private sellers, and presented with provenance, condition and price before you decide.' },
+        { note: 'Subject to availability, with independent verification where appropriate. NOYA is not an authorised dealer for any brand.', mt: 4 },
       ],
     },
     {
@@ -77,12 +77,11 @@ export default {
         { gap: 5 },
         { box: { h: 'Selected work · Cairo, October 2025', t: 'An international wedding party at a five-star Cairo hotel: a group rate negotiated and contracted, guest bookings taken directly, the rooming list managed through every revision to the final list, and the couple’s suite and photo session arranged.' } },
       ],
-      approval: 'case study (client courtesy approval)',
     },
     {
       layout: 'text', tone: 'navy',
       eyebrow: 'Corporate and brands',
-      title: 'For organisations, the same care at a different scale.',
+      title: 'For organisations, the same care.',
       blocks: [
         { cols: { n: 2, items: [
           { h: 'Corporate hospitality', t: 'Executive travel, visiting delegations, board dinners, client entertainment, retreats and off-sites. One NOYA contact holds the whole programme and stays accountable for it, from the first proposal to the final account.', more: 'See NOYA Corporate' },
@@ -93,7 +92,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'pyramid-woman', pos: '45% 50%', approval: 'photo rights (Giza image)',
+      layout: 'split', side: 'left', img: 'pyramid-woman', pos: '45% 50%',
       eyebrow: 'Egypt',
       title: 'Where our knowledge\nruns deepest.',
       blocks: [
@@ -110,8 +109,7 @@ export default {
     {
       layout: 'text',
       eyebrow: 'Beyond Egypt · How we work',
-      title: 'Arranged worldwide, through people and places we know.',
-      approval: 'international destinations list',
+      title: 'Worldwide, through people we know.',
       blocks: [
         { p: 'Outside Egypt, we arrange stays and journeys across the Mediterranean summer, Europe’s cities and further afield. We work through properties, drivers and specialists we have vetted, and introduce trusted partners where they are better placed to deliver.' },
         { list: { two: true, items: ['Marbella and the Costa del Sol', 'Mykonos and the Greek islands', 'Saint-Tropez and Cannes', 'London, Paris and European cities', 'Long-haul and family holidays', 'Further afield, on request'] } },
@@ -132,7 +130,7 @@ export default {
       blocks: [
         { p: 'Most relationships with NOYA begin with a single request. Send it by email or WhatsApp, as briefly as you like, and we will reply personally.' },
         { contact: { founder: true } },
-        { collection: 'NOYA Private Desk · NOYA Corporate · NOYA Brands & Productions · NOYA Trade & Partners · NOYA Selected Work. Each is available on request.' },
+        { collection: 'NOYA Private Desk · NOYA Corporate · NOYA Brands & Productions · NOYA Trade & Partners. Each is available on request; NOYA Selected Work is shared privately.' },
       ],
     },
   ],

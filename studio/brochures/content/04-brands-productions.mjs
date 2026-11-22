@@ -12,7 +12,7 @@ export default {
   purpose: 'Show the ground layer NOYA provides around a brand programme or a shoot, and exactly where NOYA’s responsibility begins and ends.',
   pages: [
     {
-      layout: 'cover', img: 'pyramid-woman', pos: '50% 35%', approval: 'photo rights (cover image)',
+      layout: 'cover', img: 'pyramid-woman', pos: '50% 35%',
       kicker: 'Brand Experiences · Talent · Production Coordination',
       title: 'NOYA Brands & Productions',
       line: 'Locations, logistics and hospitality for brands, agencies\nand production teams, in Egypt and internationally.',
@@ -29,7 +29,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'shoot-villa', pos: '50% 50%', approval: 'photo rights (behind-the-scenes image)',
+      layout: 'split', side: 'left', img: 'shoot-villa', pos: '50% 50%',
       eyebrow: 'Scope of service',
       title: 'Everything around the camera.',
       blocks: [
@@ -49,7 +49,7 @@ export default {
       ],
     },
     {
-      layout: 'band', img: 'terrace-sea', h: 108, pos: '50% 50%', approval: 'photo rights (terrace image)',
+      layout: 'band', img: 'terrace-sea', h: 108, pos: '50% 50%',
       eyebrow: 'Brand experiences and destination events',
       title: 'A brand programme, properly hosted.',
       blocks: [
@@ -79,7 +79,6 @@ export default {
       layout: 'text',
       eyebrow: 'Egypt · Locations',
       title: 'One country. Many looks.',
-      approval: 'photo rights (Giza image)',
       blocks: [
         { intro: 'Desert, Nile, Mediterranean coast, Red Sea, ancient monument and modern city, most within a few hours of one another and workable for much of the year.' },
         { cols: { n: 2, items: [
@@ -89,8 +88,22 @@ export default {
           { h: 'The North Coast and the desert', t: 'Mediterranean beaches and summer villas; open desert landscapes within reach of Cairo.' },
         ] } },
         { gap: 6 },
-        { photos: { imgs: ['pyramid-woman', 'yacht-tray-wide', 'pyramids-camels'], h: 52, cols: '1fr 1.4fr 1.4fr' } },
+        { photos: { imgs: ['pyramids-camels', 'yacht-tray-wide'], h: 56 } },
         { note: 'Filming at heritage sites requires permissions from the relevant Egyptian authorities, applied for through licensed partners. Timelines vary by site.', mt: 3 },
+      ],
+    },
+    {
+      layout: 'text', tone: 'navy', reference: true,
+      eyebrow: 'Creative references',
+      title: 'Egypt, through a creative lens.',
+      blocks: [
+        { refs: { h: 112, items: [
+          { img: 'ref-dior-giza', title: 'Dior — Giza, 2022', text: 'Men’s Pre-Fall 2023 runway presentation at the Pyramids of Giza.' },
+          { img: 'ref-jacquemus-egypt', title: 'Jacquemus — Egypt, 2025', text: 'La Croisière campaign, photographed across Egypt from Cairo to Aswan.' },
+        ] } },
+        { gap: 7 },
+        { p: 'From Dior’s runway presentation at Giza to Jacquemus’ campaign across Egypt, the country has provided a remarkable setting for international fashion. NOYA works with brands and their creative teams to coordinate the locations, local production support, travel and hospitality behind their own vision.' },
+        { note: 'Independent creative references. NOYA was not involved in these productions. Locations and permissions are subject to approval. Photography: Dior, Henar Sherif and Adel Essam; Jacquemus, Mohamed Sherif.', mt: 4 },
       ],
     },
     {
@@ -103,7 +116,6 @@ export default {
         { gap: 8 },
         { photos: { imgs: ['shoot-yacht', 'robe-pool', 'champagne-car'], h: 62, cols: '1fr 1.6fr 1fr' } },
       ],
-      approval: 'photo rights (behind-the-scenes image)',
     },
     {
       layout: 'text', tone: 'navy',

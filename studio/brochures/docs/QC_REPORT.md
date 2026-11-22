@@ -1,21 +1,22 @@
 # NOYA Brochure Collection · Quality-Control Report
 
-*Final build 2026-11-21 13:12 UTC · draft markers ON · `node studio/brochures/build.mjs`*
+*Final publication build 2026-11-22 15:27 UTC · `DRAFT=0` · no approval markers in any file.*
 
-## 1. Build results
+## 1. Final build results
 
-| # | File | Pages | Size | Overflow / clipping | Fonts embedded | Links |
-|---|---|---|---|---|---|---|
-| 01 | `NOYA_01_Concierge_Overview_v2026-11.pdf` | 10 | 1.72 MB | none | Cormorant Garamond, Jost | 4 live |
-| 02 | `NOYA_02_Private_Desk_v2026-11.pdf` | 9 | 1.07 MB | none | Cormorant Garamond, Jost | 4 live |
-| 03 | `NOYA_03_Corporate_v2026-11.pdf` | 10 | 1.35 MB | none | Cormorant Garamond, Jost | 4 live |
-| 04 | `NOYA_04_Brands_and_Productions_v2026-11.pdf` | 11 | 1.71 MB | none | Cormorant Garamond, Jost | 4 live |
-| 05 | `NOYA_05_Trade_and_Partners_v2026-11.pdf` | 9 | 1.4 MB | none | Cormorant Garamond, Jost | 4 live |
-| 06 | `NOYA_06_Selected_Work_Q4-2026.pdf` | 5 | 0.26 MB | none | Cormorant Garamond, Jost | 4 live |
+| # | File | Pages | Size | Overflow / clipping | Links |
+|---|---|---|---|---|---|
+| 01 | `NOYA_01_Concierge_Overview_v2026-11.pdf` | 10 | 1.72 MB | none | 4 live |
+| 02 | `NOYA_02_Private_Desk_v2026-11.pdf` | 9 | 1.06 MB | none | 4 live |
+| 03 | `NOYA_03_Corporate_v2026-11.pdf` | 10 | 1.34 MB | none | 4 live |
+| 04 | `NOYA_04_Brands_and_Productions_v2026-11.pdf` | 12 | 1.91 MB | none | 4 live |
+| 05 | `NOYA_05_Trade_and_Partners_v2026-11.pdf` | 9 | 1.39 MB | none | 4 live |
+| 06 | `NOYA_06_Selected_Work_Q4-2026.pdf` | 5 | 0.29 MB | none | 4 live |
+| 04 | `NOYA_04_Brands_and_Productions_v2026-11_without-references.pdf` | 11 | 1.69 MB | none | 4 live |
 
-Every PDF embeds its fonts and photos (self-contained), is A4 portrait for screen and phone reading, and is under 2 MB, so it
-can be emailed or sent on WhatsApp. Contact links tested in every file: `mailto:noya@noyaconcierge.com`, `https://wa.me/447864569006`,
-`https://noyaconcierge.com/`, `https://www.instagram.com/noyaconcierge/`.
+All files embed their fonts and photos, are A4 portrait, and are 2 MB or less (email and WhatsApp friendly). Contact links in every file:
+`mailto:noya@noyaconcierge.com`, `https://wa.me/447864569006`, `https://noyaconcierge.com/`, `https://www.instagram.com/noyaconcierge/`.
+Final pages were reviewed rendered at full resolution (`studio/out/brochures/final/pages/`).
 
 ## 2. Checks performed
 
@@ -63,67 +64,29 @@ can be emailed or sent on WhatsApp. Contact links tested in every file: `mailto:
 - Two-part titles ("Clear scope. Clear costs.", "One country. Many looks."): kept where they are existing NOYA lines.
 - Vehicle marques (Maybach seat emblem, Bentley grille, Rolls-Royce): incidental to chauffeur photography, not retouched; listed for sign-off.
 
-## 5. Images printed, with status
+## 5. Images
 
-| Key | Status | Uses | Where |
-|---|---|---|---|
-| `beach-dinner` | NOYA CONTENT | 3 | 01 p6, 03 p6, 05 p1 |
-| `car-headrest` | NOYA CONTENT | 1 | 03 p4 |
-| `car-night` | APPROVAL REQUIRED | 3 | 01 p3, 02 p3, 03 p2 |
-| `car-street` | APPROVAL REQUIRED | 1 | 03 p1 |
-| `champagne-car` | NOYA CONTENT | 5 | 01 p5, 01 p7, 02 p9, 04 p7, 05 p3 |
-| `pyramid-woman` | APPROVAL REQUIRED | 5 | 01 p8, 03 p5, 04 p1, 04 p6, 05 p4 |
-| `pyramids-camels` | APPROVAL REQUIRED | 2 | 03 p5, 04 p6 |
-| `robe-pool` | NOYA CONTENT | 3 | 01 p10, 02 p1, 04 p7 |
-| `robes-two` | NOYA CONTENT | 4 | 01 p7, 02 p5, 04 p11, 05 p8 |
-| `shoot-villa` | APPROVAL REQUIRED | 1 | 04 p3 |
-| `shoot-yacht` | APPROVAL REQUIRED | 1 | 04 p7 |
-| `terrace-sea` | APPROVAL REQUIRED | 1 | 04 p4 |
-| `towels-daybed` | NOYA CONTENT | 4 | 01 p7, 02 p4, 05 p4, 05 p8 |
-| `yacht-tray-tall` | NOYA CONTENT | 2 | 01 p1, 05 p9 |
-| `yacht-tray-wide` | NOYA CONTENT | 4 | 01 p4, 03 p10, 04 p6, 05 p4 |
+All photographs approved by Adam on 22 Nov 2026 (see ASSET_REGISTER). The two creative reference panels in 04 are third-party material: see
+RELEASE_REPORT for the dependency.
 
-## 6. Open approvals before release (red tags in the draft PDFs)
+## 6. Open approvals
 
-| Doc | Page: item |
-|---|---|
-| 01 | p3: photo rights (car image) |
-| 01 | p6: case study (client courtesy approval) |
-| 01 | p8: photo rights (Giza image) |
-| 01 | p9: international destinations list |
-| 02 | p3: photo rights (car image) |
-| 02 | p6: sourcing supplier capability |
-| 02 | p8: access wording |
-| 03 | p1: photo rights (car image) |
-| 03 | p2: photo rights (car image) |
-| 03 | p5: photo rights (pyramids image) |
-| 03 | p7: engagement model |
-| 04 | p1: photo rights (cover image) |
-| 04 | p3: photo rights (behind-the-scenes image) |
-| 04 | p4: photo rights (terrace image) |
-| 04 | p6: photo rights (Giza image) |
-| 04 | p7: photo rights (behind-the-scenes image) |
-| 05 | p4: photo rights (Giza image) |
-| 05 | p5: partner terms |
-| 05 | p6: partner terms |
-| 06 | p3: case study (client courtesy approval) |
-
-Plus, collection-wide: **Instagram handle** (@noyaconcierge vs @noya__egy, evidence register F5), and the **photographer and releases** for
-NOYA's branded shoots before any print run.
+None in the copy. Remaining external dependencies are listed in `RELEASE_REPORT.md`.
 
 ## 7. Release procedure
 
-1. Adam clears or rejects each open approval (record it in `EVIDENCE_REGISTER.md › Sign-off log`). A rejected item is cut from the content module.
-2. `DRAFT=0 node studio/brochures/build.mjs` to export clean PDFs (no red tags); re-run the visual check.
-3. Upload the final PDFs to Drive beside the drafts; send only the brochure for the buyer in front of you.
+1. Approvals recorded in `EVIDENCE_REGISTER.md › Sign-off log` (22 Nov 2026).
+2. Clean PDFs exported with `DRAFT=0` (and `OMIT_REFS=1` for 04 without references); final pages reviewed at full resolution.
+3. Publication copies are in their own Drive folder, separate from drafts and evidence. Send only the brochure for the buyer in front of you.
 4. Print versions: no print specification was supplied. For print, request bleed (3 mm), CMYK conversion and higher-resolution originals
    of the branded shoots; the current files are optimised for screen.
 
 ## 8. Files
 
-- Editable source: `studio/brochures/` (content, layout, build, registers) on branch `claude/lucid-gates-gw5yik`.
-- Draft PDFs and the internal evidence register: private Drive folder *NOYA Brochure Collection 2026-11 (DRAFT, not for
-  distribution)* (Drive 18KATRdDhjG9Et6Aa-4pCabqzqtNZuPXI), restricted, not shared.
-- The prepared image set (27 JPEGs, 3.9 MB zip) was **not** uploaded: it exceeds the Drive connector's per-file limit from this session.
-  It can be rebuilt from the 2026 PDFs (see ASSET_REGISTER) or uploaded in parts.
+- Editable source: `studio/brochures/` on branch `claude/lucid-gates-gw5yik`.
+- **Publication copies (final):** Drive folder *NOYA Brochure Collection 2026-11 · Publication copies (FINAL, not yet sent)*
+  (1LIDD3nbadwZDB0PCqdm_9mzP8hmEpTA9), restricted; locally `studio/out/brochures/final/`.
+- **Internal (drafts, evidence, legal):** Drive folder *NOYA Brochure Collection 2026-11 (DRAFT, not for distribution)*
+  (18KATRdDhjG9Et6Aa-4pCabqzqtNZuPXI): the 21 Nov draft PDFs, the internal evidence register and the partner agreement draft.
+- The prepared image set is not in Drive (over the connector's per-file limit); it is rebuilt from the 2026 PDFs (ASSET_REGISTER).
 - Previous edition: the original Canva designs are unchanged.

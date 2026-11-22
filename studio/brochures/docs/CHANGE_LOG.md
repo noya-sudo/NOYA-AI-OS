@@ -71,3 +71,20 @@ and the Partner Guide (Summer & Autumn 2026) to the 2026-11 collection. The orig
 - No photograph is placed beside the case study or on the portfolio cover, so that no image reads as a picture of the work it sits next to.
 - Retained but flagged for rights confirmation: the Giza cover image (B&P), the London hotel arrival (Corporate cover), two car images,
   two behind-the-scenes shoot images and a small Giza camel image.
+
+## Final release · 22 Nov 2026 (Adam's approval instructions)
+
+- **Photography approved**; all photo approval banners removed. Corporate cover stays the street image (no Ritz London image). Vehicle marques left as photographed.
+- **Dior and Jacquemus restored** in 04 as one editorial page, *Egypt, through a creative lens* (p7, between locations and project types), with
+  Adam's captions (checked against press coverage), his editorial statement, a one-line attribution and photographer credits. Not used in Selected Work.
+  A second edition of 04 without this page is exported for use until permissions are in place.
+- **Private sourcing** rewritten to read as a valuable service on request (luxury watches, rare handbags, jewellery, cars, art, collectibles, gifts),
+  with three positives (discreet, verified where appropriate, your decision) and a single caveat line. Flagship copy aligned.
+- **Trade & Partners**: client ownership, non-solicitation, payment schedules and responsibilities all now "confirmed in a written partner agreement".
+  A one-page partner agreement draft for legal review is in the internal Drive folder (not in the brochure, not in the repository).
+- **Corporate** closing now international: *Wherever your people travel. With particular expertise in Egypt.*
+- **Selected Work**: shared privately on request; defensive pages replaced. The Cairo wedding is shown as real delivery: the entry plus a dated,
+  step-by-step page (*From first rate to final night*), all re-checked against the original records.
+- **Copyedit**: shorter headings (*For organisations, the same care.*; *Worldwide, through people we know.*); repeated images within a document
+  removed; the flagship now notes Selected Work is shared privately; an unsupported "the Gulf" and "delivery anywhere" were caught and cut.
+- **Production**: final copies exported to a separate `final/` folder and a separate Drive folder; drafts, evidence and legal drafts kept apart.

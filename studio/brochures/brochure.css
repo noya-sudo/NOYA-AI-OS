@@ -188,3 +188,11 @@ p.b, .item p, .card p, .box p, .steps .st p, ul.rows li, ul.dots li, .note, .ent
 .navy .item .more { color: var(--on-navy-3); }
 .split.left .rf { left: calc(46% + 12mm); }
 .split.right .rf { right: calc(46% + 12mm); }
+
+/* Creative reference panels (04): photo above, caption below */
+.refs { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+.refs figure { margin: 0; }
+.refs .p { background-size: cover; background-position: center; }
+.refs figcaption { margin-top: 3.4mm; border-top: .25mm solid var(--rule-navy); padding-top: 3mm; }
+.refs .rt { display: block; font-family: var(--sans); font-weight: 460; font-size: 6.8pt; letter-spacing: .26em; text-transform: uppercase; color: var(--on-navy); margin-bottom: 1.6mm; }
+.refs .rd { display: block; font-family: var(--serif); font-style: italic; font-size: 11pt; line-height: 1.35; color: var(--on-navy-2); text-wrap: pretty; }

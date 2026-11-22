@@ -51,7 +51,6 @@ export default {
       layout: 'text',
       eyebrow: 'Destinations',
       title: 'Egypt, in four chapters.',
-      approval: 'photo rights (Giza image)',
       blocks: [
         { cols: { n: 2, items: [
           { k: 'I', h: 'Cairo and Giza', t: 'The Pyramids, the Grand Egyptian Museum and Cairo’s historic and contemporary hotels and restaurants. Suited to first visits, executive travel, cultural programmes and VIP guests.' },
@@ -67,13 +66,12 @@ export default {
       layout: 'text', tone: 'navy',
       eyebrow: 'How partnership works',
       title: 'Clear ownership. Clear handovers.',
-      approval: 'partner terms',
       blocks: [
         { cols: { n: 2, items: [
-          { h: 'Your client remains yours', t: 'We do not market to, solicit or contract directly with partner clients. Confidentiality and non-solicitation are agreed in writing before the first booking.' },
+          { h: 'Your client remains yours', t: 'NOYA does not market to or solicit partner clients. Client ownership, confidentiality and non-solicitation are confirmed in a written partner agreement before the first booking.' },
           { h: 'White-label or NOYA-branded', t: 'Documents, guest communications and on-the-ground introductions are presented under your brand or ours, as agreed for each booking.' },
           { h: 'A defined handover', t: 'Each booking moves from your brief to our proposal, your confirmation, a guest dossier and on-the-ground delivery, with responsibilities stated in writing.' },
-          { h: 'Escalation', t: 'Every booking has a named NOYA lead. Our founder is the escalation point for every partner relationship.' },
+          { h: 'Escalation', t: 'Every booking has a named NOYA lead, and our founder is the escalation point for each partner relationship.' },
         ] } },
         { gap: 8 },
         { steps: [
@@ -89,7 +87,6 @@ export default {
       layout: 'text',
       eyebrow: 'Commercial structures',
       title: 'Net or commission, agreed in writing.',
-      approval: 'partner terms',
       blocks: [
         { p: 'We work with partners on one of two structures, chosen per partner or per booking and confirmed in a written agreement before the first booking. Terms depend on the programme and on volume.' },
         { gap: 3 },
@@ -98,7 +95,7 @@ export default {
           { tag: 'Structure B', h: 'Commission', t: 'We quote the client-facing price and pay you an agreed commission on confirmed, paid bookings.', list: ['Client-facing proposal from NOYA, white-label if required', 'Commission paid on completion, per agreement', 'Suited to introducers and referral partners'] },
         ] } },
         { gap: 6 },
-        { box: { h: 'Payment', t: 'Deposits secure suppliers and dates; balances follow the schedule in each booking confirmation. Supplier cancellation terms are passed through transparently.' } },
+        { box: { h: 'Payment', t: 'Deposit and balance schedules are set in the partner agreement and confirmed for each booking. Supplier cancellation terms are passed through transparently.' } },
         { note: 'NOYA does not publish partner rates or commission levels. Preferred rates or benefits apply only where a supplier has agreed them in writing for a specific booking.', mt: 5 },
       ],
     },
@@ -113,7 +110,7 @@ export default {
           ['Licensed operators', 'Regulated services such as private aviation, yacht charter, licensed guiding and security, delivered under their own licences.'],
         ] } },
         { gap: 6 },
-        { note: ROLE },
+        { note: `Responsibilities are confirmed in the partner agreement and in each booking confirmation. ${ROLE}` },
       ],
     },
     {

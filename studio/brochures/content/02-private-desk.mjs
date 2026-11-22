@@ -28,7 +28,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'right', img: 'car-night', pos: '50% 50%', approval: 'photo rights (car image)',
+      layout: 'split', side: 'right', img: 'car-night', pos: '50% 50%',
       eyebrow: 'What the Desk includes',
       title: 'One person who already knows the answer.',
       blocks: [
@@ -75,19 +75,18 @@ export default {
       layout: 'text', tone: 'navy',
       eyebrow: 'Private sourcing',
       title: 'Some things cannot simply be ordered.',
-      approval: 'sourcing supplier capability',
       blocks: [
         { p: 'A particular watch reference. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.' },
-        { p: 'We search through independent dealers, specialist auction and resale houses and private collectors, and present what we find with its provenance, condition and price, before anything is committed.' },
+        { p: 'On request, we search independent dealers, specialist houses, auctions and private collections, and bring you what we find with its provenance, condition and price, so that you can decide with confidence.' },
         { gap: 3 },
-        { list: { two: true, items: ['Watches', 'Handbags and leather goods', 'Jewellery', 'Vehicles', 'Art, objects and collectibles', 'Gifts and occasion pieces'] } },
+        { list: { two: true, items: ['Luxury watches', 'Rare handbags', 'Jewellery', 'Cars', 'Art', 'Collectibles', 'Gifts and occasion pieces'] } },
         { gap: 7 },
         { cols: { n: 3, items: [
-          { h: 'Authenticated', t: 'Pieces are offered only with appropriate authentication by independent specialists, and the documentation is passed to you.' },
-          { h: 'In writing', t: 'Every detail is documented. You decide before anything is bought.' },
-          { h: 'Independent', t: 'NOYA is not an authorised dealer or agent for any brand. We do not offer guaranteed allocations.' },
+          { h: 'Discreet', t: 'Searches are made without revealing who is asking.' },
+          { h: 'Verified', t: 'Independent verification is arranged where appropriate, and the documentation comes to you.' },
+          { h: 'Your decision', t: 'Nothing is bought until you have approved the piece, its condition and its price.' },
         ] } },
-        { note: 'Availability depends on the market at the time of the request.', mt: 6 },
+        { note: 'Subject to market availability. NOYA is not an authorised dealer for any brand and does not offer guaranteed allocations.', mt: 6 },
       ],
     },
     {
@@ -111,7 +110,6 @@ export default {
       layout: 'text',
       eyebrow: 'Access',
       title: 'By introduction or application.',
-      approval: 'access wording',
       blocks: [
         { intro: 'We keep the number of Private Desk relationships small, so that each one receives proper attention.' },
         { p: 'Many begin with an introduction. Others begin with a private conversation with our founder. We consider each enquiry individually.' },
