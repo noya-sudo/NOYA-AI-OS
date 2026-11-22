@@ -18,6 +18,33 @@ const opp = (i, stage = 'PROJECT_READY') => ({ id: uid(100 + i), company_id: uid
   next_action: `Prepare the first note for Example Company ${i}.`, next_action_due: day(3), priority: 80 - i, blocker: null, why_now: 'Public launch announced.', stage, rank: 4, missing_next: false, overdue: false });
 const route = (i) => ({ opportunity_id: uid(100 + i), company_id: uid(500 + i), company: `Example Company ${i}`, person: `Test Person ${i}`, position: 'Director', email: `person${i}@example.com`, label: 'Named public email',
   route_state: 'PUBLIC_NAMED_EMAIL', bucket: 3, status: 'READY', stream: STREAMS[i % 36].label, priority: 70, sent: false, warm: i === 0, next_action: 'Held until SPF and DKIM pass.', next_action_due: null, source_url: null });
+const qItem = (i, o = {}) => ({ id: uid(800 + i), rank: i + 1, state: 'QUEUED', opportunity_id: uid(100 + i), company_id: uid(500 + i), person: `Test Person ${String.fromCharCode(65 + i)}`, position: 'Founder',
+  company: `Example Atelier ${i}`, stream: 'WEDDINGS', stream_label: 'Weddings', category: 'WEDDINGS_EVENTS', category_label: 'Wedding planners / private events', market: 'EGYPT',
+  project_idea: `A three-day destination celebration in Egypt for Example Atelier ${i}'s clients.`, why_now: 'They announced an international wedding season with new destinations.',
+  route_email: `office${i}@example-atelier.com`, route_canonical: 'OFFICIAL_PUBLISHED_INBOX', route_label: 'Official published inbox · for their attention', route_source_type: 'OFFICIAL_WEBSITE',
+  route_source_url: `https://example-atelier-${i}.com/contact`, confidence: 'MEDIUM', draft_subject: `Example Atelier ${i} and NOYA`, draft_excerpt: 'For the attention of Test Person… A short, specific note.',
+  draft_status: 'READY_FOR_REVIEW', has_gmail_draft: false, task_id: uid(700 + i), next_action: 'Review in Supabase and approve before any outreach',
+  next_step: 'Review the draft in the approval desk; approving creates an unsent Gmail draft', failed: [], score: 60 - i, sendable_today: true, send_window: 'Today', ...o });
+const LANE_BASE = () => ({ ok: true, date: day(0), built_at: now(), morning_at: now(), stale: false,
+  counts: { act_now: 5, today: 3, today_sent: 1, reserve: 2, needs_contact: 2, needs_draft: 7, follow_ups: 2, replies: 2 },
+  allowance: { mode: 'ACTIVE', stage: 1, stages: [5, 10, 15, 20, 25], daily_cap: 5, stage_cap: 5, sent_today: 1, remaining: 4, slots: ['11:05', '12:40', '14:15', '15:50'], slot_zone: 'Cairo',
+    markets_today: ['EGYPT', 'GCC'], warm_pending: 5, reasons: [], rule: 'Nothing is sent automatically.' },
+  funnel: { considered: 849, screened: 754, researched: 70, ready: 25, ready_unique_companies: 25 },
+  coverage: { WEDDINGS_EVENTS: { label: 'Wedding planners / private events', considered: 100, ready: 21, today: 3 }, HOTELS_RESIDENCES: { label: 'Hotels / branded residences', considered: 50, ready: 4, today: 1 } },
+  shortfall: 0, bottleneck: 'personalised_draft', learning: { clean_sends: 0, excluded_21_nov: 35, weights_active: 0 }, total: 0, limit: 25, offset: 0, extra: {} });
+export const LANE_FX = (lane) => {
+  const B = LANE_BASE(); let items = [];
+  if (lane === 'TODAY') items = [qItem(0, { draft_status: 'GMAIL_DRAFT', has_gmail_draft: true, next_step: 'Send the unsent Gmail draft yourself, in a send window' }),
+    qItem(1, { route_email: 'test.person@example-house.com', route_canonical: 'CLAY_WORK_EMAIL', route_label: 'Clay work email · not independently verified', route_source_type: 'CLAY', route_source_url: null, confidence: 'LOW', market: 'UK', sendable_today: false, send_window: 'Mon 23 Nov' }),
+    qItem(2, { route_canonical: 'PUBLIC_BUSINESS_EMAIL_INSTAGRAM', route_label: 'Public business email · Instagram · not SMTP-verified', route_source_type: 'INSTAGRAM_PUBLIC', route_source_url: 'https://www.instagram.com/example', confidence: 'MEDIUM' }),
+    qItem(3, { state: 'SENT' })];
+  if (lane === 'RESERVE') items = [qItem(4, { rank: 26 }), qItem(5, { rank: 27 })];
+  if (lane === 'NEEDS_CONTACT') items = [qItem(6, { failed: ['contact_route', 'route_classification'], route_email: null, route_label: 'Not found', confidence: null, next_step: 'Find the right person and a sourced professional route' }), qItem(7, { person: null, failed: ['real_account_person', 'decision_maker'] })];
+  if (lane === 'FOLLOW_UPS') { items = [{ opportunity_id: uid(130), company: 'Example Follow Co', person: 'Test Person F', stream_label: 'Brands', status: 'CONTACTED', due_on: day(1), next_action: 'Follow up if no reply.', last_sent: now() }]; B.extra = { held_21_nov: 38, hold_rule: 'Releasing them is Adam\'s decision.' }; }
+  if (lane === 'REPLIES') items = [{ thread_id: 'thread-1', company: 'Example Reply Co', subject: 'Re: Example', summary: 'Interested in a call next week.', last_inbound_at: now(), classification: 'POSITIVE', supplier: false, url: 'https://mail.google.com/mail/?authuser=noya@noyaconcierge.com#all/thread-1', opportunity_id: uid(131) }];
+  if (lane === 'ACT_NOW') { items = FX.hq_today().actions; B.extra = { more: 0 }; }
+  return { ...B, lane, items, total: items.length };
+};
 export const FX = {
   hq_today: () => ({ generated_at: now(), gate: 'CLOSED', bottleneck: 'Conversion: 3 warm actions are prepared and waiting for you',
     actions: [
@@ -55,6 +82,10 @@ export const FX = {
     return { rows: rows.slice(off, off + lim), total: rows.length, limit: lim, offset: off, filter: b?.p_filter, computed_at: now() };
   },
   hq_ceo_action: () => ({ ok: true, status: 'DONE' }),
+  hq_outreach_lanes: (b) => LANE_FX(b?.p_lane || 'TODAY'),
+  hq_outreach_draft: (b) => ({ ok: true, id: b?.p_id, company: 'Example Atelier', person: 'Test Person A', to: 'office@example-atelier.com', route_label: 'Official published inbox · for their attention',
+    subject: 'Example Atelier and NOYA', body: 'For the attention of Test Person A\n\nHi Test,\n\nA short, specific note about one project idea.\n\nBest,\nAdam', draft_status: 'GMAIL_DRAFT',
+    gmail_draft_url: 'https://mail.google.com/mail/u/0/#drafts?compose=abc', rule: 'Unsent. Approving in the desk creates an unsent Gmail draft; Adam sends it himself.' }),
   hq_seasons: () => ({ generated_at: now(), horizon: 180, counts: { d30: 1, d60: 2, d90: 2, d180: 3, act_now: 1 }, undated_rule: 'NO SOURCE = NO DATE',
     windows: [
       { id: uid(901), name: 'Example Fashion Week', category: 'FASHION_WEEK', market: 'EUROPE', stream: 'STREAM_7', stream_label: 'Stream 7', starts_on: day(20), ends_on: day(26), lead_time_days: 45, outreach_from: day(-25), outreach_to: day(5), angle: 'Brand hospitality around the shows.', accounts: 'Example houses', source_url: 'https://example.org/fashion-calendar', source_title: 'Official calendar', verified: now(), confidence: 'VERIFIED', days_to_start: 20, act_now: true, bucket: 30 },
@@ -205,9 +236,11 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
 // 5. Outreach: gate banner, approval-desk strip, filters with counts, zero-match fallback, one route per company.
 {
   const { browser, page, errors, calls } = await open({ hash: 'mail' });
+  await page.waitForSelector('[data-lane="ALL"]', { timeout: 6000 }).catch(() => {});
+  await page.locator('[data-lane="ALL"]').click();
   await page.waitForSelector('.row4[data-lopp]', { timeout: 6000 }).catch(() => {});
   let t = await mainText(page);
-  check('Outreach shows the cold-email gate and the approval desk count', /Cold email is held until SPF and DKIM pass/.test(t) && /waiting for your review in the approval desk/.test(t));
+  check('Outreach shows the send allowance and the approval desk count', /Send allowance today: 5 new first touches/.test(t) && /waiting for your review in the approval desk/.test(t));
   check('Outreach filter chips carry server counts', /Actionable\s*40/.test(t) && /Needs research\s*774/.test(t));
   const emails = await page.locator('.row4[data-lopp] .mono').allInnerTexts(); const cos = await page.locator('.row4[data-lopp] .t4').allInnerTexts();
   check('One route per company: no company appears twice on the page', cos.length === 25 && new Set(cos.map((c) => c.replace(/Warm|Sent/g, '').trim())).size === cos.length && new Set(emails).size === emails.length);
@@ -224,10 +257,68 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('No uncaught page errors on Outreach', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
+// 5b. Daily acquisition policy: Outreach lanes (Act now, Today's 25, Reserve, Needs contact, Follow-ups, Replies), the send allowance,
+// the ten fields on each Today card, truthful route classes, draft on demand, and no send button anywhere.
+{
+  const { browser, page, errors, calls } = await open({ hash: 'mail' });
+  await page.waitForSelector('.q4', { timeout: 6000 }).catch(() => {});
+  let t = await mainText(page);
+  check('Outreach opens on Today’s 25 from one small lane read (no route explorer read)', last(calls, 'hq_outreach_lanes').p_lane === 'TODAY' && n(calls, 'hq_email_routes') === 0
+    && await page.locator('.lane4.on[data-lane="TODAY"]').count() === 1);
+  const lanes = (await page.locator('.lane4').allTextContents()).map((x) => x.replace(/\d+/g, '').trim());
+  check('Lanes: Act now, Today’s 25, Reserve, Needs contact, Follow-ups, Replies (+ All routes) with counts', lanes.join('|') === 'Act now|Today’s|Reserve|Needs contact|Follow-ups|Replies|All routes'
+    && /Act now\s*5/.test(t) && /Needs contact\s*2/.test(t), lanes.join('|'));
+  check('Send allowance: stage, cap, sent, left, spread slots, warm first, manual-send rule', /Send allowance today: 5 new first touches/.test(t) && /ramp stage 1 of 5/.test(t) && /1 sent · 4 left/.test(t)
+    && /11:05, 12:40, 14:15, 15:50 Cairo/.test(t) && /Warm first: 5 items in Act now come before any new send/.test(t) && /Nothing is sent automatically/.test(t));
+  const card = page.locator('.q4').first(); const ct = await card.evaluate((el) => el.textContent.replace(/\s+/g, ' '));
+  const dts = await card.locator('dt').allTextContents();
+  check('Each Today card shows person, company, stream, project idea, why now, route, route source, confidence, draft and next action',
+    dts.join('|') === 'Project idea|Why now|Contact route|Route source|Prepared draft|Next action' && /Test Person A/.test(ct) && /Example Atelier 0/.test(ct) && /Weddings/.test(ct) && /confidence/i.test(ct)
+    && /office0@example-atelier.com/.test(ct) && /Official website/.test(ct) && /Unsent Gmail draft ready/.test(ct) && /Send the unsent Gmail draft yourself/.test(ct));
+  check('Today shows four cards (three queued, one marked sent last)', await page.locator('.q4').count() === 4 && await page.locator('.q4.sent').count() === 1
+    && /Sent/.test(await page.locator('.q4').nth(3).evaluate((el) => el.textContent)));
+  const clay = await page.locator('.q4').nth(1).evaluate((el) => el.textContent.replace(/\s+/g, ' '));
+  check('Clay route stays truthful: "not independently verified", Low confidence, no source link', /not independently verified/.test(clay) && /Low confidence/.test(clay) && await page.locator('.q4').nth(1).locator('a:has-text("where it was found")').count() === 0
+    && /Send Mon 23 Nov/.test(clay), clay.slice(0, 400));
+  check('Instagram route is labelled as public Instagram with its link', /Public Instagram business profile/.test(await page.locator('.q4').nth(2).evaluate((el) => el.textContent)) && await page.locator('.q4').nth(2).locator('a[href^="https://www.instagram.com"]').count() === 1);
+  check('Route provenance link opens the page where the address was found', await page.locator('.q4').first().locator('a[href="https://example-atelier-0.com/contact"]').count() === 1);
+  check('Funnel and mix are shown, never as a quota', /849\s*Considered/.test(t) && /25\s*Send-ready/.test(t) && /Mix today: Wedding planners \/ private events 3/.test(t) && /never forced into equal quotas/.test(t), t.slice(0, 900));
+  check('No send button anywhere on Outreach (manual send in Gmail only)', await page.locator('main button, main a').filter({ hasText: /^\s*(send|send now|send email|send all)\s*$/i }).count() === 0
+    && n(calls, 'hq_send') === 0);
+  await page.locator('.q4').first().locator('[data-draft-open]').click(); await page.waitForSelector('.q4-dr pre', { timeout: 4000 }).catch(() => {});
+  check('Read the full draft loads one draft on demand, with the unsent Gmail link', last(calls, 'hq_outreach_draft').p_id === uid(800) && /A short, specific note about one project idea/.test(await page.locator('.q4-dr pre').textContent().catch(() => ''))
+    && await page.locator('.q4-dr a[href^="https://mail.google.com"]').count() === 1);
+  await page.locator('[data-lane="NEEDS_CONTACT"]').click(); await page.waitForSelector('.row4[data-lopp]', { timeout: 4000 }).catch(() => {});
+  t = await mainText(page);
+  check('Needs contact lists accounts with the missing gates, nothing guessed', last(calls, 'hq_outreach_lanes').p_lane === 'NEEDS_CONTACT' && /Missing: professional route, route class/.test(t) && /No confirmed person yet/.test(t));
+  await page.locator('[data-lane="FOLLOW_UPS"]').click(); await page.waitForTimeout(500); t = await mainText(page);
+  check('Follow-ups shows due items and the held 21 Nov batch as Adam’s decision', /38 follow-ups from the 21 Nov batch are held/.test(t) && /Example Follow Co/.test(t));
+  await page.locator('[data-lane="REPLIES"]').click(); await page.waitForTimeout(500);
+  check('Replies opens the Gmail thread', await page.locator('main a[href*="#all/thread-1"]').count() === 1 && /Positive/.test(await mainText(page)));
+  await page.locator('[data-lane="ACT_NOW"]').click(); await page.waitForTimeout(500);
+  check('Act now shows the warm work first (the same cards as Today)', await page.locator('main .ca4').count() === 5 && /outrank every new send/.test(await mainText(page)));
+  await page.locator('[data-lane="RESERVE"]').click(); await page.waitForTimeout(500);
+  check('Reserve shows the send-ready records behind the 25', await page.locator('.q4').count() === 2 && /behind Today’s 25/.test(await mainText(page)));
+  check('Primary navigation unchanged by the lanes', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Opportunities|Outreach|Streams|Relationships|Projects');
+  check('No uncaught page errors on the Outreach lanes', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
+// 5c. Shortfall and a paused ramp are stated plainly; the gap is never padded.
+{
+  const { browser, page, errors } = await open({ hash: 'mail', behave: (fn, b) => (fn === 'hq_outreach_lanes' ? { ...LANE_FX(b?.p_lane || 'TODAY'), shortfall: 22, bottleneck: 'contact_route',
+    allowance: { mode: 'STOPPED', stage: 2, stages: [5, 10, 15, 20, 25], daily_cap: 0, stage_cap: 10, sent_today: 0, remaining: 0, slots: [], markets_today: ['UK'], warm_pending: 0, reasons: ['Bounce spike: 2 or more bounces in 3 days'] } } : undefined) });
+  await page.waitForSelector('.q4', { timeout: 6000 }).catch(() => {});
+  const t = await mainText(page);
+  check('Shortfall says how many and why, and that nothing is padded', /Short of 25 by 22/.test(t) && /contact routes/.test(t) && /not filled with weaker accounts/.test(t));
+  check('A stop signal pauses new first touches and says why', /New cold first touches are paused today/.test(t) && /Bounce spike/.test(t) && !/Send allowance today/.test(t));
+  check('No uncaught page errors (shortfall / paused)', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
 // 6. Outreach routes fail → Retry; the summary still draws.
 {
   let fail = true;
   const { browser, page } = await open({ hash: 'mail', behave: (fn) => (fn === 'hq_email_routes' && fail ? { status: 503, json: { message: 'upstream' } } : undefined) });
+  await page.waitForSelector('[data-lane="ALL"]', { timeout: 6000 }).catch(() => {}); await page.locator('[data-lane="ALL"]').click();
   await page.waitForSelector('main [data-retry="routes"]', { timeout: 8000 }).catch(() => {});
   const t = await mainText(page);
   check('Failed route list shows Retry while filter counts still draw', /temporarily unavailable/i.test(t) && /Actionable\s*40/.test(t));

@@ -115,6 +115,7 @@ const state = {
   session: null, data: null, ov: null, dir: null, ins: null, errors: {}, notice: null, tab: 'today', loading: false,
   today: null, opps: null, streams: null, mail: null, routes: null, seq: {}, actNote: null, refocus: null, typeT: null, streamOpen: null, streamPillar: '',
   seasons: null, scout: null, pships: null, seasonH: 90, paOpen: null,
+  lane: 'TODAY', laneOff: 0, laneLast: null, draftOpen: null, drafts: {},
   oppF: { stage: 'PROJECT_READY_PLUS', stream: '', rel: '', q: '', offset: 0 }, routeF: { filter: 'ACTIONABLE', stream: '', q: '', offset: 0 },
   desk: null, ops: null, directors: null, club: null, busy: {}, dirKey: null, dirDetail: {}, dirSec: {}, more: false, feedAll: false, feedDir: '',
   deskTab: 'TOP5', deskCh: 'EMAIL', deskDir: '', deskProj: '', deskMore: null, ceo: null, net: null, deskPage: 0, deskOpen: {}, deskSrc: {}, relTab: 'IMPORTANT', clubTab: 'PRIVATE',
@@ -509,7 +510,7 @@ function renderInner() {
     const el = document.getElementById(state.refocus || keep.id); const caret = keep && keep.id === el?.id ? [keep.s, keep.e] : null; state.refocus = null;
     if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(caret ? caret[0] : n, caret ? caret[1] : n); } catch { /* not a text field */ } }
   }
-  if (LIGHT_TABS.has(state.tab) && (TAB_KEYS[state.tab] || []).some((k) => !state[k] && !state.busy[k] && !state.errors[k])) ensureLight(state.tab);
+  if (LIGHT_TABS.has(state.tab) && tabKeys(state.tab).some((k) => !state[k] && !state.busy[k] && !state.errors[k])) ensureLight(state.tab);
   if (EXTRA_KEYS[state.tab]) ensureExtra(state.tab);
   if (state.focusSearch) { const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); state.focusSearch = false; }
 }
@@ -4952,6 +4953,7 @@ function viewOps() {
 // Retry one section (or everything) after a temporary failure.
 async function retry(k) {
   if (k === 'all') { Object.keys(state.errors).forEach((x) => { if (x !== 'lastAction') delete state.errors[x]; }); return load(false, 'full'); }
+  if (k.startsWith('ln_')) { delete state.errors[k]; render(); return reloadLane(); }
   if (LIGHT_KEYS.includes(k)) {
     delete state.errors[k]; render();
     const fns = { today: ['hq_today', {}], opps: ['hq_opportunities', oppArgs()], streams: ['hq_streams', {}], mail: ['hq_email_summary', {}], routes: ['hq_email_routes', routeArgs()],
@@ -5027,7 +5029,10 @@ function bindV3(on) {
 // and each has its own loading, empty and error state. The only write here is hq_ceo_action (audited): nothing sends, approves or spends.
 const LIGHT_TABS = new Set(['today', 'opps', 'mail', 'streams']);
 const LIGHT_KEYS = ['today', 'opps', 'streams', 'mail', 'routes', 'seasons', 'scout', 'pships'];
-const TAB_KEYS = { today: ['today'], opps: ['opps', 'streams'], streams: ['streams'], mail: ['mail', 'routes'] };
+const TAB_KEYS = { today: ['today'], opps: ['opps', 'streams'], streams: ['streams'], mail: ['mail'] };
+// Outreach reads one lane at a time (hq_outreach_lanes); the full route explorer loads only under "All routes".
+const laneKey = () => `ln_${state.lane}`;
+const tabKeys = (tab) => (tab === 'mail' ? (state.lane === 'ALL' ? ['mail', 'routes'] : ['mail', laneKey()]) : TAB_KEYS[tab] || []);
 const LIGHT_TIMEOUT_MS = 15000;
 const STAGE_ORDER = ['MARKET_UNIVERSE', 'QUALIFIED_ACCOUNT', 'CONTACT_READY', 'PROJECT_READY', 'OUTREACH_READY', 'CONTACTED', 'FOLLOW_UP', 'ACTIVE_CONVERSATION', 'MEETING', 'BRIEF', 'PROPOSAL', 'NEGOTIATION', 'WON', 'ACTIVE_PROJECT', 'COMPLETED', 'REPEAT'];
 const STAGE_V4 = { MARKET_UNIVERSE: 'Market universe', QUALIFIED_ACCOUNT: 'Qualified account', CONTACT_READY: 'Contact ready', PROJECT_READY: 'Project ready', OUTREACH_READY: 'Outreach ready', CONTACTED: 'Contacted', FOLLOW_UP: 'Follow-up', ACTIVE_CONVERSATION: 'In conversation', MEETING: 'Meeting', BRIEF: 'Brief', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', ACTIVE_PROJECT: 'Active project', COMPLETED: 'Completed', REPEAT: 'Repeat client', PARKED: 'Parked', LOST: 'Lost', ARCHIVED: 'Archived' };
@@ -5069,12 +5074,18 @@ function loadTab(tab, force = false) {
   if (tab === 'opps' && need('opps')) jobs.push(loadLight('opps', 'hq_opportunities', oppArgs(), force));
   if ((tab === 'opps' || tab === 'streams') && need('streams')) jobs.push(loadLight('streams', 'hq_streams', {}, force && tab === 'streams'));
   if (tab === 'mail' && need('mail')) jobs.push(loadLight('mail', 'hq_email_summary', {}, force));
-  if (tab === 'mail' && need('routes')) jobs.push(loadLight('routes', 'hq_email_routes', routeArgs(), force));
+  if (tab === 'mail' && state.lane === 'ALL' && need('routes')) jobs.push(loadLight('routes', 'hq_email_routes', routeArgs(), force));
+  if (tab === 'mail' && state.lane !== 'ALL' && need(laneKey())) jobs.push(reloadLane(force));
   return Promise.allSettled(jobs);
 }
 function ensureLight(tab) { if (LIGHT_TABS.has(tab)) setTimeout(() => loadTab(tab), 0); }
 const reloadOpps = () => loadLight('opps', 'hq_opportunities', oppArgs(), true);
 const reloadRoutes = () => loadLight('routes', 'hq_email_routes', routeArgs(), true);
+const LANE_PAGE = 25;
+async function reloadLane(force = true) {
+  const key = laneKey(); await loadLight(key, 'hq_outreach_lanes', { p_lane: state.lane, p_limit: LANE_PAGE, p_offset: state.laneOff }, force);
+  if (state[key]) { state.laneLast = state[key]; render(); }
+}
 
 // ---- TODAY: what needs Adam, what is live, what is due, what is waiting.
 function viewToday() {
@@ -5207,20 +5218,115 @@ function streamRow(s) {
   </div>`;
 }
 
-// ---- OUTREACH: one route per company, three states, gated cold email.
+// ---- OUTREACH: Today's 25 and the lanes around it (daily acquisition policy, 22 Nov 2026). One company, one route; every email is an
+// unsent Gmail draft Adam sends himself; the send allowance follows the ramp (5 → 25) and warm work always comes first. Each lane is one
+// small admin-gated read (hq_outreach_lanes); the full route explorer stays under "All routes". Nothing here sends, approves or spends.
+const LANES = [['ACT_NOW', 'Act now', 'act_now'], ['TODAY', 'Today’s 25', 'today'], ['RESERVE', 'Reserve', 'reserve'], ['NEEDS_CONTACT', 'Needs contact', 'needs_contact'],
+  ['FOLLOW_UPS', 'Follow-ups', 'follow_ups'], ['REPLIES', 'Replies', 'replies'], ['ALL', 'All routes', null]];
+const SRC4 = { OFFICIAL_WEBSITE: 'Official website', INSTAGRAM_PUBLIC: 'Public Instagram business profile', CLAY: 'Clay work email (not independently verified)',
+  LINKEDIN: 'LinkedIn', FIFA_AGENT_REGISTER: 'FIFA agent register', PRESS: 'Press or interview', PUBLIC_DOCUMENT: 'Media kit or speaker page', WEB_SEARCH: 'Web search result',
+  ADAM: 'Added by Adam', VERIFICATION_PROVIDER: 'Verification provider', WEB: 'Public web page' };
+const DRAFT4 = { GMAIL_DRAFT: 'Unsent Gmail draft ready', APPROVED_PENDING_GMAIL: 'Approved · Gmail draft being created', APPROVED: 'Approved', READY_FOR_REVIEW: 'Passed the quality gate · awaiting your review',
+  NEEDS_EDIT: 'Needs an edit', PLANNED_TONIGHT: 'Drafting tonight', HELD: 'Held', NONE: 'No draft yet' };
+const GATE4 = { real_account_person: 'confirmed person', stream: 'stream', commercial_reason: 'commercial reason', project_hypothesis: 'project idea', decision_maker: 'decision maker',
+  contact_route: 'professional route', provenance: 'source of the address', route_classification: 'route class', personalised_draft: 'personalised draft', next_action: 'next action', no_conflict: 'conflict check' };
+const BOTTLE4 = { personalised_draft: 'drafting: researched accounts are waiting for W18 tonight or for an edit', contact_route: 'contact routes: accounts still need a sourced professional address',
+  decision_maker: 'decision makers: accounts still need the right person confirmed', real_account_person: 'confirmed people', route_classification: 'route classification',
+  provenance: 'sources for addresses', commercial_reason: 'commercial reasons', project_hypothesis: 'project ideas', next_action: 'next actions', no_conflict: 'conflicts' };
+const MKT4 = { EGYPT: 'Egypt', GCC: 'GCC', UK: 'UK', EUROPE: 'Europe', NORTH_AMERICA: 'North America', REST_OF_WORLD: 'rest of world', GLOBAL: 'global' };
 function viewMail() {
-  const M4 = state.mail; const R4 = state.routes; const F = state.routeF; const streams = state.streams?.streams || [];
-  const gateOpen = (M4?.gate || state.today?.gate) === 'PASS';
+  const M4 = state.mail; const L = state.lane === 'ALL' ? null : state[laneKey()]; const H = L || state.laneLast; const C = H?.counts || {};
   const desk = state.desk?.counts?.needs_review?.total;
+  return `${head4('Outreach', 'Today’s 25, prepared and ranked by the agents. Every email is an unsent Gmail draft that you send yourself.')}
+  ${allowanceBanner(H?.allowance, M4)}
+  <div class="lanes4" role="tablist" aria-label="Outreach lanes">${LANES.map(([k, l, c]) => `<button class="lane4 ${state.lane === k ? 'on' : ''}" role="tab" aria-selected="${state.lane === k}" data-lane="${k}">${l}${c && C[c] != null ? ` <span class="c">${esc(C[c])}</span>` : ''}</button>`).join('')}</div>
+  ${desk ? `<div class="strip4"><span><b>${esc(desk)}</b> outreach item${Number(desk) === 1 ? '' : 's'} waiting for your review in the approval desk.</span><button class="btn small primary" data-tab="desk">Open approval desk</button></div>` : ''}
+  ${state.lane === 'ALL' ? routesView() : laneView(state.lane, L)}`;
+}
+function allowanceBanner(A, M4) {
+  const rule = 'Nothing is sent automatically. Approving creates an unsent Gmail draft; you send it yourself.';
+  if (!A) { const open = (M4?.gate || state.today?.gate) === 'PASS'; return `<div class="banner4 ${open ? 'ok' : 'hold'}">${open ? 'SPF, DKIM and DMARC pass.' : 'Cold email is held until SPF and DKIM pass.'} ${rule}</div>`; }
+  if (A.mode === 'NON_BUSINESS_DAY') return `<div class="banner4 hold">Saturday: no cold first touches today. Warm replies and client work continue. ${rule}</div>`;
+  if (A.mode !== 'ACTIVE') return `<div class="banner4 hold allow4"><div><b>New cold first touches are paused today.</b></div><div class="s4">${(A.reasons || []).map(esc).join(' · ')}</div><div class="s4">Warm replies and client work continue. ${rule}</div></div>`;
+  const slots = A.slots || []; const mk = (A.markets_today || []).map((m) => MKT4[m] || m).join(', '); const cap = Number(A.daily_cap) || 0;
+  return `<div class="banner4 ok allow4">
+    <div><b>Send allowance today: ${esc(cap)} new first touch${cap === 1 ? '' : 'es'}</b> · ramp stage ${esc(A.stage)} of ${esc((A.stages || []).length)} (${esc((A.stages || []).join(' → '))}) · ${esc(A.sent_today ?? 0)} sent · ${esc(A.remaining ?? 0)} left</div>
+    <div class="s4">${slots.length ? `Spread them through the day: ${slots.map(esc).join(', ')} Cairo. Never in one burst.` : 'Today’s send window (10:00–16:30 Cairo) has closed; the next one opens on the next business morning.'}${mk ? ` Markets in their working day: ${esc(mk)}.` : ''}</div>
+    ${A.warm_pending ? `<div class="s4"><b>Warm first:</b> ${esc(A.warm_pending)} item${Number(A.warm_pending) === 1 ? '' : 's'} in Act now come${Number(A.warm_pending) === 1 ? 's' : ''} before any new send.</div>` : ''}
+    <div class="s4">${rule} The ramp moves up only while SPF, DKIM and DMARC pass and bounces, complaints and reputation stay clean.</div>
+  </div>`;
+}
+function laneView(lane, L) {
+  const key = laneKey();
+  if (!L) return lightState(key, 'this lane');
+  const items = L.items || []; const dim = state.busy[key] ? 'dim' : ''; const pg = pager(L.total, state.laneOff, LANE_PAGE, 'lane');
+  const err = state.errors[key] ? `<div class="unavail"><span>This lane could not refresh; showing the last result.</span><button class="btn small" data-retry="${esc(key)}">Retry</button></div>` : '';
+  if (lane === 'ACT_NOW') return `${err}<p class="meta4">Replies, client work, enquiries and decisions. These outrank every new send.</p>${items.length ? `<div class="ca4s ${dim}">${items.map(actCard).join('')}</div>${L.extra?.more ? `<p class="meta4">${esc(L.extra.more)} more on Today.</p>` : ''}` : '<p class="empty4">Nothing warm is waiting. New first touches can go out in the send windows.</p>'}`;
+  if (lane === 'TODAY' || lane === 'RESERVE') return `${err}${queueMeta(L, lane)}${items.length ? `<div class="q4s ${dim}">${items.map(queueCard).join('')}</div>${pg}` : emptyQueue(L, lane)}`;
+  if (lane === 'NEEDS_CONTACT') return `${err}<p class="meta4">Qualified accounts with a reason and a project idea that still need a confirmed person or a sourced professional route. Research continues in the background; nothing is guessed.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(needRow).join('')}</div>${pg}` : '<p class="empty4">No account is waiting on contact research.</p>'}`;
+  if (lane === 'FOLLOW_UPS') return `${err}${L.extra?.held_21_nov ? `<div class="strip4"><span><b>${esc(L.extra.held_21_nov)}</b> follow-ups from the 21 Nov batch are held. ${esc(L.extra.hold_rule || '')}</span></div>` : ''}<p class="meta4">Due within two days. Check for a reply first; follow up only where there is a reason to.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(fuRow).join('')}</div>${pg}` : '<p class="empty4">No follow-up is due in the next two days.</p>'}`;
+  if (lane === 'REPLIES') return `${err}<p class="meta4">Inbound in the last 14 days, newest first.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(replyRow).join('')}</div>${pg}` : '<p class="empty4">No reply in the last 14 days.</p>'}`;
+  return '';
+}
+function queueMeta(L, lane) {
+  const C = L.counts || {}; const F = L.funnel || {};
+  if (lane === 'RESERVE') return '<p class="meta4">Send-ready records behind Today’s 25, in rank order. They move up when a Today record is sent or drops out.</p>';
+  const out = [`<p class="meta4">${esc(C.today ?? 0)} ready${C.today_sent ? ` · ${esc(C.today_sent)} sent` : ''} · ${esc(C.reserve ?? 0)} in reserve · ${esc(C.needs_draft ?? 0)} researched account${Number(C.needs_draft) === 1 ? '' : 's'} waiting for a draft · ${L.built_at ? `built ${esc(fmtDate(L.built_at))}` : 'not built yet'}${L.stale ? ` · showing ${esc(shortDay(L.date))}; today’s queue builds at 05:30 Cairo` : ''}</p>`];
+  if (Number(L.shortfall) > 0) out.push(`<p class="note4 warn-t">Short of 25 by ${esc(L.shortfall)}. The limit is ${esc(BOTTLE4[L.bottleneck] || sentence(String(L.bottleneck || 'supply').replace(/_/g, ' ')))}. The gap is not filled with weaker accounts.</p>`);
+  if (F.considered != null) out.push(`<div class="fun4">${[['Considered', F.considered], ['Screened', F.screened], ['Researched', F.researched], ['Send-ready', F.ready_unique_companies ?? F.ready]].map(([l, n]) => `<div><b>${esc(n ?? 0)}</b><span>${l}</span></div>`).join('')}</div>`);
+  const cov = Object.values(L.coverage || {}).filter((c) => Number(c.today) > 0).sort((a, b) => b.today - a.today);
+  if (cov.length) out.push(`<p class="meta4">Mix today: ${cov.map((c) => `${esc(c.label)} ${esc(c.today)}`).join(' · ')}. Guided by the portfolio, never forced into equal quotas.</p>`);
+  return out.join('');
+}
+function emptyQueue(L, lane) {
+  if (lane === 'RESERVE') return '<p class="empty4">No send-ready record beyond Today’s 25 yet. The reserve fills as research, routes and drafts complete.</p>';
+  return `<div class="empty-box"><p>No send-ready record yet today${L.bottleneck ? `: the limit is ${esc(BOTTLE4[L.bottleneck] || L.bottleneck)}` : ''}.</p><p class="s4">The agents continue discovery, contact research and drafting. Nothing is padded to reach 25.</p><div class="btn-row"><button class="btn small ghost" data-lane="NEEDS_CONTACT">Needs contact</button></div></div>`;
+}
+function queueCard(x) {
+  const open = state.draftOpen === x.id; const src = SRC4[x.route_source_type] || sentence(String(x.route_source_type || '—').replace(/_/g, ' '));
+  const href = safeHref(x.route_source_url); const conf = String(x.confidence || '').toLowerCase();
+  return `<article class="q4 ${x.state === 'SENT' ? 'sent' : ''}">
+    <div class="q4-top"><span class="q4-rk">${esc(x.rank)}</span>${x.stream_label ? `<span class="q4-tag">${esc(x.stream_label)}</span>` : ''}<span class="q4-conf c-${esc(conf || 'none')}">${esc({ high: 'High', medium: 'Medium', low: 'Low' }[conf] || 'Unrated')} confidence</span><span class="q4-win ${x.state !== 'SENT' && x.sendable_today ? 'ok' : ''}">${x.state === 'SENT' ? 'Sent' : x.sendable_today ? 'Send today' : `Send ${esc(x.send_window || 'next business day')}`}</span></div>
+    <h4>${esc(x.person || 'Team inbox')}${x.position ? `<span class="q4-pos">, ${esc(x.position)}</span>` : ''} <span class="q4-co">· ${esc(x.company || '—')}</span></h4>
+    <dl class="q4-dl">
+      <dt>Project idea</dt><dd>${esc(x.project_idea || '—')}</dd>
+      <dt>Why now</dt><dd>${esc(x.why_now || '—')}</dd>
+      <dt>Contact route</dt><dd><span class="mono">${esc(x.route_email || '—')}</span> <span class="route ${/verified|named|published/i.test(x.route_label || '') ? 'good' : ''}">${esc(x.route_label || '—')}</span></dd>
+      <dt>Route source</dt><dd>${esc(src)}${href ? ` · <a class="link4" href="${esc(href)}" target="_blank" rel="noopener noreferrer">where it was found</a>` : ''}</dd>
+      <dt>Prepared draft</dt><dd>${x.draft_subject ? `<b>${esc(x.draft_subject)}</b> · ` : ''}<span class="s4 q4-ds">${esc(DRAFT4[x.draft_status] || sentence(String(x.draft_status || 'none').replace(/_/g, ' ')))}</span>${x.draft_excerpt ? `<span class="q4-ex">${esc(clip(x.draft_excerpt, 220))}</span>` : ''}<button class="link4" data-draft-open="${esc(x.id)}">${open ? 'Hide the draft' : 'Read the full draft'}</button></dd>
+      <dt>Next action</dt><dd>${esc(x.next_step || x.next_action || '—')}</dd>
+    </dl>
+    ${open ? draftPanel(state.drafts[x.id], x) : ''}
+    <div class="btn-row">${x.task_id && x.state !== 'SENT' ? '<button class="btn small" data-tab="desk">Review in the approval desk</button>' : ''}<button class="btn small ghost" data-lopp="${esc(x.opportunity_id)}">Record</button></div>
+  </article>`;
+}
+function draftPanel(D, x) {
+  if (!D) return `<div class="q4-dr">${skel(2)}</div>`;
+  if (D.error) return '<div class="q4-dr"><p class="warn-t">The draft could not be loaded. Nothing was changed.</p></div>';
+  const g = safeHref(D.gmail_draft_url);
+  return `<div class="q4-dr"><p class="s4">To ${esc(D.to || x.route_email || '—')}${D.route_label ? ` · ${esc(D.route_label)}` : ''}</p>${D.subject ? `<p><b>${esc(D.subject)}</b></p>` : ''}<pre>${esc(D.body || 'No draft text.')}</pre>${g ? `<a class="btn small" href="${esc(g)}" target="_blank" rel="noopener noreferrer">Open the unsent Gmail draft</a>` : ''}<p class="why">${esc(D.rule || 'Unsent.')}</p></div>`;
+}
+const needRow = (x) => `<div class="row4" role="button" tabindex="0" data-lopp="${esc(x.opportunity_id)}">
+  <div><div class="t4">${esc(x.company || '—')}</div><div class="s4">${esc([x.person ? `${x.person}${x.position ? `, ${x.position}` : ''}` : 'No confirmed person yet', x.stream_label, x.category_label].filter(Boolean).join(' · '))}</div>
+    ${x.why_now ? `<div class="n4">${esc(clip(x.why_now, 150))}</div>` : ''}${x.next_step ? `<div class="n4">${esc(x.next_step)}</div>` : ''}</div>
+  <div class="r4"><span class="s4">Missing: ${esc((x.failed || []).map((g) => GATE4[g] || g).join(', ') || '—')}</span>${x.route_label ? `<span class="route">${esc(x.route_label)}</span>` : ''}</div></div>`;
+const fuRow = (x) => `<div class="row4" role="button" tabindex="0" data-lopp="${esc(x.opportunity_id)}">
+  <div><div class="t4">${esc(x.company || '—')}</div><div class="s4">${esc([x.person ? `${x.person}${x.position ? `, ${x.position}` : ''}` : '', x.stream_label, x.last_sent ? `last sent ${shortDay(x.last_sent)}` : ''].filter(Boolean).join(' · '))}</div>
+    ${x.next_action ? `<div class="n4">${esc(clip(x.next_action, 160))}</div>` : ''}</div>
+  <div class="r4">${x.due_on ? `<span class="due ${isPast(x.due_on) ? 'late' : ''}">${esc(shortDay(x.due_on))}</span>` : ''}</div></div>`;
+const replyRow = (x) => { const u = safeHref(x.url); return `<div class="row4" ${x.opportunity_id ? `role="button" tabindex="0" data-lopp="${esc(x.opportunity_id)}"` : ''}>
+  <div><div class="t4">${esc(x.company || 'Unmatched sender')}${x.supplier ? ' <span class="tag4 muted">Supplier</span>' : ''}${x.classification ? ` <span class="tag4">${esc(sentence(String(x.classification).replace(/_/g, ' ')))}</span>` : ''}</div>
+    <div class="s4">${esc(clip(x.subject || '', 120))}</div>${x.summary ? `<div class="n4">${esc(clip(x.summary, 200))}</div>` : ''}</div>
+  <div class="r4">${x.last_inbound_at ? `<span class="s4">${esc(fmtDate(x.last_inbound_at))}</span>` : ''}${u ? `<a class="link4" href="${esc(u)}" target="_blank" rel="noopener noreferrer" data-stop>Open the thread</a>` : ''}</div></div>`; };
+// The route explorer (one verified route per company), unchanged, under "All routes".
+function routesView() {
+  const M4 = state.mail; const R4 = state.routes; const F = state.routeF; const streams = state.streams?.streams || [];
   const rows = R4?.rows || [];
   const body = !R4 || (state.busy.routes && !rows.length) ? lightState('routes', 'contact routes')
     : state.errors.routes ? unavailable('routes')
     : !rows.length ? `<div class="empty-box"><p>No contact routes match these filters.</p><div class="btn-row">${F.filter !== 'ACTIONABLE' || F.stream || F.q ? '<button class="btn small" data-route-reset>Show actionable routes</button>' : ''}<button class="btn small ghost" data-route-filter="NEEDS_RESEARCH">Accounts that need research</button></div></div>`
     : `<div class="rows4 ${state.busy.routes ? 'dim' : ''}">${rows.map(routeRow).join('')}</div>${pager(R4.total, F.offset, ROUTE_PAGE, 'route')}`;
-  return `${head4('Outreach', 'One verified route per company. Every email is an unsent Gmail draft that you send yourself.')}
-  <div class="banner4 ${gateOpen ? 'ok' : 'hold'}">${gateOpen ? 'SPF and DKIM pass: cold first touches may be released in small, clean cohorts.' : 'Cold email is held until SPF and DKIM pass. Warm replies and follow-ups continue; nothing is sent automatically.'}</div>
-  ${desk ? `<div class="strip4"><span><b>${esc(desk)}</b> outreach item${Number(desk) === 1 ? '' : 's'} waiting for your review in the approval desk.</span><button class="btn small primary" data-tab="desk">Open approval desk</button></div>` : ''}
-  <div class="filters4">
+  return `<div class="filters4">
     <div class="chips">${ROUTE_FILTERS.map(([k, l, c]) => `<button class="chip ${F.filter === k ? 'on' : ''}" data-route-filter="${k}">${l}${M4 && M4[c] != null ? ` <span class="c">${esc(M4[c])}</span>` : ''}</button>`).join('')}</div>
     <div class="frow">
       <select data-route-stream aria-label="Stream"><option value="">All streams</option>${PILLARS.map(([p, pl]) => `<optgroup label="${esc(pl)}">${streams.filter((s) => s.pillar === p).map((s) => `<option value="${esc(s.code)}" ${F.stream === s.code ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</optgroup>`).join('')}</select>
@@ -5282,16 +5388,30 @@ function bindV4(on) {
     else if (data && data.ok === false) state.notice = { err: true, text: explain(data) };
     else state.notice = { err: false, text };
     await loadLight('today', 'hq_today', {}, true);
+    if (state.tab === 'mail' && state.lane === 'ACT_NOW') await reloadLane(true);
   });
   on('[data-act-note]', 'click', (b) => { state.actNote = b.dataset.actNote || null; render(); if (state.actNote) $('#act-note')?.focus(); });
   on('[data-stream-go]', 'click', (b, e) => { e.stopPropagation(); state.oppF = { stage: 'ALL', stream: b.dataset.streamGo, rel: '', q: '', offset: 0 }; go('opps'); reloadOpps(); });
-  on('[data-stream-mail]', 'click', (b, e) => { e.stopPropagation(); state.routeF = { filter: 'ACTIONABLE', stream: b.dataset.streamMail, q: '', offset: 0 }; go('mail'); loadTab('mail'); reloadRoutes(); });
+  on('[data-stream-mail]', 'click', (b, e) => { e.stopPropagation(); state.routeF = { filter: 'ACTIONABLE', stream: b.dataset.streamMail, q: '', offset: 0 }; state.lane = 'ALL'; go('mail'); loadTab('mail'); reloadRoutes(); });
   on('[data-stream-open]', 'click', (b) => { state.streamOpen = state.streamOpen === b.dataset.streamOpen ? null : b.dataset.streamOpen; render(); });
   on('[data-pillar]', 'click', (b) => { state.streamPillar = b.dataset.pillar || ''; render(); });
   on('[data-opp-stage]', 'click', (b) => { state.oppF.stage = b.dataset.oppStage; state.oppF.offset = 0; render(); reloadOpps(); });
   on('[data-opp-clear]', 'click', () => { clearTimeout(state.typeT); state.oppF = { stage: 'PROJECT_READY_PLUS', stream: '', rel: '', q: '', offset: 0 }; render(); reloadOpps(); });
   on('select[data-opp-stream]', 'change', (el) => { state.oppF.stream = el.value; state.oppF.offset = 0; render(); reloadOpps(); });
   on('select[data-opp-rel]', 'change', (el) => { state.oppF.rel = el.value; state.oppF.offset = 0; render(); reloadOpps(); });
+  on('[data-lane]', 'click', (b) => {
+    const k = b.dataset.lane; if (!k || state.lane === k) return;
+    state.lane = k; state.laneOff = 0; state.draftOpen = null; render();
+    if (k === 'ALL') { if (!state.routes) reloadRoutes(); } else reloadLane(true);
+  });
+  on('[data-draft-open]', 'click', async (b, e) => {
+    e.stopPropagation(); const id = b.dataset.draftOpen; state.draftOpen = state.draftOpen === id ? null : id; render();
+    if (state.draftOpen && !state.drafts[id]) {
+      // Read-only: the prepared draft text, on demand. Nothing is sent or approved from here.
+      const { data, error } = await rpcT('hq_outreach_draft', { p_id: id });
+      state.drafts[id] = error || !data || data.ok === false ? { error: true } : data; render();
+    }
+  });
   on('[data-route-filter]', 'click', (b) => { state.routeF.filter = b.dataset.routeFilter; state.routeF.offset = 0; render(); reloadRoutes(); });
   on('[data-route-reset]', 'click', () => { clearTimeout(state.typeT); state.routeF = { filter: 'ACTIONABLE', stream: '', q: '', offset: 0 }; render(); reloadRoutes(); });
   on('select[data-route-stream]', 'change', (el) => { state.routeF.stream = el.value; state.routeF.offset = 0; render(); reloadRoutes(); });
@@ -5299,6 +5419,7 @@ function bindV4(on) {
     const k = b.dataset.page; const dir = Number(b.dataset.dir);
     if (k === 'opp') { state.oppF.offset = Math.max(0, state.oppF.offset + dir * OPP_PAGE); render(); reloadOpps(); }
     if (k === 'route') { state.routeF.offset = Math.max(0, state.routeF.offset + dir * ROUTE_PAGE); render(); reloadRoutes(); }
+    if (k === 'lane') { state.laneOff = Math.max(0, state.laneOff + dir * LANE_PAGE); render(); reloadLane(true); }
     window.scrollTo(0, 0);
   });
   // Search boxes: typing never loses focus; the server is asked 350 ms after the last key.

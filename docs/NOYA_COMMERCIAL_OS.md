@@ -2734,3 +2734,135 @@ Major HQ architecture is frozen once production is verified. From then on the wo
 - The login screen loads only `/app.js` and `/styles.css`.
 
 Major HQ architecture is FROZEN (`system_config.hq_architecture`). Adam's logged-in check is still pending. DNS check at the same time: SPF missing, DKIM NXDOMAIN; the cold gate stays CLOSED.
+
+## Daily acquisition policy (22 Nov 2026)
+
+Adam's approved policy, implemented inside the existing OS. No HQ redesign, no new navigation, no new architecture: one migration
+(`supabase/migrations/20261122120000_daily_acquisition_policy.sql`), lane tabs inside the existing Outreach screen, and checks
+(`supabase/tests/acquisition_checks.sql`, `hq/tests/ui_v4.mjs` sections 5b and 5c).
+
+**Target.** At least 25 genuinely send-ready first touches every business day, prepared by the existing stack and surfaced in HQ
+Outreach. It is a preparation floor, not a send quota. Quality is never lowered and rows are never invented to reach 25: a shortfall is
+shown with the gate that limits it.
+
+**SEND READY = the 11 gates** (`outreach_queue_build()`, recorded per record in `daily_outreach_queue.gates`):
+
+1. Real account and person: a company with a website or professional profile, and a confirmed person (or an official team inbox).
+2. A canonical NOYA stream.
+3. A credible commercial reason (W18 why-now, the trigger or the reason; at least 25 characters).
+4. A specific project or relationship hypothesis (the W18 angle, the opportunity angle or its description).
+5. The right decision maker or professional gatekeeper (`role_score` > 0; never scouts, recruiters, interns or students).
+6. A legitimate professional route. The route is the person's route, exactly as the route cache and W18 evaluate it. Excluded: support,
+   careers, HR, privacy, legal, reservation, booking, billing and no-reply inboxes, and invalid addresses.
+7. Provenance: a source link, or Clay / verification-provider evidence.
+8. A truthful route class (canonical state plus source type). Clay stays "not independently verified" with Low confidence. Instagram
+   appears only when the address came from a public Instagram profile.
+9. A personalised first-touch draft: W18 gate PASS or Adam-approved, current, naming the company or person, with no template
+   placeholders.
+10. A next action.
+11. No conflict: none of DNC, an outreach hold, a supplier or client relationship, a warm or active relationship, another live
+    opportunity at the company, an outbound touch in the last 180 days, an address already emailed, or an old account without a new
+    reason.
+
+**Lanes in Outreach.**
+
+| Lane | What it shows |
+|---|---|
+| Act now | Warm work: the same items as Today. It always comes before new sends. |
+| Today's 25 | The send-ready queue. |
+| Reserve | Send-ready records ranked behind the 25. |
+| Needs contact | Accounts missing only a person or route gate. |
+| Follow-ups | Due within 2 days; also the held 21 Nov batch. |
+| Replies | The last 14 days. |
+| All routes | The existing route explorer, unchanged. |
+
+Each Today card shows:
+
+- person and company;
+- stream;
+- project idea and why now;
+- contact route, route source and type, with a link to where the address was found;
+- confidence;
+- prepared draft (subject, excerpt and full text on demand);
+- next action.
+
+There is no send button. Approving in the desk creates an unsent Gmail draft (W12), and Adam sends it.
+
+**Ranking.**
+
+- One company, one route: enforced by a unique index on the day's live Today and Reserve rows.
+- Score = opportunity priority + route strength + decision-maker role + live signal + draft state + freshness + market open today, times
+  the learned weights.
+- Coverage maps the 36 streams to the 13 categories (`outreach_coverage`). A consultancy or family office is identified by its company
+  type.
+- `acquisition_engine.portfolio_guide` applies as a soft diminishing factor (0.88 per record beyond the guide). It is never a quota.
+- Regional timing: Egypt and the GCC work Sun–Thu; the UK, Europe and the rest of the world work Mon–Fri. Each card says when it can be
+  sent.
+
+**Daily schedule** (pg_cron, Sun–Fri):
+
+1. 05:20 Cairo: `outreach_ramp_review()`, which also refreshes the learning ledger.
+2. 05:30 Cairo: `outreach_queue_build('MORNING')`.
+3. Hourly, 07:50–17:50 Cairo: `TOPUP`. It keeps the day's Today set, marks Adam's sends as SENT, drops records that no longer qualify
+   (with a reason) and refills only the vacated places from Reserve.
+4. `outreach_learning_refresh()` hourly at :41.
+
+The existing stack feeds the build:
+
+- W18 drafts nightly, 21:00–23:30 Cairo, up to 60.
+- W13 syncs Gmail hourly.
+- The route cache refreshes every 10 minutes.
+
+The daily operating check now runs Sun–Fri at 07:37 Cairo. Its responsibilities, in order:
+
+1. Reconcile Gmail.
+2. Warm work first.
+3. Background discovery across all 13 categories.
+4. Qualify new accounts.
+5. Enrich the strongest.
+6. Find people and routes from legitimate sources.
+7. Repair drafts that need an edit.
+8. Confirm the build.
+9. Report Today's 25, the shortfall and the allowance.
+
+Discovery never pauses for a backlog.
+
+**Send ramp.** Actual cold first touches per day:
+
+- 5, then 10, 15, 20, and up to 25 (`send_ramp_state`; 3 clean send days per stage).
+- The stage advances only while all of these hold:
+  - SPF, DKIM and DMARC pass, on a check within 8 days;
+  - bounces stay at or below 3% (at most 1 below 20 sends; never 2 in 3 days);
+  - no reputation warning, spam complaint, throttling, suspicious activity or mass-sending flag is recorded.
+- Any stop signal sets the day's allowance to 0. A bounce, complaint or reputation signal also steps the ramp back one stage.
+- The decision is a pure function (`outreach_ramp_decide`) and is unit-tested in SQL.
+- Send windows are spread between 10:00 and 16:30 Cairo, never in one burst. Warm work is counted first.
+- Follow-ups are counted separately from first touches.
+
+**Learning.** `outreach_learning` holds one row per cold first touch (the first outbound email before any inbound).
+
+- Dimensions: stream, category, account type, decision-maker role, source, route type, project hypothesis and message angle.
+- Outcomes: delivered (no bounce within 24 h), bounce, reply, positive reply, meeting, brief, proposal, win and revenue.
+- Only the CLEAN cohort (from 22 Nov) counts. The 21 Nov batch is EXCLUDED_21_NOV.
+- Learned weights (positive-reply rate per value against the average, smoothed and clamped to 0.75–1.35) switch on only at 20 clean
+  sends per cell. Until then, ranking uses route, role, signal and draft quality.
+
+**Safety.**
+
+- No new function writes to `outbound_emails`, `tasks`, `message_drafts` or `outreach_candidates`, or calls out. A SQL check enforces
+  this.
+- Two admin-gated reads go to HQ: `hq_outreach_lanes` (one lane per call, about 27 ms warm, under 50 KB) and `hq_outreach_draft`. Every
+  other new function is internal.
+- RLS is on all five new tables.
+- A trigger normalises a recorded authentication gate of OPEN to PASS (HQ reads PASS / CLOSED).
+
+**First build (22 Nov, a Sunday).**
+
+- 849 accounts considered, 754 screened, 70 researched, 25 send-ready: Today's 25 is full, and the Reserve is empty.
+- All 25 were existing W18 drafts that pass every gate: 21 wedding planners and 4 hotels / residences. Every route is an official
+  published inbox sourced from the company's own website (Medium confidence), addressed for the decision maker's attention. Three
+  already have unsent Gmail drafts.
+- 40 researched accounts wait for a draft. 27 of them hold a W18 draft from the last 30 days that failed the quality gate and needs an
+  edit; the rest go to W18 tonight. 60 accounts head the Needs-contact lane.
+- The bottleneck is drafting and contact routes, not discovery. The mix is narrow because W18 drafted mostly weddings in early November.
+- Fixed in passing: one opportunity left READY after its 21 Nov send (now CONTACTED).
