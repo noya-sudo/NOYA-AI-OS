@@ -3,8 +3,12 @@
 // consent box, dates or budgets) are listed in _needs_adam and left empty. form_prepare_save then runs the quality check.
 var src = $('Build Form Prompts').all();
 function fillField(fl, s, subject, message) {
-  var k = ((fl.name || '') + ' ' + (fl.label || '')).toLowerCase(), t = fl.type;
+  var k = ((fl.name || '') + ' ' + (fl.label || '')).toLowerCase(), t = fl.type, lab = String(fl.label || '').toLowerCase().replace(/[^a-z ]/g, ' ').trim();
+  // Anti-spam honeypot fields must stay empty (filling one marks the enquiry as spam).
+  if (/(^|[\[_-])(hp|honeypot|bot-?field|trap|website_url_hp)([\]_-]|$)/i.test(fl.name || '') || /honeypot|leave (this )?(field )?(blank|empty)/.test(k)) return '';
   if (t === 'textarea') return message;
+  if (/^first( name)?$/.test(lab)) return s.first_name || '';
+  if (/^(last|surname|family)( name)?$/.test(lab)) return s.last_name || '';
   if (t === 'checkbox' || t === 'radio') { if (/newsletter|marketing|subscribe|updates/.test(k)) return ''; return fl.required ? null : ''; }
   if (/e-?mail/.test(k)) return s.email || '';
   if (/first.?name|fname|given.?name|forename/.test(k)) return s.first_name || '';

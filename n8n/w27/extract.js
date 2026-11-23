@@ -81,6 +81,17 @@ function social(html) {
   if (r2) li = 'https://www.linkedin.com/company/' + r2[1];
   return { instagram: ig, linkedin: li };
 }
+// The company's own one-line description of itself (meta / og description on the homepage): a citable public fact.
+function siteDesc(h) {
+  var tags = String(h || '').match(/<meta\b[^>]*>/gi) || [];
+  for (var i = 0; i < tags.length; i++) {
+    var n = (attr(tags[i], 'name') || attr(tags[i], 'property')).toLowerCase(), c = attr(tags[i], 'content');
+    if ((n === 'description' || n === 'og:description') && c.length >= 40)
+      return c.replace(/&amp;/g, '&').replace(/&#0?39;|&apos;|&rsquo;/g, "'").replace(/&quot;|&ldquo;|&rdquo;/g, '"')
+        .replace(/&nbsp;/g, ' ').replace(/&ndash;|&mdash;/g, '-').replace(/&[a-z]+;|&#[0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
+  }
+  return '';
+}
 function errOf(j, dflt) { var e = j && j.error; return String((e && (e.message || e)) || dflt).slice(0, 160); }
 var by = {};
 comps.forEach(function (c, i) {
@@ -96,13 +107,13 @@ pages.forEach(function (x, i) {
   else b.errors.push(errOf(x.json, 'page not readable'));
 });
 return Object.keys(by).map(function (k) {
-  var b = by[k], emails = [], forms = [], ig = '', li = '', seenE = {};
+  var b = by[k], emails = [], forms = [], ig = '', li = '', seenE = {}, home = b.htmls[0] || null, desc = home ? siteDesc(home.html) : '';
   b.htmls.forEach(function (z) {
     emailsIn(z.html, z.url).forEach(function (e) { if (!seenE[e.email]) { seenE[e.email] = 1; emails.push(e); } });
     formsIn(z.html, z.url).forEach(function (f) { forms.push(f); });
     var s = social(z.html); ig = ig || s.instagram; li = li || s.linkedin;
   });
   return { json: { p: { company_id: b.company_id, method: 'W27_SITE', pages: b.htmls.map(function (z) { return z.url; }),
-    emails: emails.slice(0, 25), forms: forms.slice(0, 6), instagram: ig, linkedin: li,
+    emails: emails.slice(0, 25), forms: forms.slice(0, 6), instagram: ig, linkedin: li, site_description: desc, site_description_url: desc && home ? home.url : '',
     error: b.htmls.length ? '' : (b.errors[0] || 'site not readable') } } };
 });

@@ -1408,7 +1408,7 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'ALREADY_TRIED_30D');
   end if;
   insert into research_credit_ledger (provider, credits, purpose, company_id, contact_id, outcome, detail, actor)
-  values ('CLAY', coalesce(p_credits, 0), 'WORK_EMAIL', (select company_id from contacts where id = p_contact), p_contact, upper(coalesce(p_outcome, 'NOT_FOUND')), left(p_detail, 200), 'engine');
+  values ('CLAY', coalesce(p_credits, 0), 'ENRICH', (select company_id from contacts where id = p_contact), p_contact, upper(coalesce(p_outcome, 'NOT_FOUND')), left(p_detail, 200), 'engine');
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -1445,3 +1445,283 @@ revoke all on function public.form_type_classify(text, text) from public, anon, 
 --     05:40 Cairo self-correction, after the 05:30 morning build. W27 (n8n) runs route and form research overnight and at midday.
 select cron.schedule('outreach-draft-repair', '40 18 * * 0-5', $c$select public.outreach_draft_repair()$c$);
 select cron.schedule('engine-self-correct', '40 3 * * 0-5', $c$select public.engine_self_correct()$c$);
+
+-- ============================================================================================================================
+-- 19. Production tuning, 23 Nov 2026 (applied live as separate migrations, in this order). Each patch edits the live function
+--     in place and is idempotent (it checks for its own marker first). One-off record corrections made the same day (two form
+--     drafts sent back for a rewrite, one dead-domain account held, one wrong website removed) are operator updates, not schema.
+-- ============================================================================================================================
+
+-- 19a. acquisition_engine_v2_route_batch_tuning: W27 reads about five pages per account; batches of 12 (up to 20) keep each
+--      n8n Cloud run within memory, repeated overnight and at midday. Accounts whose routes are EXHAUSTED go last.
+update public.system_config set value = jsonb_set(jsonb_set(value, '{route_research,batch_per_run}', '12'), '{route_research,max_batch}', '20')
+  || jsonb_build_object('route_research_note', 'W27 reads about five pages per account; batches of 12 (up to 20) keep each n8n run within its memory, and the run repeats overnight and at midday.')
+ where key = 'acquisition_engine';
+do $do$
+declare d text; a text := 'order by (c.nc_rank < 999) desc, coalesce(g.gap, 0) desc';
+        b text := 'order by (not exists (select 1 from hq_route_cache r2 where r2.company_id = c.company_id and r2.raw_state = ''EXHAUSTED'')) desc, (c.nc_rank < 999) desc, coalesce(g.gap, 0) desc';
+begin
+  select pg_get_functiondef('public.route_research_next_batch(integer)'::regprocedure) into d;
+  if position('r2.raw_state' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'route batch patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+do $do$
+declare d text;
+begin
+  select pg_get_functiondef('public.engine_self_correct()'::regprocedure) into d;
+  if position('greatest(v_rr - 8, 12)' in d) = 0 then
+    d := replace(d, 'v_rr := least(v_rr + 10, v_rr_max);', 'v_rr := least(v_rr + 8, v_rr_max);');
+    d := replace(d, 'v_rr := greatest(v_rr - 10, 30);', 'v_rr := greatest(v_rr - 8, 12);');
+    d := replace(d, '''route_research''->>''batch_per_run'')::int, 30)', '''route_research''->>''batch_per_run'')::int, 12)');
+    execute d;
+  end if;
+end $do$;
+
+-- 19b. acquisition_engine_v2_form_quality_tighten: form copy meets the W18 first-touch standard. No characterising the recipient
+--      (their strategy, commitment, needs, requirements, next move) and at least two concrete evidence terms from stored facts.
+do $do$
+declare d text;
+begin
+  select pg_get_functiondef('public.form_message_quality(text,text,integer,text)'::regprocedure) into d;
+  if position('PRESUMPTUOUS' in d) = 0 then
+    d := replace(d, $r$  if (length(b) - length(replace(b, '?', ''))) > 1 then$r$,
+      $r$  if lower(b) ~ '(demonstrat|commitment to|core (marketing )?strateg|\mrequir(e|es|ed|ing)\M|\myou need|your needs|your next|as you (expand|grow|plan|scale|look)|well[- ]positioned|perfect fit|natural (next step|fit)|high-level|clear focus|untapped|\mgap in|logical next|aligns perfectly|we noticed|i noticed|i note that|caught my eye|impressed)' then
+    hard := hard || ('PRESUMPTUOUS: ' || substring(lower(b) from '(demonstrat\w*|commitment to|core (marketing )?strateg\w*|requir\w*|you need|your needs|your next|as you \w+|well[- ]positioned|perfect fit|natural (next step|fit)|high-level|clear focus|untapped|gap in|logical next|aligns perfectly|we noticed|i noticed|i note that|caught my eye|impressed)'));
+  end if;
+  if (length(b) - length(replace(b, '?', ''))) > 1 then$r$);
+    execute d;
+  end if;
+end $do$;
+
+create or replace function public.form_evidence_overlap(p_message text, p_evidence text, p_company text) returns integer
+ language sql immutable set search_path to 'public'
+as $$
+  select count(distinct w)::int from regexp_split_to_table(lower(coalesce(p_evidence, '')), '[^a-z0-9''-]+') w
+   where length(w) >= 5
+     and w not in (select regexp_split_to_table(lower(coalesce(p_company, '')), '[^a-z0-9]+'))
+     and w not in ('their', 'there', 'which', 'while', 'where', 'about', 'after', 'before', 'these', 'those', 'brand', 'brands', 'company', 'luxury',
+                   'travel', 'egypt', 'would', 'could', 'should', 'other', 'being', 'through', 'including', 'based', 'clients', 'client', 'services', 'service',
+                   'noya', 'events', 'event', 'group', 'global', 'international', 'private', 'experience', 'experiences', 'partner', 'partners', 'partnership')
+     and position(w in lower(coalesce(p_message, ''))) > 0
+$$;
+revoke all on function public.form_evidence_overlap(text, text, text) from public, anon, authenticated;
+
+do $do$
+declare d text;
+begin
+  select pg_get_functiondef('public.form_prepare_save(jsonb)'::regprocedure) into d;
+  if position('form_evidence_overlap' in d) = 0 then
+    d := replace(d, $r$  q := form_message_quality(p->>'subject', p->>'message', cf.max_message_chars, v_company);$r$,
+      $r$  q := form_message_quality(p->>'subject', p->>'message', cf.max_message_chars, v_company);
+  -- The first sentence must rest on stored facts: at least two concrete evidence terms (as W18's gate requires).
+  if form_evidence_overlap(p->>'message',
+       (select concat_ws(' ', o.commercial_trigger, o.reason, o.angle, o.description, c.universe_reason)
+          from opportunities o join companies c on c.id = o.company_id where o.id = cf.opportunity_id), v_company) < 2 then
+    q := jsonb_set(jsonb_set(q, '{issues}', coalesce(q->'issues', '[]'::jsonb) || '["NOT_PERSONALISED: fewer than two evidence terms"]'::jsonb),
+                   '{status}', to_jsonb(case when q->>'status' = 'BLOCKED' then 'BLOCKED' else 'NEEDS_EDIT' end));
+  end if;$r$);
+    execute d;
+  end if;
+end $do$;
+
+-- 19c. acquisition_engine_v2_repair_family_priority: nightly failed-draft repair works the families furthest from target first.
+do $do$
+declare d text;
+  a text := 'order by (q.lane = ''NEEDS_DRAFT'') desc nulls last, q.score desc nulls last, oc.updated_at desc';
+  b text := 'order by coalesce((select (r.engine->''families''->coalesce(q.family, ocat.family)->>''gap'')::int from daily_outreach_runs r order by r.run_date desc limit 1), 0) desc,
+              (q.lane = ''NEEDS_DRAFT'') desc nulls last, q.score desc nulls last, oc.updated_at desc';
+begin
+  select pg_get_functiondef('public.outreach_draft_repair(integer)'::regprocedure) into d;
+  if position('''gap''' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'repair order patch: no unique match'; end if;
+    d := replace(d, a, b);
+    d := replace(d, 'left join daily_outreach_queue q on q.opportunity_id = oc.opportunity_id and q.run_date = (select max(run_date) from daily_outreach_runs)',
+                 'left join daily_outreach_queue q on q.opportunity_id = oc.opportunity_id and q.run_date = (select max(run_date) from daily_outreach_runs)
+      left join companies cc on cc.id = o.company_id
+      left join outreach_categories ocat on ocat.code = outreach_category(o.primary_stream, cc.company_type)');
+    execute d;
+  end if;
+end $do$;
+
+-- 19d. acquisition_engine_v2_form_fact_evidence: form copy may only cite public facts. companies.universe_reason often mixes a
+--      fact with our own rationale ("making them an ideal partner for NOYA"); the model restated the rationale as fact. Pass only
+--      the fact sentences, and draft a form only when at least one real fact remains (otherwise it waits for research).
+do $do$
+declare d text;
+  a text := 'c.universe_reason evidence';
+  b text := '(select string_agg(s, '' '') from regexp_split_to_table(coalesce(c.universe_reason, ''''), ''(?<=[.!?])\s+'') s
+             where s !~* ''(noya|synerg|ideal partner|prime [a-z ]*partner|making them|need for|would work with|could benefit|perfect fit|strong fit|well[- ]placed|natural partner)'') evidence';
+  a2 text := 'from (select * from f order by prio desc limit';
+  b2 text := 'from (select * from f where length(coalesce(f.evidence, '''')) >= 40 order by prio desc limit';
+begin
+  select pg_get_functiondef('public.form_draft_next_batch(integer)'::regprocedure) into d;
+  if position('natural partner' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'evidence patch: no unique match'; end if;
+    if (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception 'limit patch: no unique match'; end if;
+    execute replace(replace(d, a, b), a2, b2);
+  end if;
+end $do$;
+
+-- 19e. acquisition_engine_v2_site_description_evidence: the company's own website description (meta / og description) is a
+--      citable public fact. W27 captures it from the homepage; form copy may restate it. Additive columns only.
+alter table public.companies add column if not exists site_description text;
+alter table public.companies add column if not exists site_description_url text;
+alter table public.companies add column if not exists site_description_at timestamptz;
+do $do$
+declare d text;
+  a text := '  end loop;' || chr(10) || '  v_ig := substring(';
+  b text := '  end loop;' || chr(10) ||
+'  -- The company''s own description of itself (homepage meta description), refreshed on every successful read.
+  if length(btrim(coalesce(p->>''site_description'', ''''))) between 40 and 500
+     and p->>''site_description'' !~* ''(cookie|javascript|page not found|404|just a moment|access denied|attention required|coming soon|under construction)'' then
+    update companies set site_description = btrim(p->>''site_description''), site_description_url = coalesce(nullif(p->>''site_description_url'', ''''), c.website),
+           site_description_at = now() where id = c.id;
+  end if;' || chr(10) || '  v_ig := substring(';
+begin
+  select pg_get_functiondef('public.route_research_ingest(jsonb)'::regprocedure) into d;
+  if position('site_description' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'ingest patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+do $do$
+declare d text;
+  a text := '(select string_agg(s, '' '') from regexp_split_to_table(coalesce(c.universe_reason, ''''),';
+  b text := 'concat_ws('' '', (select string_agg(s, '' '') from regexp_split_to_table(coalesce(c.universe_reason, ''''),';
+  a2 text := 'natural partner)'') evidence';
+  b2 text := 'natural partner)''), ''Their website describes them as: '' || nullif(btrim(c.site_description), '''')) evidence';
+begin
+  select pg_get_functiondef('public.form_draft_next_batch(integer)'::regprocedure) into d;
+  if position('site_description' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'evidence patch A: no unique match'; end if;
+    if (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception 'evidence patch B: no unique match'; end if;
+    execute replace(replace(d, a, b), a2, b2);
+  end if;
+end $do$;
+
+-- 19f. acquisition_engine_v2_overlap_site_description: the evidence-overlap check also accepts the website description.
+do $do$
+declare d text; a text := 'o.description, c.universe_reason)'; b text := 'o.description, c.universe_reason, c.site_description)';
+begin
+  select pg_get_functiondef('public.form_prepare_save(jsonb)'::regprocedure) into d;
+  if position('c.site_description' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'overlap patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+
+-- 19g. acquisition_engine_v2_form_model_outage_and_clause_trim: a model outage (empty copy) leaves the form untouched so the next
+--      W27 run retries it; evidence also drops rationale clauses hanging off a fact (", creating demand for ...").
+do $do$
+declare d text;
+  a text := '  if cf.status <> ''QUALIFIED'' then return jsonb_build_object(''ok'', false, ''reason'', ''NOT_QUALIFIED'', ''status'', cf.status); end if;';
+  b text := a || chr(10) || '  if length(btrim(coalesce(p->>''message'', ''''))) < 20 then return jsonb_build_object(''ok'', false, ''reason'', ''NO_COPY_MODEL_UNAVAILABLE''); end if;';
+begin
+  select pg_get_functiondef('public.form_prepare_save(jsonb)'::regprocedure) into d;
+  if position('NO_COPY_MODEL_UNAVAILABLE' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'outage patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+do $do$
+declare d text;
+  a text := '(select string_agg(s, '' '') from regexp_split_to_table(coalesce(c.universe_reason, ''''),';
+  b text := '(select string_agg(regexp_replace(s, '',\s*(creating|making|which (creates|makes|means|could)|giving|offering|presenting|opening|positioning)\M.*$'', ''.'', ''i''), '' '') from regexp_split_to_table(coalesce(c.universe_reason, ''''),';
+begin
+  select pg_get_functiondef('public.form_draft_next_batch(integer)'::regprocedure) into d;
+  if position('positioning)' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'clause patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+update public.contact_forms set qa_status = null, qa_issues = null, updated_at = now()
+ where status = 'QUALIFIED' and qa_issues->'issues' ? 'TOO_SHORT(1w)';
+
+-- 19h. acquisition_engine_v2_needs_contact_balance: NEEDS CONTACT (the research queue W19/W25/W27 work from) was ordered
+--      multipliers-first; five multiplier families (170+ accounts) filled all 150 slots, so brands, hospitality and weddings got
+--      no contact research. Round-robin by family: three per multiplier family and two per other family per round.
+do $do$
+declare d text;
+  a text := '    select e.opportunity_id, e.raw, row_number() over (order by e.multiplier desc, e.raw desc, e.opportunity_id) rn
+      from (select e1.*, row_number() over (partition by e1.company_id order by e1.raw desc, e1.opportunity_id) rn_co
+              from _e e1 where not e1.ready and e1.account_ok and e1.g2 and e1.gfit';
+  b text := '    select e.opportunity_id, e.raw, row_number() over (order by ceil(e.k_fam / case when e.multiplier then 3.0 else 2.0 end), e.multiplier desc, e.raw desc, e.opportunity_id) rn
+      from (select e1.*, row_number() over (partition by e1.company_id order by e1.raw desc, e1.opportunity_id) rn_co,
+                   dense_rank() over (partition by e1.family order by e1.raw desc, e1.company_id) k_fam
+              from _e e1 where not e1.ready and e1.account_ok and e1.g2 and e1.gfit';
+begin
+  select pg_get_functiondef('public.outreach_queue_build(text)'::regprocedure) into d;
+  if position('dense_rank() over (partition by e1.family' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'needs-contact patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+
+-- 19i. acquisition_engine_v2_discovery_ingest: safe loader for discovery-matrix results (daily operating agent or any discovery
+--      workflow). One company per registrable domain; a public fact and a source URL are required; the account enters the cold
+--      universe as RESEARCHING for the route engines. No tasks for Adam; nothing is contacted.
+create or replace function public.discovery_ingest(p jsonb) returns jsonb
+ language plpgsql security definer set search_path to 'public'
+as $$
+declare r jsonb; v_dom text; v_co uuid; v_opp uuid; v_stream text; v_fam text; v_mult boolean;
+        n_in int := 0; n_new int := 0; n_dup int := 0; n_bad int := 0; bad jsonb := '[]'::jsonb;
+begin
+  for r in select * from jsonb_array_elements(coalesce(p->'rows', '[]'::jsonb)) loop
+    n_in := n_in + 1;
+    v_dom := registrable_domain(r->>'website');
+    v_stream := upper(btrim(coalesce(r->>'stream', '')));
+    if coalesce(r->>'name', '') = '' or coalesce(r->>'website', '') !~* '^https?://' or v_dom is null
+       or length(btrim(coalesce(r->>'fact', ''))) < 40 or length(btrim(coalesce(r->>'angle', ''))) < 25
+       or not exists (select 1 from commercial_streams s where s.code = v_stream and s.active)
+       or coalesce(r->>'source_url', '') !~* '^https?://'
+       or (r->>'fact') ~* '(noya|synerg|ideal partner|perfect fit)' then
+      n_bad := n_bad + 1; bad := bad || to_jsonb(coalesce(r->>'name', '?')); continue;
+    end if;
+    if exists (select 1 from companies c where c.merged_into is null and (registrable_domain(c.website) = v_dom or lower(c.name) = lower(btrim(r->>'name')))) then
+      n_dup := n_dup + 1; continue;
+    end if;
+    select oc.family, coalesce(f.multiplier, false) into v_fam, v_mult
+      from outreach_categories oc left join outreach_families f on f.code = oc.family
+     where oc.code = outreach_category(v_stream, r->>'company_type');
+    insert into companies (name, website, country, city, company_type, source, notes, relationship_status, universe_status, universe_reason, universe_added_at)
+    values (btrim(r->>'name'), r->>'website', nullif(r->>'country', ''), nullif(r->>'city', ''), nullif(r->>'company_type', ''),
+            'Discovery matrix (' || coalesce(nullif(p->>'actor', ''), 'engine') || ')',
+            'Source: ' || (r->>'source_url') || coalesce(E'\nDiscovered via query: ' || nullif(p->>'query', ''), ''),
+            'prospect', 'QUALIFIED', btrim(r->>'fact'), now())
+    returning id into v_co;
+    insert into opportunities (company_id, company_name, website, country, city, company_type, opportunity_type, destination, description, reason,
+                               commercial_trigger, angle, status, approval_status, priority, provenance, primary_stream, market, buyer_type,
+                               relationship_type, next_action, track, owner)
+    values (v_co, btrim(r->>'name'), r->>'website', nullif(r->>'country', ''), nullif(r->>'city', ''), nullif(r->>'company_type', ''),
+            coalesce(nullif(r->>'project', ''), initcap(replace(lower(v_stream), '_', ' ')) || ' — Egypt project'), 'Egypt',
+            btrim(r->>'angle'), btrim(r->>'fact'), case when length(btrim(coalesce(r->>'why_now', ''))) >= 25 then btrim(r->>'why_now') end,
+            btrim(r->>'angle'), 'RESEARCHING', 'PENDING', least(greatest(coalesce((r->>'priority')::int, 60), 0), 100), 'SOURCE_BACKED',
+            v_stream, nullif(r->>'market', ''), nullif(r->>'buyer_type', ''), 'COLD',
+            'Engine: find the decision maker and the strongest legitimate route', case when v_mult then 'PARTNERSHIP' else 'SALES' end, 'Adam')
+    returning id into v_opp;
+    n_new := n_new + 1;
+  end loop;
+  if nullif(p->>'query_id', '') is not null or nullif(p->>'query', '') is not null then
+    perform discovery_record(jsonb_build_object('id', p->>'query_id', 'query', p->>'query', 'provider', coalesce(nullif(p->>'provider', ''), 'SERPER'),
+             'credits', coalesce((p->>'credits')::numeric, 1), 'results', coalesce((p->>'results')::int, n_in), 'new_companies', n_new, 'qualified', n_new,
+             'actor', p->>'actor'));
+  end if;
+  return jsonb_build_object('ok', true, 'rows', n_in, 'new', n_new, 'duplicates', n_dup, 'rejected', n_bad, 'rejected_names', bad);
+end $$;
+revoke all on function public.discovery_ingest(jsonb) from public, anon, authenticated;
+
+-- 19j. acquisition_engine_v2_clay_ledger_purpose_fix: clay_spend_record wrote purpose 'WORK_EMAIL', which the ledger's purpose
+--      check rejects; Clay work-email lookups are 'ENRICH'.
+do $do$
+declare d text;
+begin
+  select pg_get_functiondef('public.clay_spend_record(uuid,numeric,text,text)'::regprocedure) into d;
+  if position('''WORK_EMAIL''' in d) > 0 then execute replace(d, '''WORK_EMAIL''', '''ENRICH'''); end if;
+end $do$;
+
+-- 19k. acquisition_engine_v2_helper_grants: the two pure helpers are used only inside security-definer engine functions;
+--      HQ calls only the five hq_* functions.
+revoke all on function public.route_rank_of(text, text, text) from public, anon, authenticated;
+revoke all on function public.form_type_label(text) from public, anon, authenticated;

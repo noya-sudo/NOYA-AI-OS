@@ -1,4 +1,4 @@
--- Final acquisition engine (22 Nov 2026): read-only checks. Run with the MCP execute_sql (returns one row per check).
+-- Final acquisition engine (22-23 Nov 2026): read-only checks. Run with the MCP execute_sql (returns one row per check).
 -- Nothing here writes, sends, submits or buys.
 with
 rd as (select max(run_date) d from daily_outreach_runs),
@@ -11,7 +11,7 @@ fns as (
      and p.proname in ('outreach_queue_build', 'route_rank_of', 'form_type_label', 'form_type_classify', 'route_research_next_batch', 'route_research_ingest',
                        'form_message_quality', 'form_draft_next_batch', 'form_prepare_save', 'hq_form_detail', 'hq_form_action', 'form_submission_record',
                        'outreach_draft_repair', 'research_credit_budget', 'engine_self_correct', 'hq_engine_health', 'discovery_next_batch', 'discovery_record',
-                       'clay_spend_record', 'hq_outreach_lanes', 'hq_outreach_draft')),
+                       'clay_spend_record', 'hq_outreach_lanes', 'hq_outreach_draft', 'discovery_ingest', 'form_evidence_overlap')),
 checks(name, ok, observed) as (
   select 'Builder v2: every queue row carries the 14 READY gates',
          bool_and((select count(*) from jsonb_object_keys(q.gates)) = 14

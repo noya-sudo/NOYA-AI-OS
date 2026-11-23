@@ -2897,18 +2897,43 @@ returns and consumer booking forms are rejected), copy prepared field by field f
 submits once and records the confirmation (`form_submission_record`). Nothing is auto-submitted; constraints enforce
 approval-before-submission and commercial-only.
 
-**W27 Route & Form Finder** (n8n `U6Sq9smOu72WxJla`, code in `n8n/w27`, built by `n8n/build_w27.py`): Sun–Fri 01:30 and 12:30
-Cairo, reads each priority account's homepage and up to four commercial pages (contact, partnerships, trade, events, press,
-team), extracts printed emails (including protected ones), forms and the Instagram / LinkedIn company page, and saves them through
-`route_research_ingest` (same-domain emails only; personal addresses only onto a known person whose name they spell). 02:15 and
-13:15 Cairo: Flash-Lite writes form copy; `form_prepare_save` gates it. No paid credits.
+**W27 Route & Form Finder** (n8n `U6Sq9smOu72WxJla`, published 23 Nov; code in `n8n/w27`, built by `n8n/build_w27.py`): Sun–Fri
+every 30 minutes 00:00–05:30 and hourly 11:30–14:30 Cairo, in batches of 12 accounts (self-correction can raise it to 20; n8n
+Cloud runs out of memory above that). It reads each priority account's homepage and up to four commercial pages (contact,
+partnerships, trade, events, press, team), extracts printed emails (including protected ones), forms, the Instagram / LinkedIn
+company page and the site's own one-line description (`companies.site_description`, a citable public fact), and saves them through
+`route_research_ingest` (same-domain emails only; personal addresses only onto a known person whose name they spell). Forms: 06:15
+and 15:15 Cairo (backstop) Flash-Lite writes form copy (4 retries on model outages; an empty answer leaves the form for the next
+run). No paid credits.
+
+**Form copy standard (23 Nov)**: copy may cite only public facts. The evidence passed to the model is the fact sentences of the
+account's research (our own rationale such as "making them an ideal partner for NOYA", ", creating demand for ..." is stripped)
+plus the website description; a form with no remaining fact is not drafted until research finds one. WHY NOW and IDEA are internal
+hypotheses, never stated as facts. `form_message_quality` blocks characterising the recipient ("demonstrated", "commitment to",
+"requires", "your next", "I note that", "I noticed" and similar); `form_prepare_save` also requires two concrete evidence terms.
+Honeypot fields stay empty; consent boxes and dates/budgets go to `_needs_adam`.
+
+**Discovery (23 Nov)**: discovery is automated by the Director departments in n8n (06 Corporate & Private Client, 07 Global
+Partnerships, Weddings & Events, Hotels & Content, Brand & Production; about 100 new qualified accounts in the week to 23 Nov).
+The daily operating agent adds gap-family discovery from the query matrix (`discovery_queries`, `discovery_next_batch()`, family
+gap first, within the Serper / Firecrawl daily allowance) and loads results with `discovery_ingest()`: one company per registrable
+domain, a public fact and a source URL required, entering the cold universe as RESEARCHING for W19 / W27 / W25; no tasks for Adam.
+
+**Needs-contact balance (23 Nov)**: the 150-slot NEEDS CONTACT lane (the queue W19, W25 and W27 research from) is round-robin by
+family, three per multiplier family and two per other family per round. Before, multipliers filled every slot and brands,
+hospitality and weddings got no contact research.
+
+**Route fallback and data integrity**: when W27 cannot read a site (bot wall, TLS, rate limit), the operating agent may scrape the
+contact / partnership page with Firecrawl and load it with `route_research_ingest(method 'FIRECRAWL')`, logging credits (purpose
+ROUTE). A dead domain or a website that belongs to another company is a data-integrity finding: the account is held or the website
+removed (one record, with the reason in notes), never routed.
 
 **Failed-draft repair** (`outreach_draft_repair`, 20:40 Cairo before W18): drafts that failed the W18 gate on copy or the free-tier
 rate limit are freed for that night's W18 run (max two repairs per draft); thin-evidence drafts wait for re-research.
 
 **Credits and self-correction**: `research_credit_budget()` (Serper balance/runway/daily allowance, Firecrawl estimate, Clay cap,
 Hunter); `engine_self_correct()` (05:40 Cairo) finds the bottleneck when READY < 60 and raises only that stage within bounds
-(repair 30→50 a night, route research 30→60 accounts a run, family focus); it never buys anything; top-ups and Gemini billing are
+(repair 30→50 a night, route research 12→20 accounts a run, family focus); it never buys anything; top-ups and Gemini billing are
 recommendations for Adam. `clay_spend_record` refuses a second Clay spend on the same unresolved person within 30 days.
 
 **Reporting**: `hq_engine_health()` (System / Admin → Acquisition engine health) gives inventory vs target, routes found in 24 h
@@ -2920,4 +2945,9 @@ Intelligence, Finance, System / Admin and Legacy / Diagnostics (the approval des
 classic agent screens, unchanged). Outreach lanes: Act now, Ready today, Form ready, Reserve, Needs contact, Follow-ups, History
 (Replies and the route explorer as small links).
 
-Checks: `supabase/tests/acquisition_engine_v2_checks.sql` (read-only) and `hq/tests/ui_v4.mjs` (98 checks).
+Checks: `supabase/tests/acquisition_engine_v2_checks.sql` (read-only, 21 checks, all passing on 23 Nov) and `hq/tests/ui_v4.mjs` (98 checks).
+
+**State at acceptance (23 Nov 2026, evening)**: READY 17 (16 email + 1 form) against 60–80; reserve 14; needs-draft 37; needs
+contact 150 balanced across all eight families. Bottleneck: personalised drafts (30 failed drafts re-queued for tonight's W18 run)
+and routes. Usable routes on record: 57 named/validated person emails, 15 Clay work emails, 68 official inboxes, 11 qualified
+commercial forms (1 prepared). Serper runway about 4 days at the current burn: a top-up is Adam's decision.
