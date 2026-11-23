@@ -40,17 +40,27 @@ function noteErr(key, e) {
 // Studio joined the primary navigation on 19 Oct (Destination Egypt mission): it is operational, so it is no longer under More.
 // HQ V4 (21 Nov 2026): the CEO control centre. Seven destinations; every earlier screen stays reachable under More, unchanged.
 // Acceptance pass (21 Nov): Agents sits under More with Studio, Intelligence, Finance and System / Admin.
-const PRIMARY = [['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams'], ['relations', 'Relationships'], ['projects', 'Projects']];
+// Final engine pass (22 Nov 2026): five destinations — Today, Outreach, Opportunities, Relationships, Projects — and More. Streams
+// moved under More. Every earlier screen (approval desk, classic dashboard, club, operations, the classic agent screens, records)
+// is still reachable under More → Legacy / Diagnostics, unchanged; nothing was deleted.
+const PRIMARY = [['today', 'Today'], ['mail', 'Outreach'], ['opps', 'Opportunities'], ['relations', 'Relationships'], ['projects', 'Projects']];
 const MORE = [
-  ['Operate', [['agents', 'Agents'], ['studio', 'Studio / Briefs'], ['intelligence', 'Intelligence'], ['finance', 'Finance'], ['system', 'System / Admin']]],
+  ['More', [['streams', 'Streams'], ['agents', 'Agents'], ['studio', 'Studio / Briefs'], ['intelligence', 'Intelligence'], ['finance', 'Finance'], ['system', 'System / Admin'], ['legacy', 'Legacy / Diagnostics']]],
+];
+const LEGACY = [
   ['Workspaces', [['desk', 'Approval desk'], ['dashboard', 'Dashboard (classic)'], ['club', 'Club'], ['ops', 'Operations']]],
   ['Agents & intelligence', [['emails', 'Email opportunities'], ['agentradar', 'Opportunity radar'], ['feed', 'Activity feed (classic)'], ['agentfloor', 'Agent floor (classic)'], ['radar', 'Signal radar'], ['markets', 'Markets'], ['growth', 'Growth reports'], ['library', 'Products & playbooks']]],
   ['Sales', [['overview', 'Command (classic)'], ['actions', 'Action queue'], ['inbox', 'Replies'], ['outreach', 'Outreach (classic)'], ['linkedin', 'LinkedIn'], ['website', 'Website leads'], ['partners', 'Partnerships'], ['events', 'Events']]],
   ['Records', [['relationships', 'Past relationships'], ['companies', 'Companies'], ['contacts', 'Contacts'], ['pipeline', 'Pipeline'], ['tasks', 'Tasks']]],
   ['Admin', [['reports', 'Reports'], ['costs', 'System costs'], ['help', 'Help & playbook']]],
 ];
-const NAV = [['HQ', PRIMARY], ...MORE];
-const MORE_KEYS = MORE.flatMap(([, items]) => items.map(([k]) => k));
+const NAV = [['HQ', PRIMARY], ...MORE, ...LEGACY];
+const MORE_KEYS = [...MORE, ...LEGACY].flatMap(([, items]) => items.map(([k]) => k));
+const LEGACY_KEYS = LEGACY.flatMap(([, items]) => items.map(([k]) => k));
+function viewLegacy() {
+  return `${head4('Legacy / Diagnostics', 'Earlier screens, kept unchanged for reference and diagnostics. Daily work happens in Today and Outreach.')}
+  ${LEGACY.map(([g, items]) => `<section class="panel"><header><h3>${esc(g)}</h3></header><div class="body"><div class="chips">${items.map(([k, l]) => `<button class="chip" data-tab="${k}">${esc(l)}</button>`).join('')}</div></div></section>`).join('')}`;
+}
 const STAGES = ['NEW', 'RESEARCHING', 'READY', 'CONTACTED', 'FOLLOW_UP', 'INTERESTED', 'CALL_REQUIRED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'LONG_TERM', 'ARCHIVED'];
 const STAGE_LABEL = { NEW: 'New', RESEARCHING: 'Researching', READY: 'Ready', CONTACTED: 'Contacted', FOLLOW_UP: 'Follow-up', INTERESTED: 'Interested', CALL_REQUIRED: 'Call required', PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won', LOST: 'Lost', LONG_TERM: 'Long term', ARCHIVED: 'Archived' };
 const VERTICAL_LABEL = { PRIVATE_UHNW: 'Private / UHNW', CORPORATE: 'Corporate', BRAND_PRODUCTION: 'Brand / Production', HOSPITALITY: 'Hospitality', TRAVEL_CONCIERGE: 'Travel / Concierge partners', WEDDINGS_EVENTS: 'Weddings / Events', SPORTS_TALENT: 'Sports / Talent', OTHER: 'Other' };
@@ -476,8 +486,8 @@ function renderInner() {
       <div class="side-col"><aside class="side">
         <div class="brand">${__HAS_LOGO__ ? '<img src="/noya-mark.svg" alt="">' : ''}<span class="word">NOYA<small>HQ · Private office</small></span></div>
         <nav class="nav-primary">${PRIMARY.map(([k, l]) => `<button class="nav-item ${state.tab === k || (k === 'agents' && state.tab === 'director') ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</nav>
-        <button class="nav-more ${moreOpen() ? 'open' : ''}" id="nav-more">More / Admin</button>
-        ${moreOpen() ? MORE.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k || (k === 'agents' && ['director', 'agent'].includes(state.tab)) ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('') : ''}
+        <button class="nav-more ${moreOpen() ? 'open' : ''}" id="nav-more">More</button>
+        ${moreOpen() ? MORE.map(([g, items]) => `<div class="nav-group"><h6>${g}</h6>${items.map(([k, l]) => `<button class="nav-item ${state.tab === k || (k === 'agents' && ['director', 'agent'].includes(state.tab)) || (k === 'legacy' && LEGACY_KEYS.includes(state.tab)) ? 'active' : ''}" data-tab="${k}"><span>${l}</span>${navBadge(k)}</button>`).join('')}</div>`).join('') : ''}
       </aside></div>
       <div>
         <div class="topbar"><div class="mbrand">NOYA</div>
@@ -498,10 +508,10 @@ function renderInner() {
       </div>
     </div>
     <nav class="bnav">
-      ${[['today', 'Today'], ['opps', 'Opportunities'], ['mail', 'Outreach'], ['streams', 'Streams']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
-      <button id="bmenu" class="${state.menu || ['relations', 'projects', 'agents', 'director', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
+      ${[['today', 'Today'], ['mail', 'Outreach'], ['opps', 'Opportunities'], ['relations', 'Relationships']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}
+      <button id="bmenu" class="${state.menu || ['projects', 'agents', 'director', ...MORE_KEYS].includes(state.tab) ? 'active' : ''}">More</button>
     </nav>
-    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['relations', 'Relationships'], ['projects', 'Projects']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
+    ${state.menu ? `<div class="sheet-bg" data-close-menu></div><div class="sheet"><div class="sheet-grid">${[['projects', 'Projects']].map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>${MORE.map(([g, items]) => `<h6>${g}</h6><div class="sheet-grid">${items.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'active' : ''}">${l}${navBadge(k)}</button>`).join('')}</div>`).join('')}</div>` : ''}
     ${state.drawer ? safeDrawer(state.drawer) : ''}
     ${state.modal && typeof state.modal === 'object' ? (state.modal.kind === 'desk' ? deskModal(state.modal) : state.modal.kind === 'weekly' ? weeklyModal() : state.modal.kind === 'fu' ? fuModal(state.modal) : renderAnyModal(state.modal)) : ''}`;
   bind();
@@ -5027,7 +5037,7 @@ function bindV3(on) {
 // Today, Opportunities, Outreach and Streams read small server-side RPCs (hq_today, hq_opportunities, hq_streams, hq_email_summary,
 // hq_email_routes: 0.3–45 KB each, about 0.2 s together) instead of the 1–4 MB dashboard reads. They draw without waiting for those reads
 // and each has its own loading, empty and error state. The only write here is hq_ceo_action (audited): nothing sends, approves or spends.
-const LIGHT_TABS = new Set(['today', 'opps', 'mail', 'streams']);
+const LIGHT_TABS = new Set(['today', 'opps', 'mail', 'streams', 'legacy']);
 const LIGHT_KEYS = ['today', 'opps', 'streams', 'mail', 'routes', 'seasons', 'scout', 'pships'];
 const TAB_KEYS = { today: ['today'], opps: ['opps', 'streams'], streams: ['streams'], mail: ['mail'] };
 // Outreach reads one lane at a time (hq_outreach_lanes); the full route explorer loads only under "All routes".
@@ -5221,25 +5231,31 @@ function streamRow(s) {
 // ---- OUTREACH: Today's 25 and the lanes around it (daily acquisition policy, 22 Nov 2026). One company, one route; every email is an
 // unsent Gmail draft Adam sends himself; the send allowance follows the ramp (5 → 25) and warm work always comes first. Each lane is one
 // small admin-gated read (hq_outreach_lanes); the full route explorer stays under "All routes". Nothing here sends, approves or spends.
-const LANES = [['ACT_NOW', 'Act now', 'act_now'], ['TODAY', 'Today’s 25', 'today'], ['RESERVE', 'Reserve', 'reserve'], ['NEEDS_CONTACT', 'Needs contact', 'needs_contact'],
-  ['FOLLOW_UPS', 'Follow-ups', 'follow_ups'], ['REPLIES', 'Replies', 'replies'], ['ALL', 'All routes', null]];
+const LANES = [['ACT_NOW', 'Act now', 'act_now'], ['TODAY', 'Ready today', 'today'], ['FORM_READY', 'Form ready', 'form_ready'], ['RESERVE', 'Reserve', 'reserve'],
+  ['NEEDS_CONTACT', 'Needs contact', 'needs_contact'], ['FOLLOW_UPS', 'Follow-ups', 'follow_ups'], ['HISTORY', 'History', 'history']];
+const LANES_MORE = [['REPLIES', 'Replies', 'replies'], ['ALL', 'Route explorer', null]];
+const CH4 = { EMAIL: 'Email', FORM: 'Website form', LINKEDIN: 'LinkedIn', INSTAGRAM: 'Instagram', MANAGEMENT: 'Management / agent', PHONE: 'Phone', WARM: 'Warm introduction' };
 const SRC4 = { OFFICIAL_WEBSITE: 'Official website', INSTAGRAM_PUBLIC: 'Public Instagram business profile', CLAY: 'Clay work email (not independently verified)',
   LINKEDIN: 'LinkedIn', FIFA_AGENT_REGISTER: 'FIFA agent register', PRESS: 'Press or interview', PUBLIC_DOCUMENT: 'Media kit or speaker page', WEB_SEARCH: 'Web search result',
   ADAM: 'Added by Adam', VERIFICATION_PROVIDER: 'Verification provider', WEB: 'Public web page' };
 const DRAFT4 = { GMAIL_DRAFT: 'Unsent Gmail draft ready', APPROVED_PENDING_GMAIL: 'Approved · Gmail draft being created', APPROVED: 'Approved', READY_FOR_REVIEW: 'Passed the quality gate · awaiting your review',
-  NEEDS_EDIT: 'Needs an edit', PLANNED_TONIGHT: 'Drafting tonight', HELD: 'Held', NONE: 'No draft yet' };
+  NEEDS_EDIT: 'Needs an edit', PLANNED_TONIGHT: 'Drafting tonight', HELD: 'Held', NONE: 'No draft yet',
+  FORM_PREPARED: 'Form copy prepared · awaiting your review', FORM_APPROVED: 'Approved · the agent submits it once', FORM_DRAFTING: 'Form copy being prepared' };
 const GATE4 = { real_account_person: 'confirmed person', stream: 'stream', commercial_reason: 'commercial reason', project_hypothesis: 'project idea', decision_maker: 'decision maker',
-  contact_route: 'professional route', provenance: 'source of the address', route_classification: 'route class', personalised_draft: 'personalised draft', next_action: 'next action', no_conflict: 'conflict check' };
+  contact_route: 'professional route', provenance: 'source of the address', route_classification: 'route class', personalised_draft: 'personalised draft', next_action: 'next action', no_conflict: 'conflict check',
+  commercial_fit: 'commercial fit', no_dnc: 'do-not-contact check', no_company_conflict: 'company conflict check', research_current: 'current research' };
 const BOTTLE4 = { personalised_draft: 'drafting: researched accounts are waiting for W18 tonight or for an edit', contact_route: 'contact routes: accounts still need a sourced professional address',
   decision_maker: 'decision makers: accounts still need the right person confirmed', real_account_person: 'confirmed people', route_classification: 'route classification',
-  provenance: 'sources for addresses', commercial_reason: 'commercial reasons', project_hypothesis: 'project ideas', next_action: 'next actions', no_conflict: 'conflicts' };
+  provenance: 'sources for addresses', commercial_reason: 'commercial reasons', project_hypothesis: 'project ideas', next_action: 'next actions', no_conflict: 'conflicts',
+  commercial_fit: 'commercial fit', no_dnc: 'do-not-contact checks', no_company_conflict: 'company conflicts', research_current: 'research that is out of date' };
 const MKT4 = { EGYPT: 'Egypt', GCC: 'GCC', UK: 'UK', EUROPE: 'Europe', NORTH_AMERICA: 'North America', REST_OF_WORLD: 'rest of world', GLOBAL: 'global' };
 function viewMail() {
   const M4 = state.mail; const L = state.lane === 'ALL' ? null : state[laneKey()]; const H = L || state.laneLast; const C = H?.counts || {};
   const desk = state.desk?.counts?.needs_review?.total;
-  return `${head4('Outreach', 'Today’s 25, prepared and ranked by the agents. Every email is an unsent Gmail draft that you send yourself.')}
+  return `${head4('Outreach', 'Ready today, prepared and ranked by the agents. Emails are unsent Gmail drafts you send yourself; website forms are submitted only after you approve them.')}
   ${allowanceBanner(H?.allowance, M4)}
-  <div class="lanes4" role="tablist" aria-label="Outreach lanes">${LANES.map(([k, l, c]) => `<button class="lane4 ${state.lane === k ? 'on' : ''}" role="tab" aria-selected="${state.lane === k}" data-lane="${k}">${l}${c && C[c] != null ? ` <span class="c">${esc(C[c])}</span>` : ''}</button>`).join('')}</div>
+  ${engineStrip(H)}
+  <div class="lanes4" role="tablist" aria-label="Outreach lanes">${LANES.map(([k, l, c]) => `<button class="lane4 ${state.lane === k ? 'on' : ''}" role="tab" aria-selected="${state.lane === k}" data-lane="${k}">${l}${c && C[c] != null ? ` <span class="c">${esc(C[c])}</span>` : ''}</button>`).join('')}<span class="lanes4-more">${LANES_MORE.map(([k, l, c]) => `<button class="link4 ${state.lane === k ? 'on' : ''}" data-lane="${k}">${l}${c && C[c] != null ? ` (${esc(C[c])})` : ''}</button>`).join(' · ')}</span></div>
   ${desk ? `<div class="strip4"><span><b>${esc(desk)}</b> outreach item${Number(desk) === 1 ? '' : 's'} waiting for your review in the approval desk.</span><button class="btn small primary" data-tab="desk">Open approval desk</button></div>` : ''}
   ${state.lane === 'ALL' ? routesView() : laneView(state.lane, L)}`;
 }
@@ -5262,7 +5278,8 @@ function laneView(lane, L) {
   const items = L.items || []; const dim = state.busy[key] ? 'dim' : ''; const pg = pager(L.total, state.laneOff, LANE_PAGE, 'lane');
   const err = state.errors[key] ? `<div class="unavail"><span>This lane could not refresh; showing the last result.</span><button class="btn small" data-retry="${esc(key)}">Retry</button></div>` : '';
   if (lane === 'ACT_NOW') return `${err}<p class="meta4">Replies, client work, enquiries and decisions. These outrank every new send.</p>${items.length ? `<div class="ca4s ${dim}">${items.map(actCard).join('')}</div>${L.extra?.more ? `<p class="meta4">${esc(L.extra.more)} more on Today.</p>` : ''}` : '<p class="empty4">Nothing warm is waiting. New first touches can go out in the send windows.</p>'}`;
-  if (lane === 'TODAY' || lane === 'RESERVE') return `${err}${queueMeta(L, lane)}${items.length ? `<div class="q4s ${dim}">${items.map(queueCard).join('')}</div>${pg}` : emptyQueue(L, lane)}`;
+  if (lane === 'TODAY' || lane === 'RESERVE' || lane === 'FORM_READY') return `${err}${queueMeta(L, lane)}${items.length ? `<div class="q4s ${dim}">${items.map(queueCard).join('')}</div>${pg}` : emptyQueue(L, lane)}`;
+  if (lane === 'HISTORY') return `${err}<p class="meta4">First touches in the last 30 days (emails you sent and approved website forms), with replies, bounces and meetings.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(histRow).join('')}</div>${pg}` : '<p class="empty4">No first touch in the last 30 days.</p>'}`;
   if (lane === 'NEEDS_CONTACT') return `${err}<p class="meta4">Qualified accounts with a reason and a project idea that still need a confirmed person or a sourced professional route. Research continues in the background; nothing is guessed.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(needRow).join('')}</div>${pg}` : '<p class="empty4">No account is waiting on contact research.</p>'}`;
   if (lane === 'FOLLOW_UPS') return `${err}${L.extra?.held_21_nov ? `<div class="strip4"><span><b>${esc(L.extra.held_21_nov)}</b> follow-ups from the 21 Nov batch are held. ${esc(L.extra.hold_rule || '')}</span></div>` : ''}<p class="meta4">Due within two days. Check for a reply first; follow up only where there is a reason to.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(fuRow).join('')}</div>${pg}` : '<p class="empty4">No follow-up is due in the next two days.</p>'}`;
   if (lane === 'REPLIES') return `${err}<p class="meta4">Inbound in the last 14 days, newest first.</p>${items.length ? `<div class="rows4 ${dim}">${items.map(replyRow).join('')}</div>${pg}` : '<p class="empty4">No reply in the last 14 days.</p>'}`;
@@ -5270,39 +5287,48 @@ function laneView(lane, L) {
 }
 function queueMeta(L, lane) {
   const C = L.counts || {}; const F = L.funnel || {};
-  if (lane === 'RESERVE') return '<p class="meta4">Send-ready records behind Today’s 25, in rank order. They move up when a Today record is sent or drops out.</p>';
-  const out = [`<p class="meta4">${esc(C.today ?? 0)} ready${C.today_sent ? ` · ${esc(C.today_sent)} sent` : ''} · ${esc(C.reserve ?? 0)} in reserve · ${esc(C.needs_draft ?? 0)} researched account${Number(C.needs_draft) === 1 ? '' : 's'} waiting for a draft · ${L.built_at ? `built ${esc(fmtDate(L.built_at))}` : 'not built yet'}${L.stale ? ` · showing ${esc(shortDay(L.date))}; today’s queue builds at 05:30 Cairo` : ''}</p>`];
-  if (Number(L.shortfall) > 0) out.push(`<p class="note4 warn-t">Short of 25 by ${esc(L.shortfall)}. The limit is ${esc(BOTTLE4[L.bottleneck] || sentence(String(L.bottleneck || 'supply').replace(/_/g, ' ')))}. The gap is not filled with weaker accounts.</p>`);
+  if (lane === 'RESERVE') return '<p class="meta4">Send-ready records behind Ready today, in rank order: overflow from the family cap and anything past the daily target. They move up when a Ready record is sent or drops out.</p>';
+  if (lane === 'FORM_READY') return '<p class="meta4">Commercial website forms with copy prepared field by field. Review a form; approving lets the agent submit it once and record the confirmation. No cold email goes to a company while its form route is active.</p>';
+  const T = (F.targets || {}).ready || 75;
+  const out = [`<p class="meta4">${esc(F.ready_total ?? C.today ?? 0)} ready of ${esc(T)} (${esc(C.today ?? 0)} email${C.form_ready ? `, ${esc(C.form_ready)} form` : ''})${C.today_sent ? ` · ${esc(C.today_sent)} sent` : ''} · ${esc(C.reserve ?? 0)} in reserve · ${esc(C.needs_draft ?? 0)} researched account${Number(C.needs_draft) === 1 ? '' : 's'} waiting for a draft · ${L.built_at ? `built ${esc(fmtDate(L.built_at))}` : 'not built yet'}${L.stale ? ` · showing ${esc(shortDay(L.date))}; today’s queue builds at 05:30 Cairo` : ''}</p>`];
+  if (Number(L.shortfall) > 0) out.push(`<p class="note4 warn-t">Short of ${esc(T)} by ${esc(L.shortfall)}. The limit is ${esc(BOTTLE4[L.bottleneck] || sentence(String(L.bottleneck || 'supply').replace(/_/g, ' ')))}. The gap is not filled with weaker accounts.</p>`);
   if (F.considered != null) out.push(`<div class="fun4">${[['Considered', F.considered], ['Screened', F.screened], ['Researched', F.researched], ['Send-ready', F.ready_unique_companies ?? F.ready]].map(([l, n]) => `<div><b>${esc(n ?? 0)}</b><span>${l}</span></div>`).join('')}</div>`);
+  const fam = Object.values((L.engine || {}).families || {}).filter((f) => Number(f.ready) > 0).sort((a, b) => b.ready - a.ready);
   const cov = Object.values(L.coverage || {}).filter((c) => Number(c.today) > 0).sort((a, b) => b.today - a.today);
-  if (cov.length) out.push(`<p class="meta4">Mix today: ${cov.map((c) => `${esc(c.label)} ${esc(c.today)}`).join(' · ')}. Guided by the portfolio, never forced into equal quotas.</p>`);
+  if (fam.length) out.push(`<p class="meta4">Mix today: ${fam.map((f) => `${esc(f.label)} ${esc(f.ready)}`).join(' · ')} · ${esc(fam.length)} of ${esc((L.engine || {}).min_families || 6)} families. No family above a quarter of the target; the overflow waits in Reserve.</p>`);
+  else if (cov.length) out.push(`<p class="meta4">Mix today: ${cov.map((c) => `${esc(c.label)} ${esc(c.today)}`).join(' · ')}.</p>`);
+  if ((L.engine || {}).cap_note) out.push(`<p class="note4">${esc(L.engine.cap_note)}</p>`);
   return out.join('');
 }
 function emptyQueue(L, lane) {
-  if (lane === 'RESERVE') return '<p class="empty4">No send-ready record beyond Today’s 25 yet. The reserve fills as research, routes and drafts complete.</p>';
-  return `<div class="empty-box"><p>No send-ready record yet today${L.bottleneck ? `: the limit is ${esc(BOTTLE4[L.bottleneck] || L.bottleneck)}` : ''}.</p><p class="s4">The agents continue discovery, contact research and drafting. Nothing is padded to reach 25.</p><div class="btn-row"><button class="btn small ghost" data-lane="NEEDS_CONTACT">Needs contact</button></div></div>`;
+  if (lane === 'RESERVE') return '<p class="empty4">No send-ready record beyond Ready today yet. The reserve fills as research, routes and drafts complete.</p>';
+  if (lane === 'FORM_READY') return '<p class="empty4">No website form is prepared yet. The route finder reads company sites overnight and at midday; qualified commercial forms get their copy prepared and appear here for your review.</p>';
+  return `<div class="empty-box"><p>No send-ready record yet today${L.bottleneck ? `: the limit is ${esc(BOTTLE4[L.bottleneck] || L.bottleneck)}` : ''}.</p><p class="s4">The agents continue discovery, contact research and drafting. Nothing is padded to reach the target.</p><div class="btn-row"><button class="btn small ghost" data-lane="NEEDS_CONTACT">Needs contact</button></div></div>`;
 }
 function queueCard(x) {
   const open = state.draftOpen === x.id; const src = SRC4[x.route_source_type] || sentence(String(x.route_source_type || '—').replace(/_/g, ' '));
-  const href = safeHref(x.route_source_url); const conf = String(x.confidence || '').toLowerCase();
+  const href = safeHref(x.route_source_url); const conf = String(x.confidence || '').toLowerCase(); const isForm = x.route_channel === 'FORM' && x.form;
+  const fh = isForm ? safeHref(x.form.url) : '';
   return `<article class="q4 ${x.state === 'SENT' ? 'sent' : ''}">
-    <div class="q4-top"><span class="q4-rk">${esc(x.rank)}</span>${x.stream_label ? `<span class="q4-tag">${esc(x.stream_label)}</span>` : ''}<span class="q4-conf c-${esc(conf || 'none')}">${esc({ high: 'High', medium: 'Medium', low: 'Low' }[conf] || 'Unrated')} confidence</span><span class="q4-win ${x.state !== 'SENT' && x.sendable_today ? 'ok' : ''}">${x.state === 'SENT' ? 'Sent' : x.sendable_today ? 'Send today' : `Send ${esc(x.send_window || 'next business day')}`}</span></div>
+    <div class="q4-top"><span class="q4-rk">${esc(x.rank)}</span>${x.family_label ? `<span class="q4-tag fam">${esc(x.family_label)}${x.multiplier ? ' · multiplier' : ''}</span>` : ''}${x.stream_label ? `<span class="q4-tag">${esc(x.stream_label)}</span>` : ''}<span class="q4-conf c-${esc(conf || 'none')}">${esc({ high: 'High', medium: 'Medium', low: 'Low' }[conf] || 'Unrated')} confidence</span><span class="q4-win ${x.state !== 'SENT' && (x.sendable_today || isForm) ? 'ok' : ''}">${x.state === 'SENT' ? (isForm ? 'Submitted' : 'Sent') : isForm ? 'Review form' : x.sendable_today ? 'Send today' : `Send ${esc(x.send_window || 'next business day')}`}</span></div>
     <h4>${esc(x.person || 'Team inbox')}${x.position ? `<span class="q4-pos">, ${esc(x.position)}</span>` : ''} <span class="q4-co">· ${esc(x.company || '—')}</span></h4>
     <dl class="q4-dl">
       <dt>Project idea</dt><dd>${esc(x.project_idea || '—')}</dd>
       <dt>Why now</dt><dd>${esc(x.why_now || '—')}</dd>
-      <dt>Contact route</dt><dd><span class="mono">${esc(x.route_email || '—')}</span> <span class="route ${/verified|named|published/i.test(x.route_label || '') ? 'good' : ''}">${esc(x.route_label || '—')}</span></dd>
+      <dt>Best route</dt><dd><b class="q4-ch">${esc(CH4[x.route_channel] || 'Email')}</b> · ${isForm ? `${esc(x.form.type_label || 'Website form')}${x.form.team ? ` for the ${esc(x.form.team)} team` : ''}${fh ? ` · <a class="link4" href="${esc(fh)}" target="_blank" rel="noopener noreferrer">open the form</a>` : ''}` : `<span class="mono">${esc(x.route_email || '—')}</span> <span class="route ${/verified|named|published/i.test(x.route_label || '') ? 'good' : ''}">${esc(x.route_label || '—')}</span>`}</dd>
       <dt>Route source</dt><dd>${esc(src)}${href ? ` · <a class="link4" href="${esc(href)}" target="_blank" rel="noopener noreferrer">where it was found</a>` : ''}</dd>
-      <dt>Prepared draft</dt><dd>${x.draft_subject ? `<b>${esc(x.draft_subject)}</b> · ` : ''}<span class="s4 q4-ds">${esc(DRAFT4[x.draft_status] || sentence(String(x.draft_status || 'none').replace(/_/g, ' ')))}</span>${x.draft_excerpt ? `<span class="q4-ex">${esc(clip(x.draft_excerpt, 220))}</span>` : ''}<button class="link4" data-draft-open="${esc(x.id)}">${open ? 'Hide the draft' : 'Read the full draft'}</button></dd>
+      ${x.fallback_route ? `<dt>Fallback</dt><dd class="s4">${esc(sentence(String(x.fallback_route).toLowerCase()))}: only after the primary route has run its course, never at the same time.</dd>` : ''}
+      <dt>${isForm ? 'Prepared form' : 'Prepared draft'}</dt><dd>${x.draft_subject ? `<b>${esc(x.draft_subject)}</b> · ` : ''}<span class="s4 q4-ds">${esc(DRAFT4[x.draft_status] || sentence(String(x.draft_status || 'none').replace(/_/g, ' ')))}</span>${x.draft_excerpt ? `<span class="q4-ex">${esc(clip(x.draft_excerpt, 220))}</span>` : ''}<button class="link4" data-draft-open="${esc(x.id)}">${open ? (isForm ? 'Hide the form' : 'Hide the draft') : (isForm ? 'Review the form' : 'Read the full draft')}</button></dd>
       <dt>Next action</dt><dd>${esc(x.next_step || x.next_action || '—')}</dd>
     </dl>
     ${open ? draftPanel(state.drafts[x.id], x) : ''}
-    <div class="btn-row">${x.task_id && x.state !== 'SENT' ? '<button class="btn small" data-tab="desk">Review in the approval desk</button>' : ''}<button class="btn small ghost" data-lopp="${esc(x.opportunity_id)}">Record</button></div>
+    <div class="btn-row">${isForm && x.state !== 'SENT' ? `<button class="btn small primary" data-draft-open="${esc(x.id)}">${open ? 'Hide the form' : 'Review form'}</button>` : x.task_id && x.state !== 'SENT' ? '<button class="btn small" data-tab="desk">Review in the approval desk</button>' : ''}<button class="btn small ghost" data-lopp="${esc(x.opportunity_id)}">Record</button></div>
   </article>`;
 }
 function draftPanel(D, x) {
   if (!D) return `<div class="q4-dr">${skel(2)}</div>`;
   if (D.error) return '<div class="q4-dr"><p class="warn-t">The draft could not be loaded. Nothing was changed.</p></div>';
+  if (D.kind === 'FORM') return formPanel(D, x);
   const g = safeHref(D.gmail_draft_url);
   return `<div class="q4-dr"><p class="s4">To ${esc(D.to || x.route_email || '—')}${D.route_label ? ` · ${esc(D.route_label)}` : ''}</p>${D.subject ? `<p><b>${esc(D.subject)}</b></p>` : ''}<pre>${esc(D.body || 'No draft text.')}</pre>${g ? `<a class="btn small" href="${esc(g)}" target="_blank" rel="noopener noreferrer">Open the unsent Gmail draft</a>` : ''}<p class="why">${esc(D.rule || 'Unsent.')}</p></div>`;
 }
@@ -5318,7 +5344,46 @@ const replyRow = (x) => { const u = safeHref(x.url); return `<div class="row4" $
   <div><div class="t4">${esc(x.company || 'Unmatched sender')}${x.supplier ? ' <span class="tag4 muted">Supplier</span>' : ''}${x.classification ? ` <span class="tag4">${esc(sentence(String(x.classification).replace(/_/g, ' ')))}</span>` : ''}</div>
     <div class="s4">${esc(clip(x.subject || '', 120))}</div>${x.summary ? `<div class="n4">${esc(clip(x.summary, 200))}</div>` : ''}</div>
   <div class="r4">${x.last_inbound_at ? `<span class="s4">${esc(fmtDate(x.last_inbound_at))}</span>` : ''}${u ? `<a class="link4" href="${esc(u)}" target="_blank" rel="noopener noreferrer" data-stop>Open the thread</a>` : ''}</div></div>`; };
-// The route explorer (one verified route per company), unchanged, under "All routes".
+// One prepared website form: every field as it will be entered, the message, limits and captcha. Approve records Adam's go-ahead
+// (hq_form_action, audited); the operating agent then submits it once and records the confirmation. Nothing is submitted from HQ.
+function formPanel(D, x) {
+  const pf = D.prepared_fields || {}; const needs = pf._needs_adam || []; const u = safeHref(D.url);
+  const rows = (D.fields || []).filter((f) => f && f.name).map((f) => `<tr><td>${esc(f.label || f.name)}${f.required ? ' <span class="s4">(required)</span>' : ''}</td><td>${f.type === 'textarea' ? '<span class="s4">the message below</span>' : esc(pf[f.name] ?? (needs.includes(f.label || f.name) ? 'needs you' : '—'))}</td></tr>`).join('');
+  const st = D.status;
+  return `<div class="q4-dr form4"><p class="s4">${esc(D.target_team ? `${D.target_team} team` : 'Website enquiries')} · ${u ? `<a class="link4" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>` : ''}${D.captcha && D.captcha !== 'NONE' ? ` · ${esc(D.captcha === 'UNKNOWN' ? 'may have a captcha' : 'captcha: ' + sentence(D.captcha.toLowerCase()))}` : ''}${D.max_chars ? ` · message limit ${esc(D.max_chars)} characters` : ''}</p>
+    ${D.subject ? `<p><b>${esc(D.subject)}</b></p>` : ''}<pre>${esc(D.message || 'No message prepared yet.')}</pre>
+    ${rows ? `<table class="tbl4"><tbody>${rows}</tbody></table>` : ''}
+    ${needs.length ? `<p class="note4 warn-t">Needs you before submission: ${esc(needs.join(', '))}.</p>` : ''}
+    <div class="btn-row">${st === 'PREPARED' ? `<button class="btn small primary" data-form-act="APPROVE" data-form="${esc(D.id)}">Approve submission</button><button class="btn small ghost" data-form-act="REJECT" data-form="${esc(D.id)}">Reject</button>` : st === 'APPROVED' ? `<span class="s4">Approved ${esc(fmtDate(D.approved_at))}. The agent submits it once and records the confirmation.</span><button class="btn small ghost" data-form-act="REOPEN" data-form="${esc(D.id)}">Withdraw approval</button>` : `<span class="s4">${esc(sentence(String(st || '').toLowerCase()))}</span>`}</div>
+    <p class="why">${esc(D.rule || 'Nothing is submitted without your approval.')}</p></div>`;
+}
+const histRow = (x) => { const u = safeHref(x.url); return `<div class="row4" ${x.opportunity_id ? `role="button" tabindex="0" data-lopp="${esc(x.opportunity_id)}"` : ''}>
+  <div><div class="t4">${esc(x.company || '—')} <span class="tag4">${esc(CH4[x.channel] || 'Email')}</span>${x.replied ? ' <span class="tag4 ok">Replied</span>' : ''}${x.positive ? ' <span class="tag4 ok">Positive</span>' : ''}${x.meeting ? ' <span class="tag4 ok">Meeting</span>' : ''}${x.bounced ? ' <span class="tag4 warn">Bounced</span>' : ''}</div>
+    <div class="s4">${esc([x.person, x.category_label, x.route_type ? sentence(String(x.route_type).replace(/_/g, ' ').toLowerCase()) : '', x.reference ? `ref ${x.reference}` : ''].filter(Boolean).join(' · '))}</div></div>
+  <div class="r4">${x.at ? `<span class="s4">${esc(fmtDate(x.at))}</span>` : ''}${u ? `<a class="link4" href="${esc(u)}" target="_blank" rel="noopener noreferrer" data-stop>The form</a>` : ''}</div></div>`; };
+function engineStrip(H) {
+  const F = H?.funnel; const E = H?.engine; if (!F) return '';
+  const T = (F.targets || {}).ready || 75;
+  const sc = E?.self_correct; const act = (sc?.actions || []).map((a) => a.action).slice(0, 2).join(' · ');
+  return `<div class="strip4 eng4"><span><b>Engine</b> · ${esc(F.ready_total ?? F.today ?? 0)} of ${esc(T)} ready · ${esc(F.reserve ?? 0)} reserve · ${esc(F.needs_contact ?? 0)} need a contact route · ${esc(F.needs_draft ?? 0)} waiting for a draft · ${esc(E?.families_ready ?? '—')} of ${esc(E?.min_families || 6)} families${H.bottleneck ? ` · limit: ${esc(BOTTLE4[H.bottleneck] || H.bottleneck)}` : ''}${act ? ` · today the engine ${esc(act.charAt(0).toLowerCase() + act.slice(1))}` : ''}</span><button class="btn small ghost" data-tab="system">Engine health</button></div>`;
+}
+function enginePanel() {
+  const E = state.engine;
+  if (!E) { if (!state.busy.engine && !state.errors.engine) loadLight('engine', 'hq_engine_health'); return sec4('Acquisition engine health', '', lightState('engine', 'engine health')); }
+  const I = E.inventory || {}; const R = E.routes_found_24h || {}; const C = E.credits || {}; const RR = E.route_research_24h || {}; const K = E.cost || {};
+  const kv = (l, v) => `<div class="ts-kv"><span>${l}</span><span>${v}</span></div>`;
+  const dirs = Object.values(E.directors || {});
+  return sec4('Acquisition engine health', `Built ${esc(fmtDate(E.built_at))}`, `
+    ${kv('Inventory', `${esc(I.ready ?? 0)} ready of ${esc((I.targets || {}).ready || 75)} (${esc(I.email_ready ?? 0)} email, ${esc(I.form_ready ?? 0)} form) · ${esc(I.reserve ?? 0)} reserve · ${esc(I.needs_draft ?? 0)} waiting for a draft · ${esc(I.needs_contact ?? 0)} need a contact route`)}
+    ${kv('Bottleneck', esc(BOTTLE4[I.bottleneck] || I.bottleneck || '—'))}
+    ${kv('Routes found, 24 h', `${esc(R.named_emails ?? 0)} named emails · ${esc(R.inboxes ?? 0)} official inboxes · ${esc(R.instagram ?? 0)} Instagram · ${esc(R.clay ?? 0)} Clay · ${esc(E.forms_found_24h ?? 0)} forms`)}
+    ${kv('Website research, 24 h', `${esc(RR.accounts ?? 0)} accounts · ${esc(RR.route_found ?? 0)} with a route · ${esc(RR.no_route ?? 0)} without · ${esc(RR.fetch_failed ?? 0)} site not readable`)}
+    ${kv('Credits', `Serper ${esc(C.serper?.balance ?? '—')} (${esc(C.serper?.runway_days ?? '—')} days, ${esc(sentence(String(C.serper?.status || '').toLowerCase()))}) · Firecrawl about ${esc(C.firecrawl?.remaining_est ?? '—')} · Hunter ${esc(C.hunter?.available ?? '—')}`)}
+    ${kv('Cost, 30 days', `about USD ${esc(K.usd_30d_est ?? 0)} · ${K.per_usable_route != null ? `USD ${esc(K.per_usable_route)} per usable route` : 'no routes yet'}${K.per_positive_reply != null ? ` · USD ${esc(K.per_positive_reply)} per positive reply` : ''}`)}
+    ${(E.self_correct?.recommendations || []).map((r) => kv('Needs Adam', esc(r.recommendation))).join('')}
+    ${dirs.length ? `<table class="tbl4"><thead><tr><th>Director (family)</th><th>Qualified</th><th>People</th><th>Usable routes</th><th>Forms</th><th>Ready</th><th>Positive</th><th>Meetings</th><th>Wins</th></tr></thead><tbody>${dirs.map((d) => `<tr><td>${esc(d.label)}</td><td>${esc(d.qualified_accounts)}</td><td>${esc(d.named_people)}</td><td>${esc(d.usable_routes)}</td><td>${esc(d.forms)}</td><td>${esc(d.ready)}</td><td>${esc(d.positive_replies)}</td><td>${esc(d.meetings)}</td><td>${esc(d.wins)}</td></tr>`).join('')}</tbody></table>` : ''}`);
+}
+// The route explorer (one verified route per company), unchanged, under "Route explorer".
 function routesView() {
   const M4 = state.mail; const R4 = state.routes; const F = state.routeF; const streams = state.streams?.streams || [];
   const rows = R4?.rows || [];
@@ -5411,6 +5476,12 @@ function bindV4(on) {
       const { data, error } = await rpcT('hq_outreach_draft', { p_id: id });
       state.drafts[id] = error || !data || data.ok === false ? { error: true } : data; render();
     }
+  });
+  on('[data-form-act]', 'click', async (b, e) => {
+    e.stopPropagation(); const a = b.dataset.formAct; const id = b.dataset.form;
+    const msg = { APPROVE: 'Approved. The agent submits this form once and records the confirmation; no cold email goes to this company while the form route is active.', REJECT: 'Form rejected. It will not be used.', REOPEN: 'Approval withdrawn. The form is back for your review.' }[a];
+    await call('hq_form_action', { p_id: id, p_action: a, p_note: null }, msg);
+    state.drafts = {}; state.draftOpen = null; reloadLane(true);
   });
   on('[data-route-filter]', 'click', (b) => { state.routeF.filter = b.dataset.routeFilter; state.routeF.offset = 0; render(); reloadRoutes(); });
   on('[data-route-reset]', 'click', () => { clearTimeout(state.typeT); state.routeF = { filter: 'ACTIONABLE', stream: '', q: '', offset: 0 }; render(); reloadRoutes(); });
@@ -5538,10 +5609,10 @@ function bindV4b(on) {
 
 // Deep links (21 Nov): hq.noyaconcierge.com/#opps opens Opportunities; the address follows the screen without adding history entries.
 function syncHash() { try { const h = `#${state.tab}`; if (location.hash !== h) history.replaceState(null, '', h); } catch { /* file:// or sandboxed */ } }
-const VIEWS = { dashboard: viewDashboard, today: viewToday, opps: viewOpps, mail: viewMail, streams: viewStreams, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, studio: viewStudio, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
+const VIEWS = { legacy: viewLegacy, dashboard: viewDashboard, today: viewToday, opps: viewOpps, mail: viewMail, streams: viewStreams, agents: viewAgentsV3, director: viewDirector, desk: viewDesk, studio: viewStudio, relations: viewRelations, club: viewClub, ops: viewOps, agentfloor: viewAgents,
   overview: viewOverview, outreach: viewOutreach, relationships: viewRelationships, linkedin: viewLinkedin, pipeline: viewPipeline, inbox: viewInbox, tasks: viewTasks, website: viewWebsite,
   contacts: viewContacts, companies: viewCompanies, finance: () => revenuePanel() + viewFinance() + weeklyPanel(), costs: viewCosts, markets: viewMarkets, growth: viewGrowth,
-  intelligence: viewIntelligence, reports: viewReports, system: (d) => sect('scout', toolScoutPanel) + sect('health', healthPanel) + sect('system', () => viewSystem(d)) + sect('team', teamPanel), help: viewHelp,
+  intelligence: viewIntelligence, reports: viewReports, system: (d) => sect('engine', enginePanel) + sect('scout', toolScoutPanel) + sect('health', healthPanel) + sect('system', () => viewSystem(d)) + sect('team', teamPanel), help: viewHelp,
   radar: viewRadar, library: viewLibrary, actions: viewActions, partners: (d) => sect('pships', partnershipsPanel) + sect('partners', () => viewPartners(d)), events: viewEvents, projects: viewProjects,
   agent: viewAgent, emails: viewEmails, agentradar: viewAgentRadar, feed: viewFeed };
 

@@ -26,10 +26,12 @@ const qItem = (i, o = {}) => ({ id: uid(800 + i), rank: i + 1, state: 'QUEUED', 
   draft_status: 'READY_FOR_REVIEW', has_gmail_draft: false, task_id: uid(700 + i), next_action: 'Review in Supabase and approve before any outreach',
   next_step: 'Review the draft in the approval desk; approving creates an unsent Gmail draft', failed: [], score: 60 - i, sendable_today: true, send_window: 'Today', ...o });
 const LANE_BASE = () => ({ ok: true, date: day(0), built_at: now(), morning_at: now(), stale: false,
-  counts: { act_now: 5, today: 3, today_sent: 1, reserve: 2, needs_contact: 2, needs_draft: 7, follow_ups: 2, replies: 2 },
+  counts: { act_now: 5, today: 3, today_sent: 1, form_ready: 1, reserve: 2, needs_contact: 2, needs_draft: 7, follow_ups: 2, replies: 2, history: 1 },
   allowance: { mode: 'ACTIVE', stage: 1, stages: [5, 10, 15, 20, 25], daily_cap: 5, stage_cap: 5, sent_today: 1, remaining: 4, slots: ['11:05', '12:40', '14:15', '15:50'], slot_zone: 'Cairo',
     markets_today: ['EGYPT', 'GCC'], warm_pending: 5, reasons: [], rule: 'Nothing is sent automatically.' },
-  funnel: { considered: 849, screened: 754, researched: 70, ready: 25, ready_unique_companies: 25 },
+  funnel: { considered: 849, screened: 754, researched: 70, ready: 25, ready_unique_companies: 25, ready_total: 4, today: 3, form_ready: 1, reserve: 2, needs_contact: 2, needs_draft: 7, targets: { ready: 75 } },
+  engine: { families: { WEDDINGS_EVENTS: { label: 'Weddings / events', ready: 3 }, AGENCIES_CONSULTANCIES: { label: 'Agencies / consultancies', ready: 1 } }, families_ready: 2, min_families: 6, cap_note: null,
+    self_correct: { actions: [{ action: 'Website route and form research raised to 40 accounts a run' }] } },
   coverage: { WEDDINGS_EVENTS: { label: 'Wedding planners / private events', considered: 100, ready: 21, today: 3 }, HOTELS_RESIDENCES: { label: 'Hotels / branded residences', considered: 50, ready: 4, today: 1 } },
   shortfall: 0, bottleneck: 'personalised_draft', learning: { clean_sends: 0, excluded_21_nov: 35, weights_active: 0 }, total: 0, limit: 25, offset: 0, extra: {} });
 export const LANE_FX = (lane) => {
@@ -43,6 +45,11 @@ export const LANE_FX = (lane) => {
   if (lane === 'FOLLOW_UPS') { items = [{ opportunity_id: uid(130), company: 'Example Follow Co', person: 'Test Person F', stream_label: 'Brands', status: 'CONTACTED', due_on: day(1), next_action: 'Follow up if no reply.', last_sent: now() }]; B.extra = { held_21_nov: 38, hold_rule: 'Releasing them is Adam\'s decision.' }; }
   if (lane === 'REPLIES') items = [{ thread_id: 'thread-1', company: 'Example Reply Co', subject: 'Re: Example', summary: 'Interested in a call next week.', last_inbound_at: now(), classification: 'POSITIVE', supplier: false, url: 'https://mail.google.com/mail/?authuser=noya@noyaconcierge.com#all/thread-1', opportunity_id: uid(131) }];
   if (lane === 'ACT_NOW') { items = FX.hq_today().actions; B.extra = { more: 0 }; }
+  if (lane === 'FORM_READY') items = [qItem(8, { route_channel: 'FORM', route_email: null, route_canonical: 'COMMERCIAL_FORM', route_label: 'Partnership form · official website', person: 'Partnerships team',
+    family: 'AGENCIES_CONSULTANCIES', family_label: 'Agencies / consultancies', multiplier: true, draft_status: 'FORM_PREPARED', task_id: null, fallback_route: 'LINKEDIN · company page',
+    form: { id: uid(990), url: 'https://example-agency.com/partner-with-us', type: 'PARTNERSHIP', type_label: 'Partnership form', team: 'Partnerships', status: 'PREPARED', required: ['Name', 'Email', 'Message'], max_chars: 1500, captcha: 'NONE' },
+    next_step: 'Review the prepared form; approving lets the agent submit it once and log the confirmation' })];
+  if (lane === 'HISTORY') items = [{ kind: 'FIRST_TOUCH', channel: 'EMAIL', at: now(), opportunity_id: uid(132), company: 'Example History Co', person: 'Test Person H', route_type: 'PUBLIC_NAMED_EMAIL', category_label: 'Brands', cohort: 'CLEAN', bounced: false, replied: true, positive: true, meeting: false, status: 'INTERESTED' }];
   return { ...B, lane, items, total: items.length };
 };
 export const FX = {
@@ -83,7 +90,17 @@ export const FX = {
   },
   hq_ceo_action: () => ({ ok: true, status: 'DONE' }),
   hq_outreach_lanes: (b) => LANE_FX(b?.p_lane || 'TODAY'),
-  hq_outreach_draft: (b) => ({ ok: true, id: b?.p_id, company: 'Example Atelier', person: 'Test Person A', to: 'office@example-atelier.com', route_label: 'Official published inbox · for their attention',
+  hq_form_action: () => ({ ok: true, status: 'APPROVED' }),
+  hq_engine_health: () => ({ ok: true, date: day(0), built_at: now(), inventory: { ready: 16, email_ready: 16, form_ready: 0, reserve: 14, needs_draft: 30, needs_contact: 150, targets: { ready: 75 }, bottleneck: 'personalised_draft' },
+    routes_found_24h: { named_emails: 2, inboxes: 9, instagram: 1, clay: 0 }, forms_found_24h: 4, route_research_24h: { accounts: 40, route_found: 18, no_route: 15, fetch_failed: 7 },
+    credits: { serper: { balance: 4300, runway_days: 5, status: 'CRITICAL' }, firecrawl: { remaining_est: 730 }, hunter: { available: 2.5 } }, cost: { usd_30d_est: 23.94, per_usable_route: 0.032 },
+    self_correct: { recommendations: [{ decision: 'SERPER_TOP_UP', recommendation: 'Top up Serper. Needs Adam.' }] },
+    directors: { TRAVEL_DMC: { label: 'Travel / DMC / concierge', qualified_accounts: 120, named_people: 80, usable_routes: 30, forms: 2, ready: 0, positive_replies: 0, meetings: 0, wins: 0 } } }),
+  hq_outreach_draft: (b) => (b?.p_id === uid(808) ? { ok: true, kind: 'FORM', id: uid(990), queue_id: uid(808), company: 'Example Atelier 8', url: 'https://example-agency.com/partner-with-us', form_type: 'PARTNERSHIP',
+    target_team: 'Partnerships', status: 'PREPARED', subject: 'An Egypt programme for Example Atelier 8', message: 'Hello,\n\nA short partnership note.\n\nAdam Elshazly\nFounder, NOYA Concierge', captcha: 'NONE', max_chars: 1500,
+    fields: [{ name: 'your-name', type: 'text', required: true, label: 'Your name' }, { name: 'your-message', type: 'textarea', required: true, label: 'Message' }, { name: 'consent', type: 'checkbox', required: true, label: 'I agree to the privacy policy' }],
+    prepared_fields: { 'your-name': 'Adam Elshazly', 'your-message': 'Hello…', _needs_adam: ['I agree to the privacy policy'] },
+    rule: 'Approving records your go-ahead. The operating agent then submits this form once, records the confirmation, and no cold email goes to this company while the form route is active.' } : { ok: true, id: b?.p_id, company: 'Example Atelier', person: 'Test Person A', to: 'office@example-atelier.com', route_label: 'Official published inbox · for their attention',
     subject: 'Example Atelier and NOYA', body: 'For the attention of Test Person A\n\nHi Test,\n\nA short, specific note about one project idea.\n\nBest,\nAdam', draft_status: 'GMAIL_DRAFT',
     gmail_draft_url: 'https://mail.google.com/mail/u/0/#drafts?compose=abc', rule: 'Unsent. Approving in the desk creates an unsent Gmail draft; Adam sends it himself.' }),
   hq_seasons: () => ({ generated_at: now(), horizon: 180, counts: { d30: 1, d60: 2, d90: 2, d180: 3, act_now: 1 }, undated_rule: 'NO SOURCE = NO DATE',
@@ -167,7 +184,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('Today: the gate shows cold email held', /Cold email held/i.test(t));
   check('Today: a new website enquiry appears as a New enquiry card', /New enquiry/.test(t) && /NOYA-TEST01/.test(t));
   check('Address follows the screen (#today deep link)', (await page.evaluate(() => location.hash)) === '#today');
-  check('Primary navigation is Today, Opportunities, Outreach, Streams, Relationships, Projects (+ More)', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Opportunities|Outreach|Streams|Relationships|Projects' && await page.locator('#nav-more').count() === 1);
+  check('Primary navigation is Today, Outreach, Opportunities, Relationships, Projects (+ More)', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Outreach|Opportunities|Relationships|Projects' && await page.locator('#nav-more').count() === 1);
   // Done → audited hq_ceo_action, then only hq_today is re-read.
   const before = n(calls, 'hq_today'); const dashBefore = n(calls, 'hq_dashboard');
   await page.locator(`[data-ceo-act="${uid(1)}"][data-to="DONE"]`).click(); await page.waitForTimeout(500);
@@ -263,17 +280,18 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   const { browser, page, errors, calls } = await open({ hash: 'mail' });
   await page.waitForSelector('.q4', { timeout: 6000 }).catch(() => {});
   let t = await mainText(page);
-  check('Outreach opens on Today’s 25 from one small lane read (no route explorer read)', last(calls, 'hq_outreach_lanes').p_lane === 'TODAY' && n(calls, 'hq_email_routes') === 0
+  check('Outreach opens on Ready today from one small lane read (no route explorer read)', last(calls, 'hq_outreach_lanes').p_lane === 'TODAY' && n(calls, 'hq_email_routes') === 0
     && await page.locator('.lane4.on[data-lane="TODAY"]').count() === 1);
   const lanes = (await page.locator('.lane4').allTextContents()).map((x) => x.replace(/\d+/g, '').trim());
-  check('Lanes: Act now, Today’s 25, Reserve, Needs contact, Follow-ups, Replies (+ All routes) with counts', lanes.join('|') === 'Act now|Today’s|Reserve|Needs contact|Follow-ups|Replies|All routes'
-    && /Act now\s*5/.test(t) && /Needs contact\s*2/.test(t), lanes.join('|'));
+  check('Lanes: Act now, Ready today, Form ready, Reserve, Needs contact, Follow-ups, History (+ Replies, Route explorer links) with counts', lanes.join('|') === 'Act now|Ready today|Form ready|Reserve|Needs contact|Follow-ups|History'
+    && /Act now\s*5/.test(t) && /Needs contact\s*2/.test(t) && await page.locator('.lanes4-more [data-lane="REPLIES"]').count() === 1 && await page.locator('.lanes4-more [data-lane="ALL"]').count() === 1, lanes.join('|'));
+  check('Engine strip: ready of target, reserve, needs contact, families, today\'s self-correction', /Engine · 4 of 75 ready · 2 reserve · 2 need a contact route · 7 waiting for a draft · 2 of 6 families/.test(t) && /route and form research raised to 40/.test(t), t.slice(0, 1200));
   check('Send allowance: stage, cap, sent, left, spread slots, warm first, manual-send rule', /Send allowance today: 5 new first touches/.test(t) && /ramp stage 1 of 5/.test(t) && /1 sent · 4 left/.test(t)
     && /11:05, 12:40, 14:15, 15:50 Cairo/.test(t) && /Warm first: 5 items in Act now come before any new send/.test(t) && /Nothing is sent automatically/.test(t));
   const card = page.locator('.q4').first(); const ct = await card.evaluate((el) => el.textContent.replace(/\s+/g, ' '));
   const dts = await card.locator('dt').allTextContents();
   check('Each Today card shows person, company, stream, project idea, why now, route, route source, confidence, draft and next action',
-    dts.join('|') === 'Project idea|Why now|Contact route|Route source|Prepared draft|Next action' && /Test Person A/.test(ct) && /Example Atelier 0/.test(ct) && /Weddings/.test(ct) && /confidence/i.test(ct)
+    dts.join('|') === 'Project idea|Why now|Best route|Route source|Prepared draft|Next action' && /Test Person A/.test(ct) && /Example Atelier 0/.test(ct) && /Weddings/.test(ct) && /confidence/i.test(ct)
     && /office0@example-atelier.com/.test(ct) && /Official website/.test(ct) && /Unsent Gmail draft ready/.test(ct) && /Send the unsent Gmail draft yourself/.test(ct));
   check('Today shows four cards (three queued, one marked sent last)', await page.locator('.q4').count() === 4 && await page.locator('.q4.sent').count() === 1
     && /Sent/.test(await page.locator('.q4').nth(3).evaluate((el) => el.textContent)));
@@ -282,7 +300,9 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     && /Send Mon 23 Nov/.test(clay), clay.slice(0, 400));
   check('Instagram route is labelled as public Instagram with its link', /Public Instagram business profile/.test(await page.locator('.q4').nth(2).evaluate((el) => el.textContent)) && await page.locator('.q4').nth(2).locator('a[href^="https://www.instagram.com"]').count() === 1);
   check('Route provenance link opens the page where the address was found', await page.locator('.q4').first().locator('a[href="https://example-atelier-0.com/contact"]').count() === 1);
-  check('Funnel and mix are shown, never as a quota', /849\s*Considered/.test(t) && /25\s*Send-ready/.test(t) && /Mix today: Wedding planners \/ private events 3/.test(t) && /never forced into equal quotas/.test(t), t.slice(0, 900));
+  check('Funnel, ready-of-target and family mix are shown (cap explained, never a quota)', /849\s*Considered/.test(t) && /25\s*Send-ready/.test(t) && /4 ready of 75 \(3 email, 1 form\)/.test(t)
+    && /Mix today: Weddings \/ events 3 · Agencies \/ consultancies 1 · 2 of 6 families/.test(t) && /overflow waits in Reserve/.test(t), t.slice(0, 900));
+  check('Each card names its family and best route channel', /Weddings \/ events|Wedding/.test(ct) && /Best route\s*Email/.test(ct));
   check('No send button anywhere on Outreach (manual send in Gmail only)', await page.locator('main button, main a').filter({ hasText: /^\s*(send|send now|send email|send all)\s*$/i }).count() === 0
     && n(calls, 'hq_send') === 0);
   await page.locator('.q4').first().locator('[data-draft-open]').click(); await page.waitForSelector('.q4-dr pre', { timeout: 4000 }).catch(() => {});
@@ -298,8 +318,24 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.locator('[data-lane="ACT_NOW"]').click(); await page.waitForTimeout(500);
   check('Act now shows the warm work first (the same cards as Today)', await page.locator('main .ca4').count() === 5 && /outrank every new send/.test(await mainText(page)));
   await page.locator('[data-lane="RESERVE"]').click(); await page.waitForTimeout(500);
-  check('Reserve shows the send-ready records behind the 25', await page.locator('.q4').count() === 2 && /behind Today’s 25/.test(await mainText(page)));
-  check('Primary navigation unchanged by the lanes', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Opportunities|Outreach|Streams|Relationships|Projects');
+  check('Reserve shows the send-ready records behind Ready today', await page.locator('.q4').count() === 2 && /behind Ready today/.test(await mainText(page)));
+  await page.locator('[data-lane="FORM_READY"]').click(); await page.waitForSelector('.q4', { timeout: 4000 }).catch(() => {});
+  t = await mainText(page);
+  check('Form ready shows company, team, form type, URL, project idea, prepared copy, status; primary action Review form', last(calls, 'hq_outreach_lanes').p_lane === 'FORM_READY'
+    && /Partnerships team/.test(t) && /Best route\s*Website form · Partnership form for the Partnerships team/.test(t) && /Form copy prepared · awaiting your review/.test(t) && /Agencies \/ consultancies · multiplier/.test(t)
+    && await page.locator('.q4 a[href="https://example-agency.com/partner-with-us"]').count() === 1 && await page.locator('.q4 button.primary:has-text("Review form")').count() === 1
+    && /only after the primary route has run its course/.test(t), t.slice(0, 900));
+  await page.locator('.q4 button.primary:has-text("Review form")').click(); await page.waitForSelector('.form4', { timeout: 4000 }).catch(() => {});
+  const ft = await page.locator('.form4').evaluate((el) => el.textContent.replace(/\s+/g, ' ')).catch(() => '');
+  check('Review form shows every field as it will be entered, the message, what needs Adam, and the approval rule', /Your name \(required\)\s*Adam Elshazly/.test(ft) && /A short partnership note/.test(ft)
+    && /Needs you before submission: I agree to the privacy policy/.test(ft) && /no cold email goes to this company/.test(ft), ft.slice(0, 600));
+  check('Nothing is submitted from HQ: no submit button, only Approve submission / Reject', await page.locator('main button').filter({ hasText: /^\s*submit\s*$/i }).count() === 0
+    && await page.locator('[data-form-act="APPROVE"]').count() === 1 && await page.locator('[data-form-act="REJECT"]').count() === 1);
+  await page.locator('[data-form-act="APPROVE"]').click(); await page.waitForTimeout(600);
+  check('Approve submission records the go-ahead through hq_form_action (audited), for that form', last(calls, 'hq_form_action').p_id === uid(990) && last(calls, 'hq_form_action').p_action === 'APPROVE');
+  await page.locator('[data-lane="HISTORY"]').click(); await page.waitForTimeout(600); t = await mainText(page);
+  check('History lists recent first touches with channel and outcome', last(calls, 'hq_outreach_lanes').p_lane === 'HISTORY' && /Example History Co/.test(t) && /Replied/.test(t) && /Positive/.test(t));
+  check('Primary navigation unchanged by the lanes', (await page.locator('.nav-primary .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim()).join('|') === 'Today|Outreach|Opportunities|Relationships|Projects');
   check('No uncaught page errors on the Outreach lanes', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
@@ -309,7 +345,7 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
     allowance: { mode: 'STOPPED', stage: 2, stages: [5, 10, 15, 20, 25], daily_cap: 0, stage_cap: 10, sent_today: 0, remaining: 0, slots: [], markets_today: ['UK'], warm_pending: 0, reasons: ['Bounce spike: 2 or more bounces in 3 days'] } } : undefined) });
   await page.waitForSelector('.q4', { timeout: 6000 }).catch(() => {});
   const t = await mainText(page);
-  check('Shortfall says how many and why, and that nothing is padded', /Short of 25 by 22/.test(t) && /contact routes/.test(t) && /not filled with weaker accounts/.test(t));
+  check('Shortfall says how many and why, and that nothing is padded', /Short of 75 by 22/.test(t) && /contact routes/.test(t) && /not filled with weaker accounts/.test(t));
   check('A stop signal pauses new first touches and says why', /New cold first touches are paused today/.test(t) && /Bounce spike/.test(t) && !/Send allowance today/.test(t));
   check('No uncaught page errors (shortfall / paused)', errors.length === 0, errors.join(' | '));
   await browser.close();
@@ -372,6 +408,11 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   await page.locator('[data-scout][data-to="APPROVED_BY_ADAM"]').click(); await page.waitForTimeout(400);
   const d = last(calls, 'hq_tool_scout_decide');
   check('Approve records the decision via hq_tool_scout_decide (nothing bought)', d.p_decision === 'APPROVED_BY_ADAM' && d.p_id === uid(950) && /Nothing was bought or connected/.test(await page.locator('.banner').innerText().catch(() => '')));
+  await page.waitForSelector('text=Acquisition engine health', { timeout: 4000 }).catch(() => {});
+  const et = await mainText(page);
+  check('System / Admin shows engine health: inventory vs target, routes found, website research, credits, Director accountability, decisions for Adam',
+    /16 ready of 75 \(16 email, 0 form\)/.test(et) && /2 named emails · 9 official inboxes · 1 Instagram · 0 Clay · 4 forms/.test(et) && /40 accounts · 18 with a route/.test(et)
+    && /Serper 4300 \(5 days, critical\)/.test(et) && /Travel \/ DMC \/ concierge/.test(et) && /Top up Serper\. Needs Adam\./.test(et), et.slice(0, 900));
   check('No uncaught page errors on System / Admin', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
@@ -404,19 +445,32 @@ const noOverflow = (page) => page.evaluate(() => document.documentElement.scroll
   check('No uncaught page errors on Agents', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
+// 7f. Sidebar: More holds Streams, Agents, Studio, Intelligence, Finance, System and Legacy / Diagnostics; the classic screens are
+//     hidden from normal navigation but every one stays reachable (and deep links still work).
+{
+  const { browser, page, errors } = await open({ hash: 'legacy' });
+  await page.waitForTimeout(1200);
+  const more = (await page.locator('.nav-group .nav-item').allInnerTexts()).map((x) => x.replace(/\d+/g, '').trim());
+  check('More lists Streams, Agents, Studio / Briefs, Intelligence, Finance, System / Admin, Legacy / Diagnostics', more.join('|') === 'Streams|Agents|Studio / Briefs|Intelligence|Finance|System / Admin|Legacy / Diagnostics', more.join('|'));
+  check('Approval desk, classic dashboard, club, operations and the classic agent screens are not in the sidebar', await page.locator('.side [data-tab="desk"], .side [data-tab="dashboard"], .side [data-tab="club"], .side [data-tab="ops"], .side [data-tab="emails"], .side [data-tab="agentradar"], .side [data-tab="feed"], .side [data-tab="agentfloor"]').count() === 0);
+  check('Legacy / Diagnostics reaches every classic screen (nothing deleted)', await page.locator('main [data-tab="desk"], main [data-tab="dashboard"], main [data-tab="club"], main [data-tab="ops"], main [data-tab="emails"], main [data-tab="agentradar"], main [data-tab="feed"], main [data-tab="agentfloor"]').count() === 8
+    && await page.locator('.nav-group .nav-item.active[data-tab="legacy"]').count() === 1);
+  check('No uncaught page errors on Legacy / Diagnostics', errors.length === 0, errors.join(' | '));
+  await browser.close();
+}
 // 8. Mobile (390 px): every V4 screen fits without horizontal scroll; bottom navigation has five targets.
 {
   const { browser, page, errors } = await open({ viewport: { width: 390, height: 844 } });
   await page.waitForSelector('.ca4', { timeout: 6000 }).catch(() => {});
   const res = [];
-  for (const tab of ['today', 'opps', 'mail', 'streams']) {
+  for (const tab of ['today', 'mail', 'opps', 'relations']) {
     if (tab !== 'today') { await page.locator(`.bnav [data-tab="${tab}"]`).click(); await page.waitForTimeout(700); }
     res.push(`${tab}:${await noOverflow(page) ? 'ok' : 'overflow'}`);
   }
-  check('Mobile: Today, Opportunities, Outreach and Streams have no horizontal scroll', res.every((r) => r.endsWith('ok')), res.join(' '));
+  check('Mobile: Today, Outreach, Opportunities and Relationships have no horizontal scroll', res.every((r) => r.endsWith('ok')), res.join(' '));
   check('Mobile: bottom navigation has five targets (four screens + More)', await page.locator('.bnav button').count() === 5);
   await page.locator('#bmenu').click(); await page.waitForTimeout(150);
-  check('Mobile: More sheet reaches Relationships, Projects, Agents and the approval desk', await page.locator('.sheet [data-tab="relations"], .sheet [data-tab="projects"], .sheet [data-tab="agents"], .sheet [data-tab="desk"]').count() === 4);
+  check('Mobile: More sheet reaches Projects, Streams, Agents and Legacy / Diagnostics', await page.locator('.sheet [data-tab="projects"], .sheet [data-tab="streams"], .sheet [data-tab="agents"], .sheet [data-tab="legacy"]').count() === 4);
   check('No uncaught page errors on mobile', errors.length === 0, errors.join(' | '));
   await browser.close();
 }
