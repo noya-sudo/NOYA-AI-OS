@@ -2866,3 +2866,58 @@ Discovery never pauses for a backlog.
   edit; the rest go to W18 tonight. 60 accounts head the Needs-contact lane.
 - The bottleneck is drafting and contact routes, not discovery. The mix is narrow because W18 drafted mostly weddings in early November.
 - Fixed in passing: one opportunity left READY after its 21 Nov send (now CONTACTED).
+
+## Final acquisition engine (22–23 Nov 2026)
+
+Adam's brief: fix discovery, contact-route quality, portfolio balance and scale without redesigning HQ or replacing what works. The
+daily build, hourly top-ups, W18 drafting, Gmail reconciliation, learning ledger, RLS and the no-auto-send rule are unchanged.
+
+**Inventory targets** (`acquisition_engine.inventory`): 75 READY (range 60–80), 100 reserve, 150 high-priority needs-contact,
+100 needs-draft. READY is capacity, not a send quota: actual sends still follow the ramp and the send allowance.
+
+**READY = 14 gates** (builder v2, `outreach_queue_build`): real account/person, stream, commercial fit (QUALIFIED, priority ≥ 50,
+fit ≥ 55), project hypothesis, reason now, decision maker or gatekeeper, legitimate route, provenance, truthful route class,
+personalised copy, no DNC, no company conflict, research current (≤ 180 days, or touched ≤ 120, or a draft ≤ 30), next action.
+A 22 Nov readiness hold fails the gate it names (wrong person → decision maker; unsourced trigger → reason; weak fit → fit), never
+the draft gate, so it lands in the honest lane and is never re-drafted to the same wrong person.
+
+**One best route per account** (rank: warm 1, named email 2, management/agent 3, validated work email 4, Instagram business email 5,
+commercial website form 6, Clay 7, official inbox 8, general contact form 9, LinkedIn 10, Instagram DM 11). An approved email
+(Gmail draft) locks email; an approved form locks the form; otherwise the stronger route wins. The next route is shown as a
+fallback for use only after the primary has run its course. One account, one active cold route.
+
+**Portfolio balance**: eight families (`outreach_families`) with Adam's guide targets. No family takes more than 25% of the ready
+target (19 of 75) unless a documented override; weddings are capped at 10 ("never dominant"); the overflow waits in Reserve.
+Within READY the order is round-robin, two per family per round, so the top of the list is a balanced portfolio. Multipliers get
+a small score lift.
+
+**Website forms** (`contact_forms`): discovered on the company's own site, classified (14 types; support, careers, privacy,
+returns and consumer booking forms are rejected), copy prepared field by field from the sender profile with a quality check
+(`form_message_quality`), shown in Outreach → Form ready. Adam approves (`hq_form_action`, audited); the operating agent then
+submits once and records the confirmation (`form_submission_record`). Nothing is auto-submitted; constraints enforce
+approval-before-submission and commercial-only.
+
+**W27 Route & Form Finder** (n8n `U6Sq9smOu72WxJla`, code in `n8n/w27`, built by `n8n/build_w27.py`): Sun–Fri 01:30 and 12:30
+Cairo, reads each priority account's homepage and up to four commercial pages (contact, partnerships, trade, events, press,
+team), extracts printed emails (including protected ones), forms and the Instagram / LinkedIn company page, and saves them through
+`route_research_ingest` (same-domain emails only; personal addresses only onto a known person whose name they spell). 02:15 and
+13:15 Cairo: Flash-Lite writes form copy; `form_prepare_save` gates it. No paid credits.
+
+**Failed-draft repair** (`outreach_draft_repair`, 20:40 Cairo before W18): drafts that failed the W18 gate on copy or the free-tier
+rate limit are freed for that night's W18 run (max two repairs per draft); thin-evidence drafts wait for re-research.
+
+**Credits and self-correction**: `research_credit_budget()` (Serper balance/runway/daily allowance, Firecrawl estimate, Clay cap,
+Hunter); `engine_self_correct()` (05:40 Cairo) finds the bottleneck when READY < 60 and raises only that stage within bounds
+(repair 30→50 a night, route research 30→60 accounts a run, family focus); it never buys anything; top-ups and Gemini billing are
+recommendations for Adam. `clay_spend_record` refuses a second Clay spend on the same unresolved person within 30 days.
+
+**Reporting**: `hq_engine_health()` (System / Admin → Acquisition engine health) gives inventory vs target, routes found in 24 h
+(named, inbox, Instagram, Clay, forms), website research outcomes, credits, cost per usable route / ready / positive reply /
+meeting, Director (family) accountability, learning by source and the top 10. The Outreach engine strip shows the same headline.
+
+**HQ**: primary navigation Today, Outreach, Opportunities, Relationships, Projects; More holds Streams, Agents, Studio / Briefs,
+Intelligence, Finance, System / Admin and Legacy / Diagnostics (the approval desk, classic dashboard, club, operations and the
+classic agent screens, unchanged). Outreach lanes: Act now, Ready today, Form ready, Reserve, Needs contact, Follow-ups, History
+(Replies and the route explorer as small links).
+
+Checks: `supabase/tests/acquisition_engine_v2_checks.sql` (read-only) and `hq/tests/ui_v4.mjs` (98 checks).
