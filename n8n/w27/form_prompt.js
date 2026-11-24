@@ -4,7 +4,8 @@
 var items = $input.all().map(function (x) { return x.json; }).filter(function (f) { return f && f.form_id; });
 var SYSTEM = [
   'You write one short message for a company\'s website enquiry form, from Adam Elshazly, Founder of NOYA Concierge, a global concierge and lifestyle management company with specialist on-the-ground capability across Egypt.',
-  'Rules:',
+  'FIRST decide fit. fit=true only if EVIDENCE shows a business that could plausibly buy, refer or co-deliver NOYA work in Egypt for the IDEA (planners, agencies, travel companies, clubs, family offices, talent or sports management, brands, hospitality groups). fit=false if EVIDENCE shows a different kind of business (a manufacturer, photographer or other supplier, bank, law or accounting firm, logistics company, directory or marketplace, car dealer), an Egypt-based competitor or supplier, or a consumer-only service. If fit=false, give a short fit_reason and leave subject and message empty.',
+  'Rules for the message (only when fit=true):',
   '1. Facts about the company come ONLY from EVIDENCE. WHY NOW and IDEA are our internal hypotheses: use them to choose the idea, never state them as facts about the company. Never invent names, clients, numbers, dates, events, reviews, awards or past work.',
   '2. Open with "Hello," or "Dear <team> team,". The first sentence is about them, names the company and restates one concrete fact from EVIDENCE in plain words.',
   '3. Then one specific idea in Egypt that fits them, and what NOYA would handle on the Egypt side, in one or two sentences. NOYA appears once.',
@@ -14,7 +15,7 @@ var SYSTEM = [
   '7. Never characterise them: no claims about their strategy, commitment, focus, needs, requirements or next move, and never "I note that" or "I noticed". State one plain fact from EVIDENCE (what they launched, opened, announced or run) and offer the idea as a possibility ("could", "if useful").',
   '8. Finish with the sign-off on two lines: "Adam Elshazly" then "Founder, NOYA Concierge".',
   'subject: plain, under 70 characters.',
-  'Understated, confident, concise British English. Return JSON {"subject": "...", "message": "..."} only.'
+  'Understated, confident, concise British English. Return JSON {"fit": true|false, "fit_reason": "...", "subject": "...", "message": "..."} only.'
 ].join('\n');
 return items.map(function (f) {
   var max = f.max_chars ? Math.min(Number(f.max_chars) - 20, 950) : 950;
@@ -32,5 +33,5 @@ return items.map(function (f) {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{ role: 'user', parts: [{ text: user }] }],
     generationConfig: { temperature: 0.4, maxOutputTokens: 700, responseMimeType: 'application/json',
-      responseSchema: { type: 'OBJECT', properties: { subject: { type: 'STRING' }, message: { type: 'STRING' } }, required: ['subject', 'message'] } } } }) };
+      responseSchema: { type: 'OBJECT', properties: { fit: { type: 'BOOLEAN' }, fit_reason: { type: 'STRING' }, subject: { type: 'STRING' }, message: { type: 'STRING' } }, required: ['fit', 'fit_reason', 'subject', 'message'] } } } }) };
 });

@@ -1725,3 +1725,54 @@ end $do$;
 --      HQ calls only the five hq_* functions.
 revoke all on function public.route_rank_of(text, text, text) from public, anon, authenticated;
 revoke all on function public.form_type_label(text) from public, anon, authenticated;
+
+-- 19l. acquisition_engine_v2_form_fit_gate (24 Nov): a quality review found 25 of 60 prepared forms were for the wrong
+--      businesses (manufacturer, photographer, bank, law firm, directories, Egypt competitors, consumer forms). A deterministic
+--      filter runs before drafting, and the model's fit verdict (W27) rejects the form with its reason instead of writing copy.
+do $do$
+declare d text;
+  a text := 'where cf.status = ''QUALIFIED'' and cf.verified_at > now() - interval ''120 days'' and c.merged_into is null';
+  b text := a || '
+       and coalesce(c.commercial_class, '''') not in (''SUPPLIER'', ''COMPETITOR'', ''LOCAL_PARTNER'', ''NOT_RELEVANT'')
+       and coalesce(c.company_type, '''') || '' '' || coalesce(c.site_description, '''') !~* ''(\mbank\M|law firm|legal services|accountan|\maudit|logistic|freight|manufactur|car dealer|dealership|supplier directory|vendor directory|photograph|private equity|asset manag|hedge fund)''';
+begin
+  select pg_get_functiondef('public.form_draft_next_batch(integer)'::regprocedure) into d;
+  if position('supplier directory' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'fit filter patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+do $do$
+declare d text;
+  a text := '  if length(btrim(coalesce(p->>''message'', ''''))) < 20 then return jsonb_build_object(''ok'', false, ''reason'', ''NO_COPY_MODEL_UNAVAILABLE''); end if;';
+  b text := '  if lower(coalesce(p->>''fit'', '''')) = ''false'' then
+    update contact_forms set status = ''REJECTED'', reject_reason = ''Fit check: '' || left(coalesce(nullif(btrim(p->>''fit_reason''), ''''), ''not a plausible buyer or partner''), 240),
+           updated_at = now() where id = cf.id;
+    return jsonb_build_object(''ok'', false, ''reason'', ''NOT_A_FIT'');
+  end if;
+' || a;
+begin
+  select pg_get_functiondef('public.form_prepare_save(jsonb)'::regprocedure) into d;
+  if position('NOT_A_FIT' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'fit verdict patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;
+
+-- 19m. learning_not_cold_supplier_cohort (24 Nov): emails to supply-side accounts (aircraft brokers, local suppliers) are not
+--      cold first touches; a NOT_COLD cohort keeps the record out of the clean benchmark, the ramp and the learning weights.
+alter table public.outreach_learning drop constraint if exists outreach_learning_cohort_check;
+alter table public.outreach_learning add constraint outreach_learning_cohort_check
+  check (cohort = any (array['CLEAN', 'PRE_AUTH', 'EXCLUDED_21_NOV', 'NOT_COLD']));
+do $do$
+declare d text;
+  a text := 'case when (x.sent_at at time zone ''Africa/Cairo'')::date = date ''2026-11-21'' then ''EXCLUDED_21_NOV''';
+  b text := 'case when exists (select 1 from companies cx where cx.id = x.company_id and coalesce(cx.commercial_class, '''') in (''SUPPLIER'', ''LOCAL_PARTNER'', ''COMPETITOR'')) then ''NOT_COLD''
+              when (x.sent_at at time zone ''Africa/Cairo'')::date = date ''2026-11-21'' then ''EXCLUDED_21_NOV''';
+begin
+  select pg_get_functiondef('public.outreach_learning_refresh()'::regprocedure) into d;
+  if position('NOT_COLD' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'cohort patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;

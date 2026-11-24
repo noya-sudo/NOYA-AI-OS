@@ -2919,6 +2919,14 @@ The daily operating agent adds gap-family discovery from the query matrix (`disc
 gap first, within the Serper / Firecrawl daily allowance) and loads results with `discovery_ingest()`: one company per registrable
 domain, a public fact and a source URL required, entering the cold universe as RESEARCHING for W19 / W27 / W25; no tasks for Adam.
 
+**Form fit gate (24 Nov)**: a review of the first 60 prepared forms found 25 for the wrong businesses (a tent manufacturer,
+a New York photographer, a bank, law and accounting firms, directories, Egypt competitors, consumer booking forms). Two gates now
+apply before any copy is written: `form_draft_next_batch` skips suppliers, competitors, banks, law/accounting, logistics,
+manufacturers, dealers, directories, photographers and investment firms; and W27's model returns a fit verdict first, and a
+form judged not a fit is rejected with its reason instead of drafted. Batches are 14 accounts (ceiling 16); runs at 20 failed
+on n8n Cloud memory. Emails to supply-side accounts (for example an aircraft broker contacted for a client's acquisition) sit in
+a NOT_COLD learning cohort, outside the clean benchmark and the send ramp.
+
 **Needs-contact balance (23 Nov)**: the 150-slot NEEDS CONTACT lane (the queue W19, W25 and W27 research from) is round-robin by
 family, three per multiplier family and two per other family per round. Before, multipliers filled every slot and brands,
 hospitality and weddings got no contact research.

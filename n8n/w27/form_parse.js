@@ -46,5 +46,6 @@ return $input.all().map(function (x, i) {
   });
   if (needs.length) fields._needs_adam = needs;
   return { json: { company: f.company, error: err.slice(0, 160),
-    p: { form_id: f.form_id, subject: subject, message: message, fields: fields, model: 'gemini-3.5-flash-lite' } } };
+    p: { form_id: f.form_id, subject: subject, message: message, fields: fields, model: 'gemini-3.5-flash-lite',
+      fit: o.fit === false ? 'false' : (o.fit === true ? 'true' : ''), fit_reason: String(o.fit_reason || '').slice(0, 240) } } };
 });
