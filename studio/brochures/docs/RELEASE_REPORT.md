@@ -41,3 +41,15 @@ independent verifier before the first request arrives.
 - Publication copies: Drive *NOYA Brochure Collection 2026-11 · Publication copies (FINAL, not yet sent)*; local `studio/out/brochures/final/`.
 - Internal: Drive *NOYA Brochure Collection 2026-11 (DRAFT, not for distribution)*: drafts, evidence register (internal), partner agreement draft.
 - Editable source and documentation: `studio/brochures/` (branch `claude/lucid-gates-gw5yik`).
+
+---
+
+## r2 · Creative refinement (24 Nov 2026) · for Adam's final visual approval
+
+Replacement PDFs (edition `v2026-11-r2`) are **built and reviewed but not released**: the v2026-11 publication copies remain the current
+approved set until Adam approves r2. Files: `studio/out/brochures/r2/digital/` (send-ready digital), `studio/out/brochures/r2/print/`
+(3 mm bleed), `studio/out/brochures/r2/review/NOYA_Before_and_After_v2026-11-r2.pdf`.
+
+Dependencies unchanged in substance: Dior/Jacquemus permission before external use of the full 04 (the without-references edition is ready);
+partner agreement review and contracting entity (05); courtesy note to the wedding couple (06). New, non-blocking: confirm partner/listing terms
+for the Saint-Tropez and Alpine photographs; obtain the Drive masters before printing the 01 and 04 covers.

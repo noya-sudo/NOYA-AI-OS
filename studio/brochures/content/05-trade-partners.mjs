@@ -30,7 +30,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'towel-lounger-beach', pos: '88% 50%',
+      layout: 'split', side: 'left', img: 'towel-lounger-beach', pos: '42% 50%',
       eyebrow: 'What we deliver',
       title: 'What we arrange in Egypt.',
       blocks: [
@@ -48,7 +48,7 @@ export default {
       ],
     },
     {
-      layout: 'text',
+      layout: 'band', img: 'giza-guests', h: 96, pos: '50% 56%', fill: true,
       eyebrow: 'Destinations',
       title: 'Egypt, in four chapters.',
       blocks: [
@@ -58,8 +58,6 @@ export default {
           { k: 'III', h: 'El Gouna and the Red Sea', t: 'A year-round resort town of marinas, golf, yachting and residences. Good for families, long stays, retreats and destination weddings.' },
           { k: 'IV', h: 'The North Coast', t: 'Summer villas, beach clubs and a busy calendar of music and events on the Mediterranean, from Almaza Bay to Marassi and Ras El Hekma. The place for summer travel, groups and celebrations.' },
         ] } },
-        { gap: 7 },
-        { photos: { imgs: ['pyramid-woman', 'yacht-tray-wide', 'towels-daybed'], h: 60, cols: '1fr 1.5fr 1.5fr' } },
       ],
     },
     {

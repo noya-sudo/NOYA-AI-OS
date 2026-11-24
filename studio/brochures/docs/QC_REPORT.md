@@ -1,92 +1,59 @@
-# NOYA Brochure Collection · Quality-Control Report
+# NOYA Brochure Collection · Publication QC Report (r2)
 
-*Final publication build 2026-11-22 15:27 UTC · `DRAFT=0` · no approval markers in any file.*
+*Edition v2026-11-r2 · built 2026-11-24 02:37 UTC · previous final PDFs archived unchanged in `studio/out/brochures/baseline_v2026-11/`.*
 
-## 1. Final build results
+## 1. Build results
 
-| # | File | Pages | Size | Overflow / clipping | Links |
-|---|---|---|---|---|---|
-| 01 | `NOYA_01_Concierge_Overview_v2026-11.pdf` | 10 | 1.72 MB | none | 4 live |
-| 02 | `NOYA_02_Private_Desk_v2026-11.pdf` | 9 | 1.06 MB | none | 4 live |
-| 03 | `NOYA_03_Corporate_v2026-11.pdf` | 10 | 1.34 MB | none | 4 live |
-| 04 | `NOYA_04_Brands_and_Productions_v2026-11.pdf` | 12 | 1.91 MB | none | 4 live |
-| 05 | `NOYA_05_Trade_and_Partners_v2026-11.pdf` | 9 | 1.39 MB | none | 4 live |
-| 06 | `NOYA_06_Selected_Work_Q4-2026.pdf` | 5 | 0.29 MB | none | 4 live |
-| 04 | `NOYA_04_Brands_and_Productions_v2026-11_without-references.pdf` | 11 | 1.69 MB | none | 4 live |
+| # | Digital file | Pages | Digital | Print | Overflow / clipping | Digital < 150 ppi | Print < 250 ppi |
+|---|---|---|---|---|---|---|---|
+| 01 | `NOYA_01_Concierge_Overview_v2026-11-r2.pdf` | 11 | 2.98 MB | 6.63 MB | none | p1 yacht-tray-tall 123, p3 towel-chair-sea 137 | yacht-tray-tall 119, towel-chair-sea 143, alpine-chalet 226 |
+| 02 | `NOYA_02_Private_Desk_v2026-11-r2.pdf` | 9 | 1.66 MB | 3.15 MB | none | p5 robes-pair 137 | robes-pair 143, robes-glasses 201, flutes-close 201, car-flutes 204 |
+| 03 | `NOYA_03_Corporate_v2026-11-r2.pdf` | 10 | 1.36 MB | 2.29 MB | none | p1 airport-arrival-bw 133, p4 car-night 146 | airport-arrival-bw 139, car-night 143, pyramids-camels 205, table-flowers-dusk 215 |
+| 04 | `NOYA_04_Brands_and_Productions_v2026-11-r2.pdf` | 12 | 2.97 MB | 5.18 MB | none | p1 pyramid-woman 119, p3 shoot-villa 138, p5 shoot-yacht 148 | pyramid-woman 117, shoot-villa 135, shoot-yacht 145 |
+| 05 | `NOYA_05_Trade_and_Partners_v2026-11-r2.pdf` | 9 | 2.04 MB | 4.01 MB | none | p1 sage-table-sea 137, p3 towel-lounger-beach 137 | sage-table-sea 143, towel-lounger-beach 143, giza-guests 153 |
+| 06 | `NOYA_06_Selected_Work_Q4-2026_v2026-11-r2.pdf` | 5 | 0.06 MB | 0.06 MB | none | none | none |
+| 04 | `NOYA_04_Brands_and_Productions_without-references_v2026-11-r2.pdf` | 11 | 2.62 MB | 4.51 MB | none | p1 pyramid-woman 119, p3 shoot-villa 138, p5 shoot-yacht 148 | pyramid-woman 117, shoot-villa 135, shoot-yacht 145 |
 
-All files embed their fonts and photos, are A4 portrait, and are 2 MB or less (email and WhatsApp friendly). Contact links in every file:
-`mailto:noya@noyaconcierge.com`, `https://wa.me/447864569006`, `https://noyaconcierge.com/`, `https://www.instagram.com/noyaconcierge/`.
-Final pages were reviewed rendered at full resolution (`studio/out/brochures/final/pages/`).
+Digital: A4 (595 × 842 pt), every file under 3 MB (email, WhatsApp and Drive friendly). Print: 216 × 303 mm (A4 + 3 mm bleed on every side;
+trim to A4), full-resolution photographs. No print specification was supplied: printers should confirm stock, CMYK conversion and any
+required crop marks; the files are RGB.
 
-## 2. Checks performed
+## 2. Technical inspection
 
 | Check | Method | Result |
 |---|---|---|
-| Text overflow and clipping | Automatic: every text frame measured against the safe area above the running foot, every build | Pass, all 54 pages |
-| Visual inspection | Every rendered page reviewed as page images, twice (author + independent reviewer), dense pages at full size | Pass after the fixes below |
-| Independent proofread | Separate reviewer with no access to the author's reasoning: spelling, grammar, British English, repetition, tone, claims, consistency, visuals | 30 findings; all MUST FIX items resolved, SHOULD FIX items resolved or consciously kept (section 4) |
-| Banned language | Scan for: passport, unforgettable, elevate, seamless, unparalleled, world-class, gateway, extraordinary, exclusive, leading, premier, fastest, bespoke, curated, iconic, effortless, 24/7, guarantee | None in print (only "do not offer guaranteed allocations") |
-| British spelling | Scan for -ize, color, center, program, traveler | None |
-| Ligatures | PDF text extraction checked for broken fi/ff/fl | Clean (old brochures' "eff iciently" defect gone) |
-| Page numbering | Generated; cover unnumbered, pages 02 onward | Correct in all six |
-| Contact block | One generated block, identical everywhere | Consistent |
-| Colour and contrast | Navy #061422 / off-white; small print at 46% white on navy and 50% ink on paper | Legible on screen; the navy table on 05 p7 was invisible in the first build and is fixed |
-| Running feet | Moved off photographs onto the text side of split pages | Fixed (were unreadable on 01 p8, 04 p3) |
-| Line breaks | Balanced headings, no one-word last lines (CSS text-wrap balance / pretty) | Fixed across the set |
-| Image resolution | Covers and half pages use ≥ 960 px sources; low-resolution images limited to small slots | Pass; `car-headrest` (615 px) used at half-page size on 03 p4 and 05 p3 is acceptable on screen, too soft for print |
-| Image rights | Each photo checked against `assets.json`; EXCLUDED photos refused by the build | See section 5 |
-| Claims | Every factual claim mapped in `EVIDENCE_REGISTER.md` | Unsupported claims removed; open items flagged on the pages |
+| Font embedding | `pdffonts` on all 14 files | **CID TrueType only, no Type 3** (r1 was entirely Type 3 because Chromium embedded the variable fonts). Static Cormorant/Jost instances now embedded with Unicode maps. |
+| Text overflow and clipping | Every text frame measured against the safe area on every build | None, at the larger r2 type sizes |
+| Effective image resolution | Measured per placement (cover-fit scale) | Digital: all 41 placements ≥ 119 ppi; 31 ≥ 150 and 33 ≥ 140. Eight half-page crops of landscape photographs sit at 133–138 ppi (sharp at 100% on screen; the digital set caps sources at 2400 px to keep files under 3 MB). The lowest are the 01 cover (123) and the 04 cover (119), limited by their originals (section 4). Print: listed above. |
+| Links | Extracted from each PDF | mailto, WhatsApp, website and Instagram live in every closing page |
+| Page numbering | Generated; cover unnumbered | Correct in all documents |
+| Bleed | Print pages rendered; photographs run to the media edge, text inside the trim | Correct |
+| Visual inspection | Every page rendered and reviewed; crops corrected where subjects or branding were lost (01 p3, 01 p6, 01 p8, 02 p3, 04 p12, 05 p3, 05 p4); covers and closings reviewed side by side | Pass |
+| Contrast | Small print raised to 62% ink / 64% white (r1: 50% / 46%); body 84% / 86% | Legible at 100% on desktop and phone |
+| Line endings | Balanced headings, pretty wrapping; split column widened to 81 mm to avoid one-word lines | Pass |
+| Copy | Automated scan for clichés, superlatives, US spelling and doubled words on the regenerated copy master | Clean |
+| Repetition | Image use across the collection | 40 photographs, 41 placements; one repeat (Red Sea pool, 02 and 03) |
 
-## 3. Defects found and fixed in QC
+## 3. Typography
 
-- **Corporate cover showed "THE RITZ LONDON" and a legible number plate.** Image excluded; replaced. A second street image was cropped
-  to remove a hotel sign (Bulgari).
-- "Destination management" in Corporate's kicker and closing, and "destination business" in 04, read as a licensed DMC → reworded.
-- 04: "filming permissions … issued … under their licences" was wrong: permissions are issued by the authorities → corrected in the
-  table and the footnote.
-- 04: "Celebrity and VIP guest attendance" under Sourcing implied booking talent → "VIP guest attendance, coordinated through representatives".
-- 06: removed the promise of a Q1 edition and the mention of client referees (none confirmed); title now "Only work we can evidence."
-- Eyebrows that read as client lists ("Who we look after", "Who we work with") → "Who the Desk is for", "Sectors we support", "Partners we support".
-- "Most begin with an introduction from an existing client" → "Many begin with an introduction."; "Demand for Egypt is growing" → "Interest in Egypt has grown…".
-- 05 heading "White-label or co-branded" did not match its text → "White-label or NOYA-branded"; 05 p7 renamed "Responsibilities, in writing."
-- 01 p7 cross-references were invisible on navy → fixed. Empty label in the Corporate copy master → "Alongside your team".
-- Repetition reduced: "when plans change" (6 uses → 2), duplicate provenance sentence, "as briefly as you like", repeated photos within a document.
-- Puffery removed: "best hotels", "great hotels", "Everything your client needs", "Every cabin and every route", "Ideal for" ×4.
-- Clarity: "A particular watch reference"; "Short-notice requests met wherever possible"; "players" → "athletes"; "Chairmen" → "Chairs"; the
-  04 fees sentence split in two.
+Implemented to the brief's targets (see DESIGN_SPEC): cover 42 pt, headlines 31 pt (26 pt in split columns, 34 pt on statement pages), secondary
+headlines 18–20 pt, introductions 13.5 pt, body 10.75 pt, service text 10 pt, labels 8.5 pt, small print 8.5 pt, running foot 8 pt.
+No text was shrunk to fit; 01 gained a page instead.
 
-## 4. Reviewer suggestions consciously not taken
+## 4. Remaining issues
 
-- *"Egypt rewards organisations that arrive well prepared and punishes those that do not."* (03 p5). Reviewer found it harsh. Kept: it is
-  NOYA's own distinctive line and the brief asked to preserve those; it speaks to the buyer's risk, not against Egypt.
-- *"A service built around people, not bookings."* (02 p2) and *"Luxury is not simply about access…"* (01 p2): kept as NOYA's signature
-  lines; other rhetorical contrasts were removed so these stand alone.
-- Two-part titles ("Clear scope. Clear costs.", "One country. Many looks."): kept where they are existing NOYA lines.
-- Vehicle marques (Maybach seat emblem, Bentley grille, Rolls-Royce): incidental to chauffeur photography, not retouched; listed for sign-off.
+**Third-party rights (blocks external use of the full 04).** Dior and Jacquemus imagery: still no licence or permission for commercial brochure
+distribution. Use `NOYA_04_Brands_and_Productions_without-references_v2026-11-r2.pdf` until permission is in writing. The r2 crops are larger
+(1135 px) but come from the same Canva collage; real detail is modest (~650–900 px).
 
-## 5. Images
+**Partner imagery (confirm, not blocking).** Saint-Tropez and Alpine property photographs are published on NOYA's website from listing or partner
+material; confirm the listing/partner terms cover PDF brochures.
 
-All photographs approved by Adam on 22 Nov 2026 (see ASSET_REGISTER). The two creative reference panels in 04 are third-party material: see
-RELEASE_REPORT for the dependency.
+**Resolution for print (not blocking digital).** The 01 cover and the 04 cover are limited by their originals (~120 ppi). Higher-resolution masters
+exist in Drive (VISUAL_AUDIT §4). Print versions should not go to press until those are swapped in.
 
-## 6. Open approvals
+**Case-study photography.** Genuine wedding photographs exist but are not used (phone quality, client monogram, no consent). Selected Work
+remains text-led.
 
-None in the copy. Remaining external dependencies are listed in `RELEASE_REPORT.md`.
-
-## 7. Release procedure
-
-1. Approvals recorded in `EVIDENCE_REGISTER.md › Sign-off log` (22 Nov 2026).
-2. Clean PDFs exported with `DRAFT=0` (and `OMIT_REFS=1` for 04 without references); final pages reviewed at full resolution.
-3. Publication copies are in their own Drive folder, separate from drafts and evidence. Send only the brochure for the buyer in front of you.
-4. Print versions: no print specification was supplied. For print, request bleed (3 mm), CMYK conversion and higher-resolution originals
-   of the branded shoots; the current files are optimised for screen.
-
-## 8. Files
-
-- Editable source: `studio/brochures/` on branch `claude/lucid-gates-gw5yik`.
-- **Publication copies (final):** Drive folder *NOYA Brochure Collection 2026-11 · Publication copies (FINAL, not yet sent)*
-  (1LIDD3nbadwZDB0PCqdm_9mzP8hmEpTA9), restricted; locally `studio/out/brochures/final/`.
-- **Internal (drafts, evidence, legal):** Drive folder *NOYA Brochure Collection 2026-11 (DRAFT, not for distribution)*
-  (18KATRdDhjG9Et6Aa-4pCabqzqtNZuPXI): the 21 Nov draft PDFs, the internal evidence register and the partner agreement draft.
-- The prepared image set is not in Drive (over the connector's per-file limit); it is rebuilt from the 2026 PDFs (ASSET_REGISTER).
-- Previous edition: the original Canva designs are unchanged.
+**Factual and contractual dependencies carried from the release report:** partner agreement legal review and NOYA's contracting entity (05);
+courtesy note to the wedding couple (06).

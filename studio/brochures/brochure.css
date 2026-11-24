@@ -176,7 +176,7 @@ ul.dots li::before { content: ''; position: absolute; left: 0; top: 2.3mm; width
 .card .tag { font-family: var(--sans); font-weight: 450; font-size: var(--t-label); letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2mm; }
 .navy .card .tag, .navy .card .num { color: var(--on-navy-3); }
 .card p { font-size: var(--t-desc); line-height: 1.5; color: var(--ink-2); margin-bottom: 4mm; text-wrap: pretty; }
-.card p.for { font-family: var(--serif); font-style: italic; font-size: 12.5pt; line-height: 1.35; color: var(--ink); margin-bottom: 4mm; }
+.card p.for { font-family: var(--serif); font-style: italic; font-size: 12.5pt; line-height: 1.35; color: var(--ink); margin-bottom: 4mm; min-height: 18.5mm; }
 .navy .card p { color: var(--on-navy-2); }
 .card ul.dots { border-top: .25mm solid var(--rule); padding-top: 3.5mm; }
 
@@ -200,7 +200,8 @@ table.resp td:first-child { font-family: var(--serif); font-size: 13.5pt; color:
 /* typographic list (e.g. private sourcing categories) */
 .words { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0; row-gap: 2mm; margin: 2mm 0 4mm; }
 .words span { font-family: var(--serif); font-weight: 300; font-style: italic; font-size: 25pt; line-height: 1.2; color: var(--on-navy); }
-.words span:not(:last-child)::after { content: '·'; font-style: normal; color: var(--on-navy-3); margin: 0 3.4mm; }
+.words .br { flex-basis: 100%; height: 0; }
+.words span:not(.end)::after { content: '·'; font-style: normal; color: var(--on-navy-3); margin: 0 3.4mm; }
 
 /* selected work entry */
 .entry { border-top: .3mm solid var(--ink-3); padding-top: 5mm; }

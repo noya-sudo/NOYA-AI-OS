@@ -88,3 +88,25 @@ and the Partner Guide (Summer & Autumn 2026) to the 2026-11 collection. The orig
 - **Copyedit**: shorter headings (*For organisations, the same care.*; *Worldwide, through people we know.*); repeated images within a document
   removed; the flagship now notes Selected Work is shared privately; an unsupported "the Gulf" and "delivery anywhere" were caught and cut.
 - **Production**: final copies exported to a separate `final/` folder and a separate Drive folder; drafts, evidence and legal drafts kept apart.
+
+## r2 · Creative director's refinement · 24 Nov 2026
+
+**Photography.** Full archive re-audit (website library, 32 Canva designs, Drive metadata, the 2026 brochures). 39 new high-resolution
+photographs registered; low-resolution brochure extracts replaced by their originals where they exist (robes, towels, car flutes, beach
+dinner). Each brochure now shows a different side of NOYA: 40 photographs across 41 placements, one repeat. Key changes: Corporate cover is a
+black-and-white executive arrival (the building-and-car image retired); Private Desk opens on robes and glasses by the pool; private sourcing
+is no longer illustrated with drinks in a car (typographic treatment in 02, event access in 01); Egypt is shown through real hospitality at
+Giza (terrace lunch, toast, guests on the plateau) instead of low-resolution stock; Brands & Productions uses SAGE service and fire, production
+behind-the-scenes and the talent yacht shoot, and closes on the open grill; Trade's destinations page carries one strong Giza photograph
+instead of a thumbnail grid. Dior/Jacquemus panels replaced with ~2.5× larger crops.
+
+**Typography and design system.** Type scale to the brief (body 10.75 pt, service text 10 pt, labels and small print 8.5 pt, headlines 31 pt,
+cover 42 pt); small-print contrast raised; warmer page white; split column widened; balanced headings and pretty wrapping; new cinematic
+layout (01 Saint-Tropez); numbered engagement options with aligned inclusions (03 p7); typographic sourcing categories (02 p6).
+
+**Production.** Static font instances (CID TrueType instead of Type 3); separate digital (≤ 3 MB) and print (full resolution, 3 mm bleed)
+exports; effective-resolution measurement on every build; before-and-after comparison; previous final PDFs archived as the baseline.
+
+**Copy.** Tightened where the new layouts called for it (01 "who we work with", lifestyle, Egypt, worldwide and how-we-work pages; 04 talent
+page condensed for its new photographic layout). "The Alps in winter" added to the worldwide list (NOYA holds signed chalet-operator
+agreements and publishes Alpine stays on its website). No new services, claims or engagements.

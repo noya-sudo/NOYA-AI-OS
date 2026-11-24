@@ -84,7 +84,7 @@ export default {
           { h: 'The North Coast and the desert', t: 'Mediterranean beaches and summer villas; open desert landscapes within reach of Cairo.' },
         ] } },
         { gap: 6 },
-        { photos: { imgs: ['pyramids-camels', 'yacht-tray-wide'], h: 56 } },
+        { photos: { imgs: ['giza-toast', 'yacht-guests'], h: 74, caps: ['Giza', 'The Red Sea'] } },
         { note: 'Filming at heritage sites requires permissions from the relevant Egyptian authorities, applied for through licensed partners. Timelines vary by site.', mt: 3 },
       ],
     },
@@ -110,7 +110,7 @@ export default {
         { p: 'Whether the requirement is a two-day content shoot or a fortnight of campaign production across three governorates, the discipline is the same: a defined scope, confirmed suppliers and one point of contact.' },
         { list: { two: true, items: ['Fashion and luxury campaigns', 'Jewellery and watch productions', 'Editorial and magazine shoots', 'Commercials', 'Social and content productions', 'Creator and influencer activations', 'Product launches', 'Press and media trips', 'Brand retreats and off-sites', 'Experiential marketing', 'Music videos and artist travel', 'Documentary and factual support'] } },
         { gap: 8 },
-        { photos: { imgs: ['yacht-pour', 'sage-fire', 'sage-grill'], h: 70, cols: '1fr 1.7fr 1fr' } },
+        { photos: { imgs: ['yacht-pour', 'sage-carving', 'sage-grill'], h: 70, cols: '1fr 1.7fr 1fr' } },
       ],
     },
     {
@@ -163,7 +163,7 @@ export default {
       ],
     },
     {
-      layout: 'closing', img: 'sage-carving-tall', h: 110, pos: '50% 28%',
+      layout: 'closing', img: 'sage-fire', h: 110, pos: '50% 45%',
       eyebrow: 'Production enquiries',
       title: 'Tell us about the project.',
       blocks: [

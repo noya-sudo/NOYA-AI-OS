@@ -79,7 +79,7 @@ export default {
         { p: 'A particular watch reference. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.' },
         { p: 'On request, we search independent dealers, specialist houses, auctions and private collections, and bring you what we find with its provenance, condition and price, so that you can decide with confidence.' },
         { gap: 3 },
-        { words: ['Watches', 'Handbags', 'Jewellery', 'Cars', 'Art', 'Collectibles', 'Gifts'] },
+        { words: ['Watches', 'Handbags', 'Jewellery', 'Cars', '|', 'Art', 'Collectibles', 'Gifts'] },
         { gap: 7 },
         { cols: { n: 3, items: [
           { h: 'Discreet', t: 'Searches are made without revealing who is asking.' },

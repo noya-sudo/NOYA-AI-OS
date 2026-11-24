@@ -27,7 +27,7 @@ Egypt is where our knowledge and working relationships run deepest. Elsewhere we
 
 > Luxury is not simply about access. It is about having someone who understands how you live.
 
-### Page 03 · split · photo: sage-card
+### Page 03 · split · photo: towel-chair-sea
 
 **Eyebrow:** Who we work with  
 **Title:** Four kinds of client. One standard of care.  
@@ -158,7 +158,7 @@ Whether you are travelling for business or with family, or simply need something
 
 From a family summer on the North Coast to a dinner reservation in Paris tonight, the same person is on the other end of the line.
 
-### Page 03 · split · photo: robe-detail
+### Page 03 · split · photo: flutes-close
 
 **Eyebrow:** What the Desk includes  
 **Title:** One person who already knows the answer.  
@@ -211,7 +211,7 @@ Watches · Handbags · Jewellery · Cars · Art · Collectibles · Gifts
 
 <sub>Subject to market availability. NOYA is not an authorised dealer for any brand and does not offer guaranteed allocations.</sub>
 
-### Page 07 · text
+### Page 07 · band · photo: tender-picnic
 
 **Eyebrow:** Who the Desk is for  
 **Title:** For people whose time is spoken for.  
@@ -330,7 +330,7 @@ Protocol, transport, venues and access depend on relationships that take years t
 - **Programmes** (Leadership retreats; Incentive travel; Cultural and private experiences)
 - **On the ground** (Movement planning and vehicles; Accommodation and room blocks; A NOYA contact throughout the visit)
 
-*[photos: pyramids-camels, pyramid-woman]*
+*[photos: pyramids-camels, red-sea-pool · captions: Giza, The Red Sea]*
 
 <sub>Access to heritage sites and venues is subject to the permissions of the relevant authorities and owners.</sub>
 
@@ -497,7 +497,7 @@ For campaigns, launches and brand trips, we identify talent, creators and influe
 - **The Red Sea** El Gouna and the coast: marinas, yachts, reefs and resort architecture.
 - **The North Coast and the desert** Mediterranean beaches and summer villas; open desert landscapes within reach of Cairo.
 
-*[photos: pyramids-camels, yacht-tray-wide]*
+*[photos: giza-toast, yacht-guests · captions: Giza, The Red Sea]*
 
 <sub>Filming at heritage sites requires permissions from the relevant Egyptian authorities, applied for through licensed partners. Timelines vary by site.</sub>
 
@@ -533,7 +533,7 @@ Whether the requirement is a two-day content shoot or a fortnight of campaign pr
 - Music videos and artist travel
 - Documentary and factual support
 
-*[photos: yacht-pour, sage-fire, flutes-close]*
+*[photos: yacht-pour, sage-carving, sage-grill]*
 
 ### Page 09 · text
 
@@ -581,7 +581,7 @@ Costs are itemised: supplier costs, NOYA’s coordination fee and any agreed mar
 
 <sub>Fares, rooms, venues, allocations and permissions are subject to availability and confirmed at the time of booking.</sub>
 
-### Page 12 · closing · photo: sage-carving
+### Page 12 · closing · photo: sage-fire
 
 **Eyebrow:** Production enquiries  
 **Title:** Tell us about the project.  
@@ -632,7 +632,7 @@ Interest in Egypt has grown with the opening of the Grand Egyptian Museum, new l
 
 <sub>Fares, rooms, venues, allocations and permissions are subject to availability and confirmed at the time of booking.</sub>
 
-### Page 04 · text
+### Page 04 · band · photo: giza-guests
 
 **Eyebrow:** Destinations  
 **Title:** Egypt, in four chapters.  
@@ -641,8 +641,6 @@ Interest in Egypt has grown with the opening of the Grand Egyptian Museum, new l
 - **Luxor and Aswan** The Valley of the Kings, Karnak, Abu Simbel and the Nile, with historic riverside hotels and private river journeys. Best for families, cultural travel and longer itineraries.
 - **El Gouna and the Red Sea** A year-round resort town of marinas, golf, yachting and residences. Good for families, long stays, retreats and destination weddings.
 - **The North Coast** Summer villas, beach clubs and a busy calendar of music and events on the Mediterranean, from Almaza Bay to Marassi and Ras El Hekma. The place for summer travel, groups and celebrations.
-
-*[photos: pyramid-woman, yacht-tray-wide, towels-daybed]*
 
 ### Page 05 · text
 

@@ -33,7 +33,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'sage-card', pos: '50% 50%',
+      layout: 'split', side: 'left', img: 'towel-chair-sea', pos: '74% 50%',
       eyebrow: 'Who we work with',
       title: 'Four kinds of client.\nOne standard of care.',
       blocks: [

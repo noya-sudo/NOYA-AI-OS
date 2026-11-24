@@ -235,15 +235,15 @@
       "approved": "Adam Elshazly, 22 Nov 2026 (final approval instructions)"
     },
     "ref-dior-giza": {
-      "source": "Brands & Productions 2026 p5 (collage panel)",
-      "px": "448x561",
+      "source": "Brands & Productions Canva design (DAHSLweLTGU) page 5, exported at 3000 px and cropped (real detail ≈650 px Dior, ≈900 px Jacquemus)",
+      "px": "1135x1465",
       "subject": "Dior Men’s Pre-Fall 2023 runway presentation at the Pyramids of Giza, 3 Dec 2022 (photography credited in press to Henar Sherif and Adel Essam)",
       "status": "THIRD-PARTY REFERENCE",
       "note": "Independent creative reference; NOYA not involved. Restored on Adam’s instruction (22 Nov 2026). No licence or permission for commercial brochure distribution is on file: required from the rights holder (Dior / photographers) before 04 is distributed externally."
     },
     "ref-jacquemus-egypt": {
-      "source": "Brands & Productions 2026 p5 (collage panel)",
-      "px": "429x570",
+      "source": "Brands & Productions Canva design (DAHSLweLTGU) page 5, exported at 3000 px and cropped (real detail ≈650 px Dior, ≈900 px Jacquemus)",
+      "px": "1133x1464",
       "subject": "Jacquemus La Croisière campaign, shot from Cairo to Aswan, released Apr 2025 (photography credited in press to Mohamed Sherif)",
       "status": "THIRD-PARTY REFERENCE",
       "note": "Independent creative reference; NOYA not involved. Restored on Adam’s instruction (22 Nov 2026). No licence or permission for commercial brochure distribution is on file: required from the rights holder (Jacquemus / photographer) before 04 is distributed externally."
@@ -558,6 +558,30 @@
       "subject": "Hands sharing dishes at a restaurant table",
       "status": "APPROVED",
       "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "giza-toast": {
+      "source": "NOYA Canva design \"Branded content\" (DAHSSK1Dg6A), exported 24 Nov 2026; resized to its real detail (~1300 px wide), page 43",
+      "px": "1300x1625",
+      "subject": "Two guests raising a toast over shared plates on a terrace facing the Giza pyramids",
+      "status": "APPROVED",
+      "provenance": "NOYA brand content (the April 2025 brand-trip locations, undated); full-resolution originals likely in Drive \"Noya Website/Branded content\" PNG masters.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "giza-guests": {
+      "source": "NOYA Canva design \"Branded content\" (DAHSSK1Dg6A), exported 24 Nov 2026; resized to its real detail (~1300 px wide), page 47",
+      "px": "1300x1625",
+      "subject": "Two guests in hats facing the Giza pyramids across the plateau",
+      "status": "APPROVED",
+      "provenance": "NOYA brand content (the April 2025 brand-trip locations, undated); full-resolution originals likely in Drive \"Noya Website/Branded content\" PNG masters.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "yacht-guests": {
+      "source": "NOYA Canva design \"Branded content\" (DAHSSK1Dg6A), exported 24 Nov 2026; resized to its real detail (~1300 px wide), page 35",
+      "px": "1300x1625",
+      "subject": "Guests relaxing on a yacht bow over turquoise water, NOYA towel and fruit board",
+      "status": "APPROVED",
+      "provenance": "NOYA brand content (the April 2025 brand-trip locations, undated); full-resolution originals likely in Drive \"Noya Website/Branded content\" PNG masters. Swimwear: use in production contexts only.",
       "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
     }
   },

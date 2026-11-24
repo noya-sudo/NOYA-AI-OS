@@ -17,7 +17,7 @@ a service NOYA coordinates within the concierge proposition. Every document stat
 
 | # | Publication | Buyer | Job it does | Pages | Sent when |
 |---|---|---|---|---|---|
-| 01 | **NOYA Concierge** (flagship) | Private clients, introductions, partners, general prospects | What NOYA is, why clients choose it, the full range once, then routing to 02–05 | 10 | Anyone asks "what do you do?" |
+| 01 | **NOYA Concierge** (flagship) | Private clients, introductions, partners, general prospects | What NOYA is, why clients choose it, the full range once, then routing to 02–05 | 11 | Anyone asks "what do you do?" |
 | 02 | **NOYA Private Desk** | Private clients, families, executives, athletes, public figures | A dedicated relationship: travel, lifestyle, family, relocation, **private sourcing**; access *by introduction or application* | 9 | A private individual or their office enquires |
 | 03 | **NOYA Corporate** | Companies, executive offices, family offices | Executive travel, delegations, hospitality, Egypt DMC capability; **engagement model** (account / retained / project) | 10 | A company or EA enquires |
 | 04 | **NOYA Brands & Productions** | Luxury brands, agencies, PR, production, talent managers | Brand experiences, talent and creator sourcing, locations and logistics; creative references (Dior, Jacquemus); **who does what**; commercial scope | 12 (11 without references) | An agency, brand or producer enquires |
@@ -70,6 +70,6 @@ Every closing page carries an invitation tailored to its buyer, not a sales line
 - Layout: `studio/brochures/brochure.css`; fonts and colours from `studio/brand/brand.css`.
 - Photos: `assets.json` (register) + `images/` (git-ignored).
 - Build: `node studio/brochures/build.mjs` → `studio/out/brochures/*.pdf`, page previews and `build-report.json`.
-- Final export: `DRAFT=0 node studio/brochures/build.mjs` → `studio/out/brochures/final/` (publication copies, kept apart from drafts).
-  `DRAFT=0 OMIT_REFS=1 node studio/brochures/build.mjs` → 04 without the third-party reference page.
+- r2 build: `node studio/brochures/build.mjs` (digital) and `VARIANT=print node studio/brochures/build.mjs` (print, 3 mm bleed) →
+  `studio/out/brochures/r2/`; add `OMIT_REFS=1` for 04 without the third-party reference page. Design system: `docs/DESIGN_SPEC.md`.
 - The 2026 Canva designs are untouched and remain the backup of the previous edition.

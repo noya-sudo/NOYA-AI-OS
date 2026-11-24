@@ -74,7 +74,7 @@ function blocks(list = [], where) {
     if (b.gap) return `<div style="height:${b.gap}mm;flex:none"></div>`;
     if (b.list) return `${b.list.h ? `<h3 class="h">${fmt(b.list.h)}</h3>` : ''}<ul class="rows${b.list.two ? ' two' : ''}">${b.list.items.map((i) => `<li>${fmt(i)}</li>`).join('')}</ul>`;
     if (b.dots) return `${b.dots.h ? `<h3 class="h">${fmt(b.dots.h)}</h3>` : ''}<ul class="dots">${b.dots.items.map((i) => `<li>${fmt(i)}</li>`).join('')}</ul>`;
-    if (b.words) return `<div class="words">${b.words.map((w) => `<span>${fmt(w)}</span>`).join('')}</div>`;
+    if (b.words) return `<div class="words">${b.words.map((w, i, a) => w === '|' ? '<i class="br"></i>' : `<span${i === a.length - 1 || a[i + 1] === '|' ? ' class="end"' : ''}>${fmt(w)}</span>`).join('')}</div>`;
     if (b.cols) return `<div class="cols c${b.cols.n}">${b.cols.items.map((i) => `<div class="item">${i.k ? `<span class="k">${fmt(i.k)}</span>` : ''}${i.h ? `<h3 class="h">${fmt(i.h)}</h3>` : ''}${i.t ? `<p>${fmt(i.t)}</p>` : ''}${i.list ? `<ul class="dots mt2">${i.list.map((x) => `<li>${fmt(x)}</li>`).join('')}</ul>` : ''}${i.more ? `<span class="more">${fmt(i.more)}</span>` : ''}</div>`).join('')}</div>`;
     if (b.box) return `<div class="box">${b.box.h ? `<h3 class="h">${fmt(b.box.h)}</h3>` : ''}${[].concat(b.box.t).map((t) => `<p>${fmt(t)}</p>`).join('')}</div>`;
     if (b.steps) return `<div class="steps">${b.steps.map((s, i) => `<div class="st"><span class="n">${s.n ?? String(i + 1).padStart(2, '0')}</span><h3 class="h">${fmt(s.h)}</h3><p>${fmt(s.t)}</p></div>`).join('')}</div>`;
@@ -197,7 +197,7 @@ function copyMaster(doc) {
       else if (b.note) out.push(`<sub>${md(b.note)}</sub>`, '');
       else if (b.h3) out.push(`**${md(b.h3)}**`, '');
       else if (b.list || b.dots) { const L = b.list || b.dots; if (L.h) out.push(`**${md(L.h)}**`); L.items.forEach((x) => out.push(`- ${md(x)}`)); out.push(''); }
-      else if (b.words) out.push(b.words.map(md).join(' · '), '');
+      else if (b.words) out.push(b.words.filter((w) => w !== '|').map(md).join(' · '), '');
       else if (b.cols) { b.cols.items.forEach((x) => out.push(`- **${md(x.h || x.k || '')}**${x.t ? ` ${md(x.t)}` : ''}${x.list ? ` (${x.list.map(md).join('; ')})` : ''}${x.more ? ` *${md(x.more)}*` : ''}`)); out.push(''); }
       else if (b.box) out.push(`${b.box.h ? `**${md(b.box.h)}** ` : ''}${[].concat(b.box.t).map(md).join(' ')}`, '');
       else if (b.steps) { b.steps.forEach((s, j) => out.push(`${s.n ? md(s.n) + '.' : j + 1 + '.'} **${md(s.h)}** ${md(s.t)}`)); out.push(''); }

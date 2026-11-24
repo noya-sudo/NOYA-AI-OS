@@ -67,7 +67,7 @@ export default {
           { h: 'On the ground', list: ['Movement planning and vehicles', 'Accommodation and room blocks', 'A NOYA contact throughout the visit'] },
         ] } },
         { gap: 6 },
-        { photos: { imgs: ['pyramids-camels', 'pyramid-woman'], h: 52, cols: '1.5fr 1fr' } },
+        { photos: { imgs: ['pyramids-camels', 'red-sea-pool'], h: 58, cols: '1fr 1.5fr', caps: ['Giza', 'The Red Sea'] } },
         { note: 'Access to heritage sites and venues is subject to the permissions of the relevant authorities and owners.', mt: 3 },
       ],
     },
