@@ -3,7 +3,7 @@ import { ROLE, AVAILABILITY, TERMS } from './shared.mjs';
 
 export default {
   code: '03',
-  file: 'NOYA_03_Corporate_v2026-11',
+  file: 'NOYA_03_Corporate',
   title: 'NOYA Corporate',
   short: 'NOYA Corporate',
   description: 'NOYA Corporate: executive travel, visiting delegations, corporate hospitality and destination management in Egypt and internationally.',
@@ -11,14 +11,14 @@ export default {
   purpose: 'Establish operational competence, accountability and commercial maturity; explain how NOYA is engaged.',
   pages: [
     {
-      layout: 'cover', img: 'car-street', pos: '40% 50%',
+      layout: 'cover', img: 'airport-arrival-bw', pos: '48% 50%',
       kicker: 'Executive Travel · Hospitality · Lifestyle Management',
       title: 'NOYA Corporate',
       line: 'Travel, hospitality and visits for organisations, held by one contact.\nExpert in Egypt. Arranging worldwide.',
       base: ['noyaconcierge.com', 'Edition 2026'],
     },
     {
-      layout: 'split', side: 'right', img: 'car-night', pos: '40% 50%',
+      layout: 'split', side: 'right', img: 'table-flowers-dusk', pos: '50% 55%',
       eyebrow: 'About NOYA',
       title: 'An extension of your executive team.',
       blocks: [
@@ -44,7 +44,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'car-headrest', pos: '50% 45%',
+      layout: 'split', side: 'left', img: 'car-night', pos: '35% 50%',
       eyebrow: 'Executive travel and visits',
       title: 'Support that sits around the working day.',
       blocks: [
@@ -72,7 +72,7 @@ export default {
       ],
     },
     {
-      layout: 'band', img: 'beach-dinner', h: 110, pos: '50% 55%',
+      layout: 'band', img: 'sage-table-row', h: 110, pos: '50% 60%',
       eyebrow: 'Corporate hospitality',
       title: 'Occasions your guests remember for the right reasons.',
       blocks: [
@@ -88,9 +88,9 @@ export default {
         { p: 'Every organisation’s requirements are different. We agree scope, service expectations and fees in writing before work begins, and present third-party costs transparently.' },
         { gap: 3 },
         { cards: { n: 3, items: [
-          { tag: 'Ongoing', h: 'Corporate account', t: 'For organisations with regular travel and hospitality needs.', list: ['A named NOYA contact', 'Agreed scope and service expectations', 'A maintained record of your people’s preferences', 'Periodic statements and review'] },
-          { tag: 'Standing', h: 'Retained support', t: 'For executive offices and family offices that want NOYA available as a standing resource.', list: ['A monthly arrangement', 'Availability defined in writing', 'Priority scheduling against the agreed scope', 'Reviewed together each quarter'] },
-          { tag: 'Defined', h: 'Project assignment', t: 'For a single visit, delegation, retreat or event.', list: ['A written scope and itemised quotation', 'Deposit and balance schedule', 'One NOYA lead from proposal to final account', 'Supplier reconciliation on completion'] },
+          { num: 'I', tag: 'Ongoing', h: 'Corporate account', for: 'For organisations with regular travel and hospitality needs.', list: ['A named NOYA contact', 'Agreed scope and service expectations', 'A maintained record of your people’s preferences', 'Periodic statements and review'] },
+          { num: 'II', tag: 'Standing', h: 'Retained support', for: 'For executive and family offices that want NOYA on hand as a standing resource.', list: ['A monthly arrangement', 'Availability defined in writing', 'Priority scheduling against the agreed scope', 'Reviewed together each quarter'] },
+          { num: 'III', tag: 'Defined', h: 'Project assignment', for: 'For a single visit, delegation, retreat or event.', list: ['A written scope and itemised quotation', 'Deposit and balance schedule', 'One NOYA lead from proposal to final account', 'Supplier reconciliation on completion'] },
         ] } },
         { note: `Fees reflect scope, volume and the level of availability required. ${TERMS}`, mt: 6 },
       ],
@@ -123,7 +123,7 @@ export default {
       ],
     },
     {
-      layout: 'closing', img: 'yacht-tray-wide', h: 104, pos: '50% 50%',
+      layout: 'closing', img: 'jet-dusk', h: 110, pos: '55% 55%',
       eyebrow: 'Corporate enquiries',
       title: 'Wherever your people travel.\nWith particular expertise in Egypt.',
       small: true,

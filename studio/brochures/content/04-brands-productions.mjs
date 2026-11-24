@@ -4,7 +4,7 @@ import { AVAILABILITY } from './shared.mjs';
 
 export default {
   code: '04',
-  file: 'NOYA_04_Brands_and_Productions_v2026-11',
+  file: 'NOYA_04_Brands_and_Productions',
   title: 'NOYA Brands & Productions',
   short: 'NOYA Brands & Productions',
   description: 'NOYA Brands & Productions: brand experiences, talent and creator sourcing, locations, logistics and hospitality for brands, agencies and production teams.',
@@ -49,7 +49,7 @@ export default {
       ],
     },
     {
-      layout: 'band', img: 'terrace-sea', h: 108, pos: '50% 50%',
+      layout: 'band', img: 'sage-long-table', h: 108, pos: '50% 62%',
       eyebrow: 'Brand experiences and destination events',
       title: 'A brand programme, properly hosted.',
       blocks: [
@@ -62,17 +62,13 @@ export default {
       ],
     },
     {
-      layout: 'text', tone: 'navy',
+      layout: 'split', side: 'right', img: 'shoot-yacht', pos: '50% 40%',
       eyebrow: 'Talent, creators and influencers',
       title: 'The right faces, and the care they expect.',
       blocks: [
         { p: 'For campaigns, launches and brand trips, we identify talent, creators and influencers suited to the brief, approach them or their representatives, and coordinate availability, travel and hospitality around the programme.' },
-        { cols: { n: 2, items: [
-          { h: 'Sourcing', list: ['Shortlists matched to the brief, audience and market', 'Approaches through talent representatives', 'Availability, schedules and travel', 'VIP guest attendance, coordinated through representatives'] },
-          { h: 'Care on the ground', list: ['Airport meet-and-assist and dedicated drivers', 'Hotel, villa and residence accommodation', 'Dietary, welfare and rest requirements', 'Discreet handling and non-disclosure as standard'] },
-        ] } },
-        { gap: 6 },
-        { box: { h: 'Clear lines', t: 'NOYA is not a talent agency and does not represent talent. Fees, usage rights and contracts are agreed between the brand or agency and the talent’s representatives. We coordinate everything around them.' } },
+        { list: { items: ['Shortlists matched to the brief, audience and market', 'Approaches through talent representatives', 'Arrivals, dedicated drivers and accommodation', 'Dietary, welfare and rest requirements', 'Discretion and non-disclosure as standard'] } },
+        { box: { h: 'Clear lines', t: 'NOYA is not a talent agency and does not represent talent. Fees, usage rights and contracts are agreed between the brand or agency and the talent’s representatives.' } },
       ],
     },
     {
@@ -114,7 +110,7 @@ export default {
         { p: 'Whether the requirement is a two-day content shoot or a fortnight of campaign production across three governorates, the discipline is the same: a defined scope, confirmed suppliers and one point of contact.' },
         { list: { two: true, items: ['Fashion and luxury campaigns', 'Jewellery and watch productions', 'Editorial and magazine shoots', 'Commercials', 'Social and content productions', 'Creator and influencer activations', 'Product launches', 'Press and media trips', 'Brand retreats and off-sites', 'Experiential marketing', 'Music videos and artist travel', 'Documentary and factual support'] } },
         { gap: 8 },
-        { photos: { imgs: ['shoot-yacht', 'robe-pool', 'champagne-car'], h: 62, cols: '1fr 1.6fr 1fr' } },
+        { photos: { imgs: ['yacht-pour', 'sage-fire', 'sage-grill'], h: 70, cols: '1fr 1.7fr 1fr' } },
       ],
     },
     {
@@ -167,7 +163,7 @@ export default {
       ],
     },
     {
-      layout: 'closing', img: 'robes-two', h: 104, pos: '50% 45%',
+      layout: 'closing', img: 'sage-carving-tall', h: 110, pos: '50% 28%',
       eyebrow: 'Production enquiries',
       title: 'Tell us about the project.',
       blocks: [

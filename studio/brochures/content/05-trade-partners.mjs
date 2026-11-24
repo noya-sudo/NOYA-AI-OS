@@ -5,7 +5,7 @@ import { ROLE, AVAILABILITY } from './shared.mjs';
 
 export default {
   code: '05',
-  file: 'NOYA_05_Trade_and_Partners_v2026-11',
+  file: 'NOYA_05_Trade_and_Partners',
   title: 'NOYA Trade & Partners',
   short: 'NOYA Trade & Partners',
   description: 'NOYA Trade & Partners: confidential on-the-ground delivery in Egypt for travel advisors, concierge firms and agencies.',
@@ -13,7 +13,7 @@ export default {
   purpose: 'Make NOYA the obvious Egypt delivery partner: what we deliver, how client ownership and commercial terms work, and who to call.',
   pages: [
     {
-      layout: 'cover', img: 'beach-dinner', pos: '42% 50%',
+      layout: 'cover', img: 'sage-table-sea', pos: '42% 50%',
       kicker: 'Egypt Partner Guide',
       title: 'NOYA Trade & Partners',
       line: 'Confidential, on-the-ground delivery in Egypt\nfor travel advisors, concierge firms and agencies.',
@@ -30,7 +30,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'champagne-car', pos: '35% 50%',
+      layout: 'split', side: 'left', img: 'towel-lounger-beach', pos: '88% 50%',
       eyebrow: 'What we deliver',
       title: 'What we arrange in Egypt.',
       blocks: [
@@ -122,11 +122,11 @@ export default {
         { gap: 8 },
         { box: { h: 'Hospitality partners', t: 'Hotels, villas and experience providers in Egypt and beyond: we are always interested in properties and people that meet our clients’ standards. Introduce yourself; we will look closely.' } },
         { gap: 6 },
-        { photos: { imgs: ['robes-two', 'towels-daybed'], h: 58 } },
+        { photos: { imgs: ['loungers-garden', 'sage-menu'], h: 64, cols: '1.6fr 1fr' } },
       ],
     },
     {
-      layout: 'closing', img: 'yacht-tray-tall', h: 104, pos: '50% 62%',
+      layout: 'closing', img: 'loungers-tray', h: 110, pos: '50% 60%',
       eyebrow: 'Partner enquiries',
       title: 'Bring us your next Egypt request.',
       blocks: [

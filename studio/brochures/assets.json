@@ -247,6 +247,318 @@
       "subject": "Jacquemus La Croisière campaign, shot from Cairo to Aswan, released Apr 2025 (photography credited in press to Mohamed Sherif)",
       "status": "THIRD-PARTY REFERENCE",
       "note": "Independent creative reference; NOYA not involved. Restored on Adam’s instruction (22 Nov 2026). No licence or permission for commercial brochure distribution is on file: required from the rights holder (Jacquemus / photographer) before 04 is distributed externally."
+    },
+    "giza-terrace-lunch": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): giza-lunch-view-2250.webp",
+      "px": "2250x3000",
+      "subject": "Terrace lunch of shared plates facing the Giza pyramids",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented. A sense of place, not a client event.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "airport-arrival-bw": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): airport-walkers-bw-2560.webp",
+      "px": "2560x1660",
+      "subject": "Black-and-white: travellers walking to a private jet across an apron",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "jet-dusk": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): cdn.sanity.io ff9f3888…-2560x1695.jpg",
+      "px": "2560x1695",
+      "subject": "Private jet engine and fuselage at dusk",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented. Aviation is supplied by licensed operators.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "beach-dinner-hd": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-beach-dinner-2560.webp",
+      "px": "2560x1707",
+      "subject": "Long beach table with NOYA cushions under parasols at dusk",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-table-sea": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): sage-table-sea-2560.webp",
+      "px": "2560x1707",
+      "subject": "Table by the sea set with NOYA cushions",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-table-row": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): sage-table-row-2560.webp",
+      "px": "2560x1707",
+      "subject": "Row of place settings with NOYA cushions",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-long-table": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): sage-long-table-beach-2560.webp",
+      "px": "2560x1707",
+      "subject": "Long table set on an empty beach at dusk, parasols and festoon lights",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-carving": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): sage-chef-carving-2560.webp",
+      "px": "2560x1707",
+      "subject": "Gloved chef carving meat at the table",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-fire": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): sage-grill-fire-2560.webp",
+      "px": "2560x1707",
+      "subject": "Open-fire grill in flame",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-menu": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-sage-02-1920.webp",
+      "px": "1920x2400",
+      "subject": "NOYA-printed dinner menu on a set table",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-card": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-sage-01-1920.webp",
+      "px": "1920x2400",
+      "subject": "NOYA cushion, place card and flowers on a set table",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-plating": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-sage-05-1920.webp",
+      "px": "1920x2400",
+      "subject": "Gloved service placing a dish",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-dishes": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-sage-07-1920.webp",
+      "px": "1920x2400",
+      "subject": "Shared dishes on a white table",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-grill": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-sage-04-1920.webp",
+      "px": "1920x2400",
+      "subject": "Grilled meats over fire",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-carving-tall": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-sage-09-1920.webp",
+      "px": "1920x2400",
+      "subject": "Chef lifting grilled meat on the beach",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "sage-dessert": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): sage-dessert-service-2560.webp",
+      "px": "2560x1707",
+      "subject": "Dessert served beside a NOYA menu",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "table-flowers-dusk": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): cdn.sanity.io c91bc1e2…-1707x2560.jpg",
+      "px": "1707x2560",
+      "subject": "Set table with flowers in low evening light",
+      "status": "APPROVED",
+      "provenance": "SAGE beach dining with NOYA-printed menus and NOYA cushions; published on NOYA’s website. Use as hospitality imagery only: never caption or present as a named client event or case study.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "towel-chair-sea": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-chair-sea-2560.webp",
+      "px": "2560x1707",
+      "subject": "NOYA towel over a chair facing a turquoise sea",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "towel-lounger-beach": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-deck-towel-2560.webp",
+      "px": "2560x1707",
+      "subject": "NOYA towel on a wicker lounger on the beach",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "loungers-tray": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-loungers-table-2560.webp",
+      "px": "2560x1707",
+      "subject": "Loungers with NOYA towels and cushions, fruit tray",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website. High-resolution original of towels-daybed.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "loungers-garden": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-loungers-garden-2560.webp",
+      "px": "2560x1707",
+      "subject": "Loungers with NOYA cushions on a pool deck in a garden",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "tender-picnic": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-tender-picnic-2560.webp",
+      "px": "2560x1707",
+      "subject": "Tray of fruit on a NOYA towel on a teak deck",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "robe-terrace": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-terrace-red-sea-2560.webp",
+      "px": "2560x1707",
+      "subject": "Guest in a NOYA robe above a pool and the sea",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website. High-resolution original of robe-pool.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "red-sea-pool": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): edge-pool-red-sea--wide-2560.webp",
+      "px": "2560x1707",
+      "subject": "Pool, lawn and palm parasols facing the Red Sea",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "robes-pair": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): cdn.sanity.io b264e925…-2560x1707.jpg",
+      "px": "2560x1707",
+      "subject": "Two guests in NOYA robes at an infinity pool",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website. High-resolution original of robes-two.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "robe-detail": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): cdn.sanity.io 28259ec8…-2560x1707.jpg",
+      "px": "2560x1707",
+      "subject": "Close detail of the embroidered NOYA robe",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "car-flutes": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): noya-car-flutes-1733.webp",
+      "px": "1733x2600",
+      "subject": "Two glasses raised in a chauffeured car, NOYA seat cover",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website. High-resolution original of champagne-car.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "robes-glasses": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-branded-content-04-1920.webp",
+      "px": "1920x2400",
+      "subject": "Glasses raised in NOYA robes beside a pool",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "yacht-pour": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-branded-content-15-1920.webp",
+      "px": "1920x2400",
+      "subject": "Champagne poured on a yacht over turquoise water",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "flutes-close": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-branded-content-23-1920.webp",
+      "px": "1920x2400",
+      "subject": "Two NOYA flutes with fruit, close",
+      "status": "APPROVED",
+      "provenance": "NOYA-branded hospitality photography (NOYA towels, robes, cushions or menus in frame); published on NOYA’s website.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "wembley-dusk": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): wembley-dusk-2560.webp",
+      "px": "2560x3413",
+      "subject": "Wembley Stadium at dusk from the stands",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented. Event access is arranged; NOYA implies no relationship with the venue.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "tennis-box": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): mc-masters-box-view-1128.webp",
+      "px": "1128x1568",
+      "subject": "View from a box over a clay tennis court",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented. 1128 px: half-page or smaller.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "superyacht-dusk": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): superyacht-dusk-2560.webp",
+      "px": "2560x1707",
+      "subject": "Superyacht moored at dusk",
+      "status": "APPROVED · PARTNER IMAGERY",
+      "provenance": "Third-party property / operator listing imagery published on NOYA’s website; confirm the listing or partner terms cover PDF brochures.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "yacht-aerial": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): dinaia-aerial-2248.webp",
+      "px": "2248x1296",
+      "subject": "Motor yacht underway, aerial",
+      "status": "APPROVED · PARTNER IMAGERY",
+      "provenance": "Third-party property / operator listing imagery published on NOYA’s website; confirm the listing or partner terms cover PDF brochures.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "yacht-underway": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): wind-of-fortune-underway-1902.webp",
+      "px": "1902x1262",
+      "subject": "Superyacht underway off a coast",
+      "status": "APPROVED · PARTNER IMAGERY",
+      "provenance": "Third-party property / operator listing imagery published on NOYA’s website; confirm the listing or partner terms cover PDF brochures.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "st-tropez-bay": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): saint-tropez-bay-2560.webp",
+      "px": "2560x3200",
+      "subject": "Infinity pool over the bay of Saint-Tropez",
+      "status": "APPROVED · PARTNER IMAGERY",
+      "provenance": "Third-party property / operator listing imagery published on NOYA’s website; confirm the listing or partner terms cover PDF brochures.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "st-tropez-terrace": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): saint-tropez-villa-terrace-2560.webp",
+      "px": "2560x3200",
+      "subject": "Villa terrace dining table over the Saint-Tropez coast",
+      "status": "APPROVED · PARTNER IMAGERY",
+      "provenance": "Third-party property / operator listing imagery published on NOYA’s website; confirm the listing or partner terms cover PDF brochures.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "alpine-chalet": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): nw-alpine-chalet-01-1920.webp",
+      "px": "1920x2400",
+      "subject": "Alpine chalet at dusk in snow",
+      "status": "APPROVED · PARTNER IMAGERY",
+      "provenance": "Third-party property / operator listing imagery published on NOYA’s website; confirm the listing or partner terms cover PDF brochures. A ski operator granted written image use for editorial and destination recommendations (Aug 2026); confirm brochure use.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
+    },
+    "pier88-table": {
+      "source": "NOYA website library (www.noyaconcierge.com/img, downloaded 24 Nov 2026): pier88-table-2560.webp",
+      "px": "2560x1706",
+      "subject": "Hands sharing dishes at a restaurant table",
+      "status": "APPROVED",
+      "provenance": "Published on NOYA’s website as NOYA imagery; photographer and licence not documented.",
+      "approved": "Adam Elshazly, 22 Nov 2026 (existing NOYA imagery)"
     }
   },
   "excluded_from_collection": {

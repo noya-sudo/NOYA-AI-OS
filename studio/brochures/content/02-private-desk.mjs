@@ -3,7 +3,7 @@ import { ROLE, AVAILABILITY, TERMS } from './shared.mjs';
 
 export default {
   code: '02',
-  file: 'NOYA_02_Private_Desk_v2026-11',
+  file: 'NOYA_02_Private_Desk',
   title: 'NOYA Private Desk',
   short: 'NOYA Private Desk',
   description: 'NOYA Private Desk: private lifestyle management, travel, family support and private sourcing. By introduction or application.',
@@ -11,7 +11,7 @@ export default {
   purpose: 'Show what a dedicated NOYA relationship covers, including private sourcing, and explain how access is considered.',
   pages: [
     {
-      layout: 'cover', img: 'robe-pool', pos: '55% 40%',
+      layout: 'cover', img: 'robes-glasses', pos: '50% 45%',
       kicker: 'Private Lifestyle Management',
       title: 'NOYA Private Desk',
       line: 'A dedicated point of contact for travel, hospitality\nand private life, in Egypt and worldwide.',
@@ -28,7 +28,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'right', img: 'car-night', pos: '50% 50%',
+      layout: 'split', side: 'right', img: 'flutes-close', pos: '50% 50%',
       eyebrow: 'What the Desk includes',
       title: 'One person who already knows the answer.',
       blocks: [
@@ -45,7 +45,7 @@ export default {
       ],
     },
     {
-      layout: 'band', img: 'towels-daybed', h: 112, pos: '50% 55%',
+      layout: 'band', img: 'red-sea-pool', h: 104, pos: '50% 62%',
       eyebrow: 'Travel and stays',
       title: 'Journeys planned around how you travel.',
       blocks: [
@@ -59,7 +59,7 @@ export default {
       ],
     },
     {
-      layout: 'split', side: 'left', img: 'robes-two', pos: '50% 50%',
+      layout: 'split', side: 'left', img: 'robes-pair', pos: '38% 50%',
       eyebrow: 'Lifestyle and family',
       title: 'Life at home\nand away.',
       blocks: [
@@ -79,7 +79,7 @@ export default {
         { p: 'A particular watch reference. A handbag in a specific leather and colour. A piece of jewellery for an occasion, a car with the right history, a gift that must arrive somewhere precise on a precise day.' },
         { p: 'On request, we search independent dealers, specialist houses, auctions and private collections, and bring you what we find with its provenance, condition and price, so that you can decide with confidence.' },
         { gap: 3 },
-        { list: { two: true, items: ['Luxury watches', 'Rare handbags', 'Jewellery', 'Cars', 'Art', 'Collectibles', 'Gifts and occasion pieces'] } },
+        { words: ['Watches', 'Handbags', 'Jewellery', 'Cars', 'Art', 'Collectibles', 'Gifts'] },
         { gap: 7 },
         { cols: { n: 3, items: [
           { h: 'Discreet', t: 'Searches are made without revealing who is asking.' },
@@ -90,7 +90,7 @@ export default {
       ],
     },
     {
-      layout: 'text',
+      layout: 'band', img: 'tender-picnic', h: 78, pos: '50% 55%', fill: true,
       eyebrow: 'Who the Desk is for',
       title: 'For people whose time is spoken for.',
       blocks: [
@@ -125,7 +125,7 @@ export default {
       ],
     },
     {
-      layout: 'closing', img: 'champagne-car', h: 104, pos: '40% 45%',
+      layout: 'closing', img: 'car-flutes', h: 110, pos: '45% 42%',
       eyebrow: 'Private enquiries',
       title: 'Luxury is measured by trust.',
       blocks: [

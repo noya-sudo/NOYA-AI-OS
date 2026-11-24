@@ -3,3 +3,4 @@ out/
 brand/images/
 # Brochure photos: extracted from NOYA's 2026 brochures (brochures/assets.json says which). Public repository, so photos stay out of git.
 brochures/images/
+brochures/images_print/
