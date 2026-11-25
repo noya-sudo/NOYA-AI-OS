@@ -1776,3 +1776,17 @@ begin
     execute replace(d, a, b);
   end if;
 end $do$;
+
+-- 19n. acquisition_engine_v2_repair_alias_fix (25 Nov): the 19c family-priority patch used the alias "r", which PL/pgSQL
+--      resolved to the function's record variable r; the nightly repair failed on 23 and 24 Nov. Rename the alias.
+do $do$
+declare d text;
+  a text := '(select (r.engine->''families''->coalesce(q.family, ocat.family)->>''gap'')::int from daily_outreach_runs r order by r.run_date desc limit 1)';
+  b text := '(select (dr_.engine->''families''->coalesce(q.family, ocat.family)->>''gap'')::int from daily_outreach_runs dr_ order by dr_.run_date desc limit 1)';
+begin
+  select pg_get_functiondef('public.outreach_draft_repair(integer)'::regprocedure) into d;
+  if position('dr_.engine' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'alias patch: no unique match'; end if;
+    execute replace(d, a, b);
+  end if;
+end $do$;

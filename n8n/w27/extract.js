@@ -11,8 +11,13 @@ function decodeCf(hex) {
   try { var k = parseInt(hex.substr(0, 2), 16), s = ''; for (var i = 2; i < hex.length; i += 2) s += String.fromCharCode(parseInt(hex.substr(i, 2), 16) ^ k); return s; }
   catch (e) { return ''; }
 }
+// Inline base64 (images, fonts) and other very long tokens make the email regex quadratic: one 400 KB data URI pushes the
+// Code node past its 60-second limit, and the same batch then fails on every run. Strip them and cap the page first.
 function clean(html) {
   return String(html || '')
+    .replace(/data:[a-z0-9.+\/-]+;base64,[A-Za-z0-9+\/=]+/gi, ' ')
+    .replace(/[A-Za-z0-9+\/=_%.-]{300,}/g, ' ')
+    .slice(0, 1500000)
     .replace(/data-cfemail="([0-9a-f]+)"/gi, function (m, h) { return '>' + decodeCf(h) + '<'; })
     .replace(/&#(\d+);/g, function (m, d) { return String.fromCharCode(+d); })
     .replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCharCode(parseInt(h, 16)); })
@@ -39,7 +44,7 @@ function emailsIn(html, page) {
   return out;
 }
 function formsIn(html, page) {
-  var out = [], fm, h = String(html || '');
+  var out = [], fm, h = String(html || '').slice(0, 800000);
   var title = textOf((h.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || ['', ''])[1]).slice(0, 120);
   var heads = (h.match(/<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi) || []).slice(0, 4).map(textOf).join(' | ').slice(0, 200);
   var labels = {}, lr = /<label\b([^>]*)>([\s\S]*?)<\/label>/gi, lm;
@@ -74,7 +79,7 @@ function formsIn(html, page) {
   return out;
 }
 function social(html) {
-  var h = String(html || ''), ig = '', li = '', m;
+  var h = String(html || '').slice(0, 800000), ig = '', li = '', m;
   var r1 = /https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9_.]{2,30})\/?(?=["'?#\s<])/gi;
   while ((m = r1.exec(h))) { if (!/^(p|reel|reels|explore|accounts|stories|tv|about|developer|legal)$/i.test(m[1])) { ig = 'https://www.instagram.com/' + m[1]; break; } }
   var r2 = /https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/company\/([A-Za-z0-9_%-]{2,80})/i.exec(h);
