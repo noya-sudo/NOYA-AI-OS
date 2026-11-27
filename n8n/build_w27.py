@@ -31,6 +31,18 @@ def fetch(var, name, url_expr):
             f"      batching: {{ batch: {{ batchSize: 8, batchInterval: 300 }} }} }} }} }} }});")
 
 
+TRIM = ("{{ typeof $json.data === 'string' ? ($json.data.length > 500000 ? $json.data.slice(0, 350000) + ' ' + $json.data.slice(-150000)"
+        " : $json.data) : '' }}")
+
+
+def trim(var, name):
+    # 27 Nov: keep the head and tail of each page (about 500 KB: meta, main content, footer) before the code steps. Whole multi-megabyte
+    # retail pages pushed the Code nodes past their time and memory limits, and the unsaved batch was then retried on every run.
+    return (f"const {var} = node({{ type: 'n8n-nodes-base.set', version: 3.4, config: {{ name: {json.dumps(name)}, onError: 'continueRegularOutput',\n"
+            f"  parameters: {{ mode: 'manual', duplicateItem: false, assignments: {{ assignments: [{{ id: {json.dumps(var + '-data')}, name: 'data', value: expr({json.dumps(TRIM)}), type: 'string' }}] }},\n"
+            f"    includeOtherFields: true, include: 'all', options: {{}} }} }} }});")
+
+
 def code(var, name, key):
     return f"const {var} = node({{ type: 'n8n-nodes-base.code', version: 2, config: {{ name: {json.dumps(name)}, parameters: {{ mode: 'runOnceForAllItems', jsCode: {json.dumps(CODE[key])} }} }} }});"
 
@@ -65,8 +77,10 @@ SRC = "\n".join([
     "const scheduleB = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.2, config: { name: 'Sun-Fri 06:15 and 15:15 Cairo (forms backstop)', parameters: { rule: { interval: [{ field: 'cronExpression', expression: '15 6,15 * * 0-5' }] } } } });",
     rpc('rrBatch', 'Next Batch', 'route_research_next_batch', '{{ JSON.stringify({}) }}'),
     fetch('fetchHome', 'Fetch Homepage', '{{ $json.website }}'),
+    trim('trimHome', 'Trim Homepage'),
     code('pickPages', 'Pick Commercial Pages', 'pp'),
     fetch('fetchPage', 'Fetch Commercial Page', '{{ $json.url }}'),
+    trim('trimPage', 'Trim Commercial Page'),
     code('extract', 'Extract Routes', 'ex'),
     rpc('ingest', 'Save Routes', 'route_research_ingest', '{{ JSON.stringify({ p: $json.p }) }}', " onError: 'continueRegularOutput',"),
     heartbeat('beatA', 'Log Route Run', 'heartbeat_w27', 'Workflow 27 route research ran. Read by the engine health report.',
@@ -92,12 +106,12 @@ SRC = "\n".join([
     "  .add(scheduleA)",
     "  .to(rrBatch)",
     "  .add(rrBatch)",
-    "  .to(fetchHome.to(pickPages.to(fetchPage.to(extract.to(ingest.to(beatA.to(budget)))))))",
+    "  .to(fetchHome.to(trimHome.to(pickPages.to(fetchPage.to(trimPage.to(extract.to(ingest.to(beatA.to(budget)))))))))",
     "  .add(scheduleB)",
     "  .to(budget)",
     "  .add(budget)",
     "  .to(budgetOk.onTrue(formBatch.to(formPrompt.to(gemini.to(formParse.to(formSave.to(beatB)))))))",
-    "  .group('Route research', [rrBatch, fetchHome, pickPages, fetchPage, extract, ingest, beatA], { description: \"Reads each account's own site (homepage + 4 commercial pages) and saves public emails, forms and social pages with provenance\" })",
+    "  .group('Route research', [rrBatch, fetchHome, trimHome, pickPages, fetchPage, trimPage, extract, ingest, beatA], { description: \"Reads each account's own site (homepage + 4 commercial pages) and saves public emails, forms and social pages with provenance\" })",
     "  .group('Form copy', [budget, budgetOk, formBatch, formPrompt, gemini, formParse, formSave, beatB], { description: 'Writes field-by-field copy for qualified commercial forms; saved as FORM READY for Adam to approve. Never submits' });",
     "",
 ])

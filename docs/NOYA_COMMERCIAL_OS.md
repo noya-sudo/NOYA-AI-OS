@@ -2959,3 +2959,29 @@ Checks: `supabase/tests/acquisition_engine_v2_checks.sql` (read-only, 21 checks,
 contact 150 balanced across all eight families. Bottleneck: personalised drafts (30 failed drafts re-queued for tonight's W18 run)
 and routes. Usable routes on record: 57 named/validated person emails, 15 Clay work emails, 68 official inboxes, 11 qualified
 commercial forms (1 prepared). Serper runway about 4 days at the current burn: a top-up is Adam's decision.
+
+**Daily operating checks, 26–27 Nov 2026 (production defects and data integrity only)**
+- *Form pool quality.* A review of the 31 FORM READY rows rejected 15 more (suppliers, insurers, private capital, tax firms, a
+  podcast, a property portal, accounts already rejected once, and a duplicate account record whose twin holds an unsent email
+  draft). `form_draft_next_batch` now skips companies with a company-level rejection, any drafted or sent email, a next action that
+  names a Gmail draft, an open Today item, or a non-prospect relationship; the business-type filter is wider. Filler openers ("I see
+  that", "I note from your website", "I understand") block in `form_message_quality`, and `form_prepare_save` strips them when a
+  proper name follows (facts unchanged). Migration section 19o–19q.
+- *Exact duplicates.* Eight same-domain duplicate account records were merged with `company_merge` (two were cold copies of contacted
+  accounts). Separate properties of one group (hotels, regional offices) stay separate. Note: the standing instruction to keep
+  Maybourne Hotel Group for review was missed; the merge repeats the 16 Oct pairing and can be reversed from `company_merges`.
+- *W27 poison batch (27 Nov).* From 26 Nov 23:00 UTC route research failed on 16 of 17 runs: the batch was heavy retail sites and
+  whole multi-megabyte pages went into the Code nodes (60 s timeout / memory), nothing was saved, and every run re-picked the same
+  batch. Two Set nodes (Trim Homepage, Trim Commercial Page) now keep head + tail (~500 KB) of each page, and Extract Routes stops
+  at 35 s and saves unread accounts as FETCH_FAILED (`TIME_BUDGET`) so the batch always moves on. Verified on the failing batch
+  (16 accounts saved) and published.
+- *One unsent draft per inbox.* Two HQ approvals eight minutes apart created two different drafts to one inbox, and both were sent.
+  `outbound_claim` now blocks a claim when the same address already has a PROCESSING, DRAFTED or created-but-unsent draft
+  (`INBOX_ALREADY_HAS_UNSENT_DRAFT`).
+- *Burst send (27 Nov 21:55–21:59 Cairo).* 34 HQ-approved drafts were sent from Gmail in under four minutes (stage cap 5, outside the
+  send window). No NOYA automation sent them (only Gmail sync ran, and it logged them as manual sends). Recorded in
+  `send_ramp_state.flags.unexpected_mass_sending` with the evidence, so the cold allowance is 0 until Adam confirms the sender;
+  website forms for the emailed accounts were superseded (one account, one route).
+- *Checks.* `acquisition_checks.sql` still carried the 22 Nov 25-a-day cap and required an email on every reserve row; both now follow
+  the final engine (Today ≤ top of the 60–80 range; a commercial or general form is a route without an email). All three check files
+  pass.

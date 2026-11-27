@@ -29,8 +29,10 @@ checks(name, ok, observed) as (
   select 'Daily task populated the queue (run recorded for the day, rows written)',
          (select count(*) from run) = 1 and (select count(*) from q) > 0,
          jsonb_build_object('date', (select dt from d), 'rows', (select count(*) from q), 'built_at', (select built_at from run), 'runs', (select runs from run))
-  union all select 'Today''s 25: never more than 25, and every Today / Reserve record passed all 11 gates',
-         (select count(*) from q where lane = 'TODAY' and state in ('QUEUED', 'SENT')) <= 25
+  -- 27 Nov: the 25-a-day cap of 22 Nov is superseded by the final acquisition engine (60-80 READY, default 75); the ceiling is the top of the range.
+  union all select 'Ready today: never above the top of the 60-80 READY range, and every Today / Reserve record passed all its gates',
+         (select count(*) from q where lane = 'TODAY' and state in ('QUEUED', 'SENT'))
+           <= coalesce((select (value->'inventory'->'ready_range'->>1)::int from system_config where key = 'acquisition_engine'), 80)
            and not exists (select 1 from ready r where cardinality(r.failed) > 0 or exists (select 1 from jsonb_each(r.gates) g where g.value <> 'true'::jsonb))
            and exists (select 1 from pg_constraint where conname = 'daily_outreach_queue_ready_gates'),
          jsonb_build_object('today', (select count(*) from q where lane = 'TODAY' and state in ('QUEUED', 'SENT')), 'reserve', (select count(*) from q where lane = 'RESERVE' and state = 'QUEUED'),
@@ -48,8 +50,10 @@ checks(name, ok, observed) as (
   union all select 'DNC: no live Today / Reserve record reaches a do-not-contact person or inbox',
          not exists (select 1 from live l join contacts c on c.id in (l.contact_id, l.route_contact_id) where c.do_not_contact),
          jsonb_build_object('dnc_hits', (select count(*) from live l join contacts c on c.id in (l.contact_id, l.route_contact_id) where c.do_not_contact))
-  union all select 'Route provenance visible on every Today / Reserve record (address, label, source type, source link or Clay / provider)',
-         not exists (select 1 from ready r where r.route_email is null or r.route_label is null or r.route_source_type is null
+  -- 27 Nov: a commercial or general website form is a legitimate route without an email address (final acquisition engine); it still needs its source link.
+  union all select 'Route provenance visible on every Today / Reserve record (address or form, label, source type, source link or Clay / provider)',
+         not exists (select 1 from ready r where (r.route_email is null and coalesce(r.route_canonical, '') not in ('COMMERCIAL_FORM', 'GENERAL_FORM'))
+                      or r.route_label is null or r.route_source_type is null
                       or not (coalesce(r.route_source_url, '') ~ '^https?://' or r.route_source_type in ('CLAY', 'VERIFICATION_PROVIDER'))),
          jsonb_build_object('by_source_type', (select jsonb_object_agg(coalesce(route_source_type, '-'), n) from (select route_source_type, count(*) n from ready group by 1) x))
   union all select 'Classifications truthful: Clay stays "not independently verified" (LOW); Instagram only when the address came from public Instagram',

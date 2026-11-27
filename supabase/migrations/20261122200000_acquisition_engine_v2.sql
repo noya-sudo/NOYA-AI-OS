@@ -1790,3 +1790,83 @@ begin
     execute replace(d, a, b);
   end if;
 end $do$;
+
+-- 19o. form_drafter_route_and_rejection_guard (26 Nov): a quality review of 31 FORM READY rows rejected 15 more (suppliers,
+--      insurers, private capital, tax firms, a podcast, a property portal, accounts already rejected once, and a duplicate
+--      Talaat Moustafa record whose twin holds the unsent email draft). The drafter now skips companies with a company-level
+--      rejection (fit check, supplier, not a buyer, weak fit, warm conflict, wrong website), companies with any drafted or sent
+--      email, an opportunity whose next action names a Gmail draft, or an open Today item, and companies that are not prospects;
+--      the business-type filter adds private capital / credit, insurance, tax services, construction, property portals,
+--      fractional aircraft, jet cards, charter operators, FBOs and podcasts.
+do $do$
+declare d text; o text; n text;
+begin
+  d := pg_get_functiondef('public.form_draft_next_batch(integer)'::regprocedure);
+  if position('reject_reason ~*' in d) = 0 then
+    o := 'and not exists (select 1 from contact_forms x where x.company_id = cf.company_id and x.status in (''PREPARED'', ''APPROVED'', ''SUBMITTED''))';
+    if (length(d) - length(replace(d, o, ''))) / length(o) <> 1 then raise exception 'anchor not unique'; end if;
+    n := o || '
+       and not exists (select 1 from contact_forms x where x.company_id = cf.company_id and x.status = ''REJECTED''
+                        and x.reject_reason ~* ''^(Fit check|Quality review [0-9]+ [A-Za-z]+: (SUPPLIER|LOCAL PARTNER|NOT A FIT|NOT A BUYER|WEAK FIT|ALREADY REJECTED|WARM CONFLICT|WRONG WEBSITE))'')
+       and not exists (select 1 from outbound_emails e where e.company_id = cf.company_id and (e.gmail_draft_id is not null or e.sent_at is not null or e.status in (''SENT'', ''APPROVED'', ''QUEUED'')))
+       and not exists (select 1 from opportunities o2 where o2.company_id = cf.company_id and o2.next_action ~* ''draft r-?[0-9]{8,}'')
+       and not exists (select 1 from ceo_actions a where (a.company_id = cf.company_id or cf.company_id = any(a.related_company_ids)) and a.status in (''OPEN'', ''WAITING''))
+       and coalesce(c.relationship_status, ''prospect'') = ''prospect''';
+    d := replace(d, o, n);
+    o := 'private equity|asset manag|hedge fund)';
+    if (length(d) - length(replace(d, o, ''))) / length(o) <> 1 then raise exception 'regex anchor not unique'; end if;
+    d := replace(d, o, 'private equity|private capital|private credit|asset manag|hedge fund|insurance|reinsur|tax (advis|servic)|construction|contracting|property portal|fractional (aircraft|jet|ownership)|jet card|charter operator|\mFBO\M|podcast)');
+    execute d;
+  end if;
+end $do$;
+
+-- 19p. form_quality_presumptuous_openers (26 Nov): "I note from your website", "I understand" and "I see that" openers block.
+do $do$
+declare d text; o text := 'i note that|caught my eye';
+begin
+  d := pg_get_functiondef('public.form_message_quality(text,text,integer,text)'::regprocedure);
+  if position('i note from' in d) = 0 then
+    if (length(d) - length(replace(d, o, ''))) / length(o) <> 2 then raise exception 'expected 2 anchors'; end if;
+    execute replace(d, o, 'i note that|i note from|i understand|i see that|caught my eye');
+  end if;
+end $do$;
+
+-- 19q. form_prepare_save_strip_openers (26 Nov): strip those filler openers before the quality check when a proper name follows
+--      ("I see that Knight Frank connects ..." -> "Knight Frank connects ..."); facts are unchanged, nothing is added.
+do $do$
+declare d text; o text := '  select name into v_company from companies where id = cf.company_id;';
+begin
+  d := pg_get_functiondef('public.form_prepare_save(jsonb)'::regprocedure);
+  if position('Strip filler openers' in d) = 0 then
+    if (length(d) - length(replace(d, o, ''))) / length(o) <> 1 then raise exception 'anchor not unique'; end if;
+    d := replace(d, o, '  -- Strip filler openers ("I see that X ...", "I note from your website that X ...") when a proper name follows; facts are unchanged.
+  p := jsonb_set(p, ''{message}'', to_jsonb(regexp_replace(p->>''message'', ''\m(I (see|understand|note)( from (your|the) website)?( that)?) (?=[A-Z])'', '''', ''g'')));
+' || o);
+    execute d;
+  end if;
+end $do$;
+
+-- 19r. outbound_claim_one_unsent_draft_per_inbox (27 Nov): never a second unsent Gmail draft to one inbox. Two HQ approvals eight
+--      minutes apart created two different drafts to the same address and both were sent. A claim is now blocked when another
+--      outbound to the same address is PROCESSING, DRAFTED, or created but not yet recorded as sent (within 60 days).
+do $do$
+declare d text;
+  o text := '  if v_block is not null then
+    update outbound_emails set status = ''FAILED''';
+  n text := '  -- ONE ROUTE PER INBOX (27 Nov): never a second unsent Gmail draft to the same inbox. On 26 Nov two approvals 8 minutes apart
+  -- created two different drafts to one address, and both were sent on 27 Nov. A draft counts until Gmail sync records it sent.
+  if v_block is null and exists (select 1 from outbound_emails e
+       where e.id <> v_row.id and lower(btrim(e.to_email)) = lower(btrim(v_row.to_email))
+         and (e.status in (''PROCESSING'', ''DRAFTED'') or (e.status = ''SENT'' and e.mode = ''DRAFT'' and e.sent_at is null))
+         and coalesce(e.completed_at, e.claimed_at, e.created_at) > now() - interval ''60 days'') then
+    v_block := ''INBOX_ALREADY_HAS_UNSENT_DRAFT'';
+  end if;
+
+';
+begin
+  d := pg_get_functiondef('public.outbound_claim(uuid)'::regprocedure);
+  if position('INBOX_ALREADY_HAS_UNSENT_DRAFT' in d) = 0 then
+    if (length(d) - length(replace(d, o, ''))) / length(o) <> 1 then raise exception 'anchor not unique'; end if;
+    execute replace(d, o, n || o);
+  end if;
+end $do$;

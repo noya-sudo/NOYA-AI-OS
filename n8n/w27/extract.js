@@ -4,9 +4,14 @@
 // careers, privacy and similar inboxes, attaches a personal address only to a known person whose name it spells, and rejects
 // non-commercial or login-only forms.
 var comps = $('Next Batch').all();
-var homes = $('Fetch Homepage').all();
+// Pages arrive trimmed (head + tail, about 500 KB) by the Trim nodes: whole multi-megabyte retail pages pushed this node past its
+// time and memory limits (27 Nov), and the same batch then failed on every run because nothing was saved.
+var homes = $('Trim Homepage').all();
 var plan = $('Pick Commercial Pages').all();
 var pages = $input.all();
+// Time budget: stop reading at 35 s so the node always returns; an account not read in time is saved as FETCH_FAILED (TIME_BUDGET),
+// which moves the next batch on instead of retrying the same heavy sites forever.
+var T0 = Date.now(), BUDGET = 35000;
 function decodeCf(hex) {
   try { var k = parseInt(hex.substr(0, 2), 16), s = ''; for (var i = 2; i < hex.length; i += 2) s += String.fromCharCode(parseInt(hex.substr(i, 2), 16) ^ k); return s; }
   catch (e) { return ''; }
@@ -17,7 +22,7 @@ function clean(html) {
   return String(html || '')
     .replace(/data:[a-z0-9.+\/-]+;base64,[A-Za-z0-9+\/=]+/gi, ' ')
     .replace(/[A-Za-z0-9+\/=_%.-]{300,}/g, ' ')
-    .slice(0, 1500000)
+    .slice(0, 600000)
     .replace(/data-cfemail="([0-9a-f]+)"/gi, function (m, h) { return '>' + decodeCf(h) + '<'; })
     .replace(/&#(\d+);/g, function (m, d) { return String.fromCharCode(+d); })
     .replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCharCode(parseInt(h, 16)); })
@@ -112,13 +117,18 @@ pages.forEach(function (x, i) {
   else b.errors.push(errOf(x.json, 'page not readable'));
 });
 return Object.keys(by).map(function (k) {
-  var b = by[k], emails = [], forms = [], ig = '', li = '', seenE = {}, home = b.htmls[0] || null, desc = home ? siteDesc(home.html) : '';
+  var b = by[k], emails = [], forms = [], ig = '', li = '', seenE = {}, home = b.htmls[0] || null, read = [], late = false;
+  var desc = home && Date.now() - T0 <= BUDGET ? siteDesc(home.html) : '';
   b.htmls.forEach(function (z) {
+    if (Date.now() - T0 > BUDGET) { late = true; return; }
+    read.push(z.url);
     emailsIn(z.html, z.url).forEach(function (e) { if (!seenE[e.email]) { seenE[e.email] = 1; emails.push(e); } });
     formsIn(z.html, z.url).forEach(function (f) { forms.push(f); });
     var s = social(z.html); ig = ig || s.instagram; li = li || s.linkedin;
   });
-  return { json: { p: { company_id: b.company_id, method: 'W27_SITE', pages: b.htmls.map(function (z) { return z.url; }),
+  var err = read.length ? (late ? 'TIME_BUDGET: some pages not read in this run' : '')
+    : (late ? 'TIME_BUDGET: the run ran out of time before this site was read' : (b.errors[0] || 'site not readable'));
+  return { json: { p: { company_id: b.company_id, method: 'W27_SITE', pages: read,
     emails: emails.slice(0, 25), forms: forms.slice(0, 6), instagram: ig, linkedin: li, site_description: desc, site_description_url: desc && home ? home.url : '',
-    error: b.htmls.length ? '' : (b.errors[0] || 'site not readable') } } };
+    error: err } } };
 });
