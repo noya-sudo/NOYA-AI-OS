@@ -10,7 +10,7 @@
 
 export default {
   code: '06',
-  file: 'NOYA_06_Selected_Work_Q4-2026',
+  file: 'NOYA_06_Selected_Work',
   title: 'NOYA Selected Work',
   short: 'NOYA Selected Work · Q4 2026',
   description: 'NOYA Selected Work: completed NOYA engagements, described from our records and anonymised. Shared privately on request.',

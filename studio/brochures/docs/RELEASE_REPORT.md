@@ -53,3 +53,15 @@ approved set until Adam approves r2. Files: `studio/out/brochures/r2/digital/` (
 Dependencies unchanged in substance: Dior/Jacquemus permission before external use of the full 04 (the without-references edition is ready);
 partner agreement review and contracting entity (05); courtesy note to the wedding couple (06). New, non-blocking: confirm partner/listing terms
 for the Saint-Tropez and Alpine photographs; obtain the Drive masters before printing the 01 and 04 covers.
+
+---
+
+## r2.1 · Published 27 Nov 2026 (current)
+
+Approved by Adam with two corrections (01 case study separated from the SAGE photograph; 04 locations wording) and unified version names.
+Digital editions are in the publication folder; the full Dior/Jacquemus edition of 04 is internal; Selected Work is private; v2026-11 and the
+r2 approval copies are archived. Checksums, page counts and Drive links: `RELEASE_MANIFEST.md`. Nothing has been sent to prospects.
+
+Remaining dependencies: Dior/Jacquemus commercial permission (until then only the without-references 04 circulates); partner agreement legal
+review and contracting entity (05); courtesy note to the wedding couple before sharing 06; Drive masters for the 01 and 04 covers before print;
+confirmation of partner/listing terms for the Saint-Tropez and Alpine photographs.

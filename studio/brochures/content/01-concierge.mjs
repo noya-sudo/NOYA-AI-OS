@@ -76,7 +76,7 @@ export default {
       title: 'Celebrations of every size,\nplanned with the same attention.',
       blocks: [
         { p: 'Birthdays, anniversaries, proposals, weddings and gatherings of family and friends. We find the setting, look after the guests’ travel and rooms, and bring the suppliers together, so that the hosts can enjoy the occasion with everyone else.' },
-        { box: { h: 'Selected work · Cairo, October 2025', t: 'An international wedding party at a five-star Cairo hotel: a group rate negotiated and contracted, guest bookings taken directly, the rooming list managed through every revision, and the couple’s suite and photo session arranged.' } },
+        { list: { two: true, items: ['Weddings and celebrations', 'Private dinners and parties', 'Group travel for family and friends', 'Guest travel, rooms and transfers', 'Venues, catering and entertainment', 'Gifts and personal touches'] } },
       ],
     },
     {
@@ -127,6 +127,8 @@ export default {
           { h: 'Confirm', t: 'Nothing is booked until you approve it, and every confirmation reaches you in writing.' },
           { h: 'Remain close', t: 'We stay available before, during and after the journey, and adjust when plans change.' },
         ] },
+        { gap: 8 },
+        { box: { h: 'Selected work · Cairo, October 2025', t: 'An international wedding party at a five-star Cairo hotel: a group rate negotiated and contracted, guest bookings taken directly, the rooming list managed through every revision, and the couple’s suite and photo session arranged.' } },
         { note: ROLE },
       ],
     },

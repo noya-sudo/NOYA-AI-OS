@@ -20,8 +20,8 @@ const VARIANT = process.env.VARIANT === 'print' ? 'print' : 'digital';
 const DRAFT = process.env.DRAFT === '1';
 const OMIT_REFS = process.env.OMIT_REFS === '1';
 const BLEED = VARIANT === 'print' ? 3 : 0;
-const EDITION = 'v2026-11-r2';
-const OUT = join(HERE, '..', 'out', 'brochures', 'r2', VARIANT);
+const EDITION = 'v2026-11-r2.1';
+const OUT = join(HERE, '..', 'out', 'brochures', 'r2.1', VARIANT);
 const IMGDIR = join(HERE, VARIANT === 'print' ? 'images_print' : 'images');
 mkdirSync(join(OUT, 'pages'), { recursive: true });
 

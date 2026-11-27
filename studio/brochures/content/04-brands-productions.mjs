@@ -76,7 +76,7 @@ export default {
       eyebrow: 'Egypt · Locations',
       title: 'One country. Many looks.',
       blocks: [
-        { intro: 'Desert, Nile, Mediterranean coast, Red Sea, ancient monument and modern city, most within a few hours of one another and workable for much of the year.' },
+        { intro: 'Desert and Nile, Mediterranean and Red Sea coasts, ancient monuments and a contemporary capital: settings of real variety, each with its own season, access and permissions.' },
         { cols: { n: 2, items: [
           { h: 'Cairo and Giza', t: 'The Pyramids and the Giza plateau, the Grand Egyptian Museum, historic and downtown Cairo, palaces and contemporary architecture.' },
           { h: 'Luxor and Aswan', t: 'Temples and tombs, the Nile and its feluccas, riverside hotels and the light of Upper Egypt.' },
